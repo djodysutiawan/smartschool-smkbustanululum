@@ -398,46 +398,129 @@
     </a>
 
     <p class="sb-section">Manajemen</p>
-    <details class="sb-group">
+    <details class="sb-group" {{ request()->routeIs(
+        'admin.teachers.*',
+        'admin.students.*',
+        'admin.parents.*',
+        'admin.piket-teachers.*',
+        'admin.users',
+        'admin.roles.*',
+        'admin.permissions.*',
+        'admin.role-permission.*') ? 'open' : '' }}>
         <summary class="sb-group-header">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
             Manajemen User
-            <svg class="chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            <svg class="chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6"/>
+            </svg>
         </summary>
         <div class="sb-sub">
-            <a href="#" class="sb-item">Data Guru</a>
-            <a href="#" class="sb-item">Data Siswa</a>
-            <a href="#" class="sb-item">Data Orang Tua</a>
-            <a href="#" class="sb-item">Data Guru Piket</a>
-            <a href="#" class="sb-item">Role &amp; Permission</a>
+            <a href="{{ route('admin.teachers.index') }}"
+               class="sb-item {{ request()->routeIs('admin.teachers.*') ? 'active' : '' }}">
+                Data Guru
+            </a>
+            <a href="{{ route('admin.students.index') }}"
+               class="sb-item {{ request()->routeIs('admin.students.*') ? 'active' : '' }}">
+                Data Siswa
+            </a>
+            <a href="{{ route('admin.parents.index') }}"
+               class="sb-item {{ request()->routeIs('admin.parents.*') ? 'active' : '' }}">
+                Data Orang Tua
+            </a>
+            <a href="{{ route('admin.piket-teachers.index') }}"
+               class="sb-item {{ request()->routeIs('admin.piket-teachers.*') ? 'active' : '' }}">
+                Data Guru Piket
+            </a>
+            <a href="{{ route('admin.users') }}"
+               class="sb-item {{ request()->routeIs(
+                   'admin.users',
+                   'admin.roles.*',
+                   'admin.permissions.*',
+                   'admin.role-permission.*'
+               ) ? 'active' : '' }}">
+                Role &amp; Permission
+            </a>
         </div>
     </details>
 
-    <details class="sb-group">
+    <details class="sb-group" {{ request()->routeIs(
+            'admin.classes.*',
+            'admin.subjects.*',
+            'admin.academic-years.*',
+            'admin.schedules.*') ? 'open' : '' }}>
         <summary class="sb-group-header">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
             Manajemen Akademik
-            <svg class="chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            <svg class="chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M6 9l6 6 6-6"/>
+            </svg>
         </summary>
         <div class="sb-sub">
-            <a href="#" class="sb-item">Data Kelas</a>
-            <a href="#" class="sb-item">Data Mata Pelajaran</a>
-            <a href="#" class="sb-item">Tahun Ajaran</a>
-            <a href="#" class="sb-item">Jadwal Pelajaran</a>
+            <a href="{{ route('admin.classes.index') }}"
+            class="sb-item {{ request()->routeIs('admin.classes.*') ? 'active' : '' }}">
+                Data Kelas
+            </a>
+            <a href="{{ route('admin.subjects.index') }}"
+            class="sb-item {{ request()->routeIs('admin.subjects.*') ? 'active' : '' }}">
+                Data Mata Pelajaran
+            </a>
+            <a href="{{ route('admin.academic-years.index') }}"
+            class="sb-item {{ request()->routeIs('admin.academic-years.*') ? 'active' : '' }}">
+                Tahun Ajaran
+            </a>
+            <a href="{{ route('admin.schedules.index') }}"
+            class="sb-item {{ request()->routeIs('admin.schedules.*') ? 'active' : '' }}">
+                Jadwal Pelajaran
+            </a>
         </div>
     </details>
 
-    <details class="sb-group">
+    <details class="sb-group" {{ Request::is(
+        'admin/materials*',
+        'admin/assignments*',
+        'admin/assignment-submissions*',
+        'admin/exams*',
+        'admin/grades*',
+        'admin/lms*') ? 'open' : '' }}>
         <summary class="sb-group-header">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
             LMS Management
             <svg class="chevron" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </summary>
         <div class="sb-sub">
-            <a href="#" class="sb-item">Semua Materi</a>
-            <a href="#" class="sb-item">Semua Tugas</a>
-            <a href="#" class="sb-item">Semua Ujian</a>
-            <a href="#" class="sb-item">Monitoring LMS</a>
+            <a href="{{ route('admin.materials.index') }}"
+               class="sb-item {{ Request::is('admin/materials*') ? 'active' : '' }}">
+                Semua Materi
+            </a>
+            <a href="{{ route('admin.assignments.index') }}"
+               class="sb-item {{ Request::is('admin/assignments') || request()->routeIs('admin.assignments.*') && !Request::is('admin/assignment-submissions*') ? 'active' : '' }}">
+                Semua Tugas
+            </a>
+            {{-- ★ BARU: Submission Tugas ★ --}}
+            <a href="{{ route('admin.assignment-submissions.index') }}"
+               class="sb-item {{ Request::is('admin/assignment-submissions*') ? 'active' : '' }}">
+                Submission Tugas
+            </a>
+            <a href="{{ route('admin.exams.index') }}"
+               class="sb-item {{ Request::is('admin/exams*') ? 'active' : '' }}">
+                Semua Ujian
+            </a>
+            <a href="{{ route('admin.grades.index') }}"
+               class="sb-item {{ Request::is('admin/grades*') ? 'active' : '' }}">
+                Nilai Siswa
+            </a>
+            <a href="{{ route('admin.lms.monitoring') }}"
+               class="sb-item {{ Request::is('admin/lms*') ? 'active' : '' }}">
+                Monitoring LMS
+            </a>
         </div>
     </details>
 
