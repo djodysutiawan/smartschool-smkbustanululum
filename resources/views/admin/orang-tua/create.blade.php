@@ -1,0 +1,451 @@
+<x-app-layout>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+
+    :root {
+        --brand:      #1f63db;
+        --brand-h:    #3582f0;
+        --brand-700:  #1750c0;
+        --brand-100:  #d9ebff;
+        --brand-50:   #eef6ff;
+        --surface:    #fff;
+        --surface2:   #f8fafc;
+        --surface3:   #f1f5f9;
+        --border:     #e2e8f0;
+        --border2:    #cbd5e1;
+        --text:       #0f172a;
+        --text2:      #475569;
+        --text3:      #94a3b8;
+        --red:        #dc2626;
+        --red-bg:     #fee2e2;
+        --red-border: #fecaca;
+        --radius:     10px;
+        --radius-sm:  7px;
+    }
+
+    .page { padding: 28px 28px 60px; max-width: 2000px; margin: 0 auto; }
+
+    .breadcrumb {
+        display: flex; align-items: center; gap: 6px;
+        font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 600;
+        color: var(--text3); margin-bottom: 20px;
+    }
+    .breadcrumb a { color: var(--text3); text-decoration: none; transition: color .15s; }
+    .breadcrumb a:hover { color: var(--brand); }
+    .breadcrumb .sep { color: var(--border2); }
+    .breadcrumb .current { color: var(--text2); }
+
+    .page-header {
+        display: flex; align-items: center; justify-content: space-between;
+        gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .page-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); }
+    .page-sub   { font-size: 12.5px; color: var(--text3); margin-top: 3px; }
+
+    .btn {
+        display: inline-flex; align-items: center; gap: 6px;
+        padding: 9px 20px; border-radius: var(--radius-sm);
+        font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13.5px; font-weight: 700;
+        cursor: pointer; border: none; text-decoration: none;
+        transition: filter .15s, background .15s; white-space: nowrap;
+    }
+    .btn-back    { padding: 8px 14px; font-size: 13px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+    .btn-back:hover { background: var(--surface3); }
+    .btn-cancel  { background: var(--surface); color: var(--text2); border: 1px solid var(--border); }
+    .btn-cancel:hover { background: var(--surface3); }
+    .btn-primary { background: var(--brand); color: #fff; }
+    .btn-primary:hover { filter: brightness(.93); }
+    .btn-primary:disabled { opacity: .6; cursor: not-allowed; filter: none; }
+
+    .alert {
+        display: flex; align-items: flex-start; gap: 10px;
+        padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 20px;
+        font-size: 13.5px; background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border);
+    }
+
+    .form-card   { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .form-section { padding: 20px 24px 24px; }
+    .section-divider { border: none; border-top: 1px solid var(--border); margin: 0; }
+
+    .section-label {
+        display: flex; align-items: center; gap: 8px;
+        font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700;
+        color: var(--text3); letter-spacing: .07em; text-transform: uppercase; margin-bottom: 16px;
+    }
+    .section-label-line { flex: 1; height: 1px; background: var(--border); }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .col-span-2 { grid-column: span 2; }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label {
+        font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px;
+        font-weight: 700; color: var(--text2);
+    }
+    .field label .req { color: var(--brand); margin-left: 2px; }
+    .field input,
+    .field select,
+    .field textarea {
+        height: 38px; padding: 0 12px;
+        border: 1px solid var(--border); border-radius: var(--radius-sm);
+        font-family: 'DM Sans', sans-serif; font-size: 13.5px;
+        color: var(--text); background: var(--surface2); width: 100%;
+        outline: none; transition: border-color .15s, background .15s;
+    }
+    .field textarea { height: auto; padding: 10px 12px; resize: vertical; }
+    .field input:focus, .field select:focus, .field textarea:focus {
+        border-color: var(--brand-h); background: #fff;
+        box-shadow: 0 0 0 3px rgba(53,130,240,.1);
+    }
+    .field input::placeholder, .field textarea::placeholder { color: var(--text3); }
+    .field input.is-invalid,
+    .field select.is-invalid,
+    .field textarea.is-invalid { border-color: var(--red); background: #fff8f8; }
+    .field-error { font-size: 12px; color: var(--red); font-family: 'DM Sans', sans-serif; margin-top: -2px; }
+    .field-hint  { font-size: 12px; color: var(--text3); font-family: 'DM Sans', sans-serif; margin-top: -2px; }
+
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 40px; }
+    .pw-toggle {
+        position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+        background: none; border: none; cursor: pointer; color: var(--text3);
+        display: flex; align-items: center; transition: color .15s;
+    }
+    .pw-toggle:hover { color: var(--text2); }
+
+    /* Toggle switch */
+    .toggle-row { display: flex; align-items: center; gap: 12px; }
+    .toggle-switch { position: relative; display: inline-block; width: 42px; height: 24px; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider {
+        position: absolute; inset: 0; border-radius: 99px;
+        background: var(--border2); cursor: pointer; transition: background .2s;
+    }
+    .toggle-slider::before {
+        content: ''; position: absolute; width: 18px; height: 18px;
+        left: 3px; top: 3px; background: #fff; border-radius: 50%;
+        transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2);
+    }
+    .toggle-switch input:checked + .toggle-slider { background: var(--brand); }
+    .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+    .toggle-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--text2); }
+
+    /* Siswa relation table */
+    .siswa-table-wrap {
+        border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden;
+    }
+    .siswa-table-wrap table { font-size: 13px; }
+    .siswa-table-wrap thead tr { background: var(--surface2); }
+    .siswa-table-wrap th {
+        padding: 9px 12px; font-family: 'Plus Jakarta Sans', sans-serif;
+        font-size: 11px; font-weight: 700; color: var(--text3);
+        text-transform: uppercase; letter-spacing: .05em; text-align: left;
+    }
+    .siswa-table-wrap td { padding: 8px 12px; border-top: 1px solid var(--border); }
+    .siswa-table-wrap td:first-child { width: 40px; }
+    .siswa-table-wrap select {
+        height: 32px; padding: 0 8px; font-size: 12.5px;
+        border: 1px solid var(--border); border-radius: 6px;
+        background: var(--surface2); font-family: 'DM Sans', sans-serif;
+        color: var(--text); outline: none;
+    }
+    .empty-siswa {
+        padding: 24px; text-align: center;
+        color: var(--text3); font-size: 13px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .info-box {
+        background: var(--brand-50); border: 1px solid var(--brand-100);
+        border-radius: var(--radius-sm); padding: 12px 16px;
+        font-size: 13px; color: var(--brand-700);
+        font-family: 'DM Sans', sans-serif; margin-bottom: 16px;
+        display: flex; align-items: flex-start; gap: 8px;
+    }
+
+    .account-toggle-card {
+        background: var(--surface2); border: 1px solid var(--border);
+        border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 16px;
+    }
+
+    .form-footer {
+        display: flex; align-items: center; justify-content: flex-end; gap: 10px;
+        padding: 16px 24px; background: var(--surface2); border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 680px) {
+        .page { padding: 16px 16px 40px; }
+        .form-grid { grid-template-columns: 1fr; }
+        .col-span-2 { grid-column: span 1; }
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
+<div class="page">
+
+    <nav class="breadcrumb">
+        <a href="{{ route('dashboard') }}">Dashboard</a>
+        <span class="sep">›</span>
+        <a href="{{ route('admin.orang-tua.index') }}">Data Orang Tua</a>
+        <span class="sep">›</span>
+        <span class="current">Tambah Orang Tua</span>
+    </nav>
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Tambah Orang Tua / Wali Baru</h1>
+            <p class="page-sub">Isi data lengkap, hubungkan dengan siswa, lalu klik Simpan Data</p>
+        </div>
+        <a href="{{ route('admin.orang-tua.index') }}" class="btn btn-back">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            Kembali
+        </a>
+    </div>
+
+    @if(session('error'))
+        <div class="alert">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ session('error') }}
+        </div>
+    @endif
+    @if($errors->any())
+        <div class="alert">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div>
+                <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">Terdapat {{ $errors->count() }} kesalahan:</strong>
+                <ul style="margin:6px 0 0 16px;display:flex;flex-direction:column;gap:2px">
+                    @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+                </ul>
+            </div>
+        </div>
+    @endif
+
+    <form action="{{ route('admin.orang-tua.store') }}" method="POST" id="orangTuaForm">
+        @csrf
+        <div class="form-card">
+
+            {{-- ═══ 1. DATA PRIBADI ═══ --}}
+            <div class="form-section">
+                <p class="section-label">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                    Data Pribadi
+                    <span class="section-label-line"></span>
+                </p>
+                <div class="form-grid">
+                    <div class="field col-span-2">
+                        <label>Nama Lengkap <span class="req">*</span></label>
+                        <input type="text" name="nama_lengkap" value="{{ old('nama_lengkap') }}"
+                            placeholder="cth. Budi Santoso"
+                            class="{{ $errors->has('nama_lengkap') ? 'is-invalid' : '' }}">
+                        @error('nama_lengkap')<span class="field-error">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="field">
+                        <label>No. HP <span class="req">*</span></label>
+                        <input type="text" name="no_hp" value="{{ old('no_hp') }}"
+                            placeholder="cth. 08123456789" inputmode="numeric"
+                            class="{{ $errors->has('no_hp') ? 'is-invalid' : '' }}">
+                        @error('no_hp')<span class="field-error">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="field">
+                        <label>Email</label>
+                        <input type="email" name="email" value="{{ old('email') }}"
+                            placeholder="cth. budi@email.com"
+                            class="{{ $errors->has('email') ? 'is-invalid' : '' }}">
+                        @error('email')<span class="field-error">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="field">
+                        <label>Pekerjaan</label>
+                        <input type="text" name="pekerjaan" value="{{ old('pekerjaan') }}"
+                            placeholder="cth. Wiraswasta"
+                            class="{{ $errors->has('pekerjaan') ? 'is-invalid' : '' }}">
+                        @error('pekerjaan')<span class="field-error">{{ $message }}</span>@enderror
+                    </div>
+                    <div class="field">
+                        <label>Alamat</label>
+                        <textarea name="alamat" rows="3"
+                            placeholder="Alamat lengkap..."
+                            class="{{ $errors->has('alamat') ? 'is-invalid' : '' }}">{{ old('alamat') }}</textarea>
+                        @error('alamat')<span class="field-error">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            {{-- ═══ 2. AKUN SISTEM ═══ --}}
+            <div class="form-section">
+                <p class="section-label">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                    Akun Sistem
+                    <span class="section-label-line"></span>
+                </p>
+
+                <div class="account-toggle-card">
+                    <div class="toggle-row">
+                        <label class="toggle-switch">
+                            <input type="hidden" name="buat_akun_baru" value="0">
+                            <input type="checkbox" name="buat_akun_baru" value="1" id="buatAkunToggle"
+                                {{ old('buat_akun_baru') == '1' ? 'checked' : '' }}
+                                onchange="toggleAkunSection()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                        <span class="toggle-label">Buat akun login untuk orang tua ini</span>
+                    </div>
+                </div>
+
+                <div id="akunBaruSection" style="{{ old('buat_akun_baru') == '1' ? '' : 'display:none' }}">
+                    <div class="form-grid">
+                        <div class="field">
+                            <label>Email Login <span class="req">*</span></label>
+                            <input type="email" name="user_email" value="{{ old('user_email') }}"
+                                placeholder="cth. budi@sekolah.sch.id"
+                                class="{{ $errors->has('user_email') ? 'is-invalid' : '' }}">
+                            @error('user_email')<span class="field-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="field">
+                            <label>Password <span class="req">*</span></label>
+                            <div class="pw-wrap">
+                                <input type="password" name="user_password" id="pwInput"
+                                    placeholder="Minimal 8 karakter"
+                                    class="{{ $errors->has('user_password') ? 'is-invalid' : '' }}">
+                                <button type="button" class="pw-toggle" onclick="togglePw()">
+                                    <svg id="eyeShow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    <svg id="eyeHide" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                </button>
+                            </div>
+                            @error('user_password')<span class="field-error">{{ $message }}</span>@enderror
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            {{-- ═══ 3. HUBUNGKAN SISWA ═══ --}}
+            <div class="form-section">
+                <p class="section-label">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                    Hubungkan dengan Siswa
+                    <span class="section-label-line"></span>
+                </p>
+
+                <div class="info-box">
+                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    Pilih siswa yang terkait dengan orang tua ini. Anda juga dapat menambahkan relasi nanti melalui halaman Detail.
+                </div>
+
+                @if($siswaAktif->isNotEmpty())
+                <div class="siswa-table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Pilih</th>
+                                <th>NIS</th>
+                                <th>Nama Siswa</th>
+                                <th>Kelas</th>
+                                <th>Hubungan</th>
+                                <th>Kontak Utama</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($siswaAktif as $s)
+                            <tr id="siswaRow-{{ $s->id }}">
+                                <td>
+                                    <input type="checkbox" name="siswa_ids[]" value="{{ $s->id }}"
+                                        id="chk-{{ $s->id }}"
+                                        {{ in_array($s->id, old('siswa_ids', [])) ? 'checked' : '' }}
+                                        onchange="toggleSiswaRow({{ $s->id }})">
+                                </td>
+                                <td style="font-size:12px;color:var(--text3)">{{ $s->nis }}</td>
+                                <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">{{ $s->nama_lengkap }}</td>
+                                <td style="font-size:12.5px;color:var(--text2)">{{ $s->kelas->nama_kelas ?? '-' }}</td>
+                                <td>
+                                    <select name="hubungan[{{ $s->id }}]"
+                                        id="hubungan-{{ $s->id }}"
+                                        style="{{ !in_array($s->id, old('siswa_ids', [])) ? 'opacity:.4;pointer-events:none' : '' }}">
+                                        <option value="ayah"      {{ old("hubungan.{$s->id}") == 'ayah' ? 'selected' : '' }}>Ayah</option>
+                                        <option value="ibu"       {{ old("hubungan.{$s->id}") == 'ibu' ? 'selected' : '' }}>Ibu</option>
+                                        <option value="wali"      {{ old("hubungan.{$s->id}") == 'wali' ? 'selected' : '' }}>Wali</option>
+                                        <option value="orang_tua" {{ old("hubungan.{$s->id}", 'orang_tua') == 'orang_tua' ? 'selected' : '' }}>Orang Tua</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="radio" name="kontak_utama" value="{{ $s->id }}"
+                                        id="kontak-{{ $s->id }}"
+                                        {{ old('kontak_utama') == $s->id ? 'checked' : '' }}
+                                        style="{{ !in_array($s->id, old('siswa_ids', [])) ? 'opacity:.4;pointer-events:none' : '' }}">
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                <div class="empty-siswa">
+                    <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px;display:block"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                    Belum ada siswa aktif yang tersedia
+                </div>
+                @endif
+            </div>
+
+            {{-- Footer --}}
+            <div class="form-footer">
+                <a href="{{ route('admin.orang-tua.index') }}" class="btn btn-cancel">Batal</a>
+                <button type="submit" class="btn btn-primary" id="btnSubmit">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Simpan Data
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    @if(session('error'))
+    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    @endif
+    @if($errors->any())
+    Swal.fire({
+        icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
+        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor:'#1f63db',
+    });
+    @endif
+
+    function toggleAkunSection() {
+        const show = document.getElementById('buatAkunToggle').checked;
+        document.getElementById('akunBaruSection').style.display = show ? '' : 'none';
+    }
+
+    function togglePw() {
+        const i = document.getElementById('pwInput');
+        const isT = i.type === 'text';
+        i.type = isT ? 'password' : 'text';
+        document.getElementById('eyeShow').style.display = isT ? 'block' : 'none';
+        document.getElementById('eyeHide').style.display = isT ? 'none' : 'block';
+    }
+
+    function toggleSiswaRow(id) {
+        const checked = document.getElementById('chk-' + id).checked;
+        const hubEl   = document.getElementById('hubungan-' + id);
+        const kontakEl = document.getElementById('kontak-' + id);
+        if (hubEl) {
+            hubEl.style.opacity = checked ? '1' : '.4';
+            hubEl.style.pointerEvents = checked ? 'auto' : 'none';
+        }
+        if (kontakEl) {
+            kontakEl.style.opacity = checked ? '1' : '.4';
+            kontakEl.style.pointerEvents = checked ? 'auto' : 'none';
+            if (!checked) kontakEl.checked = false;
+        }
+    }
+
+    document.getElementById('orangTuaForm').addEventListener('submit', function() {
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
+    });
+</script>
+</x-app-layout>
