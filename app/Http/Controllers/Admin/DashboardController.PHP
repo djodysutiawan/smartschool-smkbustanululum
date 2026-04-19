@@ -4,14 +4,17 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Absensi;
+use App\Models\AbsensiGuru;          // ← TAMBAHAN: absensi guru
 use App\Models\Guru;
 use App\Models\JadwalPelajaran;
+use App\Models\JadwalPiketGuru;      // ← TAMBAHAN: jadwal piket untuk widget guru belum absen
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use App\Models\Notifikasi;
 use App\Models\Pelanggaran;
 use App\Models\Pengumuman;
 use App\Models\RiwayatScanQr;
+use App\Models\SesiQrGuru;           // ← TAMBAHAN: sesi QR guru aktif
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
 use App\Models\Ujian;
@@ -38,7 +41,7 @@ class DashboardController extends Controller
             'total_pengguna'       => User::count(),
         ];
 
-        // ── Absensi hari ini ─────────────────────────────────────────────────
+        // ── Absensi SISWA hari ini ────────────────────────────────────────────
         $hadirHariIni = Absensi::whereIn('status', ['hadir', 'telat'])
             ->whereDate('tanggal', $today)->count();
         $izinHariIni  = Absensi::where('status', 'izin')
@@ -60,6 +63,71 @@ class DashboardController extends Controller
                 : 0,
         ];
 
+        // ── Absensi GURU hari ini ─────────────────────────────────────────────
+        $totalGuruAktif       = Guru::aktif()->count();
+        $guruHadirHariIni     = AbsensiGuru::whereIn('status', ['hadir', 'telat'])
+                                    ->whereDate('tanggal', $today)->count();
+        $guruIzinHariIni      = AbsensiGuru::where('status', 'izin')
+                                    ->whereDate('tanggal', $today)->count();
+        $guruSakitHariIni     = AbsensiGuru::where('status', 'sakit')
+                                    ->whereDate('tanggal', $today)->count();
+        $guruAlfaHariIni      = AbsensiGuru::where('status', 'alfa')
+                                    ->whereDate('tanggal', $today)->count();
+        $guruSudahAbsen       = AbsensiGuru::whereDate('tanggal', $today)->count();
+        $guruBelumAbsen       = max(0, $totalGuruAktif - $guruSudahAbsen);
+
+        $absensiGuruHariIni = [
+            'hadir'             => $guruHadirHariIni,
+            'izin'              => $guruIzinHariIni,
+            'sakit'             => $guruSakitHariIni,
+            'alfa'              => $guruAlfaHariIni,
+            'belum_absen'       => $guruBelumAbsen,
+            'total_aktif'       => $totalGuruAktif,
+            'persentase_hadir'  => $totalGuruAktif > 0
+                ? round(($guruHadirHariIni / $totalGuruAktif) * 100)
+                : 0,
+        ];
+
+        // ── Daftar guru yang BELUM absen hari ini (untuk alert/notifikasi) ────
+        $guruBelumAbsenList = Guru::aktif()
+            ->whereDoesntHave('absensiGuru', fn ($q) => $q->whereDate('tanggal', $today))
+            ->orderBy('nama_lengkap')
+            ->limit(10)  // Batasi 10 untuk tampilan dashboard
+            ->get(['id', 'nama_lengkap', 'adalah_guru_piket']);
+
+        // ── Sesi QR Guru aktif hari ini ───────────────────────────────────────
+        $sesiQrGuruAktif = SesiQrGuru::aktif()
+            ->whereDate('tanggal', $today)
+            ->first();
+
+        // ── Absensi guru bulan ini per status ─────────────────────────────────
+        $absensiGuruBulanIni = [
+            'hadir' => AbsensiGuru::whereIn('status', ['hadir', 'telat'])
+                ->whereMonth('tanggal', $thisMonth->month)
+                ->whereYear('tanggal', $thisMonth->year)->count(),
+            'izin'  => AbsensiGuru::where('status', 'izin')
+                ->whereMonth('tanggal', $thisMonth->month)
+                ->whereYear('tanggal', $thisMonth->year)->count(),
+            'sakit' => AbsensiGuru::where('status', 'sakit')
+                ->whereMonth('tanggal', $thisMonth->month)
+                ->whereYear('tanggal', $thisMonth->year)->count(),
+            'alfa'  => AbsensiGuru::where('status', 'alfa')
+                ->whereMonth('tanggal', $thisMonth->month)
+                ->whereYear('tanggal', $thisMonth->year)->count(),
+        ];
+
+        // ── Grafik absensi GURU 7 hari terakhir ───────────────────────────────
+        $absensiGuruGrafik = collect(range(6, 0))->map(function ($daysAgo) {
+            $date = Carbon::today()->subDays($daysAgo);
+            return [
+                'tanggal' => $date->format('d M'),
+                'hadir'   => AbsensiGuru::whereIn('status', ['hadir', 'telat'])
+                    ->whereDate('tanggal', $date)->count(),
+                'alfa'    => AbsensiGuru::where('status', 'alfa')
+                    ->whereDate('tanggal', $date)->count(),
+            ];
+        });
+
         // ── Pelanggaran stats ────────────────────────────────────────────────
         $pelanggaranStats = [
             'hari_ini'  => Pelanggaran::whereDate('tanggal', $today)->count(),
@@ -75,7 +143,7 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // ── Grafik absensi 7 hari terakhir ───────────────────────────────────
+        // ── Grafik absensi SISWA 7 hari terakhir ─────────────────────────────
         $absensiGrafik = collect(range(6, 0))->map(function ($daysAgo) {
             $date = Carbon::today()->subDays($daysAgo);
             return [
@@ -87,7 +155,7 @@ class DashboardController extends Controller
             ];
         });
 
-        // ── Scan QR hari ini ─────────────────────────────────────────────────
+        // ── Scan QR SISWA hari ini ────────────────────────────────────────────
         $scanHariIni = [
             'total'    => RiwayatScanQr::whereDate('dipindai_pada', $today)->count(),
             'berhasil' => RiwayatScanQr::where('hasil', 'berhasil')
@@ -124,12 +192,12 @@ class DashboardController extends Controller
         // ── Jadwal hari ini ──────────────────────────────────────────────────
         $namaHariRaw = Carbon::today()->locale('id')->isoFormat('dddd');
         $hariMap = [
-            'senin'     => 'senin',  'selasa'    => 'selasa', 'rabu'      => 'rabu',
-            'kamis'     => 'kamis',  'jumat'     => 'jumat',  'sabtu'     => 'sabtu',
-            'minggu'    => 'minggu',
-            'monday'    => 'senin',  'tuesday'   => 'selasa', 'wednesday' => 'rabu',
-            'thursday'  => 'kamis',  'friday'    => 'jumat',  'saturday'  => 'sabtu',
-            'sunday'    => 'minggu',
+            'senin'    => 'senin',  'selasa'    => 'selasa', 'rabu'      => 'rabu',
+            'kamis'    => 'kamis',  'jumat'     => 'jumat',  'sabtu'     => 'sabtu',
+            'minggu'   => 'minggu',
+            'monday'   => 'senin',  'tuesday'   => 'selasa', 'wednesday' => 'rabu',
+            'thursday' => 'kamis',  'friday'    => 'jumat',  'saturday'  => 'sabtu',
+            'sunday'   => 'minggu',
         ];
         $hariKey = $hariMap[strtolower($namaHariRaw)] ?? 'senin';
 
@@ -139,6 +207,23 @@ class DashboardController extends Controller
             ->orderBy('jam_mulai')
             ->limit(6)
             ->get();
+
+        // ── Jadwal piket hari ini + status hadir masing-masing ───────────────
+        $jadwalPiketHariIni = JadwalPiketGuru::where('hari', $hariKey)
+            ->where('is_active', true)
+            ->with('guru')
+            ->get();
+
+        // Inject status hadir ke koleksi piket tanpa query N+1
+        $absensiPiket = AbsensiGuru::whereDate('tanggal', $today)
+            ->whereIn('guru_id', $jadwalPiketHariIni->pluck('guru_id')->filter()->unique())
+            ->get()
+            ->keyBy('guru_id');
+
+        $jadwalPiketHariIni->each(function ($jadwal) use ($absensiPiket) {
+            $jadwal->sudah_absen    = $absensiPiket->has($jadwal->guru_id);
+            $jadwal->status_absensi = $absensiPiket->get($jadwal->guru_id)?->status;
+        });
 
         // ── Top 5 siswa poin pelanggaran bulan ini ────────────────────────────
         $topPelanggaran = Siswa::withSum(
@@ -154,7 +239,7 @@ class DashboardController extends Controller
             ->get()
             ->filter(fn ($s) => ($s->pelanggaran_sum_poin ?? 0) > 0);
 
-        // ── Absensi bulan ini per status ─────────────────────────────────────
+        // ── Absensi SISWA bulan ini per status ────────────────────────────────
         $absensiBulanIni = [
             'hadir' => Absensi::whereIn('status', ['hadir', 'telat'])
                 ->whereMonth('tanggal', $thisMonth->month)
@@ -171,6 +256,7 @@ class DashboardController extends Controller
         ];
 
         return view('admin.dashboard', [
+            // ── Data lama (tidak diubah) ──────────────────────────────────────
             'today'              => $today,
             'tahunAktif'         => $tahunAktif,
             'stats'              => $stats,
@@ -186,6 +272,14 @@ class DashboardController extends Controller
             'jadwalHariIni'      => $jadwalHariIni,
             'topPelanggaran'     => $topPelanggaran,
             'absensiBulanIni'    => $absensiBulanIni,
+
+            // ── Data BARU: absensi guru ───────────────────────────────────────
+            'absensiGuruHariIni'   => $absensiGuruHariIni,
+            'absensiGuruBulanIni'  => $absensiGuruBulanIni,
+            'absensiGuruGrafik'    => $absensiGuruGrafik,
+            'guruBelumAbsenList'   => $guruBelumAbsenList,
+            'sesiQrGuruAktif'      => $sesiQrGuruAktif,
+            'jadwalPiketHariIni'   => $jadwalPiketHariIni,
         ]);
     }
 }

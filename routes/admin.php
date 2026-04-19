@@ -31,6 +31,9 @@ use App\Http\Controllers\Admin\PengumumanController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SoalUjianController;
 use App\Http\Controllers\Admin\SesiUjianController;
+use App\Http\Controllers\Admin\AbsensiGuruPiketController;
+use App\Http\Controllers\Admin\SesiQrGuruController;
+use App\Http\Controllers\Admin\AbsensiGuruController;
 
 Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
@@ -518,6 +521,49 @@ Route::prefix('admin')
             Route::get('/ujian',                    [ReportController::class, 'exam'])->name('ujian');
             Route::get('/ujian/export/pdf',         [ReportController::class, 'exportExamPdf'])->name('ujian.export.pdf');
             Route::get('/ujian/export/excel',       [ReportController::class, 'exportExamExcel'])->name('ujian.export.excel');
+        });
+
+        // ─── Absensi Guru (Admin penuh) ───────────────────────────────────────────
+        Route::prefix('absensi-guru')->name('absensi-guru.')->group(function () {
+            Route::get('/',                     [AbsensiGuruController::class, 'index'])->name('index');
+            Route::get('/create',               [AbsensiGuruController::class, 'create'])->name('create');
+            Route::post('/',                    [AbsensiGuruController::class, 'store'])->name('store');
+
+            Route::get('/rekap',                [AbsensiGuruController::class, 'rekapGuru'])->name('rekap');
+            Route::get('/export/pdf',           [AbsensiGuruController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/rekap-pdf',     [AbsensiGuruController::class, 'exportRekapPdf'])->name('export.rekap-pdf');
+
+            // Route parameter di bawah
+            Route::get('/{absensiGuru}',        [AbsensiGuruController::class, 'show'])->name('show');
+            Route::get('/{absensiGuru}/edit',   [AbsensiGuruController::class, 'edit'])->name('edit');
+            Route::put('/{absensiGuru}',        [AbsensiGuruController::class, 'update'])->name('update');
+            Route::delete('/{absensiGuru}',     [AbsensiGuruController::class, 'destroy'])->name('destroy');
+        });
+
+        // ─── Sesi QR Guru ─────────────────────────────────────────────────────────
+        Route::prefix('sesi-qr-guru')->name('sesi-qr-guru.')->group(function () {
+            Route::get('/',                             [SesiQrGuruController::class, 'index'])->name('index');
+            Route::get('/create',                       [SesiQrGuruController::class, 'create'])->name('create');
+            Route::post('/',                            [SesiQrGuruController::class, 'store'])->name('store');
+
+            Route::post('/proses-qr',                   [SesiQrGuruController::class, 'prosesQr'])->name('proses-qr');
+
+            Route::get('/{sesiQrGuru}',                 [SesiQrGuruController::class, 'show'])->name('show');
+            Route::post('/{sesiQrGuru}/nonaktifkan',    [SesiQrGuruController::class, 'nonaktifkan'])->name('nonaktifkan');
+            Route::delete('/{sesiQrGuru}',              [SesiQrGuruController::class, 'destroy'])->name('destroy');
+            Route::get('/{sesiQrGuru}/cetak-qr',        [SesiQrGuruController::class, 'cetakQr'])->name('cetak-qr');
+            Route::get('/{sesiQrGuru}/scan',            [SesiQrGuruController::class, 'scanGuru'])->name('scan');
+        });
+
+        // ─── Dashboard Guru Piket ─────────────────────────────────────────────────
+        Route::prefix('piket')->name('absensi-guru-piket.')->group(function () {
+            Route::get('/dashboard',            [AbsensiGuruPiketController::class, 'dashboard'])->name('dashboard');
+            Route::get('/manual/{guru}',        [AbsensiGuruPiketController::class, 'absenManualForm'])->name('manual.form');
+            Route::post('/manual/{guru}',       [AbsensiGuruPiketController::class, 'absenManualStore'])->name('manual.store');
+            Route::get('/massal',               [AbsensiGuruPiketController::class, 'absenMassalForm'])->name('massal.form');
+            Route::post('/massal',              [AbsensiGuruPiketController::class, 'absenMassalStore'])->name('massal.store');
+            Route::get('/scan-qr',              [AbsensiGuruPiketController::class, 'halamanScanQr'])->name('scan-qr');
+            Route::get('/riwayat',              [AbsensiGuruPiketController::class, 'riwayat'])->name('riwayat');
         });
 
     });

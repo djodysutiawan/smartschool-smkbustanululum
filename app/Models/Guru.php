@@ -145,4 +145,14 @@ class Guru extends Model
 
         return $query->exists();
     }
+    public function absensiGuru()
+    {
+        return $this->hasMany(\App\Models\AbsensiGuru::class);
+    }
+
+        public function absensiHariIni(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(AbsensiGuru::class, 'guru_id')
+                    ->whereDate('tanggal', today());
+    }
 }

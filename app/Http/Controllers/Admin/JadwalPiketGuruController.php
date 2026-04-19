@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\JadwalPiketGuru;
+use App\Models\AbsensiGuru;         // ← TAMBAHAN: untuk cek status hadir guru piket
 use App\Models\Guru;
+use App\Models\JadwalPiketGuru;
 use App\Models\TahunAjaran;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
-use Barryvdh\DomPDF\Facade\Pdf;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\JadwalPiketGuruExport;
 use App\Imports\JadwalPiketGuruImport;
@@ -16,6 +17,8 @@ use App\Imports\JadwalPiketGuruImport;
 class JadwalPiketGuruController extends Controller
 {
     protected array $hariList = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+
+    // ─── INDEX — MODIFIKASI: tambah info status hadir guru piket hari ini ─────
 
     public function index(Request $request)
     {
@@ -26,25 +29,46 @@ class JadwalPiketGuruController extends Controller
         if ($request->filled('tahun_ajaran_id')) {
             $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
         }
+
         if ($request->filled('guru_id')) {
             $query->where('guru_id', $request->guru_id);
         }
+
         if ($request->filled('hari')) {
             $query->where('hari', $request->hari);
         }
+
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active);
         }
 
-        $jadwal       = $query->paginate(15)->withQueryString();
-        $guruPiket    = Guru::orderBy('nama_lengkap')->get();
-        $tahunAjaran  = TahunAjaran::orderByDesc('tahun')->get();
+        $jadwal      = $query->paginate(15)->withQueryString();
+        $guruPiket   = Guru::orderBy('nama_lengkap')->get();
+        $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
+
+        // Kode lama: guru yang bertugas piket hari ini
         $piketHariIni = JadwalPiketGuru::getPiketHariIni();
 
+        // ─── TAMBAHAN: tandai siapa dari guru piket hari ini yang sudah absen ─
+        $absensiHariIni = AbsensiGuru::whereDate('tanggal', today())
+            ->whereIn('guru_id', $piketHariIni->pluck('guru_id')->filter()->unique())
+            ->get()
+            ->keyBy('guru_id');
+
+        // Inject status hadir ke dalam koleksi piketHariIni (tanpa ubah struktur aslinya)
+        $piketHariIni->each(function ($jadwalPiket) use ($absensiHariIni) {
+            $absensi = $absensiHariIni->get($jadwalPiket->guru_id);
+            $jadwalPiket->sudah_absen    = ! is_null($absensi);
+            $jadwalPiket->status_absensi = $absensi?->status;
+        });
+        // ─────────────────────────────────────────────────────────────────────
+
         return view('admin.jadwal_piket_guru.index', compact(
-            'jadwal', 'guruPiket', 'tahunAjaran', 'piketHariIni'
+            'jadwal', 'guruPiket', 'tahunAjaran', 'piketHariIni', 'absensiHariIni'
         ) + ['hariList' => $this->hariList]);
     }
+
+    // ─── Semua method di bawah ini TIDAK DIUBAH dari versi asli ──────────────
 
     public function create()
     {
@@ -98,7 +122,6 @@ class JadwalPiketGuruController extends Controller
     public function show(JadwalPiketGuru $jadwalPiketGuru)
     {
         $jadwalPiketGuru->load(['guru', 'tahunAjaran']);
-
         return view('admin.jadwal_piket_guru.show', compact('jadwalPiketGuru'));
     }
 
@@ -163,7 +186,6 @@ class JadwalPiketGuruController extends Controller
     public function toggleStatus(JadwalPiketGuru $jadwalPiketGuru)
     {
         $jadwalPiketGuru->update(['is_active' => !$jadwalPiketGuru->is_active]);
-
         $status = $jadwalPiketGuru->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
         return back()->with('success', "Jadwal piket berhasil {$status}.");
@@ -172,7 +194,6 @@ class JadwalPiketGuruController extends Controller
     public function export(Request $request)
     {
         $filename = 'jadwal_piket_guru_' . now()->format('Ymd_His') . '.xlsx';
-
         return Excel::download(new JadwalPiketGuruExport($request->all()), $filename);
     }
 
@@ -185,12 +206,15 @@ class JadwalPiketGuruController extends Controller
         if ($request->filled('tahun_ajaran_id')) {
             $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
         }
+
         if ($request->filled('guru_id')) {
             $query->where('guru_id', $request->guru_id);
         }
+
         if ($request->filled('hari')) {
             $query->where('hari', $request->hari);
         }
+
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active);
         }
@@ -206,7 +230,6 @@ class JadwalPiketGuruController extends Controller
     public function exportPdfSingle(JadwalPiketGuru $jadwalPiketGuru)
     {
         $jadwalPiketGuru->load(['guru', 'tahunAjaran']);
-
         $jadwal = collect([$jadwalPiketGuru]);
 
         $pdf = Pdf::loadView('admin.jadwal_piket_guru.pdf', compact('jadwal'))
@@ -239,6 +262,7 @@ class JadwalPiketGuruController extends Controller
 
             return redirect()->route('admin.jadwal_piket_guru.index')
                 ->with('success', 'Data jadwal piket berhasil diimport.');
+
         } catch (\Exception $e) {
             return redirect()->route('admin.jadwal_piket_guru.index')
                 ->with('error', 'Gagal mengimport data: ' . $e->getMessage());
@@ -248,7 +272,6 @@ class JadwalPiketGuruController extends Controller
     public function downloadTemplate()
     {
         $filename = 'template_jadwal_piket_guru.xlsx';
-
         return Excel::download(new \App\Exports\JadwalPiketGuruTemplateExport(), $filename);
     }
 }

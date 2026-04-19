@@ -443,6 +443,21 @@
             </div>
         </details>
 
+        {{-- Absensi Guru --}}
+        <details class="sb-group" {{ request()->routeIs('admin.absensi-guru.*','admin.absensi-guru-piket.*','admin.sesi-qr-guru.*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M9 14v8"/><path d="M13 18h8"/><path d="M17 14v8"/></svg>
+                Absensi Guru
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('admin.absensi-guru.index') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru.index','admin.absensi-guru.create','admin.absensi-guru.show','admin.absensi-guru.edit') ? 'active' : '' }}">Data Absensi Guru</a>
+                <a href="{{ route('admin.absensi-guru.rekap') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru.rekap') ? 'active' : '' }}">Rekap per Guru</a>
+                <a href="{{ route('admin.absensi-guru-piket.dashboard') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.*') ? 'active' : '' }}">Dashboard Piket Guru</a>
+                <a href="{{ route('admin.sesi-qr-guru.index') }}" class="sb-item {{ request()->routeIs('admin.sesi-qr-guru.*') ? 'active' : '' }}">Sesi QR Guru</a>
+            </div>
+        </details>
+
         <p class="sb-section">Sistem</p>
 
         <a href="{{ route('admin.notifikasi.index') }}" class="sb-item {{ request()->routeIs('admin.notifikasi.*') ? 'active' : '' }}">
@@ -547,6 +562,30 @@
                 <a href="{{ route('piket.laporan.riwayat') }}" class="sb-item {{ request()->routeIs('piket.laporan.riwayat') ? 'active' : '' }}">Riwayat Laporan</a>
             </div>
         </details>
+
+        <p class="sb-section">Absensi Guru</p>
+
+        <a href="{{ route('admin.absensi-guru-piket.dashboard') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.dashboard') ? 'active' : '' }}">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard Absensi
+        </a>
+
+        <details class="sb-group" {{ request()->routeIs('admin.absensi-guru-piket.manual*','admin.absensi-guru-piket.massal*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+                Input Absensi
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('admin.absensi-guru-piket.massal.form') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.massal*') ? 'active' : '' }}">Absen Massal</a>
+                <a href="{{ route('admin.absensi-guru-piket.riwayat') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.riwayat') ? 'active' : '' }}">Riwayat Saya</a>
+            </div>
+        </details>
+
+        <a href="{{ route('admin.absensi-guru-piket.scan-qr') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.scan-qr') ? 'active' : '' }}">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3"/><path d="M21 21h-3"/><path d="M16 21v-3"/></svg>
+            Scan QR Guru
+        </a>
 
         <p class="sb-section">Sistem</p>
         <a href="{{ route('piket.notifikasi.index') }}" class="sb-item {{ request()->routeIs('piket.notifikasi.*') ? 'active' : '' }}">
@@ -677,7 +716,6 @@
 
     {{-- Bottom: Profile & Logout semua role --}}
     <div class="sb-bottom">
-        <div class="sb-divider"></div>
         <a href="{{ route('profile.edit') }}" class="sb-item">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Profil Saya
         </a>

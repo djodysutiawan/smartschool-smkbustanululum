@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Exports\GuruExport;
 use App\Http\Controllers\Controller;
 use App\Imports\GuruImport;
+use App\Models\AbsensiGuru;   // ← TAMBAHAN: untuk rekap absensi di halaman show
 use App\Models\Guru;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;             // ← TAMBAHAN: untuk kalkulasi periode bulan berjalan
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +19,8 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class GuruController extends Controller
 {
+    // ─── Semua kode di bawah ini TIDAK DIUBAH dari versi asli ────────────────
+
     private function validasiPesan(): array
     {
         return [
@@ -51,12 +55,15 @@ class GuruController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+
         if ($request->filled('status_kepegawaian')) {
             $query->where('status_kepegawaian', $request->status_kepegawaian);
         }
+
         if ($request->filled('adalah_guru_piket')) {
             $query->where('adalah_guru_piket', $request->boolean('adalah_guru_piket'));
         }
+
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(fn($q) => $q->where('nama_lengkap', 'like', "%{$s}%")
@@ -65,6 +72,7 @@ class GuruController extends Controller
         }
 
         $guru  = $query->orderBy('nama_lengkap')->paginate(20)->withQueryString();
+
         $stats = [
             'total'  => Guru::count(),
             'aktif'  => Guru::aktif()->count(),
@@ -121,6 +129,7 @@ class GuruController extends Controller
                     'role'      => 'guru',
                     'is_active' => true,
                 ]);
+
                 $user->assignRole('guru');
                 $validated['pengguna_id'] = $user->id;
             }
@@ -143,6 +152,10 @@ class GuruController extends Controller
             ->with('success', 'Data guru berhasil ditambahkan.');
     }
 
+    /**
+     * MODIFIKASI: method show ditambahkan load relasi absensiGuru
+     * dan stats absensi bulan ini. Semua kode lama tetap ada.
+     */
     public function show(Guru $guru)
     {
         $guru->load([
@@ -150,15 +163,43 @@ class GuruController extends Controller
             'kelasWali.tahunAjaran',
             'ketersediaan' => fn($q) => $q->orderBy('hari')->orderBy('jam_mulai'),
             'jadwalPelajaran' => fn($q) => $q->aktif()->with(['kelas', 'mataPelajaran']),
+            // ← TAMBAHAN: load absensi guru bulan ini untuk ditampilkan di profil
+            'absensiGuru' => fn($q) => $q->whereMonth('tanggal', now()->month)
+                                         ->whereYear('tanggal', now()->year)
+                                         ->orderBy('tanggal'),
         ]);
 
+        // ─── Stats lama (tidak diubah) ────────────────────────────────────────
         $stats = [
             'total_kelas_wali'   => $guru->kelasWali()->count(),
             'total_jadwal'       => $guru->jadwalPelajaran()->aktif()->count(),
             'total_ketersediaan' => $guru->ketersediaan()->tersedia()->count(),
         ];
 
-        return view('admin.guru.show', compact('guru', 'stats'));
+        // ─── TAMBAHAN: Stats absensi guru bulan berjalan ──────────────────────
+        $statsAbsensi = [
+            'hadir'       => $guru->absensiGuru()
+                                ->whereMonth('tanggal', now()->month)
+                                ->whereYear('tanggal', now()->year)
+                                ->whereIn('status', ['hadir', 'telat'])->count(),
+            'izin'        => $guru->absensiGuru()
+                                ->whereMonth('tanggal', now()->month)
+                                ->whereYear('tanggal', now()->year)
+                                ->where('status', 'izin')->count(),
+            'sakit'       => $guru->absensiGuru()
+                                ->whereMonth('tanggal', now()->month)
+                                ->whereYear('tanggal', now()->year)
+                                ->where('status', 'sakit')->count(),
+            'alfa'        => $guru->absensiGuru()
+                                ->whereMonth('tanggal', now()->month)
+                                ->whereYear('tanggal', now()->year)
+                                ->where('status', 'alfa')->count(),
+            'absensi_hari_ini' => $guru->absensiGuru()
+                                ->whereDate('tanggal', today())
+                                ->first(),
+        ];
+
+        return view('admin.guru.show', compact('guru', 'stats', 'statsAbsensi'));
     }
 
     public function edit(Guru $guru)
@@ -225,12 +266,15 @@ class GuruController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+
         if ($request->filled('status_kepegawaian')) {
             $query->where('status_kepegawaian', $request->status_kepegawaian);
         }
+
         if ($request->filled('adalah_guru_piket')) {
             $query->where('adalah_guru_piket', $request->boolean('adalah_guru_piket'));
         }
+
         if ($request->filled('search')) {
             $s = $request->search;
             $query->where(fn($q) => $q->where('nama_lengkap', 'like', "%{$s}%")
@@ -250,6 +294,7 @@ class GuruController extends Controller
         if ($request->filled('search')) {
             $filterParts[] = 'Cari: ' . $request->search;
         }
+
         $filterLabel = $filterParts ? implode(', ', $filterParts) : 'Semua Data';
 
         $pdf = Pdf::loadView('admin.guru.pdf', compact('guru', 'filterLabel'))
@@ -262,7 +307,6 @@ class GuruController extends Controller
     {
         $filters  = $request->only(['status', 'status_kepegawaian', 'adalah_guru_piket', 'search']);
         $filename = 'data-guru-' . now()->format('Ymd-His') . '.xlsx';
-
         return Excel::download(new GuruExport($filters), $filename);
     }
 
@@ -276,7 +320,7 @@ class GuruController extends Controller
             'file.max'      => 'Ukuran file tidak boleh lebih dari 5 MB.',
         ]);
 
-        $import = new GuruImport();
+        $import   = new GuruImport();
         Excel::import($import, $request->file('file'));
 
         $failures = $import->failures();

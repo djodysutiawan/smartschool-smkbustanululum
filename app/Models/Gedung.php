@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\AbsensiGuru;
 
 class Gedung extends Model
 {
@@ -34,4 +35,10 @@ class Gedung extends Model
     {
         return $this->ruang()->where('status', 'tersedia');
     }
+
+    public function absensiGuru(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AbsensiGuru::class, 'guru_id');
+    }
+
 }
