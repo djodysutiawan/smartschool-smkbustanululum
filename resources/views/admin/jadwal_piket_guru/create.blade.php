@@ -162,6 +162,17 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // ── Popup error duplikat jadwal ──────────────────────────────────────────
+    @if(session('duplicate_error'))
+    Swal.fire({
+        icon: 'error',
+        title: 'Jadwal Sudah Ada!',
+        text: @json(session('duplicate_error')),
+        confirmButtonColor: '#1f63db',
+        confirmButtonText: 'Mengerti',
+    });
+    @endif
+
     @if(session('error'))
     Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
     @endif

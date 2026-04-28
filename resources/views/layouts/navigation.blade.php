@@ -329,9 +329,12 @@
         </div>
     </div>
 
-    {{-- ════ MENU ADMIN ════ --}}
+    {{-- ══════════════════════════════════════════════════════
+        MENU ADMIN
+    ══════════════════════════════════════════════════════ --}}
     @if($role === 'admin')
 
+        {{-- ── Utama ───────────────────────────────────────── --}}
         <p class="sb-section">Utama</p>
 
         <a href="{{ route('admin.dashboard') }}" class="sb-item {{ request()->routeIs('admin.dashboard*') ? 'active' : '' }}">
@@ -339,6 +342,7 @@
             Dashboard
         </a>
 
+        {{-- ── Manajemen Pengguna & SDM ────────────────────── --}}
         <p class="sb-section">Manajemen</p>
 
         <details class="sb-group" {{ request()->routeIs('admin.users.*','admin.guru.*','admin.siswa.*','admin.orang-tua.*') ? 'open' : '' }}>
@@ -348,13 +352,14 @@
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('admin.users.index') }}" class="sb-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">Semua Pengguna</a>
-                <a href="{{ route('admin.guru.index') }}" class="sb-item {{ request()->routeIs('admin.guru.*') ? 'active' : '' }}">Data Guru</a>
-                <a href="{{ route('admin.siswa.index') }}" class="sb-item {{ request()->routeIs('admin.siswa.*') ? 'active' : '' }}">Data Siswa</a>
-                <a href="{{ route('admin.orang-tua.index') }}" class="sb-item {{ request()->routeIs('admin.orang-tua.*') ? 'active' : '' }}">Data Orang Tua</a>
+                <a href="{{ route('admin.users.index') }}"      class="sb-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}">Semua Pengguna</a>
+                <a href="{{ route('admin.guru.index') }}"       class="sb-item {{ request()->routeIs('admin.guru.*') ? 'active' : '' }}">Data Guru</a>
+                <a href="{{ route('admin.siswa.index') }}"      class="sb-item {{ request()->routeIs('admin.siswa.*') ? 'active' : '' }}">Data Siswa</a>
+                <a href="{{ route('admin.orang-tua.index') }}"  class="sb-item {{ request()->routeIs('admin.orang-tua.*') ? 'active' : '' }}">Data Orang Tua</a>
             </div>
         </details>
 
+        {{-- ── Akademik ─────────────────────────────────────── --}}
         <details class="sb-group" {{ request()->routeIs('admin.tahun-ajaran.*','admin.kelas.*','admin.mata-pelajaran.*','admin.gedung.*','admin.ruang.*','admin.jadwal-pelajaran.*','admin.ketersediaan-guru.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
@@ -362,15 +367,79 @@
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('admin.tahun-ajaran.index') }}" class="sb-item {{ request()->routeIs('admin.tahun-ajaran.*') ? 'active' : '' }}">Tahun Ajaran</a>
-                <a href="{{ route('admin.kelas.index') }}" class="sb-item {{ request()->routeIs('admin.kelas.*') ? 'active' : '' }}">Data Kelas</a>
-                <a href="{{ route('admin.mata-pelajaran.index') }}" class="sb-item {{ request()->routeIs('admin.mata-pelajaran.*') ? 'active' : '' }}">Mata Pelajaran</a>
-                <a href="{{ route('admin.gedung.index') }}" class="sb-item {{ request()->routeIs('admin.gedung.*') ? 'active' : '' }}">Gedung & Ruang</a>
-                <a href="{{ route('admin.ruang.index') }}" class="sb-item {{ request()->routeIs('admin.ruang.*') ? 'active' : '' }}">Data Ruang</a>
-                <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="sb-item {{ request()->routeIs('admin.jadwal-pelajaran.*') ? 'active' : '' }}">Jadwal Pelajaran</a>
-                <a href="{{ route('admin.ketersediaan-guru.index') }}" class="sb-item {{ request()->routeIs('admin.ketersediaan-guru.*') ? 'active' : '' }}">Ketersediaan Guru</a>
+                <a href="{{ route('admin.tahun-ajaran.index') }}"       class="sb-item {{ request()->routeIs('admin.tahun-ajaran.*') ? 'active' : '' }}">Tahun Ajaran</a>
+                <a href="{{ route('admin.kelas.index') }}"              class="sb-item {{ request()->routeIs('admin.kelas.*') ? 'active' : '' }}">Data Kelas</a>
+                <a href="{{ route('admin.mata-pelajaran.index') }}"     class="sb-item {{ request()->routeIs('admin.mata-pelajaran.*') ? 'active' : '' }}">Mata Pelajaran</a>
+                <a href="{{ route('admin.gedung.index') }}"             class="sb-item {{ request()->routeIs('admin.gedung.*') ? 'active' : '' }}">Gedung & Ruang</a>
+                <a href="{{ route('admin.ruang.index') }}"              class="sb-item {{ request()->routeIs('admin.ruang.*') ? 'active' : '' }}">Data Ruang</a>
+                <a href="{{ route('admin.jadwal-pelajaran.index') }}"   class="sb-item {{ request()->routeIs('admin.jadwal-pelajaran.*') ? 'active' : '' }}">Jadwal Pelajaran</a>
+                <a href="{{ route('admin.ketersediaan-guru.index') }}"  class="sb-item {{ request()->routeIs('admin.ketersediaan-guru.*') ? 'active' : '' }}">Ketersediaan Guru</a>
             </div>
         </details>
+
+        {{-- ── LMS / Pembelajaran ───────────────────────────── --}}
+        <details class="sb-group" {{ request()->routeIs('admin.materi.*','admin.tugas.*','admin.pengumpulan-tugas.*','admin.ujian.*','admin.nilai.*','admin.jurnal-mengajar.*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                LMS / Pembelajaran
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('admin.materi.index') }}"             class="sb-item {{ request()->routeIs('admin.materi.*') ? 'active' : '' }}">Materi</a>
+                <a href="{{ route('admin.tugas.index') }}"              class="sb-item {{ request()->routeIs('admin.tugas.*') && !request()->routeIs('admin.pengumpulan-tugas.*') ? 'active' : '' }}">Tugas</a>
+                <a href="{{ route('admin.pengumpulan-tugas.index') }}"  class="sb-item {{ request()->routeIs('admin.pengumpulan-tugas.*') ? 'active' : '' }}">Pengumpulan Tugas</a>
+                <a href="{{ route('admin.ujian.index') }}"              class="sb-item {{ request()->routeIs('admin.ujian.*') ? 'active' : '' }}">Ujian</a>
+                <a href="{{ route('admin.nilai.index') }}"              class="sb-item {{ request()->routeIs('admin.nilai.*') ? 'active' : '' }}">Nilai Siswa</a>
+                <a href="{{ route('admin.jurnal-mengajar.index') }}"    class="sb-item {{ request()->routeIs('admin.jurnal-mengajar.*') ? 'active' : '' }}">Jurnal Mengajar</a>
+            </div>
+        </details>
+
+        {{-- ── Kedisiplinan ─────────────────────────────────── --}}
+        <details class="sb-group" {{ request()->routeIs('admin.pelanggaran.*','admin.kategori-pelanggaran.*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Kedisiplinan
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('admin.pelanggaran.index') }}"          class="sb-item {{ request()->routeIs('admin.pelanggaran.*') ? 'active' : '' }}">Data Pelanggaran</a>
+                <a href="{{ route('admin.kategori-pelanggaran.index') }}" class="sb-item {{ request()->routeIs('admin.kategori-pelanggaran.*') ? 'active' : '' }}">Kategori Pelanggaran</a>
+            </div>
+        </details>
+
+        {{-- ── Absensi Siswa ────────────────────────────────── --}}
+        <p class="sb-section">Absensi & Kehadiran</p>
+
+        <details class="sb-group" {{ request()->routeIs('admin.absensi.*','admin.sesi-qr.*','admin.riwayat-scan.*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Absensi Siswa
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('admin.absensi.index') }}"        class="sb-item {{ request()->routeIs('admin.absensi.index','admin.absensi.create','admin.absensi.edit','admin.absensi.show') ? 'active' : '' }}">Data Absensi</a>
+                <a href="{{ route('admin.sesi-qr.index') }}"        class="sb-item {{ request()->routeIs('admin.sesi-qr.*') ? 'active' : '' }}">Sesi QR Code</a>
+                <a href="{{ route('admin.riwayat-scan.index') }}"   class="sb-item {{ request()->routeIs('admin.riwayat-scan.*') ? 'active' : '' }}">Riwayat Scan</a>
+            </div>
+        </details>
+
+        {{-- ── Absensi Guru ─────────────────────────────────── --}}
+        <details class="sb-group" {{ request()->routeIs('admin.absensi-guru.*','admin.absensi-guru-piket.*','admin.sesi-qr-guru.*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M9 14v8"/><path d="M13 18h8"/><path d="M17 14v8"/></svg>
+                Absensi Guru
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('admin.absensi-guru.index') }}"              class="sb-item {{ request()->routeIs('admin.absensi-guru.index','admin.absensi-guru.create','admin.absensi-guru.show','admin.absensi-guru.edit') ? 'active' : '' }}">Data Absensi Guru</a>
+                <a href="{{ route('admin.absensi-guru.rekap') }}"              class="sb-item {{ request()->routeIs('admin.absensi-guru.rekap') ? 'active' : '' }}">Rekap per Guru</a>
+                <a href="{{ route('admin.absensi-guru-piket.dashboard') }}"    class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.*') ? 'active' : '' }}">Dashboard Piket Guru</a>
+                <a href="{{ route('admin.sesi-qr-guru.index') }}"              class="sb-item {{ request()->routeIs('admin.sesi-qr-guru.*') ? 'active' : '' }}">Sesi QR Guru</a>
+            </div>
+        </details>
+
+        {{-- ── Monitoring Piket ─────────────────────────────── --}}
+        <p class="sb-section">Monitoring Piket</p>
 
         <details class="sb-group" {{ request()->routeIs('admin.jadwal-piket-guru.*','admin.log-piket.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
@@ -379,52 +448,61 @@
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('admin.jadwal-piket-guru.index') }}" class="sb-item {{ request()->routeIs('admin.jadwal-piket-guru.*') ? 'active' : '' }}">Jadwal Piket</a>
-                <a href="{{ route('admin.log-piket.index') }}" class="sb-item {{ request()->routeIs('admin.log-piket.*') ? 'active' : '' }}">Log Piket</a>
+                <a href="{{ route('admin.jadwal-piket-guru.index') }}"  class="sb-item {{ request()->routeIs('admin.jadwal-piket-guru.*') ? 'active' : '' }}">Jadwal Piket</a>
+                <a href="{{ route('admin.log-piket.index') }}"          class="sb-item {{ request()->routeIs('admin.log-piket.*') ? 'active' : '' }}">Log Piket</a>
             </div>
         </details>
 
-        <details class="sb-group" {{ request()->routeIs('admin.materi.*','admin.tugas.*','admin.pengumpulan-tugas.*','admin.ujian.*','admin.nilai.*','admin.jurnal-mengajar.*') ? 'open' : '' }}>
+        <details class="sb-group" {{ request()->routeIs('admin.laporan-harian-piket.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
-                LMS / Pembelajaran
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>
+                Laporan Harian Piket
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('admin.materi.index') }}" class="sb-item {{ request()->routeIs('admin.materi.*') ? 'active' : '' }}">Materi</a>
-                <a href="{{ route('admin.tugas.index') }}" class="sb-item {{ request()->routeIs('admin.tugas.*') && !request()->routeIs('admin.pengumpulan-tugas.*') ? 'active' : '' }}">Tugas</a>
-                <a href="{{ route('admin.pengumpulan-tugas.index') }}" class="sb-item {{ request()->routeIs('admin.pengumpulan-tugas.*') ? 'active' : '' }}">Pengumpulan Tugas</a>
-                <a href="{{ route('admin.ujian.index') }}" class="sb-item {{ request()->routeIs('admin.ujian.*') ? 'active' : '' }}">Ujian</a>
-                <a href="{{ route('admin.nilai.index') }}" class="sb-item {{ request()->routeIs('admin.nilai.*') ? 'active' : '' }}">Nilai Siswa</a>
-                <a href="{{ route('admin.jurnal-mengajar.index') }}" class="sb-item {{ request()->routeIs('admin.jurnal-mengajar.*') ? 'active' : '' }}">Jurnal Mengajar</a>
+                <a href="{{ route('admin.laporan-harian-piket.index') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan-harian-piket.index') && !request('tanggal_dari') ? 'active' : '' }}">
+                    Semua Laporan
+                </a>
+                <a href="{{ route('admin.laporan-harian-piket.index', ['tanggal_dari' => today()->toDateString(), 'tanggal_sampai' => today()->toDateString()]) }}"
+                class="sb-item {{ request()->routeIs('admin.laporan-harian-piket.index') && request('tanggal_dari') === today()->toDateString() ? 'active' : '' }}">
+                    Laporan Hari Ini
+                </a>
+                <a href="{{ route('admin.laporan-harian-piket.export-pdf', request()->query()) }}" class="sb-item">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export PDF
+                </a>
             </div>
         </details>
 
-        <details class="sb-group" {{ request()->routeIs('admin.absensi.*','admin.sesi-qr.*','admin.riwayat-scan.*') ? 'open' : '' }}>
+        {{-- ── Izin Keluar Siswa ────────────────────────────── --}}
+        <details class="sb-group" {{ request()->routeIs('admin.izin-keluar-siswa.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                Absensi
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                Izin Keluar Siswa
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('admin.absensi.index') }}" class="sb-item {{ request()->routeIs('admin.absensi.index','admin.absensi.create','admin.absensi.edit','admin.absensi.show') ? 'active' : '' }}">Data Absensi</a>
-                <a href="{{ route('admin.sesi-qr.index') }}" class="sb-item {{ request()->routeIs('admin.sesi-qr.*') ? 'active' : '' }}">Sesi QR Code</a>
-                <a href="{{ route('admin.riwayat-scan.index') }}" class="sb-item {{ request()->routeIs('admin.riwayat-scan.*') ? 'active' : '' }}">Riwayat Scan</a>
+                <a href="{{ route('admin.izin-keluar-siswa.index') }}"
+                class="sb-item {{ request()->routeIs('admin.izin-keluar-siswa.index') && !request('status') ? 'active' : '' }}">
+                    Semua Izin
+                </a>
+                <a href="{{ route('admin.izin-keluar-siswa.index', ['status' => 'menunggu']) }}"
+                class="sb-item {{ request()->routeIs('admin.izin-keluar-siswa.index') && request('status') === 'menunggu' ? 'active' : '' }}">
+                    Menunggu Proses
+                </a>
+                <a href="{{ route('admin.izin-keluar-siswa.index', ['status' => 'disetujui']) }}"
+                class="sb-item {{ request()->routeIs('admin.izin-keluar-siswa.index') && request('status') === 'disetujui' ? 'active' : '' }}">
+                    Sedang Keluar
+                </a>
+                <a href="{{ route('admin.izin-keluar-siswa.create') }}"
+                class="sb-item {{ request()->routeIs('admin.izin-keluar-siswa.create') ? 'active' : '' }}">
+                    + Buat Izin Baru
+                </a>
             </div>
         </details>
 
-        <details class="sb-group" {{ request()->routeIs('admin.pelanggaran.*','admin.kategori-pelanggaran.*') ? 'open' : '' }}>
-            <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                Kedisiplinan
-                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-            </summary>
-            <div class="sb-sub">
-                <a href="{{ route('admin.pelanggaran.index') }}" class="sb-item {{ request()->routeIs('admin.pelanggaran.*') ? 'active' : '' }}">Data Pelanggaran</a>
-                <a href="{{ route('admin.kategori-pelanggaran.index') }}" class="sb-item {{ request()->routeIs('admin.kategori-pelanggaran.*') ? 'active' : '' }}">Kategori Pelanggaran</a>
-            </div>
-        </details>
-
+        {{-- ── Laporan & Analytics ──────────────────────────── --}}
         <p class="sb-section">Laporan</p>
 
         <details class="sb-group" {{ request()->routeIs('admin.laporan.*') ? 'open' : '' }}>
@@ -434,30 +512,16 @@
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('admin.laporan.index') }}" class="sb-item {{ request()->routeIs('admin.laporan.index') ? 'active' : '' }}">Grafik & Insight</a>
-                <a href="{{ route('admin.laporan.absensi') }}" class="sb-item {{ request()->routeIs('admin.laporan.absensi') ? 'active' : '' }}">Laporan Absensi</a>
-                <a href="{{ route('admin.laporan.nilai') }}" class="sb-item {{ request()->routeIs('admin.laporan.nilai') ? 'active' : '' }}">Laporan Nilai</a>
-                <a href="{{ route('admin.laporan.pelanggaran') }}" class="sb-item {{ request()->routeIs('admin.laporan.pelanggaran') ? 'active' : '' }}">Laporan Pelanggaran</a>
-                <a href="{{ route('admin.laporan.siswa') }}" class="sb-item {{ request()->routeIs('admin.laporan.siswa') ? 'active' : '' }}">Laporan Siswa</a>
-                <a href="{{ route('admin.laporan.guru') }}" class="sb-item {{ request()->routeIs('admin.laporan.guru') ? 'active' : '' }}">Laporan Guru</a>
+                <a href="{{ route('admin.laporan.index') }}"         class="sb-item {{ request()->routeIs('admin.laporan.index') ? 'active' : '' }}">Grafik & Insight</a>
+                <a href="{{ route('admin.laporan.absensi') }}"       class="sb-item {{ request()->routeIs('admin.laporan.absensi') ? 'active' : '' }}">Laporan Absensi</a>
+                <a href="{{ route('admin.laporan.nilai') }}"         class="sb-item {{ request()->routeIs('admin.laporan.nilai') ? 'active' : '' }}">Laporan Nilai</a>
+                <a href="{{ route('admin.laporan.pelanggaran') }}"   class="sb-item {{ request()->routeIs('admin.laporan.pelanggaran') ? 'active' : '' }}">Laporan Pelanggaran</a>
+                <a href="{{ route('admin.laporan.siswa') }}"         class="sb-item {{ request()->routeIs('admin.laporan.siswa') ? 'active' : '' }}">Laporan Siswa</a>
+                <a href="{{ route('admin.laporan.guru') }}"          class="sb-item {{ request()->routeIs('admin.laporan.guru') ? 'active' : '' }}">Laporan Guru</a>
             </div>
         </details>
 
-        {{-- Absensi Guru --}}
-        <details class="sb-group" {{ request()->routeIs('admin.absensi-guru.*','admin.absensi-guru-piket.*','admin.sesi-qr-guru.*') ? 'open' : '' }}>
-            <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M9 14v8"/><path d="M13 18h8"/><path d="M17 14v8"/></svg>
-                Absensi Guru
-                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-            </summary>
-            <div class="sb-sub">
-                <a href="{{ route('admin.absensi-guru.index') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru.index','admin.absensi-guru.create','admin.absensi-guru.show','admin.absensi-guru.edit') ? 'active' : '' }}">Data Absensi Guru</a>
-                <a href="{{ route('admin.absensi-guru.rekap') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru.rekap') ? 'active' : '' }}">Rekap per Guru</a>
-                <a href="{{ route('admin.absensi-guru-piket.dashboard') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.*') ? 'active' : '' }}">Dashboard Piket Guru</a>
-                <a href="{{ route('admin.sesi-qr-guru.index') }}" class="sb-item {{ request()->routeIs('admin.sesi-qr-guru.*') ? 'active' : '' }}">Sesi QR Guru</a>
-            </div>
-        </details>
-
+        {{-- ── Sistem ───────────────────────────────────────── --}}
         <p class="sb-section">Sistem</p>
 
         <a href="{{ route('admin.notifikasi.index') }}" class="sb-item {{ request()->routeIs('admin.notifikasi.*') ? 'active' : '' }}">
@@ -469,181 +533,270 @@
             Pengumuman
         </a>
 
-    {{-- ════ MENU GURU ════ --}}
+
+    {{-- ══════════════════════════════════════════════════════
+        MENU GURU
+    ══════════════════════════════════════════════════════ --}}
     @elseif($role === 'guru')
 
+        {{-- ── Utama ───────────────────────────────────────── --}}
         <p class="sb-section">Utama</p>
+
         <a href="{{ route('guru.dashboard') }}" class="sb-item {{ request()->routeIs('guru.dashboard') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg> Dashboard
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
         </a>
         <a href="{{ route('guru.jadwal.index') }}" class="sb-item {{ request()->routeIs('guru.jadwal.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Jadwal Mengajar
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Jadwal Mengajar
         </a>
         <a href="{{ route('guru.ketersediaan.index') }}" class="sb-item {{ request()->routeIs('guru.ketersediaan.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Ketersediaan Saya
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Ketersediaan Saya
         </a>
 
+        {{-- ── Kelas & Pembelajaran ────────────────────────── --}}
         <p class="sb-section">Kelas & Pembelajaran</p>
 
         <details class="sb-group" {{ request()->routeIs('guru.materi.*','guru.tugas.*','guru.pengumpulan-tugas.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Materi & Tugas <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                Materi & Tugas
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('guru.materi.index') }}" class="sb-item {{ request()->routeIs('guru.materi.*') ? 'active' : '' }}">Materi Pelajaran</a>
-                <a href="{{ route('guru.tugas.index') }}" class="sb-item {{ request()->routeIs('guru.tugas.*') ? 'active' : '' }}">Buat Tugas</a>
+                <a href="{{ route('guru.materi.index') }}"            class="sb-item {{ request()->routeIs('guru.materi.*') ? 'active' : '' }}">Materi Pelajaran</a>
+                <a href="{{ route('guru.tugas.index') }}"             class="sb-item {{ request()->routeIs('guru.tugas.*') ? 'active' : '' }}">Buat Tugas</a>
                 <a href="{{ route('guru.pengumpulan-tugas.index') }}" class="sb-item {{ request()->routeIs('guru.pengumpulan-tugas.*') ? 'active' : '' }}">Nilai Pengumpulan</a>
             </div>
         </details>
 
-        <details class="sb-group" {{ request()->routeIs('guru.ujian.*','guru.nilai.*') ? 'open' : '' }}>
+        <details class="sb-group" {{ request()->routeIs('guru.ujian.*','guru.nilai.*','guru.jurnal-mengajar.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Ujian & Nilai <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Ujian & Nilai
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('guru.ujian.index') }}" class="sb-item {{ request()->routeIs('guru.ujian.index') ? 'active' : '' }}">Kelola Ujian</a>
-                <a href="{{ route('guru.nilai.index') }}" class="sb-item {{ request()->routeIs('guru.nilai.*') ? 'active' : '' }}">Input Nilai</a>
+                <a href="{{ route('guru.ujian.index') }}"           class="sb-item {{ request()->routeIs('guru.ujian.index') ? 'active' : '' }}">Kelola Ujian</a>
+                <a href="{{ route('guru.nilai.index') }}"           class="sb-item {{ request()->routeIs('guru.nilai.*') ? 'active' : '' }}">Input Nilai</a>
                 <a href="{{ route('guru.jurnal-mengajar.index') }}" class="sb-item {{ request()->routeIs('guru.jurnal-mengajar.*') ? 'active' : '' }}">Jurnal Mengajar</a>
             </div>
         </details>
 
         <details class="sb-group" {{ request()->routeIs('guru.absensi.*','guru.sesi-qr.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Absensi Kelas <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Absensi Kelas
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('guru.absensi.index') }}" class="sb-item {{ request()->routeIs('guru.absensi.index') ? 'active' : '' }}">Catat Absensi</a>
-                <a href="{{ route('guru.absensi.rekap') }}" class="sb-item {{ request()->routeIs('guru.absensi.rekap') ? 'active' : '' }}">Rekap Kehadiran</a>
-                <a href="{{ route('guru.sesi-qr.index') }}" class="sb-item {{ request()->routeIs('guru.sesi-qr.*') ? 'active' : '' }}">Buat Sesi QR</a>
+                <a href="{{ route('guru.absensi.index') }}"  class="sb-item {{ request()->routeIs('guru.absensi.index') ? 'active' : '' }}">Catat Absensi</a>
+                <a href="{{ route('guru.absensi.rekap') }}"  class="sb-item {{ request()->routeIs('guru.absensi.rekap') ? 'active' : '' }}">Rekap Kehadiran</a>
+                <a href="{{ route('guru.sesi-qr.index') }}"  class="sb-item {{ request()->routeIs('guru.sesi-qr.*') ? 'active' : '' }}">Buat Sesi QR</a>
             </div>
         </details>
 
+        {{-- ── Izin Keluar Siswa (Read-Only untuk Guru) ──────── --}}
+        <p class="sb-section">Monitoring Kelas</p>
+
+        <a href="{{ route('guru.izin-keluar-siswa.index') }}" class="sb-item {{ request()->routeIs('guru.izin-keluar-siswa.*') ? 'active' : '' }}">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+            Izin Keluar Siswa
+        </a>
+
+        {{-- ── Sistem ───────────────────────────────────────── --}}
         <p class="sb-section">Sistem</p>
+
         <a href="{{ route('guru.notifikasi.index') }}" class="sb-item {{ request()->routeIs('guru.notifikasi.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notifikasi
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Notifikasi
             @if($unread > 0) <span class="sb-badge-count">{{ $unread }}</span> @endif
         </a>
         <a href="{{ route('guru.pengumuman.index') }}" class="sb-item {{ request()->routeIs('guru.pengumuman.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Pengumuman
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Pengumuman
         </a>
 
-    {{-- ════ MENU GURU PIKET ════ --}}
+
+    {{-- ══════════════════════════════════════════════════════
+        MENU GURU PIKET
+    ══════════════════════════════════════════════════════ --}}
     @elseif($role === 'guru_piket')
 
+        {{-- ── Utama ───────────────────────────────────────── --}}
         <p class="sb-section">Utama</p>
+
         <a href="{{ route('piket.dashboard') }}" class="sb-item {{ request()->routeIs('piket.dashboard') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg> Dashboard
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+            Dashboard
         </a>
         <a href="{{ route('piket.jadwal.index') }}" class="sb-item {{ request()->routeIs('piket.jadwal.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Jadwal Piket Saya
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Jadwal Piket Saya
         </a>
         <a href="{{ route('piket.log.checkin') }}" class="sb-item {{ request()->routeIs('piket.log.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Check-In Piket
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            Check-In Piket
         </a>
 
+        {{-- ── Tugas Piket ──────────────────────────────────── --}}
         <p class="sb-section">Tugas Piket</p>
 
         <details class="sb-group" {{ request()->routeIs('piket.pelanggaran.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Pelanggaran Siswa <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Pelanggaran Siswa
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
                 <a href="{{ route('piket.pelanggaran.create') }}" class="sb-item {{ request()->routeIs('piket.pelanggaran.create') ? 'active' : '' }}">Input Pelanggaran</a>
-                <a href="{{ route('piket.pelanggaran.index') }}" class="sb-item {{ request()->routeIs('piket.pelanggaran.index') ? 'active' : '' }}">Riwayat Pelanggaran</a>
+                <a href="{{ route('piket.pelanggaran.index') }}"  class="sb-item {{ request()->routeIs('piket.pelanggaran.index') ? 'active' : '' }}">Riwayat Pelanggaran</a>
+            </div>
+        </details>
+
+        {{-- Izin Keluar Siswa — akses penuh untuk piket --}}
+        <details class="sb-group" {{ request()->routeIs('piket.izin-keluar-siswa.*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                Izin Keluar Siswa
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('piket.izin-keluar-siswa.index', ['status' => 'menunggu']) }}"
+                class="sb-item {{ request()->routeIs('piket.izin-keluar-siswa.index') && request('status') === 'menunggu' ? 'active' : '' }}">
+                    Menunggu Proses
+                </a>
+                <a href="{{ route('piket.izin-keluar-siswa.index', ['status' => 'disetujui']) }}"
+                class="sb-item {{ request()->routeIs('piket.izin-keluar-siswa.index') && request('status') === 'disetujui' ? 'active' : '' }}">
+                    Sedang Keluar
+                </a>
+                <a href="{{ route('piket.izin-keluar-siswa.index') }}"
+                class="sb-item {{ request()->routeIs('piket.izin-keluar-siswa.index') && !request('status') ? 'active' : '' }}">
+                    Semua Riwayat
+                </a>
+                <a href="{{ route('piket.izin-keluar-siswa.create') }}"
+                class="sb-item {{ request()->routeIs('piket.izin-keluar-siswa.create') ? 'active' : '' }}">
+                    + Buat Izin Baru
+                </a>
             </div>
         </details>
 
         <details class="sb-group" {{ request()->routeIs('piket.laporan.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Laporan Harian <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Laporan Harian
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('piket.laporan.harian') }}" class="sb-item {{ request()->routeIs('piket.laporan.harian') ? 'active' : '' }}">Buat Laporan</a>
+                <a href="{{ route('piket.laporan.harian') }}"  class="sb-item {{ request()->routeIs('piket.laporan.harian') ? 'active' : '' }}">Buat Laporan</a>
                 <a href="{{ route('piket.laporan.riwayat') }}" class="sb-item {{ request()->routeIs('piket.laporan.riwayat') ? 'active' : '' }}">Riwayat Laporan</a>
             </div>
         </details>
 
+        {{-- ── Absensi Guru ─────────────────────────────────── --}}
         <p class="sb-section">Absensi Guru</p>
 
-        <a href="{{ route('admin.absensi-guru-piket.dashboard') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.dashboard') ? 'active' : '' }}">
+        <a href="{{ route('piket.absensi-guru.dashboard') }}" class="sb-item {{ request()->routeIs('piket.absensi-guru.dashboard') ? 'active' : '' }}">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
             Dashboard Absensi
         </a>
 
-        <details class="sb-group" {{ request()->routeIs('admin.absensi-guru-piket.manual*','admin.absensi-guru-piket.massal*') ? 'open' : '' }}>
+        <details class="sb-group" {{ request()->routeIs('piket.absensi-guru.massal*') ? 'open' : '' }}>
             <summary class="sb-group-header">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                 Input Absensi
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('admin.absensi-guru-piket.massal.form') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.massal*') ? 'active' : '' }}">Absen Massal</a>
-                <a href="{{ route('admin.absensi-guru-piket.riwayat') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.riwayat') ? 'active' : '' }}">Riwayat Saya</a>
+                <a href="{{ route('piket.absensi-guru.massal.form') }}" class="sb-item {{ request()->routeIs('piket.absensi-guru.massal*') ? 'active' : '' }}">Absen Massal</a>
+                <a href="{{ route('piket.absensi-guru.riwayat') }}"     class="sb-item {{ request()->routeIs('piket.absensi-guru.riwayat') ? 'active' : '' }}">Riwayat Saya</a>
             </div>
         </details>
 
-        <a href="{{ route('admin.absensi-guru-piket.scan-qr') }}" class="sb-item {{ request()->routeIs('admin.absensi-guru-piket.scan-qr') ? 'active' : '' }}">
+        <a href="{{ route('piket.absensi-guru.scan-qr') }}" class="sb-item {{ request()->routeIs('piket.absensi-guru.scan-qr') ? 'active' : '' }}">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/><rect x="3" y="16" width="5" height="5"/><path d="M21 16h-3v3"/><path d="M21 21h-3"/><path d="M16 21v-3"/></svg>
             Scan QR Guru
         </a>
 
+        {{-- ── Sistem ───────────────────────────────────────── --}}
         <p class="sb-section">Sistem</p>
+
         <a href="{{ route('piket.notifikasi.index') }}" class="sb-item {{ request()->routeIs('piket.notifikasi.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notifikasi
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Notifikasi
             @if($unread > 0) <span class="sb-badge-count">{{ $unread }}</span> @endif
         </a>
         <a href="{{ route('piket.pengumuman.index') }}" class="sb-item {{ request()->routeIs('piket.pengumuman.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Pengumuman
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Pengumuman
         </a>
 
-    {{-- ════ MENU SISWA ════ --}}
+
+    {{-- ══════════════════════════════════════════════════════
+        MENU SISWA
+    ══════════════════════════════════════════════════════ --}}
     @elseif($role === 'siswa')
 
+        {{-- ── Utama ───────────────────────────────────────── --}}
         <p class="sb-section">Utama</p>
+
         <a href="{{ route('siswa.dashboard') }}" class="sb-item {{ request()->routeIs('siswa.dashboard') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg> Beranda
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+            Beranda
         </a>
         <a href="{{ route('siswa.jadwal.index') }}" class="sb-item {{ request()->routeIs('siswa.jadwal.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Jadwal Pelajaran
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            Jadwal Pelajaran
         </a>
 
+        {{-- ── Pembelajaran ─────────────────────────────────── --}}
         <p class="sb-section">Pembelajaran</p>
 
         <details class="sb-group" {{ request()->routeIs('siswa.materi.*','siswa.tugas.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg> Materi & Tugas <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+                Materi & Tugas
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
                 <a href="{{ route('siswa.materi.index') }}" class="sb-item {{ request()->routeIs('siswa.materi.*') ? 'active' : '' }}">Materi Pelajaran</a>
-                <a href="{{ route('siswa.tugas.index') }}" class="sb-item {{ request()->routeIs('siswa.tugas.*') ? 'active' : '' }}">Tugas Saya</a>
+                <a href="{{ route('siswa.tugas.index') }}"  class="sb-item {{ request()->routeIs('siswa.tugas.*') ? 'active' : '' }}">Tugas Saya</a>
             </div>
         </details>
 
         <details class="sb-group" {{ request()->routeIs('siswa.ujian.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Ujian Online <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                Ujian Online
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('siswa.ujian.index') }}" class="sb-item {{ request()->routeIs('siswa.ujian.index') ? 'active' : '' }}">Ujian Tersedia</a>
+                <a href="{{ route('siswa.ujian.index') }}"   class="sb-item {{ request()->routeIs('siswa.ujian.index') ? 'active' : '' }}">Ujian Tersedia</a>
                 <a href="{{ route('siswa.ujian.riwayat') }}" class="sb-item {{ request()->routeIs('siswa.ujian.riwayat') ? 'active' : '' }}">Riwayat Ujian</a>
             </div>
         </details>
 
         <details class="sb-group" {{ request()->routeIs('siswa.absensi.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Absensi Saya <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Absensi Saya
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('siswa.absensi.scan') }}" class="sb-item {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">Scan QR Hadir</a>
+                <a href="{{ route('siswa.absensi.scan') }}"    class="sb-item {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">Scan QR Hadir</a>
                 <a href="{{ route('siswa.absensi.riwayat') }}" class="sb-item {{ request()->routeIs('siswa.absensi.riwayat') ? 'active' : '' }}">Riwayat Kehadiran</a>
             </div>
         </details>
 
+        {{-- ── Akademik ─────────────────────────────────────── --}}
         <p class="sb-section">Akademik</p>
 
         <details class="sb-group" {{ request()->routeIs('siswa.nilai.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Nilai & Rapor <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Nilai & Rapor
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
                 <a href="{{ route('siswa.nilai.index') }}" class="sb-item {{ request()->routeIs('siswa.nilai.index') ? 'active' : '' }}">Nilai per Mapel</a>
@@ -652,34 +805,49 @@
         </details>
 
         <a href="{{ route('siswa.pelanggaran.index') }}" class="sb-item {{ request()->routeIs('siswa.pelanggaran.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Kedisiplinan Saya
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Kedisiplinan Saya
         </a>
 
+        {{-- ── Sistem ───────────────────────────────────────── --}}
         <p class="sb-section">Sistem</p>
+
         <a href="{{ route('siswa.notifikasi.index') }}" class="sb-item {{ request()->routeIs('siswa.notifikasi.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notifikasi
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Notifikasi
             @if($unread > 0) <span class="sb-badge-count">{{ $unread }}</span> @endif
         </a>
         <a href="{{ route('siswa.pengumuman.index') }}" class="sb-item {{ request()->routeIs('siswa.pengumuman.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Pengumuman
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Pengumuman
         </a>
 
-    {{-- ════ MENU ORANG TUA ════ --}}
+
+    {{-- ══════════════════════════════════════════════════════
+        MENU ORANG TUA
+    ══════════════════════════════════════════════════════ --}}
     @elseif($role === 'orang_tua')
 
+        {{-- ── Utama ───────────────────────────────────────── --}}
         <p class="sb-section">Utama</p>
+
         <a href="{{ route('ortu.dashboard') }}" class="sb-item {{ request()->routeIs('ortu.dashboard') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg> Beranda
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+            Beranda
         </a>
         <a href="{{ route('ortu.profil-anak.index') }}" class="sb-item {{ request()->routeIs('ortu.profil-anak.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> Profil Anak
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Profil Anak
         </a>
 
+        {{-- ── Pantau Anak ──────────────────────────────────── --}}
         <p class="sb-section">Pantau Anak</p>
 
         <details class="sb-group" {{ request()->routeIs('ortu.akademik.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Akademik Anak <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                Akademik Anak
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
                 <a href="{{ route('ortu.akademik.nilai') }}" class="sb-item {{ request()->routeIs('ortu.akademik.nilai') ? 'active' : '' }}">Nilai per Mapel</a>
@@ -690,26 +858,33 @@
 
         <details class="sb-group" {{ request()->routeIs('ortu.absensi.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Kehadiran Anak <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                Kehadiran Anak
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
                 <a href="{{ route('ortu.absensi.status-hari-ini') }}" class="sb-item {{ request()->routeIs('ortu.absensi.status-hari-ini') ? 'active' : '' }}">Status Hari Ini</a>
-                <a href="{{ route('ortu.absensi.riwayat') }}" class="sb-item {{ request()->routeIs('ortu.absensi.riwayat') ? 'active' : '' }}">Riwayat Kehadiran</a>
-                <a href="{{ route('ortu.absensi.rekap') }}" class="sb-item {{ request()->routeIs('ortu.absensi.rekap') ? 'active' : '' }}">Rekap Bulanan</a>
+                <a href="{{ route('ortu.absensi.riwayat') }}"         class="sb-item {{ request()->routeIs('ortu.absensi.riwayat') ? 'active' : '' }}">Riwayat Kehadiran</a>
+                <a href="{{ route('ortu.absensi.rekap') }}"           class="sb-item {{ request()->routeIs('ortu.absensi.rekap') ? 'active' : '' }}">Rekap Bulanan</a>
             </div>
         </details>
 
         <a href="{{ route('ortu.kedisiplinan.riwayat') }}" class="sb-item {{ request()->routeIs('ortu.kedisiplinan.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> Kedisiplinan Anak
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            Kedisiplinan Anak
         </a>
 
+        {{-- ── Komunikasi ───────────────────────────────────── --}}
         <p class="sb-section">Komunikasi</p>
+
         <a href="{{ route('ortu.notifikasi.index') }}" class="sb-item {{ request()->routeIs('ortu.notifikasi.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Notifikasi
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+            Notifikasi
             @if($unread > 0) <span class="sb-badge-count">{{ $unread }}</span> @endif
         </a>
         <a href="{{ route('ortu.pengumuman.index') }}" class="sb-item {{ request()->routeIs('ortu.pengumuman.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Pengumuman
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Pengumuman
         </a>
 
     @endif
@@ -751,7 +926,17 @@
                 <div class="notif-header">
                     <span class="notif-header-title">Notifikasi</span>
                     @if($unread > 0)
-                        <form method="POST" action="{{ route(str_replace('.', '.', $role === 'admin' ? 'admin.notifikasi.mark-all-read' : ($role . '.notifikasi.mark-all-read')) )  }}" style="display:inline">
+                        @php
+                            $markAllReadRoute = match($role) {
+                                'admin'      => 'admin.notifikasi.mark-all-read',
+                                'guru'       => 'guru.notifikasi.mark-all-read',
+                                'guru_piket' => 'piket.notifikasi.mark-all-read',
+                                'siswa'      => 'siswa.notifikasi.mark-all-read',
+                                'orang_tua'  => 'ortu.notifikasi.mark-all-read',
+                                default      => 'piket.notifikasi.mark-all-read',
+                            };
+                        @endphp
+                        <form method="POST" action="{{ route($markAllReadRoute) }}" style="display:inline">
                             @csrf @method('PATCH')
                             <button type="submit" class="notif-mark-all">Tandai semua dibaca</button>
                         </form>

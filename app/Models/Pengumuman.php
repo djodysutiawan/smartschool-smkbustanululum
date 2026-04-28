@@ -12,23 +12,26 @@ class Pengumuman extends Model
     protected $table = 'pengumuman';
 
     protected $fillable = [
-        'judul', 'isi', 'path_lampiran', 'target_role', 'kadaluarsa_pada', 'dipinned', 'dibuat_oleh',
-        'dipublikasikan', 'dipublikasikan_oleh', 'dipublikasikan_pada',
+        'judul', 'isi', 'path_lampiran', 'target_role', 'kadaluarsa_pada',
+        'dipinned', 'dibuat_oleh', 'dipublikasikan_oleh', 'dipublikasikan_pada',
     ];
 
     protected function casts(): array
     {
         return [
-            'dipublikasikan'     => 'boolean',
-            'dipublikasikan_pada'=> 'datetime',
+            'dipublikasikan_pada' => 'datetime',
             'kadaluarsa_pada'     => 'datetime',
             'dipinned'            => 'boolean',
         ];
     }
 
+    /**
+     * Sudah dipublikasikan = dipublikasikan_pada tidak null.
+     * (Kolom boolean 'dipublikasikan' tidak ada di tabel)
+     */
     public function scopeDipublikasikan($query)
     {
-        return $query->where('dipublikasikan', true);
+        return $query->whereNotNull('dipublikasikan_pada');
     }
 
     public function scopeUntukRole($query, string $role)
@@ -38,10 +41,17 @@ class Pengumuman extends Model
         });
     }
 
+    /**
+     * Cek apakah pengumuman sudah dipublikasikan (helper accessor).
+     */
+    public function getDipublikasikanAttribute(): bool
+    {
+        return $this->dipublikasikan_pada !== null;
+    }
+
     public function publish(int $olehId): void
     {
         $this->update([
-            'dipublikasikan'      => true,
             'dipublikasikan_oleh' => $olehId,
             'dipublikasikan_pada' => now(),
         ]);
@@ -56,7 +66,7 @@ class Pengumuman extends Model
     {
         return $this->belongsTo(User::class, 'dipublikasikan_oleh');
     }
-    
+
     public function dibuatOleh()
     {
         return $this->belongsTo(User::class, 'dibuat_oleh');

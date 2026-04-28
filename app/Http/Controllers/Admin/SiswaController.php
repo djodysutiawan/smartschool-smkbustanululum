@@ -19,6 +19,7 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SiswaController extends Controller
 {
+    protected $table = 'siswa';
     private function validasiPesan(): array
     {
         return [

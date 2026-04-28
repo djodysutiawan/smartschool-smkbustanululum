@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\AbsensiGuru;         // ← TAMBAHAN: untuk cek status hadir guru piket
+use App\Models\AbsensiGuru;
 use App\Models\Guru;
 use App\Models\JadwalPiketGuru;
 use App\Models\TahunAjaran;
@@ -18,7 +18,7 @@ class JadwalPiketGuruController extends Controller
 {
     protected array $hariList = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
 
-    // ─── INDEX — MODIFIKASI: tambah info status hadir guru piket hari ini ─────
+    // ─── INDEX ───────────────────────────────────────────────────────────────
 
     public function index(Request $request)
     {
@@ -29,15 +29,12 @@ class JadwalPiketGuruController extends Controller
         if ($request->filled('tahun_ajaran_id')) {
             $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
         }
-
         if ($request->filled('guru_id')) {
             $query->where('guru_id', $request->guru_id);
         }
-
         if ($request->filled('hari')) {
             $query->where('hari', $request->hari);
         }
-
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active);
         }
@@ -46,29 +43,25 @@ class JadwalPiketGuruController extends Controller
         $guruPiket   = Guru::orderBy('nama_lengkap')->get();
         $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
 
-        // Kode lama: guru yang bertugas piket hari ini
         $piketHariIni = JadwalPiketGuru::getPiketHariIni();
 
-        // ─── TAMBAHAN: tandai siapa dari guru piket hari ini yang sudah absen ─
         $absensiHariIni = AbsensiGuru::whereDate('tanggal', today())
             ->whereIn('guru_id', $piketHariIni->pluck('guru_id')->filter()->unique())
             ->get()
             ->keyBy('guru_id');
 
-        // Inject status hadir ke dalam koleksi piketHariIni (tanpa ubah struktur aslinya)
         $piketHariIni->each(function ($jadwalPiket) use ($absensiHariIni) {
             $absensi = $absensiHariIni->get($jadwalPiket->guru_id);
             $jadwalPiket->sudah_absen    = ! is_null($absensi);
             $jadwalPiket->status_absensi = $absensi?->status;
         });
-        // ─────────────────────────────────────────────────────────────────────
 
         return view('admin.jadwal_piket_guru.index', compact(
             'jadwal', 'guruPiket', 'tahunAjaran', 'piketHariIni', 'absensiHariIni'
         ) + ['hariList' => $this->hariList]);
     }
 
-    // ─── Semua method di bawah ini TIDAK DIUBAH dari versi asli ──────────────
+    // ─── CREATE ───────────────────────────────────────────────────────────────
 
     public function create()
     {
@@ -81,6 +74,8 @@ class JadwalPiketGuruController extends Controller
             'hariList'    => $this->hariList,
         ]);
     }
+
+    // ─── STORE ────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
     {
@@ -105,6 +100,19 @@ class JadwalPiketGuruController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
+        // ─── Cek duplikat: satu guru tidak boleh piket di hari + tahun ajaran yang sama ─
+        $duplicate = JadwalPiketGuru::where('guru_id', $request->guru_id)
+            ->where('tahun_ajaran_id', $request->tahun_ajaran_id)
+            ->where('hari', $request->hari)
+            ->exists();
+
+        if ($duplicate) {
+            $namaGuru = Guru::find($request->guru_id)?->nama_lengkap ?? 'Guru ini';
+            return back()
+                ->withInput()
+                ->with('duplicate_error', "\"$namaGuru\" sudah memiliki jadwal piket pada hari " . ucfirst($request->hari) . " di tahun ajaran yang dipilih. Setiap guru hanya boleh memiliki satu jadwal piket per hari.");
+        }
+
         JadwalPiketGuru::create([
             'guru_id'         => $request->guru_id,
             'tahun_ajaran_id' => $request->tahun_ajaran_id,
@@ -119,11 +127,15 @@ class JadwalPiketGuruController extends Controller
             ->with('success', 'Jadwal piket guru berhasil ditambahkan.');
     }
 
+    // ─── SHOW ─────────────────────────────────────────────────────────────────
+
     public function show(JadwalPiketGuru $jadwalPiketGuru)
     {
         $jadwalPiketGuru->load(['guru', 'tahunAjaran']);
         return view('admin.jadwal_piket_guru.show', compact('jadwalPiketGuru'));
     }
+
+    // ─── EDIT ─────────────────────────────────────────────────────────────────
 
     public function edit(JadwalPiketGuru $jadwalPiketGuru)
     {
@@ -137,6 +149,8 @@ class JadwalPiketGuruController extends Controller
             'hariList'        => $this->hariList,
         ]);
     }
+
+    // ─── UPDATE ───────────────────────────────────────────────────────────────
 
     public function update(Request $request, JadwalPiketGuru $jadwalPiketGuru)
     {
@@ -161,6 +175,20 @@ class JadwalPiketGuruController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
+        // ─── Cek duplikat: exclude record yang sedang diedit ─────────────────
+        $duplicate = JadwalPiketGuru::where('guru_id', $request->guru_id)
+            ->where('tahun_ajaran_id', $request->tahun_ajaran_id)
+            ->where('hari', $request->hari)
+            ->where('id', '!=', $jadwalPiketGuru->id)
+            ->exists();
+
+        if ($duplicate) {
+            $namaGuru = Guru::find($request->guru_id)?->nama_lengkap ?? 'Guru ini';
+            return back()
+                ->withInput()
+                ->with('duplicate_error', "\"$namaGuru\" sudah memiliki jadwal piket pada hari " . ucfirst($request->hari) . " di tahun ajaran yang dipilih. Setiap guru hanya boleh memiliki satu jadwal piket per hari.");
+        }
+
         $jadwalPiketGuru->update([
             'guru_id'         => $request->guru_id,
             'tahun_ajaran_id' => $request->tahun_ajaran_id,
@@ -175,13 +203,17 @@ class JadwalPiketGuruController extends Controller
             ->with('success', 'Jadwal piket guru berhasil diperbarui.');
     }
 
+    // ─── DESTROY ──────────────────────────────────────────────────────────────
+
     public function destroy(JadwalPiketGuru $jadwalPiketGuru)
     {
         $jadwalPiketGuru->delete();
 
-        return redirect()->route('admin.jadwal_piket_guru.index')
+        return redirect()->route('admin.jadwal-piket-guru.index')
             ->with('success', 'Jadwal piket guru berhasil dihapus.');
     }
+
+    // ─── TOGGLE STATUS ────────────────────────────────────────────────────────
 
     public function toggleStatus(JadwalPiketGuru $jadwalPiketGuru)
     {
@@ -190,6 +222,8 @@ class JadwalPiketGuruController extends Controller
 
         return back()->with('success', "Jadwal piket berhasil {$status}.");
     }
+
+    // ─── EXPORT ───────────────────────────────────────────────────────────────
 
     public function export(Request $request)
     {
@@ -206,15 +240,12 @@ class JadwalPiketGuruController extends Controller
         if ($request->filled('tahun_ajaran_id')) {
             $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
         }
-
         if ($request->filled('guru_id')) {
             $query->where('guru_id', $request->guru_id);
         }
-
         if ($request->filled('hari')) {
             $query->where('hari', $request->hari);
         }
-
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->is_active);
         }
@@ -237,6 +268,8 @@ class JadwalPiketGuruController extends Controller
 
         return $pdf->stream('jadwal_piket_' . $jadwalPiketGuru->id . '.pdf');
     }
+
+    // ─── IMPORT ───────────────────────────────────────────────────────────────
 
     public function import(Request $request)
     {

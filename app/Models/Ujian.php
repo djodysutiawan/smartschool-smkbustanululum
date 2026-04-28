@@ -10,13 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * Ujian.php — Model Ujian yang diperluas.
  *
- * Tambahan relasi vs model lama:
- *   + soal()      → SoalUjian
- *   + sesi()      → SesiUjian (pengerjaan per siswa)
- *
- * Tambahan helper:
- *   + sudahDimulai(), sudahBerakhir(), getTotalSoalAttribute()
- *   + getTotalBobotAttribute(), getSiswaSelesaiAttribute()
+ * Kolom status di DB: is_active (TINYINT 1)
+ * Enum jenis di DB : ulangan_harian | uts | uas | remedial | quiz
  */
 class Ujian extends Model
 {
@@ -30,17 +25,17 @@ class Ujian extends Model
         'kelas_id',
         'tahun_ajaran_id',
         'judul',
-        'jenis',           // ulangan_harian | uts | uas | kuis
+        'jenis',           // ulangan_harian | uts | uas | remedial | quiz
         'tanggal',
         'jam_mulai',
-        'durasi_menit',    // batas waktu pengerjaan
+        'durasi_menit',
         'nilai_kkm',
-        'acak_soal',       // boolean — soal diacak per siswa
-        'acak_pilihan',    // boolean — urutan pilihan diacak
-        'tampilkan_nilai', // boolean — siswa lihat nilai setelah selesai
-        'maks_percobaan',  // int — berapa kali boleh mengulang (default 1)
+        'acak_soal',
+        'acak_pilihan',
+        'tampilkan_nilai',
+        'maks_percobaan',
         'keterangan',
-        'status',          // draft | aktif | ditutup
+        'is_active',       // 1 = aktif, 0 = tidak aktif
     ];
 
     protected function casts(): array
@@ -50,6 +45,7 @@ class Ujian extends Model
             'acak_soal'       => 'boolean',
             'acak_pilihan'    => 'boolean',
             'tampilkan_nilai' => 'boolean',
+            'is_active'       => 'boolean',
         ];
     }
 
@@ -57,12 +53,12 @@ class Ujian extends Model
 
     public function scopeAktif($query)
     {
-        return $query->where('status', 'aktif');
+        return $query->where('is_active', true);
     }
 
-    public function scopeDraft($query)
+    public function scopeTidakAktif($query)
     {
-        return $query->where('status', 'draft');
+        return $query->where('is_active', false);
     }
 
     // ── Computed Attributes ───────────────────────────────────────
@@ -79,7 +75,7 @@ class Ujian extends Model
 
     public function getWaktuMulaiAttribute(): ?Carbon
     {
-        if (!$this->tanggal || !$this->jam_mulai) return null;
+        if (! $this->tanggal || ! $this->jam_mulai) return null;
         return Carbon::parse($this->tanggal->format('Y-m-d') . ' ' . $this->jam_mulai);
     }
 
@@ -96,6 +92,11 @@ class Ujian extends Model
     public function sudahBerakhir(): bool
     {
         return $this->waktu_berakhir && Carbon::now()->gt($this->waktu_berakhir);
+    }
+
+    public function isAktif(): bool
+    {
+        return (bool) $this->is_active;
     }
 
     public function isLulus(float $nilai): bool

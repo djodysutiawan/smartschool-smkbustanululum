@@ -34,6 +34,9 @@ use App\Http\Controllers\Admin\SesiUjianController;
 use App\Http\Controllers\Admin\AbsensiGuruPiketController;
 use App\Http\Controllers\Admin\SesiQrGuruController;
 use App\Http\Controllers\Admin\AbsensiGuruController;
+use App\Http\Controllers\Admin\LaporanHarianPiketController;
+use App\Http\Controllers\Admin\IzinKeluarSiswaController;
+use App\Http\Controllers\Admin\DashboardController;
 
 Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
@@ -41,8 +44,8 @@ Route::prefix('admin')
     ->group(function () {
 
         // Dashboard
-        Route::get('/',          fn () => view('admin.dashboard'))->name('dashboard');
-        Route::get('/dashboard', fn () => view('admin.dashboard'))->name('dashboard.alt');
+        Route::get('/',          [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard.alt');
 
         // Users
         Route::prefix('users')->name('users.')->group(function () {
@@ -564,6 +567,30 @@ Route::prefix('admin')
             Route::post('/massal',              [AbsensiGuruPiketController::class, 'absenMassalStore'])->name('massal.store');
             Route::get('/scan-qr',              [AbsensiGuruPiketController::class, 'halamanScanQr'])->name('scan-qr');
             Route::get('/riwayat',              [AbsensiGuruPiketController::class, 'riwayat'])->name('riwayat');
+        });
+
+        // Laporan Harian Piket
+        Route::prefix('laporan-harian-piket')->name('laporan-harian-piket.')->group(function () {
+            Route::get('/',                        [LaporanHarianPiketController::class, 'index'])->name('index');
+            Route::get('/export-pdf',              [LaporanHarianPiketController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/{laporanHarianPiket}',    [LaporanHarianPiketController::class, 'show'])->name('show');
+            Route::delete('/{laporanHarianPiket}', [LaporanHarianPiketController::class, 'destroy'])->name('destroy');
+        });
+
+        // Izin Keluar Siswa
+        Route::prefix('izin-keluar-siswa')->name('izin-keluar-siswa.')->group(function () {
+            Route::get('/',                                [IzinKeluarSiswaController::class, 'index'])->name('index');
+            Route::get('/create',                          [IzinKeluarSiswaController::class, 'create'])->name('create');
+            Route::post('/',                               [IzinKeluarSiswaController::class, 'store'])->name('store');
+            Route::get('/export/pdf',                      [IzinKeluarSiswaController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/{izinKeluarSiswa}',               [IzinKeluarSiswaController::class, 'show'])->name('show');
+            Route::get('/{izinKeluarSiswa}/edit',          [IzinKeluarSiswaController::class, 'edit'])->name('edit');
+            Route::put('/{izinKeluarSiswa}',               [IzinKeluarSiswaController::class, 'update'])->name('update');
+            Route::delete('/{izinKeluarSiswa}',            [IzinKeluarSiswaController::class, 'destroy'])->name('destroy');
+            Route::patch('/{izinKeluarSiswa}/setujui',     [IzinKeluarSiswaController::class, 'setujui'])->name('setujui');
+            Route::patch('/{izinKeluarSiswa}/tolak',       [IzinKeluarSiswaController::class, 'tolak'])->name('tolak');
+            Route::patch('/{izinKeluarSiswa}/catat-kembali', [IzinKeluarSiswaController::class, 'catatKembali'])->name('catat-kembali');
+            Route::get('/{izinKeluarSiswa}/cetak-surat',   [IzinKeluarSiswaController::class, 'cetakSurat'])->name('cetak-surat');
         });
 
     });

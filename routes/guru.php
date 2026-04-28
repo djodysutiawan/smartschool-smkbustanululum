@@ -14,6 +14,7 @@ use App\Http\Controllers\Guru\AbsensiController;
 use App\Http\Controllers\Guru\SesiQrController;
 use App\Http\Controllers\Guru\NotifikasiController;
 use App\Http\Controllers\Guru\PengumumanController;
+use App\Http\Controllers\Guru\GuruIzinController;
 
 Route::prefix('guru')
     ->name('guru.')
@@ -106,14 +107,18 @@ Route::prefix('guru')
 
         // Absensi Kelas
         Route::prefix('absensi')->name('absensi.')->group(function () {
-            Route::get('/', [AbsensiController::class, 'index'])->name('index');
-            Route::get('/rekap', [AbsensiController::class, 'rekap'])->name('rekap');
-            Route::get('/create', [AbsensiController::class, 'create'])->name('create');
-            Route::post('/', [AbsensiController::class, 'store'])->name('store');
-            Route::get('/{absensi}', [AbsensiController::class, 'show'])->name('show');
-            Route::get('/{absensi}/edit', [AbsensiController::class, 'edit'])->name('edit');
-            Route::put('/{absensi}', [AbsensiController::class, 'update'])->name('update');
-            Route::delete('/{absensi}', [AbsensiController::class, 'destroy'])->name('destroy');
+            // ── Static routes (harus di atas wildcard /{absensi}) ──
+            Route::get('/',        [AbsensiController::class, 'index'])->name('index');
+            Route::get('/rekap',   [AbsensiController::class, 'rekap'])->name('rekap');
+            Route::get('/create',  [AbsensiController::class, 'create'])->name('create');
+            Route::post('/massal', [AbsensiController::class, 'storeMassal'])->name('storeMassal'); // ← dipindah ke sini
+            Route::post('/',       [AbsensiController::class, 'store'])->name('store');
+        
+            // ── Wildcard routes (harus di bawah static routes) ──
+            Route::get('/{absensi}',       [AbsensiController::class, 'show'])->name('show');
+            Route::get('/{absensi}/edit',  [AbsensiController::class, 'edit'])->name('edit');
+            Route::put('/{absensi}',       [AbsensiController::class, 'update'])->name('update');
+            Route::delete('/{absensi}',    [AbsensiController::class, 'destroy'])->name('destroy');
         });
 
         // Sesi QR
@@ -141,4 +146,12 @@ Route::prefix('guru')
             Route::get('/', [PengumumanController::class, 'index'])->name('index');
             Route::get('/{pengumuman}', [PengumumanController::class, 'show'])->name('show');
         });
+
+        // Izin Keluar Siswa — HANYA READ (guru melihat izin siswa di kelasnya)
+        Route::prefix('izin-keluar-siswa')->name('izin-keluar-siswa.')->group(function () {
+            Route::get('/',              [GuruIzinController::class, 'index'])->name('index');
+            Route::get('/{izin}',        [GuruIzinController::class, 'show'])->name('show');
+        });
+
+
     });

@@ -6,11 +6,13 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable, SoftDeletes, HasRoles;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'name', 'email', 'password', 'role',
@@ -28,6 +30,8 @@ class User extends Authenticatable
             'password'          => 'hashed',
         ];
     }
+
+    // ── Relasi ─────────────────────────────────────────────────────────────
 
     public function guru()
     {
@@ -55,35 +59,34 @@ class User extends Authenticatable
                     ->where('sudah_dibaca', false);
     }
 
-    public function isAdmin(): bool
-    {
-        return $this->role === 'admin';
-    }
+    // ── Helper methods ─────────────────────────────────────────────────────
 
-    public function isGuru(): bool
-    {
-        return $this->role === 'guru';
-    }
-
-    public function isSiswa(): bool
-    {
-        return $this->role === 'siswa';
-    }
-
-    public function isOrangTua(): bool
-    {
-        return $this->role === 'orang_tua';
-    }
+    public function isAdmin(): bool    { return $this->role === 'admin'; }
+    public function isGuru(): bool     { return $this->role === 'guru'; }
+    public function isSiswa(): bool    { return $this->role === 'siswa'; }
+    public function isOrangTua(): bool { return $this->role === 'orang_tua'; }
 
     public function updateLastLogin(): void
     {
         $this->update(['last_login_at' => now()]);
     }
 
-    public function getAvatarUrlAttribute(): string
+    // ── Accessors ──────────────────────────────────────────────────────────
+
+    /**
+     * Return URL publik avatar.
+     * File disimpan di storage/app/public/avatars/xxx.png
+     * → public URL: APP_URL/storage/avatars/xxx.png
+     *
+     * Storage::disk('public')->url() otomatis pakai APP_URL dari .env,
+     * sehingga konsisten dengan apapun yang diset (localhost atau 127.0.0.1).
+     */
+    public function getAvatarUrlAttribute(): ?string
     {
-        return $this->avatar
-            ? asset('storage/' . $this->avatar)
-            : asset('images/default-avatar.png');
+        if (! $this->avatar) {
+            return null;
+        }
+
+        return asset('storage/' . $this->avatar);
     }
 }

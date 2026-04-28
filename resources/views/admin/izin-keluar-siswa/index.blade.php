@@ -1,0 +1,431 @@
+<x-app-layout>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+    :root {
+        --brand-700:#1750c0;--brand-600:#1f63db;--brand-500:#3582f0;
+        --brand-100:#d9ebff;--brand-50:#eef6ff;
+        --surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;
+        --border:#e2e8f0;--border2:#cbd5e1;
+        --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+        --radius:10px;--radius-sm:7px;
+    }
+
+    .page{padding:28px 28px 40px}
+    .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+    .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
+    .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
+    .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
+    .btn:hover{filter:brightness(.93)}
+    .btn-primary{background:var(--brand-600);color:#fff}
+    .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+    .btn-secondary:hover{background:var(--surface3);filter:none}
+    .btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
+    .btn-edit{background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100)}
+    .btn-edit:hover{background:var(--brand-100);filter:none}
+    .btn-del{background:#fff0f0;color:#dc2626;border:1px solid #fecaca}
+    .btn-del:hover{background:#fee2e2;filter:none}
+    .btn-detail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+    .btn-detail:hover{background:#dcfce7;filter:none}
+
+    .dropdown{position:relative;display:inline-flex}
+    .dropdown-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 8px 28px rgba(0,0,0,.1);min-width:200px;z-index:200;overflow:hidden}
+    .dropdown.open .dropdown-menu{display:block}
+    .dropdown-item{display:flex;align-items:center;gap:8px;padding:9px 14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text2);text-decoration:none;background:none;border:none;width:100%;cursor:pointer;transition:background .12s;text-align:left}
+    .dropdown-item:hover{background:var(--surface2);color:var(--text)}
+
+    .stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;transition:box-shadow .2s;text-decoration:none}
+    .stat-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+    .stat-card.active-filter{border-color:var(--brand-500);background:var(--brand-50)}
+    .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .stat-icon.blue{background:#eff6ff}
+    .stat-icon.yellow{background:#fefce8}
+    .stat-icon.orange{background:#fff7ed}
+    .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase}
+    .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
+    .stat-sub{font-size:11px;color:var(--text3);margin-top:1px}
+
+    .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px}
+    .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+    .filter-row select,.filter-row input[type=text]{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
+    .filter-row input[type=date]{height:36px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;width:148px}
+    .filter-row select:focus,.filter-row input:focus{border-color:var(--brand-500);background:#fff}
+    .filter-sep{flex:1}
+    .btn-filter{height:36px;padding:0 18px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+    .btn-filter:hover{background:var(--brand-700)}
+    .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:background .15s}
+    .btn-reset:hover{background:var(--surface3)}
+    .search-input{height:36px;padding:0 12px 0 36px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;width:220px;transition:border-color .15s}
+    .search-input:focus{border-color:var(--brand-500);background:#fff}
+    .search-wrap{position:relative;display:flex;align-items:center}
+    .search-wrap svg{position:absolute;left:10px;pointer-events:none;color:var(--text3)}
+
+    .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
+    .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
+    .table-info span{font-weight:400;color:var(--text3);margin-left:6px}
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-size:13.5px}
+    thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
+    thead th{padding:11px 14px;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+    thead th.center{text-align:center}
+    tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+    tbody tr:last-child{border-bottom:none}
+    tbody tr:hover{background:#fafbff}
+    td{padding:10px 14px;color:var(--text);vertical-align:middle}
+    td.center{text-align:center}
+    td.muted{color:var(--text3)}
+    .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)}
+
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
+    .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+    .badge-menunggu{background:#fefce8;color:#a16207} .badge-menunggu .badge-dot{background:#a16207}
+    .badge-disetujui{background:#dcfce7;color:#15803d} .badge-disetujui .badge-dot{background:#15803d}
+    .badge-ditolak{background:#fee2e2;color:#dc2626} .badge-ditolak .badge-dot{background:#dc2626}
+    .badge-sudah_kembali{background:#eff6ff;color:#1d4ed8} .badge-sudah_kembali .badge-dot{background:#1d4ed8}
+    .badge-keperluan_keluarga{background:#fff7ed;color:#c2410c} .badge-keperluan_keluarga .badge-dot{background:#c2410c}
+    .badge-keperluan_sekolah{background:#ecfdf5;color:#065f46} .badge-keperluan_sekolah .badge-dot{background:#065f46}
+    .badge-berobat{background:#fdf4ff;color:#7c3aed} .badge-berobat .badge-dot{background:#7c3aed}
+    .badge-lainnya{background:var(--surface3);color:var(--text2)} .badge-lainnya .badge-dot{background:var(--text3)}
+
+    .two-line .primary{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
+    .two-line .secondary{font-size:12px;color:var(--text3);margin-top:1px}
+
+    .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap}
+
+    .empty-state{padding:60px 20px;text-align:center}
+    .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
+    .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
+    .empty-sub{font-size:13px;color:var(--text3)}
+
+    .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
+    .pag-info{font-size:12.5px;color:var(--text3)}
+    .pag-btns{display:flex;gap:4px;align-items:center}
+    .pag-btn{height:32px;min-width:32px;padding:0 8px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none}
+    .pag-btn:hover{background:var(--surface2);border-color:var(--border2)}
+    .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
+    .pag-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
+
+    @media(max-width:640px){
+        .stats-strip{grid-template-columns:1fr}
+        .page{padding:16px}
+        .header-actions{width:100%}
+    }
+</style>
+
+<div class="page">
+
+    {{-- Header --}}
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Izin Keluar Siswa</h1>
+            <p class="page-sub">Kelola dan pantau izin keluar siswa dari sekolah</p>
+        </div>
+        <div class="header-actions">
+            <a href="{{ route('admin.izin-keluar-siswa.create') }}" class="btn btn-primary">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Buat Izin Baru
+            </a>
+            <div class="dropdown" id="exportDropdown">
+                <button type="button" class="btn btn-secondary" onclick="toggleDropdown('exportDropdown')">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Export
+                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="dropdown-menu">
+                    <a href="{{ route('admin.izin-keluar-siswa.export.pdf', request()->query()) }}" class="dropdown-item">
+                        <svg width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        Export PDF
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Stats --}}
+    <div class="stats-strip">
+        <a href="{{ route('admin.izin-keluar-siswa.index') }}" class="stat-card {{ !request('status') ? 'active-filter' : '' }}">
+            <div class="stat-icon blue">
+                <svg width="18" height="18" fill="none" stroke="#1d4ed8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Total Hari Ini</p>
+                <p class="stat-val">{{ $hariIniTotal }}</p>
+                <p class="stat-sub">semua izin</p>
+            </div>
+        </a>
+        <a href="{{ route('admin.izin-keluar-siswa.index', ['status' => 'menunggu']) }}" class="stat-card {{ request('status') === 'menunggu' ? 'active-filter' : '' }}">
+            <div class="stat-icon yellow">
+                <svg width="18" height="18" fill="none" stroke="#a16207" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Menunggu</p>
+                <p class="stat-val">{{ $hariIniMenunggu }}</p>
+                <p class="stat-sub">perlu diproses</p>
+            </div>
+        </a>
+        <a href="{{ route('admin.izin-keluar-siswa.index', ['status' => 'disetujui']) }}" class="stat-card {{ request('status') === 'disetujui' ? 'active-filter' : '' }}">
+            <div class="stat-icon orange">
+                <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Sedang Keluar</p>
+                <p class="stat-val">{{ $hariIniKeluar }}</p>
+                <p class="stat-sub">belum kembali</p>
+            </div>
+        </a>
+    </div>
+
+    {{-- Filter --}}
+    <div class="filter-card">
+        <form method="GET" action="{{ route('admin.izin-keluar-siswa.index') }}">
+            <div class="filter-row">
+                <div class="search-wrap">
+                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                    <input type="text" name="search" class="search-input" placeholder="Cari nama / nomor surat / tujuan…" value="{{ request('search') }}">
+                </div>
+
+                <select name="status">
+                    <option value="">Semua Status</option>
+                    @foreach($statusList as $val => $label)
+                        <option value="{{ $val }}" {{ request('status') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+
+                <select name="kategori">
+                    <option value="">Semua Kategori</option>
+                    @foreach($kategoriList as $val => $label)
+                        <option value="{{ $val }}" {{ request('kategori') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+
+                <input type="date" name="tanggal_dari" value="{{ request('tanggal_dari') }}">
+                <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}">
+
+                <select name="tahun_ajaran_id">
+                    <option value="">Semua Tahun Ajaran</option>
+                    @foreach($tahunAjarans as $ta)
+                        <option value="{{ $ta->id }}" {{ $tahunAjaranId == $ta->id ? 'selected' : '' }}>
+                            {{ $ta->label }}{{ $ta->isAktif() ? ' (Aktif)' : '' }}
+                        </option>
+                    @endforeach
+                </select>
+
+                <div class="filter-sep"></div>
+                <a href="{{ route('admin.izin-keluar-siswa.index') }}" class="btn-reset">Reset</a>
+                <button type="submit" class="btn-filter">Terapkan</button>
+            </div>
+        </form>
+    </div>
+
+    {{-- Table --}}
+    <div class="table-card">
+        <div class="table-topbar">
+            <p class="table-info">
+                Daftar Izin Keluar
+                @if($izins->total() > 0)
+                    <span>— menampilkan {{ $izins->firstItem() }}–{{ $izins->lastItem() }} dari {{ $izins->total() }} data</span>
+                @else
+                    <span>— tidak ada data</span>
+                @endif
+            </p>
+        </div>
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width:48px">#</th>
+                        <th>Siswa</th>
+                        <th>Tanggal</th>
+                        <th>Tujuan / Keperluan</th>
+                        <th class="center">Kategori</th>
+                        <th>Jam Keluar</th>
+                        <th>Jam Kembali</th>
+                        <th class="center">Status</th>
+                        <th>No. Surat</th>
+                        <th class="center" style="width:200px">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($izins as $index => $izin)
+                    <tr>
+                        <td><span class="no-col">{{ $izins->firstItem() + $index }}</span></td>
+
+                        <td>
+                            <div class="two-line">
+                                <p class="primary">{{ $izin->siswa->nama_lengkap ?? '—' }}</p>
+                                <p class="secondary">{{ $izin->siswa->kelas->nama_kelas ?? '—' }}</p>
+                            </div>
+                        </td>
+
+                        <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px;white-space:nowrap">
+                            {{ \Carbon\Carbon::parse($izin->tanggal)->format('d M Y') }}
+                        </td>
+
+                        <td style="font-size:12.5px;color:var(--text2);max-width:180px">
+                            <p style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+                                {{ $izin->tujuan }}
+                            </p>
+                        </td>
+
+                        <td class="center">
+                            @php
+                                $kategoriKey = $izin->kategori ?? 'lainnya';
+                                $allowedBadges = ['keperluan_keluarga','keperluan_sekolah','berobat','lainnya'];
+                                $badgeClass = in_array($kategoriKey, $allowedBadges) ? 'badge-'.$kategoriKey : 'badge-lainnya';
+                            @endphp
+                            <span class="badge {{ $badgeClass }}">
+                                <span class="badge-dot"></span>
+                                {{ $kategoriList[$izin->kategori] ?? ucfirst($izin->kategori) }}
+                            </span>
+                        </td>
+
+                        <td class="muted" style="font-size:13px;white-space:nowrap">
+                            {{ $izin->jam_keluar ? \Carbon\Carbon::parse($izin->jam_keluar)->format('H:i') : '—' }}
+                        </td>
+
+                        <td class="muted" style="font-size:13px;white-space:nowrap">
+                            @if($izin->jam_kembali_aktual)
+                                <span style="color:var(--text);font-weight:600">{{ \Carbon\Carbon::parse($izin->jam_kembali_aktual)->format('H:i') }}</span>
+                                <span style="font-size:11px;display:block;color:var(--text3)">aktual</span>
+                            @elseif($izin->jam_kembali)
+                                {{ \Carbon\Carbon::parse($izin->jam_kembali)->format('H:i') }}
+                                <span style="font-size:11px;display:block;color:var(--text3)">rencana</span>
+                            @else
+                                —
+                            @endif
+                        </td>
+
+                        <td class="center">
+                            <span class="badge badge-{{ $izin->status }}">
+                                <span class="badge-dot"></span>
+                                {{ $statusList[$izin->status] ?? ucfirst($izin->status) }}
+                            </span>
+                        </td>
+
+                        <td style="font-size:12px;color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600">
+                            {{ $izin->nomor_surat ?? '—' }}
+                        </td>
+
+                        <td class="center">
+                            <div class="action-group">
+                                <a href="{{ route('admin.izin-keluar-siswa.show', $izin->id) }}" class="btn btn-sm btn-detail">Detail</a>
+
+                                @if($izin->status === 'menunggu')
+                                    <a href="{{ route('admin.izin-keluar-siswa.edit', $izin->id) }}" class="btn btn-sm btn-edit">Edit</a>
+                                @endif
+
+                                @if(in_array($izin->status, ['disetujui', 'sudah_kembali']))
+                                    <a href="{{ route('admin.izin-keluar-siswa.cetak-surat', $izin->id) }}" target="_blank"
+                                       class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa">
+                                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                                        Cetak
+                                    </a>
+                                @endif
+
+                                <form action="{{ route('admin.izin-keluar-siswa.destroy', $izin->id) }}" method="POST"
+                                      id="delIzin-{{ $izin->id }}" style="display:inline">
+                                    @csrf @method('DELETE')
+                                    <button type="button" class="btn btn-sm btn-del"
+                                        onclick="confirmDelete(
+                                            document.getElementById('delIzin-{{ $izin->id }}'),
+                                            '{{ addslashes($izin->siswa->nama_lengkap ?? '') }}',
+                                            '{{ \Carbon\Carbon::parse($izin->tanggal)->format('d M Y') }}'
+                                        )">
+                                        Hapus
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr>
+                        <td colspan="10">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+                                </div>
+                                <p class="empty-title">Belum ada data izin keluar</p>
+                                <p class="empty-sub">Coba ubah filter atau buat izin keluar baru</p>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        {{-- Pagination --}}
+        @if($izins->hasPages())
+        <div class="pag-wrap">
+            <p class="pag-info">Menampilkan {{ $izins->firstItem() }} – {{ $izins->lastItem() }} dari {{ $izins->total() }} izin</p>
+            <div class="pag-btns">
+                @if($izins->onFirstPage())
+                    <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                @else
+                    <a href="{{ $izins->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                @endif
+
+                @foreach($izins->getUrlRange(1, $izins->lastPage()) as $page => $url)
+                    @if($page == $izins->currentPage())
+                        <span class="pag-btn active">{{ $page }}</span>
+                    @elseif($page == 1 || $page == $izins->lastPage() || abs($page - $izins->currentPage()) <= 1)
+                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
+                    @elseif(abs($page - $izins->currentPage()) == 2)
+                        <span class="pag-ellipsis">…</span>
+                    @endif
+                @endforeach
+
+                @if($izins->hasMorePages())
+                    <a href="{{ $izins->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                @else
+                    <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                @endif
+            </div>
+        </div>
+        @endif
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+@if(session('success'))
+Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+@endif
+@if(session('error'))
+Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+@endif
+@if($errors->any())
+Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
+@endif
+
+function confirmDelete(form, nama, tanggal) {
+    Swal.fire({
+        title: 'Hapus Izin?',
+        html: `Izin keluar <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal',
+    }).then(r => { if (r.isConfirmed) form.submit(); });
+}
+
+function toggleDropdown(id) {
+    const el = document.getElementById(id);
+    const isOpen = el.classList.contains('open');
+    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    if (!isOpen) el.classList.add('open');
+}
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    }
+});
+</script>
+</x-app-layout>
