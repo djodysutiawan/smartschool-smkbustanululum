@@ -1,42 +1,58 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-
-use App\Http\Controllers\Admin\UserController;
-use App\Http\Controllers\Admin\TahunAjaranController;
+use App\Http\Controllers\Admin\AbsensiController;
+use App\Http\Controllers\Admin\AbsensiGuruController;
+use App\Http\Controllers\Admin\AbsensiGuruPiketController;
+use App\Http\Controllers\Admin\AgendaSekolahController;
+use App\Http\Controllers\Admin\BeritaKategoriController;
+use App\Http\Controllers\Admin\BeritaPublikController;
+use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\GaleriFotoController;
+use App\Http\Controllers\Admin\GaleriKategoriController;
+use App\Http\Controllers\Admin\GaleriVideoController;
 use App\Http\Controllers\Admin\GedungController;
-use App\Http\Controllers\Admin\RuangController;
-use App\Http\Controllers\Admin\KelasController;
-use App\Http\Controllers\Admin\MataPelajaranController;
 use App\Http\Controllers\Admin\GuruController;
-use App\Http\Controllers\Admin\SiswaController;
-use App\Http\Controllers\Admin\OrangTuaController;
-use App\Http\Controllers\Admin\KetersediaanGuruController;
+use App\Http\Controllers\Admin\IzinKeluarSiswaController;
 use App\Http\Controllers\Admin\JadwalPelajaranController;
 use App\Http\Controllers\Admin\JadwalPiketGuruController;
-use App\Http\Controllers\Admin\LogPiketController;
-use App\Http\Controllers\Admin\MateriController;
-use App\Http\Controllers\Admin\TugasController;
-use App\Http\Controllers\Admin\PengumpulanTugasController;
-use App\Http\Controllers\Admin\UjianController;
-use App\Http\Controllers\Admin\NilaiController;
 use App\Http\Controllers\Admin\JurnalMengajarController;
-use App\Http\Controllers\Admin\AbsensiController;
-use App\Http\Controllers\Admin\SesiQrController;
-use App\Http\Controllers\Admin\RiwayatScanController;
+use App\Http\Controllers\Admin\JurusanController;
+use App\Http\Controllers\Admin\JurusanFasilitasController;
+use App\Http\Controllers\Admin\JurusanKompetensiController;
+use App\Http\Controllers\Admin\JurusanKurikulumController;
+use App\Http\Controllers\Admin\JurusanProspekKerjaController;
 use App\Http\Controllers\Admin\KategoriPelanggaranController;
-use App\Http\Controllers\Admin\PelanggaranController;
-use App\Http\Controllers\Admin\NotifikasiController;
-use App\Http\Controllers\Admin\PengumumanController;
-use App\Http\Controllers\Admin\ReportController;
-use App\Http\Controllers\Admin\SoalUjianController;
-use App\Http\Controllers\Admin\SesiUjianController;
-use App\Http\Controllers\Admin\AbsensiGuruPiketController;
-use App\Http\Controllers\Admin\SesiQrGuruController;
-use App\Http\Controllers\Admin\AbsensiGuruController;
+use App\Http\Controllers\Admin\KelasController;
+use App\Http\Controllers\Admin\KetersediaanGuruController;
+use App\Http\Controllers\Admin\KontakPesanController;
 use App\Http\Controllers\Admin\LaporanHarianPiketController;
-use App\Http\Controllers\Admin\IzinKeluarSiswaController;
-use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\LinkCepatController;
+use App\Http\Controllers\Admin\LogPiketController;
+use App\Http\Controllers\Admin\MataPelajaranController;
+use App\Http\Controllers\Admin\MateriController;
+use App\Http\Controllers\Admin\NilaiController;
+use App\Http\Controllers\Admin\NotifikasiController;
+use App\Http\Controllers\Admin\OrangTuaController;
+use App\Http\Controllers\Admin\PelanggaranController;
+use App\Http\Controllers\Admin\PengumpulanTugasController;
+use App\Http\Controllers\Admin\PengumumanController;
+use App\Http\Controllers\Admin\PrestasiController;
+use App\Http\Controllers\Admin\ProfilSekolahController;
+use App\Http\Controllers\Admin\ReportController;
+use App\Http\Controllers\Admin\RiwayatScanController;
+use App\Http\Controllers\Admin\RuangController;
+use App\Http\Controllers\Admin\SesiQrController;
+use App\Http\Controllers\Admin\SesiQrGuruController;
+use App\Http\Controllers\Admin\SesiUjianController;
+use App\Http\Controllers\Admin\SiswaController;
+use App\Http\Controllers\Admin\SliderBerandaController;
+use App\Http\Controllers\Admin\SoalUjianController;
+use App\Http\Controllers\Admin\TahunAjaranController;
+use App\Http\Controllers\Admin\TugasController;
+use App\Http\Controllers\Admin\UjianController;
+use App\Http\Controllers\Admin\UserController;
+use Illuminate\Support\Facades\Route;
+
 
 Route::prefix('admin')
     ->middleware(['auth', 'role:admin'])
@@ -591,6 +607,205 @@ Route::prefix('admin')
             Route::patch('/{izinKeluarSiswa}/tolak',       [IzinKeluarSiswaController::class, 'tolak'])->name('tolak');
             Route::patch('/{izinKeluarSiswa}/catat-kembali', [IzinKeluarSiswaController::class, 'catatKembali'])->name('catat-kembali');
             Route::get('/{izinKeluarSiswa}/cetak-surat',   [IzinKeluarSiswaController::class, 'cetakSurat'])->name('cetak-surat');
+        });
+
+         // ── Profil Sekolah (single-row, tidak perlu index/show/destroy) ────────
+        Route::prefix('profil-sekolah')->name('profil-sekolah.')->group(function () {
+            Route::get('/edit',  [ProfilSekolahController::class, 'edit'])->name('edit');
+            Route::put('/',      [ProfilSekolahController::class, 'update'])->name('update');
+        });
+ 
+        // ── Jurusan ────────────────────────────────────────────────────────────
+        Route::prefix('jurusan')->name('jurusan.')->group(function () {
+            Route::get('/export/pdf',              [JurusanController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',            [JurusanController::class, 'exportExcel'])->name('export.excel');
+            Route::post('/reorder',                [JurusanController::class, 'reorder'])->name('reorder');
+            Route::get('/',                        [JurusanController::class, 'index'])->name('index');
+            Route::get('/create',                  [JurusanController::class, 'create'])->name('create');
+            Route::post('/',                       [JurusanController::class, 'store'])->name('store');
+            Route::get('/{jurusan}',               [JurusanController::class, 'show'])->name('show');
+            Route::get('/{jurusan}/edit',          [JurusanController::class, 'edit'])->name('edit');
+            Route::put('/{jurusan}',               [JurusanController::class, 'update'])->name('update');
+            Route::delete('/{jurusan}',            [JurusanController::class, 'destroy'])->name('destroy');
+            Route::patch('/{jurusan}/toggle-publish', [JurusanController::class, 'togglePublish'])->name('toggle-publish');
+            Route::patch('/{jurusan}/toggle-penerimaan', [JurusanController::class, 'togglePenerimaan'])->name('toggle-penerimaan');
+ 
+            // ── Detail Jurusan (nested) ────────────────────────────────────────
+ 
+            // Kurikulum
+            Route::prefix('/{jurusan}/kurikulum')->name('kurikulum.')->group(function () {
+                Route::post('/reorder',            [JurusanKurikulumController::class, 'reorder'])->name('reorder');
+                Route::get('/',                    [JurusanKurikulumController::class, 'index'])->name('index');
+                Route::post('/',                   [JurusanKurikulumController::class, 'store'])->name('store');
+                Route::put('/{kurikulum}',         [JurusanKurikulumController::class, 'update'])->name('update');
+                Route::delete('/{kurikulum}',      [JurusanKurikulumController::class, 'destroy'])->name('destroy');
+            });
+ 
+            // Kompetensi
+            Route::prefix('/{jurusan}/kompetensi')->name('kompetensi.')->group(function () {
+                Route::post('/reorder',            [JurusanKompetensiController::class, 'reorder'])->name('reorder');
+                Route::get('/',                    [JurusanKompetensiController::class, 'index'])->name('index');
+                Route::post('/',                   [JurusanKompetensiController::class, 'store'])->name('store');
+                Route::put('/{kompetensi}',        [JurusanKompetensiController::class, 'update'])->name('update');
+                Route::delete('/{kompetensi}',     [JurusanKompetensiController::class, 'destroy'])->name('destroy');
+            });
+ 
+            // Prospek Kerja
+            Route::prefix('/{jurusan}/prospek-kerja')->name('prospek-kerja.')->group(function () {
+                Route::post('/reorder',            [JurusanProspekKerjaController::class, 'reorder'])->name('reorder');
+                Route::get('/',                    [JurusanProspekKerjaController::class, 'index'])->name('index');
+                Route::post('/',                   [JurusanProspekKerjaController::class, 'store'])->name('store');
+                Route::put('/{prospek}',           [JurusanProspekKerjaController::class, 'update'])->name('update');
+                Route::delete('/{prospek}',        [JurusanProspekKerjaController::class, 'destroy'])->name('destroy');
+            });
+ 
+            // Fasilitas
+            Route::prefix('/{jurusan}/fasilitas')->name('fasilitas.')->group(function () {
+                Route::post('/reorder',            [JurusanFasilitasController::class, 'reorder'])->name('reorder');
+                Route::get('/',                    [JurusanFasilitasController::class, 'index'])->name('index');
+                Route::post('/',                   [JurusanFasilitasController::class, 'store'])->name('store');
+                Route::put('/{fasilitas}',         [JurusanFasilitasController::class, 'update'])->name('update');
+                Route::delete('/{fasilitas}',      [JurusanFasilitasController::class, 'destroy'])->name('destroy');
+            });
+        });
+ 
+        // ── Berita Kategori ────────────────────────────────────────────────────
+        Route::prefix('berita-kategori')->name('berita-kategori.')->group(function () {
+            Route::post('/reorder',                    [BeritaKategoriController::class, 'reorder'])->name('reorder');
+            Route::get('/',                            [BeritaKategoriController::class, 'index'])->name('index');
+            Route::get('/create',                      [BeritaKategoriController::class, 'create'])->name('create');
+            Route::post('/',                           [BeritaKategoriController::class, 'store'])->name('store');
+            Route::get('/{beritaKategori}/edit',       [BeritaKategoriController::class, 'edit'])->name('edit');
+            Route::put('/{beritaKategori}',            [BeritaKategoriController::class, 'update'])->name('update');
+            Route::delete('/{beritaKategori}',         [BeritaKategoriController::class, 'destroy'])->name('destroy');
+            Route::patch('/{beritaKategori}/toggle',   [BeritaKategoriController::class, 'togglePublish'])->name('toggle');
+        });
+ 
+        // ── Berita Publik ──────────────────────────────────────────────────────
+        Route::prefix('berita')->name('berita.')->group(function () {
+            Route::get('/export/pdf',              [BeritaPublikController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',            [BeritaPublikController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/',                        [BeritaPublikController::class, 'index'])->name('index');
+            Route::get('/create',                  [BeritaPublikController::class, 'create'])->name('create');
+            Route::post('/',                       [BeritaPublikController::class, 'store'])->name('store');
+            Route::get('/{berita}',                [BeritaPublikController::class, 'show'])->name('show');
+            Route::get('/{berita}/edit',           [BeritaPublikController::class, 'edit'])->name('edit');
+            Route::put('/{berita}',                [BeritaPublikController::class, 'update'])->name('update');
+            Route::delete('/{berita}',             [BeritaPublikController::class, 'destroy'])->name('destroy');
+            Route::patch('/{berita}/publish',      [BeritaPublikController::class, 'publish'])->name('publish');
+            Route::patch('/{berita}/unpublish',    [BeritaPublikController::class, 'unpublish'])->name('unpublish');
+            Route::patch('/{berita}/toggle-featured', [BeritaPublikController::class, 'toggleFeatured'])->name('toggle-featured');
+        });
+ 
+        // ── Agenda Sekolah ─────────────────────────────────────────────────────
+        Route::prefix('agenda')->name('agenda.')->group(function () {
+            Route::get('/export/pdf',              [AgendaSekolahController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',            [AgendaSekolahController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/kalender',                [AgendaSekolahController::class, 'kalender'])->name('kalender');
+            Route::get('/',                        [AgendaSekolahController::class, 'index'])->name('index');
+            Route::get('/create',                  [AgendaSekolahController::class, 'create'])->name('create');
+            Route::post('/',                       [AgendaSekolahController::class, 'store'])->name('store');
+            Route::get('/{agenda}',                [AgendaSekolahController::class, 'show'])->name('show');
+            Route::get('/{agenda}/edit',           [AgendaSekolahController::class, 'edit'])->name('edit');
+            Route::put('/{agenda}',                [AgendaSekolahController::class, 'update'])->name('update');
+            Route::delete('/{agenda}',             [AgendaSekolahController::class, 'destroy'])->name('destroy');
+            Route::patch('/{agenda}/toggle',       [AgendaSekolahController::class, 'togglePublish'])->name('toggle');
+        });
+ 
+        // ── Slider Beranda ─────────────────────────────────────────────────────
+        Route::prefix('slider')->name('slider.')->group(function () {
+            Route::post('/reorder',                [SliderBerandaController::class, 'reorder'])->name('reorder');
+            Route::get('/',                        [SliderBerandaController::class, 'index'])->name('index');
+            Route::get('/create',                  [SliderBerandaController::class, 'create'])->name('create');
+            Route::post('/',                       [SliderBerandaController::class, 'store'])->name('store');
+            Route::get('/{slider}/edit',           [SliderBerandaController::class, 'edit'])->name('edit');
+            Route::put('/{slider}',                [SliderBerandaController::class, 'update'])->name('update');
+            Route::delete('/{slider}',             [SliderBerandaController::class, 'destroy'])->name('destroy');
+            Route::patch('/{slider}/toggle',       [SliderBerandaController::class, 'togglePublish'])->name('toggle');
+        });
+ 
+        // ── Link Cepat ─────────────────────────────────────────────────────────
+        Route::prefix('link-cepat')->name('link-cepat.')->group(function () {
+            Route::post('/reorder',                [LinkCepatController::class, 'reorder'])->name('reorder');
+            Route::get('/',                        [LinkCepatController::class, 'index'])->name('index');
+            Route::get('/create',                  [LinkCepatController::class, 'create'])->name('create');
+            Route::post('/',                       [LinkCepatController::class, 'store'])->name('store');
+            Route::get('/{linkCepat}/edit',        [LinkCepatController::class, 'edit'])->name('edit');
+            Route::put('/{linkCepat}',             [LinkCepatController::class, 'update'])->name('update');
+            Route::delete('/{linkCepat}',          [LinkCepatController::class, 'destroy'])->name('destroy');
+            Route::patch('/{linkCepat}/toggle',    [LinkCepatController::class, 'togglePublish'])->name('toggle');
+        });
+ 
+        // ── Galeri Kategori ────────────────────────────────────────────────────
+        Route::prefix('galeri/kategori')->name('galeri.kategori.')->group(function () {
+            Route::post('/reorder',                        [GaleriKategoriController::class, 'reorder'])->name('reorder');
+            Route::get('/',                                [GaleriKategoriController::class, 'index'])->name('index');
+            Route::get('/create',                          [GaleriKategoriController::class, 'create'])->name('create');
+            Route::post('/',                               [GaleriKategoriController::class, 'store'])->name('store');
+            Route::get('/{galeriKategori}/edit',           [GaleriKategoriController::class, 'edit'])->name('edit');
+            Route::put('/{galeriKategori}',                [GaleriKategoriController::class, 'update'])->name('update');
+            Route::delete('/{galeriKategori}',             [GaleriKategoriController::class, 'destroy'])->name('destroy');
+            Route::patch('/{galeriKategori}/toggle',       [GaleriKategoriController::class, 'togglePublish'])->name('toggle');
+        });
+ 
+        // ── Galeri Foto ────────────────────────────────────────────────────────
+        Route::prefix('galeri/foto')->name('galeri.foto.')->group(function () {
+            Route::get('/export/pdf',              [GaleriFotoController::class, 'exportPdf'])->name('export.pdf');
+            Route::post('/reorder',                [GaleriFotoController::class, 'reorder'])->name('reorder');
+            Route::post('/bulk-upload',            [GaleriFotoController::class, 'bulkUpload'])->name('bulk-upload');
+            Route::delete('/bulk-delete',          [GaleriFotoController::class, 'bulkDelete'])->name('bulk-delete');
+            Route::get('/',                        [GaleriFotoController::class, 'index'])->name('index');
+            Route::get('/create',                  [GaleriFotoController::class, 'create'])->name('create');
+            Route::post('/',                       [GaleriFotoController::class, 'store'])->name('store');
+            Route::get('/{galeriFoto}/edit',       [GaleriFotoController::class, 'edit'])->name('edit');
+            Route::put('/{galeriFoto}',            [GaleriFotoController::class, 'update'])->name('update');
+            Route::delete('/{galeriFoto}',         [GaleriFotoController::class, 'destroy'])->name('destroy');
+            Route::patch('/{galeriFoto}/toggle',   [GaleriFotoController::class, 'togglePublish'])->name('toggle');
+            Route::patch('/{galeriFoto}/featured', [GaleriFotoController::class, 'toggleFeatured'])->name('featured');
+        });
+ 
+        // ── Galeri Video ───────────────────────────────────────────────────────
+        Route::prefix('galeri/video')->name('galeri.video.')->group(function () {
+            Route::get('/export/pdf',              [GaleriVideoController::class, 'exportPdf'])->name('export.pdf');
+            Route::post('/reorder',                [GaleriVideoController::class, 'reorder'])->name('reorder');
+            Route::post('/parse-url',              [GaleriVideoController::class, 'parseUrl'])->name('parse-url');  // AJAX: extract YouTube ID + thumbnail
+            Route::get('/',                        [GaleriVideoController::class, 'index'])->name('index');
+            Route::get('/create',                  [GaleriVideoController::class, 'create'])->name('create');
+            Route::post('/',                       [GaleriVideoController::class, 'store'])->name('store');
+            Route::get('/{galeriVideo}/edit',      [GaleriVideoController::class, 'edit'])->name('edit');
+            Route::put('/{galeriVideo}',           [GaleriVideoController::class, 'update'])->name('update');
+            Route::delete('/{galeriVideo}',        [GaleriVideoController::class, 'destroy'])->name('destroy');
+            Route::patch('/{galeriVideo}/toggle',  [GaleriVideoController::class, 'togglePublish'])->name('toggle');
+            Route::patch('/{galeriVideo}/featured',[GaleriVideoController::class, 'toggleFeatured'])->name('featured');
+        });
+ 
+        // ── Prestasi ───────────────────────────────────────────────────────────
+        Route::prefix('prestasi')->name('prestasi.')->group(function () {
+            Route::get('/export/pdf',              [PrestasiController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',            [PrestasiController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/',                        [PrestasiController::class, 'index'])->name('index');
+            Route::get('/create',                  [PrestasiController::class, 'create'])->name('create');
+            Route::post('/',                       [PrestasiController::class, 'store'])->name('store');
+            Route::get('/{prestasi}',              [PrestasiController::class, 'show'])->name('show');
+            Route::get('/{prestasi}/edit',         [PrestasiController::class, 'edit'])->name('edit');
+            Route::put('/{prestasi}',              [PrestasiController::class, 'update'])->name('update');
+            Route::delete('/{prestasi}',           [PrestasiController::class, 'destroy'])->name('destroy');
+            Route::patch('/{prestasi}/toggle',     [PrestasiController::class, 'togglePublish'])->name('toggle');
+            Route::patch('/{prestasi}/featured',   [PrestasiController::class, 'toggleFeatured'])->name('featured');
+        });
+ 
+        // ── Kontak Pesan Masuk ─────────────────────────────────────────────────
+        Route::prefix('kontak-pesan')->name('kontak-pesan.')->group(function () {
+            Route::get('/export/pdf',              [KontakPesanController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',            [KontakPesanController::class, 'exportExcel'])->name('export.excel');
+            Route::delete('/bulk-delete',          [KontakPesanController::class, 'bulkDelete'])->name('bulk-delete');
+            Route::patch('/mark-all-read',         [KontakPesanController::class, 'markAllRead'])->name('mark-all-read');
+            Route::get('/',                        [KontakPesanController::class, 'index'])->name('index');
+            Route::get('/{kontakPesan}',           [KontakPesanController::class, 'show'])->name('show');
+            Route::delete('/{kontakPesan}',        [KontakPesanController::class, 'destroy'])->name('destroy');
+            Route::patch('/{kontakPesan}/baca',    [KontakPesanController::class, 'markAsRead'])->name('baca');
+            Route::patch('/{kontakPesan}/arsip',   [KontakPesanController::class, 'arsip'])->name('arsip');
+            Route::patch('/{kontakPesan}/balas',   [KontakPesanController::class, 'tandaiDibalas'])->name('balas');
         });
 
     });
