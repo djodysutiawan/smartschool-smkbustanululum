@@ -168,11 +168,11 @@
     </a>
 
     <nav class="hidden md:flex items-center gap-0.5">
-      <a href="{{ url('/') }}"           class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Beranda</a>
-      <a href="{{ url('/ppdb') }}"       class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">PPDB</a>
-      <a href="{{ url('/elearning') }}"  class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">E-Learning</a>
-      <a href="#"                        class="nl text-white font-semibold text-sm px-3 py-2 rounded-lg bg-white/10 transition-all">Cek Nilai</a>
-      <a href="{{ url('/') }}#kontak"    class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Kontak</a>
+      <a href="{{ url('/ppdb') }}"      class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all {{ request()->is('ppdb*') ? 'bg-white/15 text-white border border-white/25' : '' }}">PPDB</a>
+      <a href="{{ url('/elearning') }}" class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all {{ request()->is('elearning*') ? 'bg-white/15 text-white border border-white/25' : '' }}">E-Learning</a>
+      <a href="{{ url('/nilai') }}"     class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all {{ request()->is('nilai*') ? 'bg-white/15 text-white border border-white/25' : '' }}">Nilai</a>
+      <a href="{{ url('/absensi') }}"   class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all {{ request()->is('absensi*') ? 'bg-white/15 text-white border border-white/25' : '' }}">Absensi</a>
+      <a href="{{ url('/') }}#kontak"   class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Kontak</a>
     </nav>
 
     <a href="{{ route('login') }}" class="ncta hidden md:inline-flex items-center gap-1.5 text-sm font-semibold font-display text-white border border-white/30 hover:border-white/60 hover:bg-white/12 px-5 py-2 rounded-xl transition-all duration-200">

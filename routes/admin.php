@@ -803,9 +803,11 @@ Route::prefix('admin')
             Route::get('/',                        [KontakPesanController::class, 'index'])->name('index');
             Route::get('/{kontakPesan}',           [KontakPesanController::class, 'show'])->name('show');
             Route::delete('/{kontakPesan}',        [KontakPesanController::class, 'destroy'])->name('destroy');
-            Route::patch('/{kontakPesan}/baca',    [KontakPesanController::class, 'markAsRead'])->name('baca');
+            // Route::patch('/{kontakPesan}/baca',    [KontakPesanController::class, 'markAsRead'])->name('baca');
             Route::patch('/{kontakPesan}/arsip',   [KontakPesanController::class, 'arsip'])->name('arsip');
-            Route::patch('/{kontakPesan}/balas',   [KontakPesanController::class, 'tandaiDibalas'])->name('balas');
+            // Route::patch('/{kontakPesan}/balas',   [KontakPesanController::class, 'tandaiDibalas'])->name('balas');
+            Route::patch('/{kontakPesan}/baca',  [KontakPesanController::class, 'markAsRead'])->name('mark-as-read');  // was: baca
+            Route::patch('/{kontakPesan}/balas', [KontakPesanController::class, 'tandaiDibalas'])->name('tandai-dibalas'); // was: balas
         });
 
     });

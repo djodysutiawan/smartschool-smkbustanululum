@@ -175,14 +175,18 @@
     </a>
 
     {{-- Desktop links --}}
-    <nav class="hidden md:flex items-center gap-0.5">
-      <a href="{{ url('/') }}" class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Beranda</a>
-      <a href="{{ url('/') }}#jurusan" class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Jurusan</a>
-      <a href="{{ url('/') }}#berita" class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Berita</a>
-      <a href="{{ url('/') }}#prestasi" class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Prestasi</a>
-      <a href="{{ url('/') }}#galeri" class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Galeri</a>
-      <a href="{{ url('/') }}#kontak" class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Kontak</a>
-    </nav>
+  <nav class="hidden md:flex items-center gap-0.5">
+    <a href="{{ url('/ppdb') }}" 
+      class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all {{ request()->is('ppdb') ? 'bg-white/15 text-white border border-white/25' : '' }}">PPDB</a>
+    <a href="{{ url('/elearning') }}" 
+      class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all {{ request()->is('elearning') ? 'bg-white/15 text-white border border-white/25' : '' }}">E-Learning</a>
+    <a href="{{ url('/nilai') }}" 
+      class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all {{ request()->is('nilai') ? 'bg-white/15 text-white border border-white/25' : '' }}">Nilai</a>
+    <a href="{{ url('/absensi') }}" 
+      class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all {{ request()->is('absensi') ? 'bg-white/15 text-white border border-white/25' : '' }}">Absensi</a>
+    <a href="{{ url('/') }}#kontak" 
+      class="nl text-white/75 hover:text-white text-sm px-3 py-2 rounded-lg hover:bg-white/10 transition-all">Kontak</a>
+  </nav>
 
     {{-- CTA --}}
     <a href="{{ route('login') }}" class="ncta hidden md:inline-flex items-center gap-1.5 text-sm font-semibold font-display text-white border border-white/30 hover:border-white/60 hover:bg-white/12 px-5 py-2 rounded-xl transition-all duration-200">
