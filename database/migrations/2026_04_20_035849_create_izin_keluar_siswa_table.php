@@ -11,7 +11,6 @@ return new class extends Migration
      */
     public function up(): void
     {
-
         Schema::create('izin_keluar_siswa', function (Blueprint $table) {
             $table->id();
  

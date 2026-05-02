@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Kelas extends Model
 {
@@ -12,7 +13,7 @@ class Kelas extends Model
     protected $table = 'kelas';
 
     protected $fillable = [
-        'nama_kelas', 'tingkat', 'jurusan', 'kode_kelas',
+        'nama_kelas', 'tingkat', 'jurusan_id', 'kode_kelas',
         'wali_kelas_id', 'ruang_id', 'tahun_ajaran_id', 'kapasitas_maks', 'status',
     ];
 
@@ -36,17 +37,22 @@ class Kelas extends Model
         return $this->siswa()->count() >= $this->kapasitas_maks;
     }
 
-    public function waliKelas()
+    public function jurusan(): BelongsTo
+    {
+        return $this->belongsTo(Jurusan::class);
+    }
+
+    public function waliKelas(): BelongsTo
     {
         return $this->belongsTo(Guru::class, 'wali_kelas_id');
     }
 
-    public function ruang()
+    public function ruang(): BelongsTo
     {
         return $this->belongsTo(Ruang::class);
     }
 
-    public function tahunAjaran()
+    public function tahunAjaran(): BelongsTo
     {
         return $this->belongsTo(TahunAjaran::class);
     }

@@ -84,6 +84,7 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
         @csrf @method('PUT')
         <div class="form-layout">
             <div style="display:flex;flex-direction:column;gap:20px;">
+
                 {{-- Informasi Dasar --}}
                 <div class="form-card">
                     <div class="form-card-header">
@@ -94,44 +95,59 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">Nama Jurusan <span class="req">*</span></label>
-                                <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama', $jurusan->nama) }}" required>
+                                <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror"
+                                    value="{{ old('nama', $jurusan->nama) }}"
+                                    placeholder="cth. Teknik Komputer dan Jaringan" required>
                                 @error('nama')<span class="form-error">{{ $message }}</span>@enderror
                             </div>
                             <div class="form-grid form-grid-2">
                                 <div class="form-group">
                                     <label class="form-label">Singkatan</label>
-                                    <input type="text" name="singkatan" class="form-control" value="{{ old('singkatan', $jurusan->singkatan) }}">
+                                    <input type="text" name="singkatan" class="form-control"
+                                        value="{{ old('singkatan', $jurusan->singkatan) }}"
+                                        placeholder="cth. TKJ">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Kode Jurusan</label>
-                                    <input type="text" name="kode_jurusan" class="form-control" value="{{ old('kode_jurusan', $jurusan->kode_jurusan) }}">
+                                    <input type="text" name="kode_jurusan" class="form-control"
+                                        value="{{ old('kode_jurusan', $jurusan->kode_jurusan) }}"
+                                        placeholder="cth. TKJ-01">
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Bidang Keahlian</label>
-                                <input type="text" name="bidang_keahlian" class="form-control" value="{{ old('bidang_keahlian', $jurusan->bidang_keahlian) }}">
+                                <input type="text" name="bidang_keahlian" class="form-control"
+                                    value="{{ old('bidang_keahlian', $jurusan->bidang_keahlian) }}"
+                                    placeholder="cth. Teknologi Informasi dan Komunikasi">
                             </div>
                             <div class="form-grid form-grid-2">
                                 <div class="form-group">
                                     <label class="form-label">Program Keahlian</label>
-                                    <input type="text" name="program_keahlian" class="form-control" value="{{ old('program_keahlian', $jurusan->program_keahlian) }}">
+                                    <input type="text" name="program_keahlian" class="form-control"
+                                        value="{{ old('program_keahlian', $jurusan->program_keahlian) }}"
+                                        placeholder="cth. Teknik Komputer dan Informatika">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Kompetensi Keahlian</label>
-                                    <input type="text" name="kompetensi_keahlian" class="form-control" value="{{ old('kompetensi_keahlian', $jurusan->kompetensi_keahlian) }}">
+                                    <input type="text" name="kompetensi_keahlian" class="form-control"
+                                        value="{{ old('kompetensi_keahlian', $jurusan->kompetensi_keahlian) }}"
+                                        placeholder="cth. Teknik Komputer dan Jaringan">
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Deskripsi Singkat</label>
-                                <textarea name="deskripsi_singkat" class="form-control" rows="2">{{ old('deskripsi_singkat', $jurusan->deskripsi_singkat) }}</textarea>
+                                <textarea name="deskripsi_singkat" class="form-control" rows="2"
+                                    placeholder="cth. Jurusan TKJ mempelajari instalasi jaringan, keamanan sistem, dan pemrograman dasar...">{{ old('deskripsi_singkat', $jurusan->deskripsi_singkat) }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Deskripsi Lengkap</label>
-                                <textarea name="deskripsi_lengkap" class="form-control" rows="4">{{ old('deskripsi_lengkap', $jurusan->deskripsi_lengkap) }}</textarea>
+                                <textarea name="deskripsi_lengkap" class="form-control" rows="4"
+                                    placeholder="cth. Jurusan Teknik Komputer dan Jaringan (TKJ) membekali siswa dengan kemampuan...">{{ old('deskripsi_lengkap', $jurusan->deskripsi_lengkap) }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Tujuan Jurusan</label>
-                                <textarea name="tujuan_jurusan" class="form-control" rows="3">{{ old('tujuan_jurusan', $jurusan->tujuan_jurusan) }}</textarea>
+                                <textarea name="tujuan_jurusan" class="form-control" rows="3"
+                                    placeholder="cth. Mencetak tenaga ahli di bidang jaringan komputer yang siap kerja dan berwirausaha...">{{ old('tujuan_jurusan', $jurusan->tujuan_jurusan) }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -147,27 +163,36 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                         <div class="form-grid form-grid-2">
                             <div class="form-group">
                                 <label class="form-label">Lama Belajar (Tahun)</label>
-                                <input type="number" name="lama_belajar" class="form-control" value="{{ old('lama_belajar', $jurusan->lama_belajar) }}" min="1" max="6">
+                                <input type="number" name="lama_belajar" class="form-control"
+                                    value="{{ old('lama_belajar', $jurusan->lama_belajar) }}" min="1" max="6">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Akreditasi</label>
-                                <input type="text" name="akreditasi" class="form-control" value="{{ old('akreditasi', $jurusan->akreditasi) }}">
+                                <input type="text" name="akreditasi" class="form-control"
+                                    value="{{ old('akreditasi', $jurusan->akreditasi) }}"
+                                    placeholder="cth. A / B / C">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Kapasitas per Kelas</label>
-                                <input type="number" name="kapasitas_per_kelas" class="form-control" value="{{ old('kapasitas_per_kelas', $jurusan->kapasitas_per_kelas) }}" min="1">
+                                <input type="number" name="kapasitas_per_kelas" class="form-control"
+                                    value="{{ old('kapasitas_per_kelas', $jurusan->kapasitas_per_kelas) }}" min="1" max="50">
+                                <span class="form-hint">Maksimal 50 siswa per kelas.</span>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Jumlah Kelas Aktif</label>
-                                <input type="number" name="jumlah_kelas_aktif" class="form-control" value="{{ old('jumlah_kelas_aktif', $jurusan->jumlah_kelas_aktif) }}" min="0">
+                                <input type="number" name="jumlah_kelas_aktif" class="form-control"
+                                    value="{{ old('jumlah_kelas_aktif', $jurusan->jumlah_kelas_aktif) }}" min="0">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Total Siswa</label>
-                                <input type="number" name="total_siswa" class="form-control" value="{{ old('total_siswa', $jurusan->total_siswa) }}" min="0">
+                                <input type="number" name="total_siswa" class="form-control"
+                                    value="{{ old('total_siswa', $jurusan->total_siswa) }}" min="0">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Urutan Tampil</label>
-                                <input type="number" name="urutan" class="form-control" value="{{ old('urutan', $jurusan->urutan) }}" min="0">
+                                <input type="number" name="urutan" class="form-control"
+                                    value="{{ old('urutan', $jurusan->urutan) }}" min="0">
+                                <span class="form-hint">Kosongkan untuk otomatis</span>
                             </div>
                         </div>
                     </div>
@@ -183,7 +208,9 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">Nama Kepala Jurusan</label>
-                                <input type="text" name="nama_kajur" class="form-control" value="{{ old('nama_kajur', $jurusan->nama_kajur) }}">
+                                <input type="text" name="nama_kajur" class="form-control"
+                                    value="{{ old('nama_kajur', $jurusan->nama_kajur) }}"
+                                    placeholder="cth. Budi Santoso, S.Kom">
                             </div>
                             <div class="form-grid form-grid-2">
                                 <div class="form-group">
@@ -203,7 +230,10 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">atau URL Foto</label>
-                                    <input type="url" name="foto_kajur_url" class="form-control" value="{{ old('foto_kajur_url', $jurusan->foto_kajur_url) }}">
+                                    <input type="url" name="foto_kajur_url" class="form-control"
+                                        value="{{ old('foto_kajur_url', $jurusan->foto_kajur_url) }}"
+                                        placeholder="https://...">
+                                    <span class="form-hint">Dipakai jika tidak upload file</span>
                                 </div>
                             </div>
                         </div>
@@ -213,6 +243,8 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
 
             {{-- Sidebar --}}
             <div style="display:flex;flex-direction:column;gap:16px;">
+
+                {{-- Foto & Logo --}}
                 <div class="form-card">
                     <div class="form-card-header">
                         <div class="form-card-icon"><svg width="15" height="15" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
@@ -235,7 +267,9 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                             <img id="prevCover" class="preview-img" style="display:none">
                             <div class="form-group" style="margin-top:10px;">
                                 <label class="form-label">atau URL Cover</label>
-                                <input type="url" name="foto_cover_url" class="form-control" value="{{ old('foto_cover_url', $jurusan->foto_cover_url) }}">
+                                <input type="url" name="foto_cover_url" class="form-control"
+                                    value="{{ old('foto_cover_url', $jurusan->foto_cover_url) }}"
+                                    placeholder="https://...">
                             </div>
                         </div>
                         <div class="sidebar-section">
@@ -254,12 +288,15 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                             <img id="prevLogo" class="preview-img" style="display:none">
                             <div class="form-group" style="margin-top:10px;">
                                 <label class="form-label">atau URL Logo</label>
-                                <input type="url" name="logo_url" class="form-control" value="{{ old('logo_url', $jurusan->logo_url) }}">
+                                <input type="url" name="logo_url" class="form-control"
+                                    value="{{ old('logo_url', $jurusan->logo_url) }}"
+                                    placeholder="https://...">
                             </div>
                         </div>
                     </div>
                 </div>
 
+                {{-- Pengaturan --}}
                 <div class="form-card">
                     <div class="form-card-header">
                         <div class="form-card-icon"><svg width="15" height="15" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/></svg></div>
@@ -291,10 +328,11 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                     </div>
                 </div>
 
+                {{-- Submit --}}
                 <div style="display:flex;gap:8px;">
                     <a href="{{ route('admin.jurusan.show', $jurusan->id) }}" class="btn btn-secondary" style="flex:1;justify-content:center;">Batal</a>
                     <button type="submit" class="btn btn-primary" style="flex:2;justify-content:center;">
-                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/></svg>
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                         Perbarui Jurusan
                     </button>
                 </div>
@@ -302,6 +340,7 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
         </div>
     </form>
 </div>
+
 <script>
 function previewImg(input, id) {
     const img = document.getElementById(id);

@@ -99,44 +99,44 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">Nama Jurusan <span class="req">*</span></label>
-                                <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama') }}" placeholder="Contoh: Teknik Komputer dan Jaringan" required>
+                                <input type="text" name="nama" class="form-control @error('nama') is-invalid @enderror" value="{{ old('nama') }}" placeholder="cth. Teknik Komputer dan Jaringan" required>
                                 @error('nama')<span class="form-error">{{ $message }}</span>@enderror
                             </div>
                             <div class="form-grid form-grid-2">
                                 <div class="form-group">
                                     <label class="form-label">Singkatan</label>
-                                    <input type="text" name="singkatan" class="form-control" value="{{ old('singkatan') }}" placeholder="TKJ">
+                                    <input type="text" name="singkatan" class="form-control" value="{{ old('singkatan') }}" placeholder="cth. TKJ">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Kode Jurusan</label>
-                                    <input type="text" name="kode_jurusan" class="form-control" value="{{ old('kode_jurusan') }}" placeholder="TKJ-01">
+                                    <input type="text" name="kode_jurusan" class="form-control" value="{{ old('kode_jurusan') }}" placeholder="cth. TKJ-01">
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Bidang Keahlian</label>
-                                <input type="text" name="bidang_keahlian" class="form-control" value="{{ old('bidang_keahlian') }}" placeholder="Teknologi Informasi dan Komunikasi">
+                                <input type="text" name="bidang_keahlian" class="form-control" value="{{ old('bidang_keahlian') }}" placeholder="cth. Teknologi Informasi dan Komunikasi">
                             </div>
                             <div class="form-grid form-grid-2">
                                 <div class="form-group">
                                     <label class="form-label">Program Keahlian</label>
-                                    <input type="text" name="program_keahlian" class="form-control" value="{{ old('program_keahlian') }}" placeholder="Teknik Komputer">
+                                    <input type="text" name="program_keahlian" class="form-control" value="{{ old('program_keahlian') }}" placeholder="cth. Teknik Komputer">
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label">Kompetensi Keahlian</label>
-                                    <input type="text" name="kompetensi_keahlian" class="form-control" value="{{ old('kompetensi_keahlian') }}" placeholder="Teknik Komputer dan Jaringan">
+                                    <input type="text" name="kompetensi_keahlian" class="form-control" value="{{ old('kompetensi_keahlian') }}" placeholder="cth. Teknik Komputer dan Jaringan">
                                 </div>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Deskripsi Singkat</label>
-                                <textarea name="deskripsi_singkat" class="form-control" rows="2" placeholder="Deskripsi singkat jurusan...">{{ old('deskripsi_singkat') }}</textarea>
+                                <textarea name="deskripsi_singkat" class="form-control" rows="2" placeholder="cth. Jurusan TKJ mempelajari instalasi jaringan, keamanan sistem, dan pemrograman dasar...">{{ old('deskripsi_singkat') }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Deskripsi Lengkap</label>
-                                <textarea name="deskripsi_lengkap" class="form-control" rows="4" placeholder="Penjelasan lengkap tentang jurusan...">{{ old('deskripsi_lengkap') }}</textarea>
+                                <textarea name="deskripsi_lengkap" class="form-control" rows="4" placeholder="cth. Jurusan Teknik Komputer dan Jaringan (TKJ) membekali siswa dengan kemampuan...">{{ old('deskripsi_lengkap') }}</textarea>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Tujuan Jurusan</label>
-                                <textarea name="tujuan_jurusan" class="form-control" rows="3" placeholder="Tujuan dan visi jurusan...">{{ old('tujuan_jurusan') }}</textarea>
+                                <textarea name="tujuan_jurusan" class="form-control" rows="3" placeholder="cth. Tujuan dan visi jurusan...">{{ old('tujuan_jurusan') }}</textarea>
                             </div>
                         </div>
                     </div>
@@ -160,7 +160,7 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Kapasitas per Kelas</label>
-                                <input type="number" name="kapasitas_per_kelas" class="form-control" value="{{ old('kapasitas_per_kelas', 36) }}" min="1">
+                                <input type="number" name="kapasitas_per_kelas" class="form-control" value="{{ old('kapasitas_per_kelas', 50) }}" min="1">
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Jumlah Kelas Aktif</label>
@@ -189,7 +189,7 @@ input:checked + .slider-sw:before { transform:translateX(18px); }
                         <div class="form-grid">
                             <div class="form-group">
                                 <label class="form-label">Nama Kepala Jurusan</label>
-                                <input type="text" name="nama_kajur" class="form-control" value="{{ old('nama_kajur') }}" placeholder="Nama lengkap kepala jurusan">
+                                <input type="text" name="nama_kajur" class="form-control" value="{{ old('nama_kajur') }}" placeholder="cth. Budi Santoso, S.Kom">
                             </div>
                             <div class="form-grid form-grid-2">
                                 <div class="form-group">

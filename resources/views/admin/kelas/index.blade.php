@@ -143,6 +143,7 @@
         </div>
     </div>
 
+    {{-- Filter --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.kelas.index') }}">
             <div class="filter-row">
@@ -150,13 +151,24 @@
                 <select name="tahun_ajaran_id">
                     <option value="">Semua Tahun Ajaran</option>
                     @foreach($tahunAjarans as $ta)
-                    <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>{{ $ta->tahun }}</option>
+                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>{{ $ta->tahun }}</option>
                     @endforeach
                 </select>
+
+                {{-- ← BARU: filter jurusan --}}
+                <select name="jurusan_id">
+                    <option value="">Semua Jurusan</option>
+                    @foreach($jurusans as $j)
+                        <option value="{{ $j->id }}" {{ request('jurusan_id') == $j->id ? 'selected' : '' }}>
+                            {{ $j->singkatan ?? $j->nama }}
+                        </option>
+                    @endforeach
+                </select>
+
                 <select name="tingkat">
                     <option value="">Semua Tingkat</option>
                     @foreach(['X','XI','XII'] as $t)
-                    <option value="{{ $t }}" {{ request('tingkat') == $t ? 'selected' : '' }}>Tingkat {{ $t }}</option>
+                        <option value="{{ $t }}" {{ request('tingkat') == $t ? 'selected' : '' }}>Tingkat {{ $t }}</option>
                     @endforeach
                 </select>
                 <select name="status">
@@ -175,7 +187,7 @@
         <div class="table-topbar">
             <p class="table-info">Daftar Kelas
                 @if($kelas->total())
-                <span>— menampilkan {{ $kelas->firstItem() }}–{{ $kelas->lastItem() }} dari {{ $kelas->total() }} data</span>
+                    <span>— menampilkan {{ $kelas->firstItem() }}–{{ $kelas->lastItem() }} dari {{ $kelas->total() }} data</span>
                 @endif
             </p>
             <div class="table-actions">
@@ -184,7 +196,7 @@
                     PDF
                 </a>
                 <a href="{{ route('admin.kelas.export.excel', request()->query()) }}" class="btn btn-sm btn-excel">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     Excel
                 </a>
                 <button type="button" class="btn btn-sm btn-import" onclick="document.getElementById('modalImport').classList.add('open')">
@@ -193,13 +205,14 @@
                 </button>
             </div>
         </div>
+
         <div class="table-wrap">
             <table>
                 <thead>
                     <tr>
                         <th style="width:48px">#</th>
                         <th>Nama / Kode Kelas</th>
-                        <th>Tingkat</th>
+                        <th>Tingkat & Jurusan</th>  {{-- ← diubah dari "Tingkat" --}}
                         <th>Tahun Ajaran</th>
                         <th>Wali Kelas</th>
                         <th>Ruang</th>
@@ -219,9 +232,12 @@
                             </div>
                         </td>
                         <td>
+                            {{-- ← DIUBAH: tampilkan dari relasi jurusan, bukan string --}}
                             <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);">{{ $k->tingkat }}</span>
                             @if($k->jurusan)
-                            <br><span style="font-size:11.5px;color:var(--text3);">{{ $k->jurusan }}</span>
+                                <br><span style="font-size:11.5px;color:var(--text3);">{{ $k->jurusan->singkatan ?? $k->jurusan->nama }}</span>
+                            @else
+                                <br><span style="font-size:11.5px;color:var(--text3);">—</span>
                             @endif
                         </td>
                         <td class="muted" style="font-size:12.5px;">{{ $k->tahunAjaran->tahun ?? '—' }}</td>
@@ -304,6 +320,7 @@
     </div>
 </div>
 
+{{-- Modal Import --}}
 <div class="modal-overlay" id="modalImport">
     <div class="modal">
         <p class="modal-title">Import Data Kelas</p>

@@ -3,13 +3,40 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\JurusanPublikController;
+use App\Http\Controllers\PrestasiPublikController;
+use App\Http\Controllers\ElearningController;
+use App\Http\Controllers\NilaiPublikController;
+use App\Http\Controllers\AbsensiPublikController;
+use App\Models\Jurusan;
+use App\Models\ProfilSekolah;
 
-Route::get('/', function () {
-    if (Auth::check()) {
-        return redirect()->route('dashboard');
-    }
-    return view('welcome');
+// Halaman utama
+Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
+Route::post('/kontak', [WelcomeController::class, 'kirimKontak'])->name('kontak.kirim');
+ 
+// Halaman publik jurusan
+Route::prefix('jurusan')->name('jurusan.')->group(function () {
+    Route::get('/',          [JurusanPublikController::class, 'index'])->name('index');
+    Route::get('/{slug}',    [JurusanPublikController::class, 'show'])->name('show');
 });
+Route::get('/prestasi', [PrestasiPublikController::class, 'index'])->name('prestasi.index');
+Route::get('/elearning', [ElearningController::class, 'index'])->name('elearning');
+Route::get('/nilai',  [NilaiPublikController::class, 'index'])->name('nilai');
+Route::post('/nilai', [NilaiPublikController::class, 'cek'])->name('nilai.cek');
+Route::get('/absensi',      [AbsensiPublikController::class, 'index'])->name('absensi.index');
+Route::post('/absensi/cek', [AbsensiPublikController::class, 'cek'])->name('absensi.cek');
+
+// ppdb 
+Route::get('/ppdb', function () {
+    $profil  = ProfilSekolah::instance();
+    $jurusan = Jurusan::where('is_published', true)
+                ->orderBy('urutan')
+                ->get();
+
+    return view('ppdb.index', compact('profil', 'jurusan')); // ← ubah ini
+})->name('ppdb');
 
 // Dashboard — redirect berdasarkan role
 Route::get('/dashboard', function () {

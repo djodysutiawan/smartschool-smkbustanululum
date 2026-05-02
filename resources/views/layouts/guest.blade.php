@@ -5,10 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'SmartSchool') }} — SMK Bustanul Ulum</title>
+    @php $profil = \App\Models\ProfilSekolah::instance(); @endphp
+
+    <title>{{ config('app.name', 'SmartSchool') }} — {{ $profil->nama_sekolah ?? 'SMK Bustanul Ulum' }}</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+
+    @if($profil->favicon_path)
+    <link rel="icon" type="image/x-icon" href="{{ asset('storage/' . $profil->favicon_path) }}">
+    @endif
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -41,6 +47,7 @@
             background-size: 44px 44px;
         }
 
+        /* ── Brand ── */
         .brand-block {
             position: relative; z-index: 10;
             display: flex;
@@ -87,15 +94,21 @@
             text-decoration: none;
         }
         .brand-logo-box {
-            width: 50px; height: 50px;
-            border-radius: 15px;
+            width: 56px; height: 56px;
+            border-radius: 16px;
             background: rgba(255,255,255,.15);
             border: 1.5px solid rgba(255,255,255,.25);
             display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
         }
         .brand-logo-box span {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            font-weight: 800; font-size: 22px; color: #fff;
+            font-weight: 800; font-size: 24px; color: #fff;
+        }
+        .brand-logo-box img {
+            width: 100%; height: 100%;
+            object-fit: contain;
+            padding: 6px;
         }
         .brand-name {
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -107,6 +120,7 @@
             font-size: 12.5px; color: rgba(255,255,255,.5); margin-top: 3px;
         }
 
+        /* ── Card ── */
         .auth-card {
             position: relative; z-index: 10;
             width: 100%; max-width: 420px;
@@ -119,6 +133,7 @@
             padding: 36px 32px 30px;
         }
 
+        /* ── Footer ── */
         .auth-footer {
             position: relative; z-index: 10;
             margin-top: 20px;
@@ -129,6 +144,7 @@
             line-height: 1.5;
         }
 
+        /* ── Animations ── */
         @keyframes fadeUp {
             from { opacity: 0; transform: translateY(20px); }
             to   { opacity: 1; transform: translateY(0); }
@@ -148,10 +164,20 @@
             Platform Aktif · Tahun Ajaran 2025/2026
         </span>
         <a href="{{ url('/') }}" class="brand-logo-wrap">
-            <div class="brand-logo-box"><span>B</span></div>
+            <div class="brand-logo-box">
+                @if($profil->logo_path)
+                    <img src="{{ asset('storage/' . $profil->logo_path) }}"
+                         alt="Logo {{ $profil->singkatan ?? 'Sekolah' }}">
+                @elseif($profil->logo_url)
+                    <img src="{{ $profil->logo_url }}"
+                         alt="Logo {{ $profil->singkatan ?? 'Sekolah' }}">
+                @else
+                    <span>{{ strtoupper(substr($profil->singkatan ?? $profil->nama_sekolah ?? 'S', 0, 1)) }}</span>
+                @endif
+            </div>
             <div style="text-align:center;">
                 <p class="brand-name">SmartSchool</p>
-                <p class="brand-sub">SMK Bustanul Ulum</p>
+                <p class="brand-sub">{{ $profil->nama_sekolah ?? 'SMK Bustanul Ulum' }}</p>
             </div>
         </a>
     </div>
@@ -163,7 +189,7 @@
 
     <!-- Footer -->
     <p class="auth-footer fade-3">
-        © 2026 SmartSchool · Sutiawan Djody, Nizar Aminur Rohman, Abdul Basit
+        © {{ date('Y') }} SmartSchool · {{ $profil->nama_sekolah ?? 'SMK Bustanul Ulum' }}
     </p>
 
 </div>

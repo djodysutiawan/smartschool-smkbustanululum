@@ -79,14 +79,14 @@
                     <div class="field">
                         <label>Nama Kelas <span class="req">*</span></label>
                         <input type="text" name="nama_kelas" value="{{ old('nama_kelas') }}"
-                            placeholder="cth. X IPA 1"
+                            placeholder="cth. X TKJ 1"
                             class="{{ $errors->has('nama_kelas') ? 'is-invalid' : '' }}">
                         @error('nama_kelas')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Kode Kelas <span class="req">*</span></label>
                         <input type="text" name="kode_kelas" value="{{ old('kode_kelas') }}"
-                            placeholder="cth. X-IPA-1"
+                            placeholder="cth. X-TKJ-1"
                             class="{{ $errors->has('kode_kelas') ? 'is-invalid' : '' }}">
                         @error('kode_kelas')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
@@ -100,16 +100,27 @@
                         </select>
                         @error('tingkat')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Jurusan --}}
                     <div class="field">
                         <label>Jurusan</label>
-                        <input type="text" name="jurusan" value="{{ old('jurusan') }}"
-                            placeholder="cth. IPA, IPS, Teknik Komputer...">
-                        @error('jurusan')<span class="field-error">{{ $message }}</span>@enderror
+                        <select name="jurusan_id" class="{{ $errors->has('jurusan_id') ? 'is-invalid' : '' }}">
+                            <option value="">— Pilih Jurusan (opsional) —</option>
+                            @foreach($jurusans as $j)
+                            <option value="{{ $j->id }}" {{ old('jurusan_id') == $j->id ? 'selected' : '' }}>
+                                {{ $j->nama }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('jurusan_id')<span class="field-error">{{ $message }}</span>@enderror
+                        <span class="field-hint">cth. TKJ, IPA, IPS...</span>
                     </div>
+
+                    {{-- Kapasitas Maks --}}
                     <div class="field">
                         <label>Kapasitas Maks. <span class="req">*</span></label>
-                        <input type="number" name="kapasitas_maks" value="{{ old('kapasitas_maks', 36) }}"
-                            min="1" max="50" placeholder="36"
+                        <input type="number" name="kapasitas_maks" value="{{ old('kapasitas_maks', 50) }}"
+                            min="1" max="50" placeholder="50"
                             class="{{ $errors->has('kapasitas_maks') ? 'is-invalid' : '' }}">
                         @error('kapasitas_maks')<span class="field-error">{{ $message }}</span>@enderror
                         <span class="field-hint">Maksimal 50 siswa per kelas.</span>

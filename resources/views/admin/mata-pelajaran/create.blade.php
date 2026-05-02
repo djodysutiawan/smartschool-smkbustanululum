@@ -97,14 +97,14 @@
                     <div class="field">
                         <label>Nama Mata Pelajaran <span class="req">*</span></label>
                         <input type="text" name="nama_mapel" value="{{ old('nama_mapel') }}"
-                            placeholder="cth. Matematika, Fisika, Bahasa Indonesia"
+                            placeholder="cth. Pemrograman Web, Basis Data, Jaringan Komputer"
                             class="{{ $errors->has('nama_mapel') ? 'is-invalid' : '' }}">
                         @error('nama_mapel')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Kode Mata Pelajaran <span class="req">*</span></label>
                         <input type="text" name="kode_mapel" value="{{ old('kode_mapel') }}"
-                            placeholder="cth. MTK, FIS, B.IND"
+                            placeholder="cth. PWB, BSD, JKO"
                             class="{{ $errors->has('kode_mapel') ? 'is-invalid' : '' }}">
                         @error('kode_mapel')<span class="field-error">{{ $message }}</span>@enderror
                     </div>

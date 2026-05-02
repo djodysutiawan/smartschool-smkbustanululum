@@ -58,4 +58,5 @@ class MataPelajaran extends Model
     {
         return $this->hasMany(Nilai::class);
     }
+
 }

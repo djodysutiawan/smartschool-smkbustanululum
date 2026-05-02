@@ -6,6 +6,7 @@ use App\Exports\KelasExport;
 use App\Http\Controllers\Controller;
 use App\Imports\KelasImport;
 use App\Models\Guru;
+use App\Models\Jurusan;
 use App\Models\Kelas;
 use App\Models\Ruang;
 use App\Models\TahunAjaran;
@@ -21,12 +22,13 @@ class KelasController extends Controller
 
     public function index(Request $request)
     {
-        $query = Kelas::with(['waliKelas', 'ruang.gedung', 'tahunAjaran'])
+        $query = Kelas::with(['waliKelas', 'ruang.gedung', 'tahunAjaran', 'jurusan'])
             ->withCount('siswa');
 
         if ($request->filled('tahun_ajaran_id')) $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
         if ($request->filled('tingkat'))         $query->where('tingkat', $request->tingkat);
         if ($request->filled('status'))          $query->where('status', $request->status);
+        if ($request->filled('jurusan_id'))      $query->where('jurusan_id', $request->jurusan_id);
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -37,8 +39,9 @@ class KelasController extends Controller
 
         $kelas        = $query->orderBy('tingkat')->orderBy('nama_kelas')->paginate(20)->withQueryString();
         $tahunAjarans = TahunAjaran::orderByDesc('id')->get();
+        $jurusans     = Jurusan::where('is_published', true)->orderBy('urutan')->get();
 
-        return view('admin.kelas.index', compact('kelas', 'tahunAjarans'));
+        return view('admin.kelas.index', compact('kelas', 'tahunAjarans', 'jurusans'));
     }
 
     // ─── CREATE & STORE ───────────────────────────────────────────────────────────
@@ -48,8 +51,9 @@ class KelasController extends Controller
         $gurus        = Guru::aktif()->orderBy('nama_lengkap')->get();
         $ruangs       = Ruang::tersedia()->with('gedung')->orderBy('nama_ruang')->get();
         $tahunAjarans = TahunAjaran::orderByDesc('id')->get();
+        $jurusans     = Jurusan::where('is_published', true)->orderBy('urutan')->get();
 
-        return view('admin.kelas.create', compact('gurus', 'ruangs', 'tahunAjarans'));
+        return view('admin.kelas.create', compact('gurus', 'ruangs', 'tahunAjarans', 'jurusans'));
     }
 
     public function store(Request $request)
@@ -57,7 +61,7 @@ class KelasController extends Controller
         $validated = $request->validate([
             'nama_kelas'      => ['required', 'string', 'max:50'],
             'tingkat'         => ['required', 'string', 'in:X,XI,XII'],
-            'jurusan'         => ['nullable', 'string', 'max:50'],
+            'jurusan_id'      => ['nullable', 'exists:jurusan,id'],  // ← FK ke tabel jurusan
             'kode_kelas'      => ['required', 'string', 'max:15', 'unique:kelas'],
             'wali_kelas_id'   => ['nullable', 'exists:guru,id'],
             'ruang_id'        => ['nullable', 'exists:ruang,id'],
@@ -92,7 +96,8 @@ class KelasController extends Controller
             'waliKelas',
             'ruang.gedung',
             'tahunAjaran',
-            'siswa'            => fn ($q) => $q->orderBy('nama_lengkap'),
+            'jurusan',
+            'siswa'              => fn ($q) => $q->orderBy('nama_lengkap'),
             'jadwalPelajaran.guru',
             'jadwalPelajaran.mataPelajaran',
         ]);
@@ -113,8 +118,9 @@ class KelasController extends Controller
         $gurus        = Guru::aktif()->orderBy('nama_lengkap')->get();
         $ruangs       = Ruang::with('gedung')->orderBy('nama_ruang')->get();
         $tahunAjarans = TahunAjaran::orderByDesc('id')->get();
+        $jurusans     = Jurusan::where('is_published', true)->orderBy('urutan')->get();
 
-        return view('admin.kelas.edit', compact('kelas', 'gurus', 'ruangs', 'tahunAjarans'));
+        return view('admin.kelas.edit', compact('kelas', 'gurus', 'ruangs', 'tahunAjarans', 'jurusans'));
     }
 
     public function update(Request $request, Kelas $kelas)
@@ -122,7 +128,7 @@ class KelasController extends Controller
         $validated = $request->validate([
             'nama_kelas'      => ['required', 'string', 'max:50'],
             'tingkat'         => ['required', 'string', 'in:X,XI,XII'],
-            'jurusan'         => ['nullable', 'string', 'max:50'],
+            'jurusan_id'      => ['nullable', 'exists:jurusan,id'],  // ← FK ke tabel jurusan
             'kode_kelas'      => ['required', 'string', 'max:15', Rule::unique('kelas')->ignore($kelas->id)],
             'wali_kelas_id'   => ['nullable', 'exists:guru,id'],
             'ruang_id'        => ['nullable', 'exists:ruang,id'],
@@ -171,17 +177,19 @@ class KelasController extends Controller
 
     public function exportPdf(Request $request)
     {
-        $query = Kelas::with(['waliKelas', 'ruang', 'tahunAjaran'])->withCount('siswa');
+        $query = Kelas::with(['waliKelas', 'ruang', 'tahunAjaran', 'jurusan'])->withCount('siswa');
 
         if ($request->filled('tahun_ajaran_id')) $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
         if ($request->filled('tingkat'))         $query->where('tingkat', $request->tingkat);
         if ($request->filled('status'))          $query->where('status', $request->status);
+        if ($request->filled('jurusan_id'))      $query->where('jurusan_id', $request->jurusan_id);
 
         $kelas = $query->orderBy('tingkat')->orderBy('nama_kelas')->get();
 
         $filterParts = [];
-        if ($request->filled('tingkat')) $filterParts[] = 'Tingkat: ' . $request->tingkat;
-        if ($request->filled('status'))  $filterParts[] = 'Status: ' . ucfirst($request->status);
+        if ($request->filled('tingkat'))    $filterParts[] = 'Tingkat: ' . $request->tingkat;
+        if ($request->filled('status'))     $filterParts[] = 'Status: ' . ucfirst($request->status);
+        if ($request->filled('jurusan_id')) $filterParts[] = 'Jurusan: ' . optional(Jurusan::find($request->jurusan_id))->nama;
         $filterLabel = implode(', ', $filterParts);
 
         $pdf = Pdf::loadView('admin.kelas.pdf', compact('kelas', 'filterLabel'))
@@ -236,7 +244,7 @@ class KelasController extends Controller
             'nama_kelas.max'           => 'Nama kelas maksimal 50 karakter.',
             'tingkat.required'         => 'Tingkat wajib dipilih.',
             'tingkat.in'               => 'Tingkat harus berupa X, XI, atau XII.',
-            'jurusan.max'              => 'Nama jurusan maksimal 50 karakter.',
+            'jurusan_id.exists'        => 'Jurusan yang dipilih tidak ditemukan.',
             'kode_kelas.required'      => 'Kode kelas wajib diisi.',
             'kode_kelas.max'           => 'Kode kelas maksimal 15 karakter.',
             'kode_kelas.unique'        => 'Kode kelas sudah digunakan.',

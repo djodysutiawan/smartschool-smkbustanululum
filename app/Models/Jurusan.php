@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class Jurusan extends Model
 {
@@ -23,16 +24,22 @@ class Jurusan extends Model
     ];
 
     protected $casts = [
-        'lama_belajar'         => 'integer',
-        'kapasitas_per_kelas'  => 'integer',
-        'jumlah_kelas_aktif'   => 'integer',
-        'total_siswa'          => 'integer',
-        'is_published'         => 'boolean',
-        'is_penerimaan_buka'   => 'boolean',
-        'urutan'               => 'integer',
+        'lama_belajar'        => 'integer',
+        'kapasitas_per_kelas' => 'integer',
+        'jumlah_kelas_aktif'  => 'integer',
+        'total_siswa'         => 'integer',
+        'is_published'        => 'boolean',
+        'is_penerimaan_buka'  => 'boolean',
+        'urutan'              => 'integer',
     ];
 
     // ── Relasi ────────────────────────────────────────────────────────────
+
+    public function kelas(): HasMany
+    {
+        return $this->hasMany(Kelas::class);
+    }
+
     public function kurikulum(): HasMany
     {
         return $this->hasMany(JurusanKurikulum::class)->orderBy('urutan');
@@ -59,6 +66,7 @@ class Jurusan extends Model
     }
 
     // ── Scopes ────────────────────────────────────────────────────────────
+
     public function scopePublished($query)
     {
         return $query->where('is_published', true)->orderBy('urutan');
@@ -70,6 +78,7 @@ class Jurusan extends Model
     }
 
     // ── Accessors ─────────────────────────────────────────────────────────
+
     public function getFotoCoverSrcAttribute(): ?string
     {
         if ($this->foto_cover_path) return Storage::url($this->foto_cover_path);
@@ -86,5 +95,14 @@ class Jurusan extends Model
     {
         if ($this->foto_kajur_path) return Storage::url($this->foto_kajur_path);
         return $this->foto_kajur_url;
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function ($model) {
+            if (empty($model->slug)) {
+                $model->slug = Str::slug($model->nama);
+            }
+        });
     }
 }

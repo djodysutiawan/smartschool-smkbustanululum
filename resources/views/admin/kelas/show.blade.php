@@ -150,7 +150,7 @@
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Jurusan</span>
-                    <span class="detail-value">{{ $kelas->jurusan ?? '—' }}</span>
+                    <span class="detail-value">{{ $kelas->jurusan->nama ?? '—' }}</span>
                 </div>
                 <div class="detail-item">
                     <span class="detail-label">Status</span>

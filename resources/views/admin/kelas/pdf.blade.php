@@ -75,7 +75,7 @@
                 <div style="color:#64748b;font-size:7.5px">{{ $k->kode_kelas }}</div>
             </td>
             <td class="center" style="font-weight:bold;color:#1f63db">{{ $k->tingkat }}</td>
-            <td style="color:#64748b;font-size:8px">{{ $k->jurusan ?? '-' }}</td>
+            <td style="color:#64748b;font-size:8px">{{ $k->jurusan->nama ?? '-' }}</td>
             <td style="font-size:8px">{{ $k->waliKelas?->nama_lengkap ?? '-' }}</td>
             <td style="color:#64748b;font-size:8px">{{ $k->ruang?->kode_ruang ?? '-' }}</td>
             <td style="font-size:8px">{{ $k->tahunAjaran?->label ?? '-' }}</td>

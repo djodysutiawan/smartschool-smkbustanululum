@@ -102,16 +102,26 @@
                         </select>
                         @error('tingkat')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- DIPERBAIKI: jurusan_id sebagai select (FK ke tabel jurusan) --}}
                     <div class="field">
                         <label>Jurusan</label>
-                        <input type="text" name="jurusan" value="{{ old('jurusan', $kelas->jurusan) }}"
-                            placeholder="cth. IPA, IPS, Teknik Komputer...">
-                        @error('jurusan')<span class="field-error">{{ $message }}</span>@enderror
+                        <select name="jurusan_id" class="{{ $errors->has('jurusan_id') ? 'is-invalid' : '' }}">
+                            <option value="">— Pilih Jurusan (opsional) —</option>
+                            @foreach($jurusans as $j)
+                            <option value="{{ $j->id }}" {{ old('jurusan_id', $kelas->jurusan_id) == $j->id ? 'selected' : '' }}>
+                                {{ $j->nama }}
+                            </option>
+                            @endforeach
+                        </select>
+                        @error('jurusan_id')<span class="field-error">{{ $message }}</span>@enderror
+                        <span class="field-hint">cth. TKJ, IPA, IPS...</span>
                     </div>
+
                     <div class="field">
                         <label>Kapasitas Maks. <span class="req">*</span></label>
                         <input type="number" name="kapasitas_maks" value="{{ old('kapasitas_maks', $kelas->kapasitas_maks) }}"
-                            min="1" max="50"
+                            min="1" max="50" placeholder="50"
                             class="{{ $errors->has('kapasitas_maks') ? 'is-invalid' : '' }}">
                         @error('kapasitas_maks')<span class="field-error">{{ $message }}</span>@enderror
                         <span class="field-hint">Maksimal 50 siswa per kelas.</span>
