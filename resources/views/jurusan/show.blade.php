@@ -519,7 +519,7 @@
           <div class="space-y-3">
             @foreach($jurusanLain as $jl)
             <a href="{{ route('jurusan.show', $jl->slug) }}"
-               class="jcard-sm flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 hover:border-brand-200 hover:bg-brand-50 transition-all block">
+               class="jcard-sm flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 hover:border-brand-200 hover:bg-brand-50 transition-all">
               <div class="w-10 h-10 rounded-xl overflow-hidden bg-brand-100 shrink-0">
                 @if($jl->logo_path || $jl->logo_url)
                   <img src="{{ $jl->logo_path ? asset('storage/'.$jl->logo_path) : $jl->logo_url }}" alt="{{ $jl->singkatan }}" class="w-full h-full object-contain p-1">
