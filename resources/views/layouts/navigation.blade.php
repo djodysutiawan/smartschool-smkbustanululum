@@ -1136,10 +1136,11 @@
                 Absensi Saya
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
-            <div class="sb-sub">
-                <a href="{{ route('siswa.absensi.scan') }}"    class="sb-item {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">Scan QR Hadir</a>
-                <a href="{{ route('siswa.absensi.riwayat') }}" class="sb-item {{ request()->routeIs('siswa.absensi.riwayat') ? 'active' : '' }}">Riwayat Kehadiran</a>
-            </div>
+                <div class="sb-sub">
+                    <a href="{{ route('siswa.absensi.scan') }}"    class="sb-item {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">Scan QR Hadir</a>
+                    <a href="{{ route('siswa.absensi.jadwal') }}"  class="sb-item {{ request()->routeIs('siswa.absensi.jadwal') ? 'active' : '' }}">QR Per Pelajaran</a>
+                    <a href="{{ route('siswa.absensi.riwayat') }}" class="sb-item {{ request()->routeIs('siswa.absensi.riwayat') ? 'active' : '' }}">Riwayat Kehadiran</a>
+                </div>
         </details>
 
         {{-- ── AKADEMIK ──────────────────────────────────────── --}}

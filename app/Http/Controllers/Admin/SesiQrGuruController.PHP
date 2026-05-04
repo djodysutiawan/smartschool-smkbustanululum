@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SesiQrGuruController extends Controller
 {
@@ -113,8 +114,19 @@ class SesiQrGuruController extends Controller
     {
         $sesiQrGuru->load('pembuat');
 
-        $pdf = Pdf::loadView('admin.sesi-qr-guru.exports.cetak-qr', compact('sesiQrGuru'))
-            ->setPaper('a5', 'portrait');
+        $qrSvg    = QrCode::format('svg')
+                        ->size(300)
+                        ->errorCorrection('H')
+                        ->margin(1)
+                        ->generate($sesiQrGuru->kode_qr);
+
+        $qrBase64 = base64_encode($qrSvg);
+        $qrMime   = 'image/svg+xml';
+
+        $pdf = Pdf::loadView('admin.sesi-qr-guru.exports.cetak-qr', compact('sesiQrGuru', 'qrBase64', 'qrMime'))
+            ->setPaper('a5', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', true);
 
         return $pdf->stream('qr_guru_' . $sesiQrGuru->id . '_' . $sesiQrGuru->tanggal->format('Ymd') . '.pdf');
     }

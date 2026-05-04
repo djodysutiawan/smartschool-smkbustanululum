@@ -58,6 +58,8 @@ class PengumumanController extends Controller
             'kadaluarsa_pada.after'   => 'Tanggal kadaluarsa harus setelah sekarang.',
             'lampiran.mimes'          => 'Format lampiran harus PDF, DOC, DOCX, JPG, atau PNG.',
             'lampiran.max'            => 'Ukuran lampiran maksimal 5 MB.',
+            'dipublikasikan_pada' => $request->boolean('publikasikan_sekarang') ? now() : null,
+            'dipublikasikan_oleh' => $request->boolean('publikasikan_sekarang') ? Auth::id() : null,
         ]);
  
         $pathLampiran = null;
@@ -144,10 +146,16 @@ class PengumumanController extends Controller
  
     public function publish(Pengumuman $pengumuman)
     {
-        $pengumuman->update(['dipublikasikan_pada' => now()]);
+        $pengumuman->publish(Auth::id());
  
         return back()->with('success', 'Pengumuman berhasil dipublikasikan.');
     }
+    // public function publish(Pengumuman $pengumuman)
+    // {
+    //     $pengumuman->update(['dipublikasikan_pada' => now()]);
+ 
+    //     return back()->with('success', 'Pengumuman berhasil dipublikasikan.');
+    // }
  
     public function unpublish(Pengumuman $pengumuman)
     {

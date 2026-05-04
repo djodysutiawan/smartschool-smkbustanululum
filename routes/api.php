@@ -42,17 +42,39 @@ use Illuminate\Support\Facades\Storage;
 */
 
 // routes/api.php
+// Route::get('/file/{path}', function (string $path) {
+//     $fullPath = storage_path('app/public/' . $path);
+
+//     if (!file_exists($fullPath)) {
+//         abort(404);
+//     }
+
+//     return response()->file($fullPath, [
+//         'Access-Control-Allow-Origin' => '*',
+//         'Access-Control-Allow-Methods' => 'GET',
+//         'Access-Control-Allow-Headers' => '*',
+//     ]);
+// })->where('path', '.*');
 Route::get('/file/{path}', function (string $path) {
     $fullPath = storage_path('app/public/' . $path);
-
+ 
     if (!file_exists($fullPath)) {
-        abort(404);
+        abort(404, 'File not found: ' . $path);
     }
-
-    return response()->file($fullPath, [
+ 
+    $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
+    $fileSize = filesize($fullPath);
+    $contents = file_get_contents($fullPath);
+ 
+    // Gunakan response() biasa dengan content string — lebih stabil
+    // dibanding response()->file() di php artisan serve (single-threaded)
+    return response($contents, 200, [
+        'Content-Type'                => $mimeType,
+        'Content-Length'              => $fileSize,
+        'Cache-Control'               => 'public, max-age=86400',
         'Access-Control-Allow-Origin' => '*',
-        'Access-Control-Allow-Methods' => 'GET',
-        'Access-Control-Allow-Headers' => '*',
+        'Access-Control-Allow-Methods'=> 'GET, OPTIONS',
+        'Access-Control-Allow-Headers'=> '*',
     ]);
 })->where('path', '.*');
 

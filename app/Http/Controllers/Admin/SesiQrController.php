@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\SesiQrExport;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Siswa;
+use App\Models\Notifikasi;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class SesiQrController extends Controller
 {
@@ -80,13 +83,43 @@ class SesiQrController extends Controller
             'radius_meter'      => ['nullable', 'integer', 'min:10', 'max:1000'],
         ]);
 
-        // kode_qr di-generate otomatis oleh SesiQr::booted()
         $validated['dibuat_oleh'] = Auth::id();
 
-        SesiQr::create($validated);
+        $sesiQr = SesiQr::create($validated);
+        $sesiQr->load(['kelas', 'mataPelajaran']);
+
+        // Kirim notifikasi ke semua siswa aktif di kelas tersebut
+        $siswaList = Siswa::where('kelas_id', $sesiQr->kelas_id)
+            ->aktif()
+            ->with('pengguna')
+            ->get();
+
+        $pesanNotif = sprintf(
+            'Absensi QR dibuka untuk %s — %s. Berlaku sampai %s.',
+            $sesiQr->mataPelajaran->nama_mapel ?? 'mata pelajaran',
+            $sesiQr->tanggal->format('d M Y'),
+            $sesiQr->kadaluarsa_pada->format('H:i')
+        );
+
+        $notifikasiData = $siswaList
+            ->filter(fn($s) => $s->pengguna_id)
+            ->map(fn($s) => [
+                'pengguna_id' => $s->pengguna_id,
+                'judul'       => 'Absensi QR Dibuka',
+                'pesan'       => $pesanNotif,
+                'sudah_dibaca'=> false,
+                'created_at'  => now(),
+                'updated_at'  => now(),
+            ])->values()->toArray();
+
+        if (! empty($notifikasiData)) {
+            Notifikasi::insert($notifikasiData);
+        }
+
+        
 
         return redirect()->route('admin.sesi-qr.index')
-            ->with('success', 'Sesi QR berhasil dibuat.');
+            ->with('success', "Sesi QR berhasil dibuat & notifikasi dikirim ke {$siswaList->count()} siswa.");
     }
 
     // -------------------------------------------------------------------------
@@ -142,8 +175,20 @@ class SesiQrController extends Controller
     {
         $sesiQr->load(['kelas', 'mataPelajaran']);
 
-        $pdf = Pdf::loadView('admin.sesi-qr.exports.cetak-qr', compact('sesiQr'))
-            ->setPaper('a5', 'portrait'); // A5 lebih praktis untuk cetak QR
+        // SVG tidak butuh Imagick sama sekali
+        $qrSvg    = QrCode::format('svg')
+                        ->size(300)
+                        ->errorCorrection('H')
+                        ->margin(1)
+                        ->generate($sesiQr->kode_qr);
+
+        $qrBase64 = base64_encode($qrSvg);
+        $qrMime   = 'image/svg+xml';
+
+        $pdf = Pdf::loadView('admin.sesi-qr.exports.cetak-qr', compact('sesiQr', 'qrBase64', 'qrMime'))
+            ->setPaper('a5', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', true);
 
         return $pdf->stream('qr_sesi_' . $sesiQr->id . '_' . $sesiQr->tanggal->format('Ymd') . '.pdf');
     }

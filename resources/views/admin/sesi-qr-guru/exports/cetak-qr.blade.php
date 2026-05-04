@@ -13,15 +13,11 @@
             min-height: 210mm;
             padding: 10mm 9mm;
         }
-
-        /* ── Bingkai ── */
         .card {
             border: 2px solid #1a1a2e;
             border-radius: 6px;
             overflow: hidden;
         }
-
-        /* ── Header strip ── */
         .card-header {
             background: #1a1a2e;
             color: #fff;
@@ -45,16 +41,21 @@
             opacity: 0.65;
             margin-top: 3px;
         }
-
-        /* ── Body ── */
         .card-body { padding: 12px 15px; }
-
-        /* Info table */
-        .info-table {
-            display: table;
-            width: 100%;
-            margin-bottom: 12px;
+        .guru-badge-wrap { text-align: center; margin-bottom: 10px; }
+        .guru-badge {
+            display: inline-block;
+            background: #ede9fe;
+            color: #5b21b6;
+            border: 1px solid #c4b5fd;
+            border-radius: 4px;
+            padding: 2px 8px;
+            font-size: 7.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
+        .info-table { display: table; width: 100%; margin-bottom: 12px; }
         .info-row { display: table-row; }
         .info-label, .info-value {
             display: table-cell;
@@ -72,12 +73,7 @@
             letter-spacing: 0.3px;
         }
         .info-value { font-weight: 700; }
-
-        /* ── QR wrapper ── */
-        .qr-wrapper {
-            text-align: center;
-            padding: 12px 0 8px;
-        }
+        .qr-wrapper { text-align: center; padding: 12px 0 8px; }
         .qr-wrapper img {
             width: 140px;
             height: 140px;
@@ -86,21 +82,6 @@
             display: block;
             margin: 0 auto 8px;
         }
-        .qr-placeholder {
-            width: 140px;
-            height: 140px;
-            border: 3px dashed #ccc;
-            border-radius: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 8px;
-            color: #aaa;
-            font-size: 8px;
-            text-align: center;
-            line-height: 1.5;
-            padding: 10px;
-        }
         .qr-code-text {
             font-family: 'DejaVu Sans Mono', monospace;
             font-size: 7px;
@@ -108,12 +89,7 @@
             word-break: break-all;
             padding: 0 8px;
         }
-
-        /* ── Status badge ── */
-        .status-row {
-            text-align: center;
-            margin-top: 10px;
-        }
+        .status-row { text-align: center; margin-top: 10px; }
         .badge {
             display: inline-block;
             padding: 3px 12px;
@@ -123,11 +99,9 @@
             text-transform: uppercase;
             letter-spacing: 0.4px;
         }
-        .badge-aktif    { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
-        .badge-nonaktif { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-        .badge-kadaluarsa { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-
-        /* ── Card footer ── */
+        .badge-aktif     { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
+        .badge-nonaktif  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+        .badge-kadaluarsa{ background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
         .card-footer {
             background: #f5f6fa;
             border-top: 1px solid #e8e8e8;
@@ -136,8 +110,6 @@
             font-size: 7.5px;
             color: #888;
         }
-
-        /* ── Instruksi ── */
         .instructions {
             margin-top: 8mm;
             font-size: 8px;
@@ -147,27 +119,11 @@
         .instructions ol { padding-left: 13px; }
         .instructions li { margin-bottom: 2px; }
         .instructions strong { color: #1a1a2e; }
-
-        /* ── Khusus Guru badge ── */
-        .guru-badge {
-            display: inline-block;
-            background: #ede9fe;
-            color: #5b21b6;
-            border: 1px solid #c4b5fd;
-            border-radius: 4px;
-            padding: 2px 8px;
-            font-size: 7.5px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 8px;
-        }
     </style>
 </head>
 <body>
 
     <div class="card">
-
         <div class="card-header">
             <div class="school">{{ config('app.name', 'Sistem Absensi') }}</div>
             <h1>Scan QR Absensi Guru</h1>
@@ -175,8 +131,7 @@
         </div>
 
         <div class="card-body">
-
-            <div style="text-align:center;margin-bottom:10px">
+            <div class="guru-badge-wrap">
                 <span class="guru-badge">&#128100; Khusus Guru</span>
             </div>
 
@@ -205,37 +160,23 @@
                 </div>
             </div>
 
-            {{-- QR Code --}}
             <div class="qr-wrapper">
-                {{--
-                    Opsi A — simplesoftwareio/simple-qrcode:
-                    {!! QrCode::size(140)->errorCorrection('H')->generate($sesiQrGuru->kode_qr) !!}
-
-                    Opsi B — endroid/qr-code (base64 PNG):
-                    @php
-                        $qr = \Endroid\QrCode\Builder\Builder::create()
-                            ->data($sesiQrGuru->kode_qr)->size(400)->build();
-                        $qrBase64 = base64_encode($qr->getString());
-                    @endphp
-                    <img src="data:image/png;base64,{{ $qrBase64 }}" alt="QR Code">
-                --}}
-                <div class="qr-placeholder">
-                    [QR Code]<br>Integrasikan<br>library QR
-                </div>
+                <img src="data:{{ $qrMime }};base64,{{ $qrBase64 }}"
+                     alt="QR Code Absensi Guru"
+                     width="140"
+                     height="140">
                 <div class="qr-code-text">{{ $sesiQrGuru->kode_qr }}</div>
             </div>
 
-            {{-- Status --}}
             <div class="status-row">
                 @if($sesiQrGuru->is_active && now()->lt($sesiQrGuru->kadaluarsa_pada))
                     <span class="badge badge-aktif">&#10003; Sesi Aktif</span>
-                @elseif($sesiQrGuru->is_active)
+                @elseif(now()->gte($sesiQrGuru->kadaluarsa_pada))
                     <span class="badge badge-kadaluarsa">Kadaluarsa</span>
                 @else
                     <span class="badge badge-nonaktif">&#10007; Nonaktif</span>
                 @endif
             </div>
-
         </div>
 
         <div class="card-footer">

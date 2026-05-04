@@ -41,6 +41,7 @@ class Notifikasi extends Model
             'pesan'       => $pesan,
             'jenis'       => $jenis,
             'url_tujuan'  => $url,
+            'sudah_dibaca' => false,
         ]);
     }
 

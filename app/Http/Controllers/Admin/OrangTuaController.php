@@ -40,7 +40,7 @@ class OrangTuaController extends Controller
 
     public function index(Request $request)
     {
-        $query = OrangTua::with('pengguna')->withCount('siswa');
+        $query = OrangTua::with('pengguna')->withCount('siswa')->withTrashed();
 
         if ($request->filled('search')) {
             $s = $request->search;
@@ -182,6 +182,26 @@ class OrangTuaController extends Controller
 
         return redirect()->route('admin.orang-tua.index')
             ->with('success', 'Data orang tua berhasil dihapus.');
+    }
+
+    public function restore(int $id)
+    {
+        $orangTua = OrangTua::onlyTrashed()->findOrFail($id);
+        $orangTua->restore();
+
+        return back()->with('success', "Data {$orangTua->nama_lengkap} berhasil dipulihkan.");
+    }
+
+    public function forceDelete(int $id)
+    {
+        $orangTua = OrangTua::onlyTrashed()->findOrFail($id);
+        
+        DB::transaction(function () use ($orangTua) {
+            $orangTua->siswa()->detach();  // bersihkan pivot table dulu
+            $orangTua->forceDelete();
+        });
+
+        return back()->with('success', 'Data orang tua berhasil dihapus permanen.');
     }
 
     public function linkSiswa(Request $request, OrangTua $orangTua)

@@ -28,8 +28,14 @@ class NotifikasiController extends Controller
  
         $notifikasis = $query->latest()->paginate(20)->withQueryString();
         $pengguna    = User::orderBy('name')->get();
+
+        $stats = [
+            'total'        => Notifikasi::count(),
+            'belum_dibaca' => Notifikasi::belumDibaca()->count(),
+            'sudah_dibaca' => Notifikasi::where('sudah_dibaca', true)->count(),
+        ];
  
-        return view('admin.notifikasi.index', compact('notifikasis', 'pengguna'));
+        return view('admin.notifikasi.index', compact('notifikasis', 'pengguna', 'stats'));
     }
  
     public function create()

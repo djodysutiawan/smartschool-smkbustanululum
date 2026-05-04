@@ -8,6 +8,7 @@ use App\Models\RiwayatScanQr;
 use App\Models\SesiQr;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\JadwalPelajaran;
 
 class AbsensiController extends Controller
 {
@@ -182,5 +183,36 @@ class AbsensiController extends Controller
         return view('siswa.absensi.riwayat', compact(
             'absensi', 'statusList', 'rekap', 'tahunList'
         ));
+    }
+
+    public function jadwalHariIni()
+    {
+        $siswa = $this->getSiswa();
+
+        $hariIni = strtolower(now()->locale('id')->dayName);
+
+        $jadwalList = JadwalPelajaran::with(['mataPelajaran', 'guru'])
+            ->aktif()
+            ->hari($hariIni)
+            ->where('kelas_id', $siswa->kelas_id)
+            ->orderBy('jam_mulai')
+            ->get();
+
+        $jadwalList->each(function ($jadwal) use ($siswa) {
+            $jadwal->sesiQrAktif = SesiQr::where('kelas_id', $siswa->kelas_id)
+                ->where('mata_pelajaran_id', $jadwal->mata_pelajaran_id)  // ← pakai ini
+                ->where('is_active', true)
+                ->whereDate('tanggal', today())
+                ->where('berlaku_mulai', '<=', now())
+                ->where('kadaluarsa_pada', '>=', now())
+                ->first();
+
+            $jadwal->sudahAbsen = Absensi::where('siswa_id', $siswa->id)
+                ->where('jadwal_pelajaran_id', $jadwal->id)
+                ->whereDate('tanggal', today())
+                ->first();
+        });
+
+        return view('siswa.absensi.jadwal', compact('siswa', 'jadwalList'));
     }
 }

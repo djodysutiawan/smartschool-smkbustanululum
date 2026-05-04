@@ -186,19 +186,16 @@ class AuthController extends Controller
         $user = $request->user();
         $role = $user->role ?? 'siswa';
 
-        // Tentukan folder berdasarkan role
         $folder = match($role) {
             'siswa'              => 'siswa/foto',
             'guru', 'guru_piket' => 'guru/foto',
             default              => 'avatars',
         };
 
-        // Hapus file lama
         if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
             Storage::disk('public')->delete($user->avatar);
         }
 
-        // Simpan ke folder sesuai role
         $path = $request->file('avatar')->store($folder, 'public');
 
         $user->update(['avatar' => $path]);
@@ -210,6 +207,7 @@ class AuthController extends Controller
             'message' => 'Avatar berhasil diperbarui.',
             'data'    => [
                 'user'       => $this->formatUser($user),
+                // asset() pakai APP_URL — tidak lewat PHP untuk serve file
                 'avatar_url' => asset('storage/' . $path),
             ],
         ]);
@@ -231,30 +229,40 @@ class AuthController extends Controller
      * Format user untuk response JSON ke Flutter.
      *
      * Prioritas avatar_url:
-     *   1. users.avatar  → diupload user sendiri via edit profil (paling prioritas)
+     *   1. users.avatar  → diupload user sendiri (paling prioritas)
      *   2. guru.foto     → diisi admin di data guru
      *   3. siswa.foto    → diisi admin di data siswa
      *   4. null          → Flutter tampilkan inisial huruf
      *
-     * asset() otomatis pakai APP_URL dari .env — pastikan APP_URL=http://localhost:8000
+     * PENTING: Gunakan asset('storage/...') bukan url('api/file/...')
+     * agar file dilayani langsung oleh web server (bukan lewat PHP).
+     * php artisan serve tidak stabil untuk binary streaming via PHP.
+     *
+     * Pastikan sudah jalankan: php artisan storage:link
+     * Pastikan .env: APP_URL=http://localhost:8000
      */
     private function formatUser(User $user): array
     {
         $role = $user->role ?? 'siswa';
 
+        // Helper — konversi path storage ke public URL via symlink
+        // storage/app/public/avatars/x.png → http://localhost:8000/storage/avatars/x.png
+        $storageUrl = fn (?string $path): ?string =>
+            $path ? asset('storage/' . $path) : null;
+
         // ── Avatar priority ────────────────────────────────────────────────
         $avatarUrl = null;
 
-        // 1. Avatar user
+        // 1. Avatar user (diupload sendiri)
         if ($user->avatar) {
-            $avatarUrl = url('api/file/' . $user->avatar);
+            $avatarUrl = $storageUrl($user->avatar);
         }
 
         // 2. Foto guru
         if (! $avatarUrl && in_array($role, ['guru', 'guru_piket'])) {
             $guru = $user->relationLoaded('guru') ? $user->guru : null;
             if ($guru && $guru->foto) {
-                $avatarUrl = url('api/file/' . $guru->foto);
+                $avatarUrl = $storageUrl($guru->foto);
             }
         }
 
@@ -262,7 +270,7 @@ class AuthController extends Controller
         if (! $avatarUrl && $role === 'siswa') {
             $siswa = $user->relationLoaded('siswa') ? $user->siswa : null;
             if ($siswa && $siswa->foto) {
-                $avatarUrl = url('api/file/' . $siswa->foto);
+                $avatarUrl = $storageUrl($siswa->foto);
             }
         }
 
@@ -292,8 +300,7 @@ class AuthController extends Controller
                     'alamat'        => $s->alamat,
                     'no_telp'       => $s->no_hp,
                     'foto'          => $s->foto,
-                    'foto_url'      => $s->foto ? url('api/file/' . $s->foto) : null,
-                    'kelas'         => $s->relationLoaded('kelas') ? $s->kelas?->nama_kelas : null,
+                    'foto_url'      => $storageUrl($s->foto),
                 ] : null;
                 break;
 
@@ -308,7 +315,7 @@ class AuthController extends Controller
                     'no_telp'       => $g->no_hp,
                     'alamat'        => $g->alamat,
                     'foto'          => $g->foto,
-                    'foto_url'      => $g->foto ? url('api/file/' . $g->foto) : null,
+                    'foto_url'      => $storageUrl($g->foto),
                 ] : null;
                 break;
 

@@ -66,11 +66,11 @@ Route::prefix('siswa')
         // ABSENSI (scan QR & riwayat)
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('absensi')->name('absensi.')->group(function () {
-            // PENTING: route statis sebelum parameter
             Route::get('/scan',     [AbsensiController::class, 'scan'])->name('scan');
             Route::post('/scan',    [AbsensiController::class, 'doScan'])->name('do-scan');
             Route::get('/riwayat',  [AbsensiController::class, 'riwayat'])->name('riwayat');
             Route::get('/rekap',    [AbsensiController::class, 'rekap'])->name('rekap');
+            Route::get('/jadwal',   [AbsensiController::class, 'jadwalHariIni'])->name('jadwal');
         });
 
         // ──────────────────────────────────────────────────────────────────────
