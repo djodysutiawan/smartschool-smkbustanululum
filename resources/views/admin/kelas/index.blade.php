@@ -80,6 +80,7 @@
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;}
     .empty-sub{font-size:13px;color:var(--text3);}
+    /* ── Pagination ─────────────────────────────── */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;}
     .pag-info{font-size:12.5px;color:var(--text3);}
     .pag-btns{display:flex;gap:4px;align-items:center;}
@@ -87,10 +88,11 @@
     .pag-btn:hover{background:var(--surface2);}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff;}
     .pag-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
-    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px;}
+    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px;line-height:32px;}
+    /* ── Modal ──────────────────────────────────── */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;}
     .modal-overlay.open{display:flex;}
-    .modal{background:#fff;border-radius:var(--radius);padding:28px;width:440px;max-width:90vw;}
+    .modal{background:#fff;border-radius:var(--radius);padding:28px;width:460px;max-width:90vw;}
     .modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px;}
     .modal-sub{font-size:13px;color:var(--text3);margin-bottom:20px;}
     .modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px;}
@@ -99,6 +101,12 @@
     .modal-field input[type=file]:focus{outline:none;border-color:var(--brand-500);}
     .modal-hint{font-size:12px;color:var(--text3);}
     .modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;}
+    /* ── Template download banner ───────────────── */
+    .template-banner{background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
+    .template-banner-text{font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--brand-700);}
+    .template-banner-text strong{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;}
+    .btn-template{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;background:var(--brand-600);color:#fff;border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;flex-shrink:0;}
+    .btn-template:hover{filter:brightness(.9);}
     @media(max-width:640px){.stats-strip{grid-template-columns:1fr 1fr;}.page{padding:16px;}.filter-row input{width:100%;}}
 </style>
 
@@ -116,30 +124,43 @@
         </div>
     </div>
 
+    {{-- Stats: dihitung dari DB langsung di controller, bukan dari paginate collection --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
                 <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             </div>
-            <div><p class="stat-label">Total Kelas</p><p class="stat-val">{{ $kelas->total() }}</p></div>
+            <div>
+                <p class="stat-label">Total Kelas</p>
+                <p class="stat-val">{{ $statsKelas['total'] }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon green">
                 <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <div><p class="stat-label">Aktif</p><p class="stat-val">{{ $kelas->getCollection()->where('status','aktif')->count() }}</p></div>
+            <div>
+                <p class="stat-label">Aktif</p>
+                <p class="stat-val">{{ $statsKelas['total_aktif'] }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon yellow">
                 <svg width="18" height="18" fill="none" stroke="#a16207" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             </div>
-            <div><p class="stat-label">Total Siswa</p><p class="stat-val">{{ $kelas->getCollection()->sum('siswa_count') }}</p></div>
+            <div>
+                <p class="stat-label">Total Siswa</p>
+                <p class="stat-val">{{ $statsKelas['total_siswa'] }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon purple">
                 <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
-            <div><p class="stat-label">Tahun Ajaran</p><p class="stat-val">{{ $tahunAjarans->count() }}</p></div>
+            <div>
+                <p class="stat-label">Tahun Ajaran</p>
+                <p class="stat-val">{{ $statsKelas['total_ta'] }}</p>
+            </div>
         </div>
     </div>
 
@@ -148,14 +169,16 @@
         <form method="GET" action="{{ route('admin.kelas.index') }}">
             <div class="filter-row">
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama atau kode kelas...">
+
                 <select name="tahun_ajaran_id">
                     <option value="">Semua Tahun Ajaran</option>
                     @foreach($tahunAjarans as $ta)
-                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>{{ $ta->tahun }}</option>
+                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>
+                            {{ $ta->tahun }}
+                        </option>
                     @endforeach
                 </select>
 
-                {{-- ← BARU: filter jurusan --}}
                 <select name="jurusan_id">
                     <option value="">Semua Jurusan</option>
                     @foreach($jurusans as $j)
@@ -171,11 +194,13 @@
                         <option value="{{ $t }}" {{ request('tingkat') == $t ? 'selected' : '' }}>Tingkat {{ $t }}</option>
                     @endforeach
                 </select>
+
                 <select name="status">
                     <option value="">Semua Status</option>
                     <option value="aktif" {{ request('status') == 'aktif' ? 'selected' : '' }}>Aktif</option>
                     <option value="nonaktif" {{ request('status') == 'nonaktif' ? 'selected' : '' }}>Tidak Aktif</option>
                 </select>
+
                 <div class="filter-sep"></div>
                 <a href="{{ route('admin.kelas.index') }}" class="btn-reset">Reset</a>
                 <button type="submit" class="btn-filter">Terapkan Filter</button>
@@ -212,7 +237,7 @@
                     <tr>
                         <th style="width:48px">#</th>
                         <th>Nama / Kode Kelas</th>
-                        <th>Tingkat & Jurusan</th>  {{-- ← diubah dari "Tingkat" --}}
+                        <th>Tingkat & Jurusan</th>
                         <th>Tahun Ajaran</th>
                         <th>Wali Kelas</th>
                         <th>Ruang</th>
@@ -225,38 +250,58 @@
                     @forelse($kelas as $index => $k)
                     <tr>
                         <td><span class="no-col">{{ $kelas->firstItem() + $index }}</span></td>
+
                         <td>
                             <div class="kelas-wrap">
                                 <p class="kname">{{ $k->nama_kelas }}</p>
                                 <p class="kcode">{{ $k->kode_kelas }}</p>
                             </div>
                         </td>
+
                         <td>
-                            {{-- ← DIUBAH: tampilkan dari relasi jurusan, bukan string --}}
-                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);">{{ $k->tingkat }}</span>
+                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);">
+                                {{ $k->tingkat }}
+                            </span>
                             @if($k->jurusan)
                                 <br><span style="font-size:11.5px;color:var(--text3);">{{ $k->jurusan->singkatan ?? $k->jurusan->nama }}</span>
                             @else
                                 <br><span style="font-size:11.5px;color:var(--text3);">—</span>
                             @endif
                         </td>
-                        <td class="muted" style="font-size:12.5px;">{{ $k->tahunAjaran->tahun ?? '—' }}</td>
-                        <td style="font-size:13px;">{{ $k->waliKelas->nama_lengkap ?? '—' }}</td>
+
+                        <td class="muted" style="font-size:12.5px;">
+                            {{ $k->tahunAjaran->tahun ?? '—' }}
+                        </td>
+
+                        <td style="font-size:13px;">
+                            {{ $k->waliKelas->nama_lengkap ?? '—' }}
+                        </td>
+
                         <td class="muted" style="font-size:12.5px;">
                             @if($k->ruang)
                                 {{ $k->ruang->nama_ruang }}<br>
                                 <span style="font-size:11px;">{{ $k->ruang->gedung->nama_gedung ?? '' }}</span>
-                            @else —
+                            @else
+                                —
                             @endif
                         </td>
+
                         <td>
                             @php
-                                $pct = $k->kapasitas_maks > 0 ? min(100, round($k->siswa_count / $k->kapasitas_maks * 100)) : 0;
+                                // siswa_count berasal dari withCount('siswa') — tidak ada N+1 query
+                                $pct   = $k->kapasitas_maks > 0
+                                            ? min(100, round($k->siswa_count / $k->kapasitas_maks * 100))
+                                            : 0;
                                 $color = $pct >= 100 ? '#dc2626' : ($pct >= 80 ? '#f97316' : '#22c55e');
                             @endphp
-                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;">{{ $k->siswa_count }}/{{ $k->kapasitas_maks }}</span>
-                            <div class="kapasitas-bar"><div class="kapasitas-fill" style="width:{{ $pct }}%;background:{{ $color }};"></div></div>
+                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;">
+                                {{ $k->siswa_count }}/{{ $k->kapasitas_maks }}
+                            </span>
+                            <div class="kapasitas-bar">
+                                <div class="kapasitas-fill" style="width:{{ $pct }}%;background:{{ $color }};"></div>
+                            </div>
                         </td>
+
                         <td>
                             @if($k->status === 'aktif')
                                 <span class="badge badge-aktif"><span class="badge-dot"></span>Aktif</span>
@@ -264,6 +309,7 @@
                                 <span class="badge badge-nonaktif"><span class="badge-dot"></span>Tidak Aktif</span>
                             @endif
                         </td>
+
                         <td class="center">
                             <div class="action-group">
                                 <a href="{{ route('admin.kelas.show', $k->id) }}" class="btn btn-sm btn-detail">Detail</a>
@@ -295,23 +341,60 @@
             </table>
         </div>
 
+        {{--
+            FIX: Pagination — gunakan flag $leftDone & $rightDone agar ellipsis
+            tidak muncul ganda. Logika:
+            - Selalu tampilkan halaman pertama, terakhir, dan sekitar currentPage (±1).
+            - Ellipsis kiri muncul sekali jika ada gap antara halaman 1 dan range kiri.
+            - Ellipsis kanan muncul sekali jika ada gap antara range kanan dan halaman terakhir.
+        --}}
         @if($kelas->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $kelas->firstItem() }} – {{ $kelas->lastItem() }} dari {{ $kelas->total() }} kelas</p>
             <div class="pag-btns">
-                <a href="{{ $kelas->previousPageUrl() ?? '#' }}" class="pag-btn {{ $kelas->onFirstPage() ? 'disabled' : '' }}">
+                {{-- Tombol Prev --}}
+                <a href="{{ $kelas->previousPageUrl() ?? '#' }}"
+                   class="pag-btn {{ $kelas->onFirstPage() ? 'disabled' : '' }}">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 </a>
-                @foreach($kelas->getUrlRange(1, $kelas->lastPage()) as $page => $url)
-                    @if($page == $kelas->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $kelas->lastPage() || abs($page - $kelas->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $kelas->currentPage()) == 2)
-                        <span class="pag-ellipsis">…</span>
+
+                @php
+                    $current  = $kelas->currentPage();
+                    $last     = $kelas->lastPage();
+                    $leftDone = false;   // flag: ellipsis kiri sudah dicetak?
+                    $rightDone= false;   // flag: ellipsis kanan sudah dicetak?
+                @endphp
+
+                @for($page = 1; $page <= $last; $page++)
+                    @php
+                        // Tampilkan nomor jika: halaman pertama, terakhir, atau dalam window ±1 dari current
+                        $inWindow = ($page === 1 || $page === $last || abs($page - $current) <= 1);
+                    @endphp
+
+                    @if($inWindow)
+                        @if($page === $current)
+                            <span class="pag-btn active">{{ $page }}</span>
+                        @else
+                            <a href="{{ $kelas->url($page) }}" class="pag-btn">{{ $page }}</a>
+                        @endif
+                    @else
+                        {{-- Ellipsis kiri: antara halaman 1 dan window kiri --}}
+                        @if($page < $current && ! $leftDone)
+                            <span class="pag-ellipsis">…</span>
+                            @php $leftDone = true; @endphp
+                        @endif
+
+                        {{-- Ellipsis kanan: antara window kanan dan halaman terakhir --}}
+                        @if($page > $current && ! $rightDone)
+                            <span class="pag-ellipsis">…</span>
+                            @php $rightDone = true; @endphp
+                        @endif
                     @endif
-                @endforeach
-                <a href="{{ $kelas->nextPageUrl() ?? '#' }}" class="pag-btn {{ !$kelas->hasMorePages() ? 'disabled' : '' }}">
+                @endfor
+
+                {{-- Tombol Next --}}
+                <a href="{{ $kelas->nextPageUrl() ?? '#' }}"
+                   class="pag-btn {{ ! $kelas->hasMorePages() ? 'disabled' : '' }}">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 </a>
             </div>
@@ -324,7 +407,19 @@
 <div class="modal-overlay" id="modalImport">
     <div class="modal">
         <p class="modal-title">Import Data Kelas</p>
-        <p class="modal-sub">Upload file Excel (.xlsx, .xls) atau CSV untuk mengimpor data kelas secara massal.</p>
+        <p class="modal-sub">Upload file Excel atau CSV untuk mengimpor data kelas secara massal.</p>
+
+        {{-- FIX: Tambah banner download template agar user tahu format yang diharapkan --}}
+        <div class="template-banner">
+            <span class="template-banner-text">
+                <strong>Belum punya template?</strong> Unduh terlebih dahulu agar format kolom sesuai.
+            </span>
+            <a href="{{ route('admin.kelas.import.template') }}" class="btn-template">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Unduh Template
+            </a>
+        </div>
+
         <form action="{{ route('admin.kelas.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="modal-field">
@@ -353,6 +448,7 @@
     Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
     @endif
 
+    // Tutup modal jika klik di luar area modal
     document.getElementById('modalImport').addEventListener('click', function(e) {
         if (e.target === this) this.classList.remove('open');
     });

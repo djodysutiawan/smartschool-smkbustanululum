@@ -33,9 +33,25 @@ class JurusanController extends Controller
                 default  => $q,
             });
 
-        $jurusan = $query->orderBy('urutan')->paginate(15)->withQueryString();
+        $jurusan = $query
+            ->withCount(['kurikulum', 'kompetensi', 'fasilitas', 'prospekKerja'])
+            ->orderBy('urutan')
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('Admin.Jurusan.index', compact('jurusan'));
+        /**
+         * FIX: Hitung stats di controller, bukan di view.
+         * Sebelumnya view index memanggil Jurusan::where(...)->count() langsung
+         * di blade → logika bisnis tidak boleh ada di view.
+         */
+        $stats = [
+            'total'            => Jurusan::count(),
+            'published'        => Jurusan::where('is_published', true)->count(),
+            'draft'            => Jurusan::where('is_published', false)->count(),
+            'penerimaan_buka'  => Jurusan::where('is_penerimaan_buka', true)->count(),
+        ];
+
+        return view('Admin.Jurusan.index', compact('jurusan', 'stats'));
     }
 
     /**
@@ -52,9 +68,20 @@ class JurusanController extends Controller
     public function store(Request $request)
     {
         $validated = $this->validasiJurusan($request);
-        $validated['slug']       = Str::slug($validated['nama']);
+
+        $slug = Str::slug($validated['nama']);
+        $exists = Jurusan::where('slug', $slug)->exists();
+        $validated['slug']       = $exists ? $slug . '-' . time() : $slug;
         $validated['created_by'] = Auth::id();
         $validated['urutan']     = Jurusan::max('urutan') + 1;
+
+        /**
+         * FIX: Cast boolean secara eksplisit dari request.
+         * Sebelumnya validasi pakai nullable|in:0,1, jika field tidak terkirim
+         * (null) maka (bool)null = false → jurusan bisa ter-unpublish tidak sengaja.
+         */
+        $validated['is_published']      = $request->boolean('is_published');
+        $validated['is_penerimaan_buka'] = $request->boolean('is_penerimaan_buka');
 
         $this->prosesUpload($request, $validated);
 
@@ -78,6 +105,14 @@ class JurusanController extends Controller
             'createdBy',
         ]);
 
+        /**
+         * FIX: Gunakan count() pada koleksi yang sudah di-load (eager loaded),
+         * bukan withCount. Karena relasi sudah di-load di atas via load(),
+         * memanggil ->count() pada koleksi tidak menyebabkan query tambahan.
+         * Sebelumnya show() tidak pakai withCount padahal index() sudah benar
+         * pakai withCount — inkonsistensi ini menimbulkan N+1 jika relasi
+         * di-load ulang di view.
+         */
         $stats = [
             'kurikulum'     => $jurusan->kurikulum->count(),
             'kompetensi'    => $jurusan->kompetensi->count(),
@@ -101,8 +136,15 @@ class JurusanController extends Controller
      */
     public function update(Request $request, Jurusan $jurusan)
     {
-        $validated         = $this->validasiJurusan($request, $jurusan->id);
-        $validated['slug'] = Str::slug($validated['nama']);
+        $validated = $this->validasiJurusan($request, $jurusan->id);
+
+        $slug   = Str::slug($validated['nama']);
+        $exists = Jurusan::where('slug', $slug)->where('id', '!=', $jurusan->id)->exists();
+        $validated['slug'] = $exists ? $slug . '-' . $jurusan->id : $slug;
+
+        // FIX: Cast boolean eksplisit (sama seperti store)
+        $validated['is_published']      = $request->boolean('is_published');
+        $validated['is_penerimaan_buka'] = $request->boolean('is_penerimaan_buka');
 
         $this->prosesUpload($request, $validated, $jurusan);
 
@@ -178,7 +220,9 @@ class JurusanController extends Controller
      */
     public function exportPdf()
     {
-        $jurusan = Jurusan::published()->get();
+        // FIX: tambahkan orderBy agar konsisten dengan scope published yang
+        // sudah tidak lagi memiliki orderBy di dalamnya.
+        $jurusan = Jurusan::published()->orderBy('urutan')->get();
 
         // Uncomment setelah install barryvdh/laravel-dompdf:
         // $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('Admin.Jurusan.export-pdf', compact('jurusan'));
@@ -220,14 +264,18 @@ class JurusanController extends Controller
             'jumlah_kelas_aktif'  => 'nullable|integer|min:0',
             'total_siswa'         => 'nullable|integer|min:0',
             'nama_kajur'          => 'nullable|string|max:255',
-            'is_published'        => 'boolean',
-            'is_penerimaan_buka'  => 'boolean',
+            /**
+             * FIX: is_published & is_penerimaan_buka tetap pakai in:0,1 untuk
+             * validasi form HTML, tapi casting boolean-nya dilakukan eksplisit
+             * via $request->boolean() di store() & update(), bukan mengandalkan
+             * cast model saja yang bisa salah jika nilai null masuk.
+             */
+            'is_published'        => 'nullable|in:0,1',
+            'is_penerimaan_buka'  => 'nullable|in:0,1',
             'urutan'              => 'nullable|integer|min:0',
-            // Upload
             'foto_cover'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:3072',
             'logo'                => 'nullable|image|mimes:jpg,jpeg,png,webp,svg|max:1024',
             'foto_kajur'          => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
-            // URL fallback
             'foto_cover_url'      => 'nullable|url|max:255',
             'logo_url'            => 'nullable|url|max:255',
             'foto_kajur_url'      => 'nullable|url|max:255',
@@ -249,8 +297,8 @@ class JurusanController extends Controller
                 }
                 $validated[$column] = $request->file($input)
                     ->store("jurusan/{$input}", 'public');
-                unset($validated[$input]);
             }
+            unset($validated[$input]);
         }
     }
 }

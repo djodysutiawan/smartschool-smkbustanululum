@@ -5,55 +5,84 @@
 <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'DejaVu Sans', Arial, sans-serif; font-size: 9px; color: #1e293b; }
-    .header { background: #1f63db; color: #fff; padding: 14px 20px; margin-bottom: 16px; border-radius: 6px; }
-    .header h1 { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
-    .header p  { font-size: 9px; opacity: .85; }
-    .stats { display: table; width: 100%; margin-bottom: 14px; border-spacing: 6px 0; }
-    .stat  { display: table-cell; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 5px; padding: 8px 12px; text-align: center; }
+
+    .header { background: #1f63db; color: #fff; padding: 14px 20px; margin-bottom: 16px; }
+    .header h1 { font-size: 15px; font-weight: bold; margin-bottom: 2px; }
+    .header p  { font-size: 8.5px; opacity: .85; }
+
+    {{-- Stats pakai table layout — DomPDF tidak support flexbox/grid --}}
+    .stats-table { width: 100%; border-collapse: separate; border-spacing: 6px 0; margin-bottom: 14px; }
+    .stats-table td { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; text-align: center; width: 33.33%; }
     .stat-val   { font-size: 18px; font-weight: bold; color: #1f63db; }
     .stat-label { font-size: 8px; color: #64748b; margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
-    table { width: 100%; border-collapse: collapse; font-size: 8.5px; }
-    thead th { background: #1f63db; color: #fff; padding: 7px 8px; text-align: left; font-size: 8px; text-transform: uppercase; letter-spacing: .04em; }
-    thead th.center { text-align: center; }
-    tbody tr:nth-child(even) { background: #f8fafc; }
-    td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-    td.center { text-align: center; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 7.5px; font-weight: bold; }
+
+    .filter-bar { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 5px 10px; margin-bottom: 12px; font-size: 8px; color: #475569; }
+
+    table.data { width: 100%; border-collapse: collapse; font-size: 8.5px; }
+    table.data thead th { background: #1f63db; color: #fff; padding: 7px 8px; text-align: left; font-size: 8px; text-transform: uppercase; letter-spacing: .04em; }
+    table.data thead th.center { text-align: center; }
+    table.data tbody tr:nth-child(even) { background: #f8fafc; }
+    table.data td { padding: 6px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+    table.data td.center { text-align: center; }
+
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 3px; font-size: 7.5px; font-weight: bold; }
     .badge-aktif    { background: #dcfce7; color: #15803d; }
     .badge-nonaktif { background: #fee2e2; color: #dc2626; }
-    .footer { margin-top: 14px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: table; width: 100%; font-size: 8px; color: #94a3b8; }
-    .footer-left  { display: table-cell; }
-    .footer-right { display: table-cell; text-align: right; }
+
+    {{-- Footer pakai table layout --}}
+    .footer-table { width: 100%; border-collapse: collapse; margin-top: 14px; padding-top: 8px; border-top: 1px solid #e2e8f0; font-size: 8px; color: #94a3b8; }
+    .footer-table td { padding: 0; }
+    .footer-table .right { text-align: right; }
 </style>
 </head>
 <body>
+
+{{-- HEADER — tanpa emoji karena DejaVu Sans tidak support semua emoji --}}
 <div class="header">
-    <h1>🏢 Data Gedung</h1>
-    <p>Laporan data gedung — dicetak {{ now()->format('d F Y, H:i') }} WIB</p>
+    <h1>Data Gedung</h1>
+    <p>Laporan data gedung &mdash; dicetak {{ now()->isoFormat('D MMMM Y, HH:mm') }} WIB</p>
 </div>
-<div class="stats">
-    <div class="stat">
-        <div class="stat-val">{{ $gedung->count() }}</div>
-        <div class="stat-label">Total Gedung</div>
-    </div>
-    <div class="stat">
-        <div class="stat-val">{{ $gedung->where('is_active', true)->count() }}</div>
-        <div class="stat-label">Aktif</div>
-    </div>
-    <div class="stat">
-        <div class="stat-val">{{ $gedung->sum('ruang_count') }}</div>
-        <div class="stat-label">Total Ruangan</div>
-    </div>
-</div>
-<table>
+
+{{-- STATS — pakai <table> bukan div dengan display:table (lebih aman di DomPDF) --}}
+{{--
+    FIX: $gedung adalah Collection hasil ->get(), bukan Eloquent Builder.
+    Gunakan ->filter() / ->sum() pada Collection, BUKAN ->where() builder method
+    karena withCount() sudah di-resolve ke atribut 'ruang_count' di Collection.
+--}}
+<table class="stats-table">
+    <tr>
+        <td>
+            <div class="stat-val">{{ $gedung->count() }}</div>
+            <div class="stat-label">Total Gedung</div>
+        </td>
+        <td>
+            {{-- FIX: Collection->filter() bukan ->where() untuk boolean cast --}}
+            <div class="stat-val">{{ $gedung->filter(fn($g) => $g->is_active)->count() }}</div>
+            <div class="stat-label">Aktif</div>
+        </td>
+        <td>
+            {{-- FIX: ruang_count adalah atribut dari withCount, bukan relasi --}}
+            <div class="stat-val">{{ $gedung->sum('ruang_count') }}</div>
+            <div class="stat-label">Total Ruangan</div>
+        </td>
+    </tr>
+</table>
+
+{{-- Filter label — hanya tampil jika ada filter aktif --}}
+@if($filterLabel)
+<div class="filter-bar">Filter aktif: {{ $filterLabel }}</div>
+@endif
+
+{{-- TABEL DATA --}}
+<table class="data">
     <thead>
         <tr>
             <th style="width:24px" class="center">#</th>
             <th style="width:60px">Kode</th>
             <th>Nama Gedung</th>
-            <th class="center">Lantai</th>
-            <th class="center">Jml Ruang</th>
-            <th class="center">Status</th>
+            <th class="center" style="width:40px">Lantai</th>
+            <th class="center" style="width:50px">Jml Ruang</th>
+            <th class="center" style="width:55px">Status</th>
             <th>Deskripsi</th>
         </tr>
     </thead>
@@ -70,16 +99,27 @@
                     {{ $g->is_active ? 'Aktif' : 'Nonaktif' }}
                 </span>
             </td>
-            <td style="color:#64748b;font-size:8px">{{ \Illuminate\Support\Str::limit($g->deskripsi ?? '-', 50) }}</td>
+            <td style="color:#64748b;font-size:8px">
+                {{ \Illuminate\Support\Str::limit($g->deskripsi ?? '-', 50) }}
+            </td>
         </tr>
         @empty
-        <tr><td colspan="7" style="text-align:center;color:#94a3b8;padding:20px">Tidak ada data</td></tr>
+        <tr>
+            <td colspan="7" style="text-align:center;color:#94a3b8;padding:20px">
+                Tidak ada data gedung
+            </td>
+        </tr>
         @endforelse
     </tbody>
 </table>
-<div class="footer">
-    <div class="footer-left">Sistem Informasi Sekolah — Dicetak oleh: {{ auth()->user()->name }}</div>
-    <div class="footer-right">{{ now()->format('d/m/Y H:i') }}</div>
-</div>
+
+{{-- FOOTER --}}
+<table class="footer-table">
+    <tr>
+        <td>Sistem Informasi Sekolah &mdash; Dicetak oleh: {{ auth()->user()->name }}</td>
+        <td class="right">{{ now()->format('d/m/Y H:i') }}</td>
+    </tr>
+</table>
+
 </body>
 </html>

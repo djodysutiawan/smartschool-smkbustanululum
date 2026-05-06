@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\TugasController;
 use App\Http\Controllers\Admin\UjianController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\KenaikanKelasController;
 
 
 Route::prefix('admin')
@@ -217,22 +218,40 @@ Route::prefix('admin')
 
         // Ketersediaan Guru
         Route::prefix('ketersediaan-guru')->name('ketersediaan-guru.')->group(function () {
-            Route::get('/export/pdf',                  [KetersediaanGuruController::class, 'exportPdf'])->name('export.pdf');
-            Route::get('/export/excel',                [KetersediaanGuruController::class, 'exportExcel'])->name('export.excel');
-            Route::post('/import',                     [KetersediaanGuruController::class, 'import'])->name('import');
-            Route::get('/guru/{guru}',                 [KetersediaanGuruController::class, 'showByGuru'])->name('by-guru');
-            Route::post('/guru/{guru}/bulk',           [KetersediaanGuruController::class, 'bulkStore'])->name('bulk-store');
-            Route::get('/',                            [KetersediaanGuruController::class, 'index'])->name('index');
-            Route::get('/create',                      [KetersediaanGuruController::class, 'create'])->name('create');
-            Route::post('/',                           [KetersediaanGuruController::class, 'store'])->name('store');
-            Route::get('/{ketersediaanGuru}',          [KetersediaanGuruController::class, 'show'])->name('show');
-            Route::get('/{ketersediaanGuru}/edit',     [KetersediaanGuruController::class, 'edit'])->name('edit');
-            Route::put('/{ketersediaanGuru}',          [KetersediaanGuruController::class, 'update'])->name('update');
-            Route::delete('/{ketersediaanGuru}',       [KetersediaanGuruController::class, 'destroy'])->name('destroy');
-            Route::patch('/{ketersediaanGuru}/toggle', [KetersediaanGuruController::class, 'toggle'])->name('toggle');
+            Route::get('/export/pdf',                        [KetersediaanGuruController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',                      [KetersediaanGuruController::class, 'exportExcel'])->name('export.excel');
+            Route::post('/import',                           [KetersediaanGuruController::class, 'import'])->name('import');
+            Route::get('/guru/{guru}',                       [KetersediaanGuruController::class, 'showByGuru'])->name('by-guru');
+            Route::post('/guru/{guru}/bulk',                 [KetersediaanGuruController::class, 'bulkStore'])->name('bulk-store');
+            Route::post('/guru/{guru}/sync-mapel',           [KetersediaanGuruController::class, 'syncMapel'])->name('sync-mapel');
+            Route::get('/ajax/mapel-by-jurusan/{jurusan}',   [KetersediaanGuruController::class, 'mapelByJurusan'])->name('ajax.mapel-by-jurusan');
+            Route::get('/ajax/mapel-by-jurusan',             [KetersediaanGuruController::class, 'mapelByJurusan'])->name('ajax.mapel-all');
+            Route::get('/',                                  [KetersediaanGuruController::class, 'index'])->name('index');
+            Route::get('/create',                            [KetersediaanGuruController::class, 'create'])->name('create');
+            Route::post('/',                                 [KetersediaanGuruController::class, 'store'])->name('store');
+            Route::get('/{ketersediaanGuru}',                [KetersediaanGuruController::class, 'show'])->name('show');
+            Route::get('/{ketersediaanGuru}/edit',           [KetersediaanGuruController::class, 'edit'])->name('edit');
+            Route::put('/{ketersediaanGuru}',                [KetersediaanGuruController::class, 'update'])->name('update');
+            Route::delete('/{ketersediaanGuru}',             [KetersediaanGuruController::class, 'destroy'])->name('destroy');
+            Route::patch('/{ketersediaanGuru}/toggle',       [KetersediaanGuruController::class, 'toggle'])->name('toggle');
         });
 
         // Jadwal Pelajaran
+        // Route::prefix('jadwal-pelajaran')->name('jadwal-pelajaran.')->group(function () {
+        //     Route::get('/export/pdf',                        [JadwalPelajaranController::class, 'exportPdf'])->name('export.pdf');
+        //     Route::get('/export/excel',                      [JadwalPelajaranController::class, 'exportExcel'])->name('export.excel');
+        //     Route::get('/import/template',                   [JadwalPelajaranController::class, 'importTemplate'])->name('import.template');
+        //     Route::post('/import',                           [JadwalPelajaranController::class, 'import'])->name('import');
+        //     Route::get('/',                                  [JadwalPelajaranController::class, 'index'])->name('index');
+        //     Route::get('/create',                            [JadwalPelajaranController::class, 'create'])->name('create');
+        //     Route::post('/',                                 [JadwalPelajaranController::class, 'store'])->name('store');
+        //     Route::get('/{jadwalPelajaran}',                 [JadwalPelajaranController::class, 'show'])->name('show');
+        //     Route::get('/{jadwalPelajaran}/edit',            [JadwalPelajaranController::class, 'edit'])->name('edit');
+        //     Route::put('/{jadwalPelajaran}',                 [JadwalPelajaranController::class, 'update'])->name('update');
+        //     Route::delete('/{jadwalPelajaran}',              [JadwalPelajaranController::class, 'destroy'])->name('destroy');
+        //     Route::patch('/{jadwalPelajaran}/toggle-status', [JadwalPelajaranController::class, 'toggleStatus'])->name('toggle-status');
+        // });
+
         Route::prefix('jadwal-pelajaran')->name('jadwal-pelajaran.')->group(function () {
             Route::get('/export/pdf',                        [JadwalPelajaranController::class, 'exportPdf'])->name('export.pdf');
             Route::get('/export/excel',                      [JadwalPelajaranController::class, 'exportExcel'])->name('export.excel');
@@ -241,6 +260,15 @@ Route::prefix('admin')
             Route::get('/',                                  [JadwalPelajaranController::class, 'index'])->name('index');
             Route::get('/create',                            [JadwalPelajaranController::class, 'create'])->name('create');
             Route::post('/',                                 [JadwalPelajaranController::class, 'store'])->name('store');
+
+            // ── Tambahkan baris ini ──────────────────────────────────────────────────
+            Route::get('/{jadwalPelajaran}/generate-qr',     [JadwalPelajaranController::class, 'generateQr'])->name('generate-qr');
+            // ─────────────────────────────────────────────────────────────────────────
+
+            // ── Tambahkan ini juga untuk AJAX mapel by kelas ─────────────────────────
+            Route::get('/get-mapel-by-kelas',                [JadwalPelajaranController::class, 'getMapelByKelas'])->name('get-mapel-by-kelas');
+            // ─────────────────────────────────────────────────────────────────────────
+
             Route::get('/{jadwalPelajaran}',                 [JadwalPelajaranController::class, 'show'])->name('show');
             Route::get('/{jadwalPelajaran}/edit',            [JadwalPelajaranController::class, 'edit'])->name('edit');
             Route::put('/{jadwalPelajaran}',                 [JadwalPelajaranController::class, 'update'])->name('update');
@@ -287,6 +315,11 @@ Route::prefix('admin')
             Route::get('/export/excel',              [MateriController::class, 'exportExcel'])->name('export.excel');
             Route::get('/import/template',           [MateriController::class, 'importTemplate'])->name('import.template');
             Route::post('/import',                   [MateriController::class, 'import'])->name('import');
+
+            // AJAX Cascade — harus sebelum /{materi} agar tidak tertangkap sebagai wildcard
+            Route::get('/ajax/mapel-by-guru/{guru}', [MateriController::class, 'ajaxMapelByGuru'])->name('ajax.mapel');
+            Route::get('/ajax/kelas-by-guru/{guru}', [MateriController::class, 'ajaxKelasByGuru'])->name('ajax.kelas');
+
             Route::get('/{materi}',                  [MateriController::class, 'show'])->name('show');
             Route::get('/{materi}/edit',             [MateriController::class, 'edit'])->name('edit');
             Route::put('/{materi}',                  [MateriController::class, 'update'])->name('update');
@@ -304,6 +337,13 @@ Route::prefix('admin')
             Route::get('/export/excel',            [TugasController::class, 'exportExcel'])->name('export.excel');
             Route::get('/import/template',         [TugasController::class, 'importTemplate'])->name('import.template');
             Route::post('/import',                 [TugasController::class, 'import'])->name('import');
+
+            // ✅ AJAX harus di atas /{tugas} agar tidak terlebih dulu ditangkap wildcard
+            Route::get('/ajax/guru/{guru}/mapel',   [TugasController::class, 'ajaxMapelByGuru'])->name('ajax.mapel');
+            Route::get('/ajax/guru/{guru}/kelas',   [TugasController::class, 'ajaxKelasByGuru'])->name('ajax.kelas');
+            Route::get('/ajax/tahun-ajaran-aktif',  [TugasController::class, 'ajaxTahunAjaranAktif'])->name('ajax.tahun');
+
+            // Wildcard /{tugas} harus paling bawah
             Route::get('/{tugas}',                 [TugasController::class, 'show'])->name('show');
             Route::get('/{tugas}/edit',            [TugasController::class, 'edit'])->name('edit');
             Route::put('/{tugas}',                 [TugasController::class, 'update'])->name('update');
@@ -808,6 +848,16 @@ Route::prefix('admin')
             // Route::patch('/{kontakPesan}/balas',   [KontakPesanController::class, 'tandaiDibalas'])->name('balas');
             Route::patch('/{kontakPesan}/baca',  [KontakPesanController::class, 'markAsRead'])->name('mark-as-read');  // was: baca
             Route::patch('/{kontakPesan}/balas', [KontakPesanController::class, 'tandaiDibalas'])->name('tandai-dibalas'); // was: balas
+        });
+
+        // Kenaikan Kelas
+        Route::prefix('kenaikan-kelas')->name('kenaikan-kelas.')->group(function () {
+            Route::get('/',                                    [KenaikanKelasController::class, 'index'])->name('index');
+            Route::get('/create',                              [KenaikanKelasController::class, 'create'])->name('create');
+            Route::post('/preview',                            [KenaikanKelasController::class, 'preview'])->name('preview');
+            Route::post('/',                                   [KenaikanKelasController::class, 'store'])->name('store');
+            Route::get('/{kenaikanKelas}',                     [KenaikanKelasController::class, 'show'])->name('show');
+            Route::post('/{kenaikanKelas}/batalkan',           [KenaikanKelasController::class, 'batalkan'])->name('batalkan');
         });
 
     });

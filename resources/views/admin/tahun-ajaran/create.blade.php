@@ -31,7 +31,6 @@
     .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13.5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
     .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
     .form-section{padding:20px 24px 24px;}
-    .section-divider{border:none;border-top:1px solid var(--border);margin:0;}
     .section-label{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px;}
     .section-label-line{flex:1;height:1px;background:var(--border);}
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
@@ -46,7 +45,6 @@
     .field input.is-invalid,.field select.is-invalid,.field textarea.is-invalid{border-color:var(--red);background:#fff8f8;}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;margin-top:-2px;}
     .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px;}
-    .info-box{background:#eef6ff;border:1px solid #d9ebff;border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:#1750c0;font-family:'DM Sans',sans-serif;display:flex;align-items:flex-start;gap:8px;margin-bottom:20px;}
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border);}
     @media(max-width:680px){.page{padding:16px 16px 40px;}.form-grid{grid-template-columns:1fr;}.col-span-2{grid-column:span 1;}}
     @keyframes spin{to{transform:rotate(360deg);}}
@@ -72,6 +70,7 @@
         </a>
     </div>
 
+    {{-- Fallback alert jika JS disabled --}}
     @if($errors->any())
     <div class="alert">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -156,13 +155,25 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    {{--
+        FIX: Gunakan @json() untuk semua variabel Blade di dalam JS.
+        @json() melakukan JSON-encode + escape karakter berbahaya (', ", <, >, &)
+        sehingga aman dari XSS dan tidak menyebabkan syntax error JS.
+    --}}
     @if($errors->any())
-    Swal.fire({
-        icon: 'error',
-        title: 'Terdapat {{ $errors->count() }} Kesalahan',
-        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor: '#1f63db',
-    });
+    (function () {
+        const errs = @json($errors->all());
+        const count = @json($errors->count());
+        const html = '<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">'
+            + errs.map(e => `<li>${e}</li>`).join('')
+            + '</ul>';
+        Swal.fire({
+            icon: 'error',
+            title: `Terdapat ${count} Kesalahan`,
+            html: html,
+            confirmButtonColor: '#1f63db',
+        });
+    })();
     @endif
 
     document.getElementById('taForm').addEventListener('submit', function () {

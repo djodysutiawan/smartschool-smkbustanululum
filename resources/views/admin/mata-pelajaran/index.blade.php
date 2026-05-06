@@ -85,6 +85,8 @@
     .badge-aktif .badge-dot { background: #15803d; }
     .badge-nonaktif { background: #fee2e2; color: #dc2626; }
     .badge-nonaktif .badge-dot { background: #dc2626; }
+    .badge-umum { background: var(--brand-50); color: var(--brand-700); }
+    .badge-jurusan { background: #faf5ff; color: #7c3aed; }
 
     .kelompok-pill { display: inline-block; padding: 2px 9px; border-radius: 5px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700; background: var(--brand-50); color: var(--brand-700); border: 1px solid var(--brand-100); }
     .perlu-lab-yes { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: #7c3aed; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -145,7 +147,7 @@
             </div>
             <div>
                 <p class="stat-label">Total Mapel</p>
-                <p class="stat-val">{{ $mapel->total() }}</p>
+                <p class="stat-val">{{ $stats['total'] }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -154,7 +156,7 @@
             </div>
             <div>
                 <p class="stat-label">Aktif</p>
-                <p class="stat-val">{{ \App\Models\MataPelajaran::where('is_active', true)->count() }}</p>
+                <p class="stat-val">{{ $stats['aktif'] }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -163,7 +165,7 @@
             </div>
             <div>
                 <p class="stat-label">Nonaktif</p>
-                <p class="stat-val">{{ \App\Models\MataPelajaran::where('is_active', false)->count() }}</p>
+                <p class="stat-val">{{ $stats['nonaktif'] }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -172,7 +174,7 @@
             </div>
             <div>
                 <p class="stat-label">Butuh Lab</p>
-                <p class="stat-val">{{ \App\Models\MataPelajaran::where('perlu_lab', true)->count() }}</p>
+                <p class="stat-val">{{ $stats['perlu_lab'] }}</p>
             </div>
         </div>
     </div>
@@ -187,6 +189,12 @@
                         <option value="{{ $k }}" {{ request('kelompok') == $k ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $k)) }}</option>
                     @endforeach
                 </select>
+                <select name="scope">
+                    <option value="">Semua Scope</option>
+                    <option value="umum" {{ request('scope') === 'umum' ? 'selected' : '' }}>Umum</option>
+                    <option value="jurusan" {{ request('scope') === 'jurusan' ? 'selected' : '' }}>Spesifik Jurusan</option>
+                </select>
+                {{-- FIX #12: Bandingkan dengan === string agar '0' terpilih benar --}}
                 <select name="is_active">
                     <option value="">Semua Status</option>
                     <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Aktif</option>
@@ -203,6 +211,7 @@
         <div class="table-topbar">
             <p class="table-info">
                 Daftar Mata Pelajaran
+                {{-- FIX #13: null-safe ?? 0 untuk firstItem/lastItem --}}
                 <span>— menampilkan {{ $mapel->firstItem() ?? 0 }}–{{ $mapel->lastItem() ?? 0 }} dari {{ $mapel->total() }} data</span>
             </p>
             <div class="table-actions">
@@ -228,6 +237,7 @@
                         <th style="width:48px">#</th>
                         <th>Nama / Kode Mapel</th>
                         <th>Kelompok</th>
+                        <th class="center">Scope</th>
                         <th class="center">Jam/Minggu</th>
                         <th class="center">Durasi Sesi</th>
                         <th class="center">Perlu Lab</th>
@@ -253,8 +263,13 @@
                                 <span class="muted">—</span>
                             @endif
                         </td>
+                        <td class="center">
+                            <span class="badge {{ $m->scope === 'umum' ? 'badge-umum' : 'badge-jurusan' }}" style="font-size:11px">
+                                {{ $m->scope === 'umum' ? 'Umum' : 'Jurusan' }}
+                            </span>
+                        </td>
                         <td class="center" style="font-size:13px;font-weight:700;color:var(--text)">{{ $m->jam_per_minggu }} jam</td>
-                        <td class="center muted" style="font-size:12.5px">{{ $m->durasi_per_sesi }} menit</td>
+                        <td class="center muted" style="font-size:12.5px">{{ $m->durasi_per_sesi }} mnt</td>
                         <td class="center">
                             @if($m->perlu_lab)
                                 <span class="perlu-lab-yes">
@@ -281,14 +296,14 @@
                                     @csrf @method('PATCH')
                                     <button type="button"
                                         class="btn btn-sm {{ $m->is_active ? 'btn-toggle-on' : 'btn-toggle-off' }}"
-                                        onclick="confirmToggle(document.getElementById('toggleForm-{{ $m->id }}'), '{{ addslashes($m->nama_mapel) }}', {{ $m->is_active ? 'true' : 'false' }})">
+                                        onclick="confirmToggle(document.getElementById('toggleForm-{{ $m->id }}'), @json($m->nama_mapel), {{ $m->is_active ? 'true' : 'false' }})">
                                         {{ $m->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                                     </button>
                                 </form>
                                 <form action="{{ route('admin.mata-pelajaran.destroy', $m->id) }}" method="POST" id="deleteForm-{{ $m->id }}">
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('deleteForm-{{ $m->id }}'), '{{ addslashes($m->nama_mapel) }}')">
+                                        onclick="confirmDelete(document.getElementById('deleteForm-{{ $m->id }}'), @json($m->nama_mapel))">
                                         Hapus
                                     </button>
                                 </form>
@@ -297,7 +312,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9">
+                        <td colspan="10">
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
@@ -312,24 +327,46 @@
             </table>
         </div>
 
+        {{-- FIX #14: Pagination — null-safe + ellipsis tidak duplikat --}}
         @if($mapel->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">Menampilkan {{ $mapel->firstItem() }} – {{ $mapel->lastItem() }} dari {{ $mapel->total() }} mata pelajaran</p>
+            <p class="pag-info">Menampilkan {{ $mapel->firstItem() ?? 0 }} – {{ $mapel->lastItem() ?? 0 }} dari {{ $mapel->total() }} mata pelajaran</p>
             <div class="pag-btns">
                 @if($mapel->onFirstPage())
                     <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
                 @else
                     <a href="{{ $mapel->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
                 @endif
-                @foreach($mapel->getUrlRange(1, $mapel->lastPage()) as $page => $url)
-                    @if($page == $mapel->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $mapel->lastPage() || abs($page - $mapel->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $mapel->currentPage()) == 2)
+
+                @php
+                    $current       = $mapel->currentPage();
+                    $last          = $mapel->lastPage();
+                    $shownLeftDots = false;
+                    $shownRightDots= false;
+                @endphp
+
+                @foreach($mapel->getUrlRange(1, $last) as $page => $url)
+                    @php
+                        $nearCurrent = abs($page - $current) <= 1;
+                        $isEdge      = $page === 1 || $page === $last;
+                        $show        = $isEdge || $nearCurrent;
+                    @endphp
+
+                    @if($show)
+                        @if($page == $current)
+                            <span class="pag-btn active">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
+                        @endif
+                    @elseif($page < $current && !$shownLeftDots)
                         <span class="pag-ellipsis">…</span>
+                        @php $shownLeftDots = true; @endphp
+                    @elseif($page > $current && !$shownRightDots)
+                        <span class="pag-ellipsis">…</span>
+                        @php $shownRightDots = true; @endphp
                     @endif
                 @endforeach
+
                 @if($mapel->hasMorePages())
                     <a href="{{ $mapel->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
                 @else
@@ -353,7 +390,10 @@
         <form action="{{ route('admin.mata-pelajaran.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="import-body">
-                <p>Upload file Excel (.xlsx, .xls) atau CSV. Pastikan format sesuai template. <a href="{{ route('admin.mata-pelajaran.import.template') }}" style="color:var(--brand);font-weight:600">Download template</a>.</p>
+                <p>
+                    Upload file Excel (.xlsx, .xls) atau CSV. Pastikan format sesuai template.
+                    <a href="{{ route('admin.mata-pelajaran.import.template') }}" style="color:var(--brand);font-weight:600">Download template</a>.
+                </p>
                 <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
             </div>
             <div class="import-footer">
@@ -373,10 +413,11 @@
     Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
     @endif
 
+    {{-- FIX #15: Gunakan @json() bukan addslashes() untuk escape nama di JS --}}
     function confirmDelete(form, nama) {
         Swal.fire({
             title: 'Hapus Mata Pelajaran?',
-            html: `Mata pelajaran <strong>${nama}</strong> akan dihapus permanen.`,
+            html: 'Mata pelajaran <strong>' + nama + '</strong> akan dihapus permanen.',
             icon: 'warning', showCancelButton: true,
             confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
             confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',
@@ -385,11 +426,11 @@
 
     function confirmToggle(form, nama, isActive) {
         Swal.fire({
-            title: `${isActive ? 'Nonaktifkan' : 'Aktifkan'} Mata Pelajaran?`,
-            html: `Mata pelajaran <strong>${nama}</strong> akan di${isActive ? 'nonaktifkan' : 'aktifkan'}.`,
+            title: (isActive ? 'Nonaktifkan' : 'Aktifkan') + ' Mata Pelajaran?',
+            html: 'Mata pelajaran <strong>' + nama + '</strong> akan di' + (isActive ? 'nonaktifkan' : 'aktifkan') + '.',
             icon: isActive ? 'warning' : 'question', showCancelButton: true,
             confirmButtonColor: '#1f63db', cancelButtonColor: '#64748b',
-            confirmButtonText: `Ya, ${isActive ? 'Nonaktifkan' : 'Aktifkan'}!`, cancelButtonText: 'Batal',
+            confirmButtonText: 'Ya, ' + (isActive ? 'Nonaktifkan' : 'Aktifkan') + '!', cancelButtonText: 'Batal',
         }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 

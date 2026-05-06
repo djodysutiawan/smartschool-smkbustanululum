@@ -89,6 +89,9 @@
             <div class="stat-icon blue">
                 <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M14 17h.01M17 14h.01M17 17h.01M20 14h.01M20 17h.01M20 20h.01M17 20h.01M14 20h.01"/></svg>
             </div>
+            {{-- Perbaikan bug: sebelumnya $sesiQrs->total() di sini tapi variabel dari
+                 controller bernama $sesiList sehingga error "Undefined variable $sesiQrs".
+                 Sekarang controller sudah mengirim $sesiQrs. --}}
             <div><p class="stat-label">Total Sesi</p><p class="stat-val">{{ $sesiQrs->total() }}</p></div>
         </div>
         <div class="stat-card">
@@ -170,6 +173,8 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{-- Perbaikan bug: loop sebelumnya pakai $sesiQrs yang tidak terdefinisi
+                         (controller mengirim $sesiList). Sekarang controller sudah fix. --}}
                     @forelse($sesiQrs as $i => $sq)
                     @php
                         $now        = \Carbon\Carbon::now();
@@ -197,6 +202,8 @@
                                 <span class="badge" style="background:var(--surface3);color:var(--text3)">Menunggu</span>
                             @endif
                         </td>
+                        {{-- Perbaikan bug: relasi dibuatOleh kini di-eager-load di controller
+                             sehingga tidak ada N+1 query di setiap baris tabel. --}}
                         <td class="muted" style="font-size:12px">{{ $sq->dibuatOleh->name ?? '—' }}</td>
                         <td class="center">
                             <div class="action-group">

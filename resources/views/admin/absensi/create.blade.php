@@ -52,6 +52,17 @@
     @media(max-width:680px){.page{padding:16px 16px 40px}.form-grid,.form-grid-3{grid-template-columns:1fr}.col-span-2,.col-span-3{grid-column:span 1}}
 </style>
 
+@php
+    // FIX: label metode sesuai enum DB ENUM('manual','qr_scan','wajah','rfid','import')
+    $metodeLabel = [
+        'manual'  => 'Manual',
+        'qr_scan' => 'QR Code',
+        'wajah'   => 'Face Recognition',
+        'rfid'    => 'RFID',
+        'import'  => 'Import',
+    ];
+@endphp
+
 <div class="page">
     <nav class="breadcrumb">
         <a href="{{ route('dashboard') }}">Dashboard</a>
@@ -158,14 +169,11 @@
                     </div>
                     <div class="field">
                         <label>Metode</label>
-                        {{--
-                            FIX: enum('manual','qr') — 'qr_code' tidak valid, harus 'qr'.
-                            Sesuai METODE_LIST = ['manual', 'qr'] di controller.
-                        --}}
+                        {{-- FIX: loop $metodeList = ['manual','qr_scan'], label dari $metodeLabel --}}
                         <select name="metode">
                             @foreach($metodeList as $m)
                                 <option value="{{ $m }}" {{ old('metode', 'manual') == $m ? 'selected' : '' }}>
-                                    {{ $m === 'qr' ? 'QR Code' : ucfirst($m) }}
+                                    {{ $metodeLabel[$m] ?? ucfirst($m) }}
                                 </option>
                             @endforeach
                         </select>
@@ -251,7 +259,6 @@
         const sec = document.getElementById('suratIzinSection');
         sec.style.display = (val === 'izin' || val === 'sakit') ? 'block' : 'none';
     }
-    // Trigger on load jika ada old value (validasi gagal)
     handleStatus('{{ old("status","") }}');
 
     document.getElementById('absensiForm').addEventListener('submit', function() {

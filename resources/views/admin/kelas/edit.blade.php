@@ -40,6 +40,8 @@
     .field input.is-invalid,.field select.is-invalid{border-color:var(--red);background:#fff8f8;}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;}
     .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;}
+    /* FIX: Tambah style untuk ruang yang sedang dipakai kelas ini (highlight) */
+    .field select option.ruang-aktif{font-weight:700;}
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border);}
     @media(max-width:680px){.page{padding:16px;}.form-grid{grid-template-columns:1fr;}.col-span-2{grid-column:span 1;}}
     @keyframes spin{to{transform:rotate(360deg);}}
@@ -103,7 +105,6 @@
                         @error('tingkat')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
-                    {{-- DIPERBAIKI: jurusan_id sebagai select (FK ke tabel jurusan) --}}
                     <div class="field">
                         <label>Jurusan</label>
                         <select name="jurusan_id" class="{{ $errors->has('jurusan_id') ? 'is-invalid' : '' }}">
@@ -115,7 +116,7 @@
                             @endforeach
                         </select>
                         @error('jurusan_id')<span class="field-error">{{ $message }}</span>@enderror
-                        <span class="field-hint">cth. TKJ, IPA, IPS...</span>
+                        <span class="field-hint">cth. TKJ, RPL, MM...</span>
                     </div>
 
                     <div class="field">
@@ -172,15 +173,25 @@
                     </div>
                     <div class="field col-span-2">
                         <label>Ruang Kelas</label>
+                        {{--
+                            FIX: Controller edit() sekarang mengirim ruang tersedia PLUS ruang
+                            yang sedang dipakai kelas ini, sehingga ruang aktif tidak hilang
+                            dari dropdown. Ruang milik kelas ini diberi label "(Saat Ini)".
+                        --}}
                         <select name="ruang_id" class="{{ $errors->has('ruang_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Ruangan (opsional) —</option>
                             @foreach($ruangs as $r)
-                            <option value="{{ $r->id }}" {{ old('ruang_id', $kelas->ruang_id) == $r->id ? 'selected' : '' }}>
-                                {{ $r->nama_ruang }} — {{ $r->gedung->nama_gedung ?? '' }} (Kapasitas: {{ $r->kapasitas }})
+                            <option value="{{ $r->id }}"
+                                {{ old('ruang_id', $kelas->ruang_id) == $r->id ? 'selected' : '' }}
+                                {{ $r->id == $kelas->ruang_id ? 'class=ruang-aktif' : '' }}>
+                                {{ $r->nama_ruang }}
+                                @if($r->id == $kelas->ruang_id) (Saat Ini) @endif
+                                — {{ $r->gedung->nama_gedung ?? '' }} (Kapasitas: {{ $r->kapasitas }})
                             </option>
                             @endforeach
                         </select>
                         @error('ruang_id')<span class="field-error">{{ $message }}</span>@enderror
+                        <span class="field-hint">Hanya menampilkan ruangan yang tersedia dan ruangan kelas saat ini.</span>
                     </div>
                 </div>
             </div>

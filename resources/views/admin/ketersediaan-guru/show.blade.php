@@ -43,6 +43,7 @@
 .info-grid { display:grid; grid-template-columns:1fr 1fr; }
 .info-item { padding:14px 20px; border-bottom:1px solid var(--surface3); }
 .info-item:nth-child(odd) { border-right:1px solid var(--surface3); }
+.info-item.full { grid-column:span 2; border-right:none; }
 .info-label { font-family:'Plus Jakarta Sans',sans-serif; font-size:11px; font-weight:700; color:var(--text3); text-transform:uppercase; letter-spacing:.05em; margin-bottom:5px; }
 .info-value { font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text); font-weight:500; }
 .badge { display:inline-flex; align-items:center; gap:4px; padding:4px 12px; border-radius:99px; font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:700; white-space:nowrap; }
@@ -64,6 +65,9 @@
 .duration-box { background:var(--brand-50); border:1px solid var(--brand-100); border-radius:var(--radius-sm); padding:10px 16px; margin:0 20px 20px; text-align:center; }
 .duration-val { font-family:'Plus Jakarta Sans',sans-serif; font-size:16px; font-weight:800; color:var(--brand); }
 .duration-label { font-size:11.5px; color:#3b82f6; margin-top:2px; }
+.catatan-box { background:var(--surface2); border-left:3px solid var(--brand); border-radius:0 var(--radius-sm) var(--radius-sm) 0; padding:10px 14px; font-size:13px; color:var(--text2); font-family:'DM Sans',sans-serif; }
+.periode-box { display:flex; align-items:center; gap:10px; font-family:'DM Sans',sans-serif; font-size:13.5px; color:var(--text); }
+.periode-arrow { color:var(--text3); font-size:16px; }
 @media (max-width:768px) { .detail-grid { grid-template-columns:1fr; } .page { padding:16px; } }
 </style>
 
@@ -107,24 +111,40 @@
         </div>
     </div>
 
+    @php
+        $jamMulai    = \Carbon\Carbon::parse($ketersediaanGuru->jam_mulai);
+        $jamSelesai  = \Carbon\Carbon::parse($ketersediaanGuru->jam_selesai);
+        $durasiMenit = $jamMulai->diffInMinutes($jamSelesai);
+    @endphp
+
     <div class="detail-grid">
+
+        {{-- ── KOLOM KIRI ── --}}
         <div style="display:flex;flex-direction:column;gap:20px">
+
+            {{-- Card: Informasi Slot --}}
             <div class="card">
                 <div class="card-header">
                     <svg width="15" height="15" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                     <p class="card-title">Informasi Slot</p>
                 </div>
                 <div class="info-grid">
-                    <div class="info-item" style="grid-column:span 2">
+                    <div class="info-item full">
                         <p class="info-label">Guru</p>
-                        <p class="info-value" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px">{{ $ketersediaanGuru->guru->nama_lengkap ?? '-' }}</p>
+                        <p class="info-value" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px">
+                            {{ $ketersediaanGuru->guru->nama_lengkap ?? '-' }}
+                        </p>
                         @if($ketersediaanGuru->guru?->nip)
                             <p style="font-size:12px;color:var(--text3);margin-top:2px">NIP: {{ $ketersediaanGuru->guru->nip }}</p>
                         @endif
                     </div>
                     <div class="info-item">
                         <p class="info-label">Hari</p>
-                        <p class="info-value"><span class="hari-pill hari-{{ $ketersediaanGuru->hari }}">{{ ucfirst($ketersediaanGuru->hari) }}</span></p>
+                        <p class="info-value">
+                            <span class="hari-pill hari-{{ $ketersediaanGuru->hari }}">
+                                {{ ucfirst($ketersediaanGuru->hari) }}
+                            </span>
+                        </p>
                     </div>
                     <div class="info-item">
                         <p class="info-label">Status</p>
@@ -140,22 +160,66 @@
                 <div class="time-display">
                     <div class="time-block">
                         <p class="time-label">Mulai</p>
-                        <p class="time-val">{{ \Carbon\Carbon::parse($ketersediaanGuru->jam_mulai)->format('H:i') }}</p>
+                        <p class="time-val">{{ $jamMulai->format('H:i') }}</p>
                     </div>
                     <span class="time-sep">→</span>
                     <div class="time-block">
                         <p class="time-label">Selesai</p>
-                        <p class="time-val">{{ \Carbon\Carbon::parse($ketersediaanGuru->jam_selesai)->format('H:i') }}</p>
+                        <p class="time-val">{{ $jamSelesai->format('H:i') }}</p>
                     </div>
                 </div>
                 <div class="duration-box">
-                    <p class="duration-val">{{ $ketersediaanGuru->durasi_menit }} menit</p>
+                    <p class="duration-val">{{ $durasiMenit }} menit</p>
                     <p class="duration-label">Total durasi slot</p>
                 </div>
             </div>
+
+            {{-- Card: Detail Pengajaran --}}
+            <div class="card">
+                <div class="card-header">
+                    <svg width="15" height="15" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+                    <p class="card-title">Detail Pengajaran</p>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <p class="info-label">Mata Pelajaran</p>
+                        <p class="info-value">{{ $ketersediaanGuru->mataPelajaran->nama_mapel ?? '—' }}</p>
+                        @if($ketersediaanGuru->mataPelajaran?->kode_mapel)
+                            <p style="font-size:11.5px;color:var(--text3);margin-top:2px">
+                                {{ $ketersediaanGuru->mataPelajaran->kode_mapel }}
+                            </p>
+                        @endif
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">Jurusan</p>
+                        {{-- FIX: kolom DB adalah `nama`, bukan `nama_jurusan` --}}
+                        <p class="info-value">{{ $ketersediaanGuru->jurusan->nama ?? '—' }}</p>
+                        @if($ketersediaanGuru->jurusan?->singkatan)
+                            <p style="font-size:11.5px;color:var(--text3);margin-top:2px">
+                                {{ $ketersediaanGuru->jurusan->singkatan }}
+                            </p>
+                        @endif
+                    </div>
+                    @if($ketersediaanGuru->catatan)
+                    <div class="info-item full" style="border-bottom:none">
+                        <p class="info-label" style="margin-bottom:8px">Catatan</p>
+                        <div class="catatan-box">{{ $ketersediaanGuru->catatan }}</div>
+                    </div>
+                    @else
+                    <div class="info-item full" style="border-bottom:none">
+                        <p class="info-label">Catatan</p>
+                        <p class="info-value" style="color:var(--text3)">—</p>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
         </div>
 
+        {{-- ── KOLOM KANAN ── --}}
         <div style="display:flex;flex-direction:column;gap:20px">
+
+            {{-- Card: Profil Guru --}}
             <div class="card">
                 <div class="card-header">
                     <svg width="15" height="15" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -172,13 +236,17 @@
                     </div>
                     <div class="info-item">
                         <p class="info-label">Status Kepegawaian</p>
-                        <p class="info-value" style="text-transform:uppercase">{{ $ketersediaanGuru->guru->status_kepegawaian ?? '-' }}</p>
+                        <p class="info-value" style="text-transform:uppercase">
+                            {{ $ketersediaanGuru->guru->status_kepegawaian ?? '-' }}
+                        </p>
                     </div>
                     <div class="info-item">
                         <p class="info-label">Status Guru</p>
-                        <p class="info-value" style="text-transform:capitalize">{{ $ketersediaanGuru->guru->status ?? '-' }}</p>
+                        <p class="info-value" style="text-transform:capitalize">
+                            {{ $ketersediaanGuru->guru->status ?? '-' }}
+                        </p>
                     </div>
-                    <div class="info-item" style="grid-column:span 2;border-bottom:none">
+                    <div class="info-item full" style="border-bottom:none">
                         <a href="{{ route('admin.ketersediaan-guru.by-guru', $ketersediaanGuru->guru_id) }}"
                             style="display:inline-flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--brand);text-decoration:none">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -188,6 +256,47 @@
                 </div>
             </div>
 
+            {{-- Card: Periode Berlaku --}}
+            <div class="card">
+                <div class="card-header">
+                    <svg width="15" height="15" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <p class="card-title">Periode Berlaku</p>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <p class="info-label">Berlaku Mulai</p>
+                        <p class="info-value">
+                            {{ $ketersediaanGuru->berlaku_mulai
+                                ? \Carbon\Carbon::parse($ketersediaanGuru->berlaku_mulai)->translatedFormat('d M Y')
+                                : '—' }}
+                        </p>
+                    </div>
+                    <div class="info-item">
+                        <p class="info-label">Berlaku Selesai</p>
+                        <p class="info-value">
+                            {{ $ketersediaanGuru->berlaku_selesai
+                                ? \Carbon\Carbon::parse($ketersediaanGuru->berlaku_selesai)->translatedFormat('d M Y')
+                                : '—' }}
+                        </p>
+                    </div>
+                    @if($ketersediaanGuru->berlaku_mulai || $ketersediaanGuru->berlaku_selesai)
+                    <div class="info-item full" style="border-bottom:none">
+                        <p class="info-label" style="margin-bottom:8px">Rentang</p>
+                        <div class="periode-box">
+                            <span>{{ $ketersediaanGuru->berlaku_mulai
+                                ? \Carbon\Carbon::parse($ketersediaanGuru->berlaku_mulai)->format('d/m/Y')
+                                : '∞' }}</span>
+                            <span class="periode-arrow">→</span>
+                            <span>{{ $ketersediaanGuru->berlaku_selesai
+                                ? \Carbon\Carbon::parse($ketersediaanGuru->berlaku_selesai)->format('d/m/Y')
+                                : '∞' }}</span>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- Card: Informasi Sistem --}}
             <div class="card">
                 <div class="card-header">
                     <svg width="15" height="15" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -196,14 +305,15 @@
                 <div class="info-grid">
                     <div class="info-item" style="border-bottom:none">
                         <p class="info-label">Dibuat</p>
-                        <p class="info-value">{{ $ketersediaanGuru->created_at->format('d M Y H:i') }}</p>
+                        <p class="info-value">{{ $ketersediaanGuru->created_at->translatedFormat('d M Y H:i') }}</p>
                     </div>
                     <div class="info-item" style="border-bottom:none">
                         <p class="info-label">Diperbarui</p>
-                        <p class="info-value">{{ $ketersediaanGuru->updated_at->format('d M Y H:i') }}</p>
+                        <p class="info-value">{{ $ketersediaanGuru->updated_at->translatedFormat('d M Y H:i') }}</p>
                     </div>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
@@ -232,7 +342,7 @@ function confirmToggle() {
 function confirmDelete() {
     Swal.fire({
         title: 'Hapus Slot?',
-        html: `Slot <strong>{{ $ketersediaanGuru->guru->nama_lengkap ?? '' }}</strong> — {{ ucfirst($ketersediaanGuru->hari) }} pukul {{ \Carbon\Carbon::parse($ketersediaanGuru->jam_mulai)->format('H:i') }} akan dihapus permanen.`,
+        html: `Slot <strong>{{ e($ketersediaanGuru->guru->nama_lengkap ?? '') }}</strong> — {{ ucfirst($ketersediaanGuru->hari) }} pukul {{ $jamMulai->format('H:i') }} akan dihapus permanen.`,
         icon: 'warning', showCancelButton: true,
         confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
         confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',

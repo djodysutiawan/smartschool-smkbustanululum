@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class RiwayatScanQr extends Model
 {
@@ -12,41 +13,66 @@ class RiwayatScanQr extends Model
     protected $table = 'riwayat_scan_qr';
 
     protected $fillable = [
-        'sesi_qr_id', 'siswa_id', 'dipindai_pada',
-        'latitude', 'longitude', 'hasil', 'ip_address', 'info_perangkat',
+        'sesi_qr_id',
+        'siswa_id',
+        'absensi_id',
+        'latitude',
+        'longitude',
+        'jarak_meter',
+        'status',
+        'keterangan',
+        'user_agent',
+        'di_scan_pada',
     ];
 
     protected function casts(): array
     {
         return [
-            'dipindai_pada' => 'datetime',
-            'latitude'      => 'decimal:8',
-            'longitude'     => 'decimal:8',
+            'latitude'    => 'decimal:8',
+            'longitude'   => 'decimal:8',
+            'di_scan_pada'=> 'datetime',
         ];
     }
 
-    public function isberhasil(): bool
+    // ── Accessors ─────────────────────────────────────────────────────────────
+
+    public function isValid(): bool
     {
-        return $this->hasil === 'berhasil';
+        return $this->status === 'valid';
     }
 
-    public function hitungJarakMeter(float $latRef, float $lonRef): float
+    public function getLabelStatusAttribute(): string
     {
-        if (!$this->latitude || !$this->longitude) return PHP_FLOAT_MAX;
-        $earthRadius = 6371000;
-        $dLat = deg2rad($this->latitude - $latRef);
-        $dLon = deg2rad($this->longitude - $lonRef);
-        $a = sin($dLat/2)**2 + cos(deg2rad($latRef)) * cos(deg2rad($this->latitude)) * sin($dLon/2)**2;
-        return $earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a));
+        return match ($this->status) {
+            'valid'                  => 'Berhasil',
+            'ditolak_radius'         => 'Ditolak: Di luar radius',
+            'ditolak_kadaluarsa'     => 'Ditolak: QR kadaluarsa',
+            'ditolak_nonaktif'       => 'Ditolak: QR tidak aktif',
+            'ditolak_duplikat'       => 'Ditolak: Sudah scan',
+            'ditolak_bukan_anggota'  => 'Ditolak: Bukan anggota kelas',
+            default                  => ucfirst($this->status),
+        };
     }
 
-    public function sesiQr()
+    public function isBerhasil(): bool
+    {
+        return $this->status === 'valid';
+    }
+
+    // ── Relations ─────────────────────────────────────────────────────────────
+
+    public function sesiQr(): BelongsTo
     {
         return $this->belongsTo(SesiQr::class);
     }
 
-    public function siswa()
+    public function siswa(): BelongsTo
     {
         return $this->belongsTo(Siswa::class);
+    }
+
+    public function absensi(): BelongsTo
+    {
+        return $this->belongsTo(Absensi::class);
     }
 }

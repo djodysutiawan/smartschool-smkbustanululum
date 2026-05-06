@@ -52,6 +52,7 @@
     .toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
     .toggle-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--text2); }
     .form-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 16px 24px; background: var(--surface2); border-top: 1px solid var(--border); }
+    select:disabled { opacity: .55; cursor: not-allowed; }
     @media (max-width: 680px) { .page { padding: 16px 16px 40px; } .form-grid { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; } }
     @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -94,48 +95,55 @@
                         @error('judul')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
+                    {{-- Guru — dipilih pertama, memicu AJAX --}}
                     <div class="field">
                         <label>Guru <span class="req">*</span></label>
-                        <select name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
+                        <select name="guru_id" id="guruSelect" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Guru —</option>
                             @foreach($guruList as $g)
-                                <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
+                                <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>
+                                    {{ $g->nama_lengkap }}
+                                </option>
                             @endforeach
                         </select>
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
-                    <div class="field">
-                        <label>Mata Pelajaran <span class="req">*</span></label>
-                        <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
-                            <option value="">— Pilih Mata Pelajaran —</option>
-                            @foreach($mapelList as $m)
-                                <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
-                            @endforeach
-                        </select>
-                        @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="field">
-                        <label>Kelas <span class="req">*</span></label>
-                        <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
-                            <option value="">— Pilih Kelas —</option>
-                            @foreach($kelasList as $k)
-                                <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
-                            @endforeach
-                        </select>
-                        @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
-                    </div>
-
+                    {{-- Tahun Ajaran — pakai $tahunAjaranList sesuai controller --}}
                     <div class="field">
                         <label>Tahun Ajaran <span class="req">*</span></label>
                         <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Tahun Ajaran —</option>
-                            @foreach($tahunAjaran as $ta)
-                                <option value="{{ $ta->id }}" {{ old('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>{{ $ta->tahun }}</option>
+                            @foreach($tahunAjaranList as $ta)
+                                <option value="{{ $ta->id }}"
+                                    {{ old('tahun_ajaran_id', optional($tahunAjaranAktif)->id) == $ta->id ? 'selected' : '' }}>
+                                    {{ $ta->tahun }}
+                                </option>
                             @endforeach
                         </select>
                         @error('tahun_ajaran_id')<span class="field-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    {{-- Mata Pelajaran — diisi via AJAX setelah guru dipilih --}}
+                    <div class="field">
+                        <label>Mata Pelajaran <span class="req">*</span></label>
+                        <select name="mata_pelajaran_id" id="mapelSelect"
+                            class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}"
+                            disabled>
+                            <option value="">— Pilih Guru dulu —</option>
+                        </select>
+                        @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    {{-- Kelas — diisi via AJAX setelah guru dipilih --}}
+                    <div class="field">
+                        <label>Kelas <span class="req">*</span></label>
+                        <select name="kelas_id" id="kelasSelect"
+                            class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}"
+                            disabled>
+                            <option value="">— Pilih Guru dulu —</option>
+                        </select>
+                        @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
                     <div class="field col-span-2">
@@ -241,16 +249,89 @@
     });
     @endif
 
-    document.getElementById('izinkanTerlambat').addEventListener('change', function() {
+    // ── Toggle labels ──────────────────────────────────────
+    document.getElementById('izinkanTerlambat').addEventListener('change', function () {
         document.getElementById('terlambatLabel').textContent = this.checked ? 'Ya' : 'Tidak';
     });
-    document.getElementById('dipublikasikanToggle').addEventListener('change', function() {
+    document.getElementById('dipublikasikanToggle').addEventListener('change', function () {
         document.getElementById('pubLabel').textContent = this.checked ? 'Dipublikasikan' : 'Draft';
     });
-    document.getElementById('tugasForm').addEventListener('submit', function() {
+
+    // ── Submit guard ───────────────────────────────────────
+    document.getElementById('tugasForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
     });
+
+    // ── AJAX Dependent Dropdowns ───────────────────────────
+    const guruSelect  = document.getElementById('guruSelect');
+    const mapelSelect = document.getElementById('mapelSelect');
+    const kelasSelect = document.getElementById('kelasSelect');
+
+    // Nilai old() yang tersimpan setelah validasi gagal
+    const oldMapel = '{{ old('mata_pelajaran_id') }}';
+    const oldKelas = '{{ old('kelas_id') }}';
+
+    function populateSelect(selectEl, items, valueKey, labelKey, oldValue, emptyLabel) {
+        selectEl.innerHTML = '';
+        if (!items.length) {
+            selectEl.innerHTML = `<option value="">${emptyLabel}</option>`;
+            selectEl.disabled = true;
+            return;
+        }
+        selectEl.innerHTML = `<option value="">— Pilih —</option>`;
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item[valueKey];
+            opt.textContent = item[labelKey];
+            if (String(item[valueKey]) === String(oldValue)) opt.selected = true;
+            selectEl.appendChild(opt);
+        });
+        selectEl.disabled = false;
+    }
+
+    async function loadDependents(guruId) {
+        mapelSelect.innerHTML = '<option value="">Memuat…</option>';
+        mapelSelect.disabled = true;
+        kelasSelect.innerHTML = '<option value="">Memuat…</option>';
+        kelasSelect.disabled = true;
+
+        try {
+            const [mapelRes, kelasRes] = await Promise.all([
+                fetch(`/admin/tugas/ajax/guru/${guruId}/mapel`),
+                fetch(`/admin/tugas/ajax/guru/${guruId}/kelas`),
+            ]);
+
+            if (!mapelRes.ok || !kelasRes.ok) throw new Error('Server error');
+
+            const mapelData = await mapelRes.json();
+            const kelasData = await kelasRes.json();
+
+            populateSelect(mapelSelect, mapelData, 'id', 'nama_mapel', oldMapel, '— Tidak ada mata pelajaran —');
+            populateSelect(kelasSelect, kelasData, 'id', 'nama_kelas', oldKelas, '— Tidak ada kelas —');
+        } catch (e) {
+            mapelSelect.innerHTML = '<option value="">Gagal memuat</option>';
+            kelasSelect.innerHTML = '<option value="">Gagal memuat</option>';
+            mapelSelect.disabled = true;
+            kelasSelect.disabled = true;
+        }
+    }
+
+    guruSelect.addEventListener('change', function () {
+        if (!this.value) {
+            mapelSelect.innerHTML = '<option value="">— Pilih Guru dulu —</option>';
+            mapelSelect.disabled = true;
+            kelasSelect.innerHTML = '<option value="">— Pilih Guru dulu —</option>';
+            kelasSelect.disabled = true;
+            return;
+        }
+        loadDependents(this.value);
+    });
+
+    // Saat halaman load dengan old('guru_id') (setelah validasi gagal), langsung load
+    if (guruSelect.value) {
+        loadDependents(guruSelect.value);
+    }
 </script>
 </x-app-layout>

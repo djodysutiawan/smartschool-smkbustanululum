@@ -55,9 +55,9 @@
 
     .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:99px; font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; font-weight:700; white-space:nowrap; }
     .badge-dot { width:5px; height:5px; border-radius:50%; }
-    .badge-tersedia      { background:#dcfce7; color:#15803d; } .badge-tersedia .badge-dot      { background:#15803d; }
-    .badge-tidak_tersedia{ background:#fef3c7; color:#92400e; } .badge-tidak_tersedia .badge-dot { background:#d97706; }
-    .badge-perbaikan     { background:#fee2e2; color:#dc2626; } .badge-perbaikan .badge-dot     { background:#dc2626; }
+    .badge-tersedia       { background:#dcfce7; color:#15803d; } .badge-tersedia .badge-dot       { background:#15803d; }
+    .badge-tidak_tersedia { background:#fef3c7; color:#92400e; } .badge-tidak_tersedia .badge-dot  { background:#d97706; }
+    .badge-perbaikan      { background:#fee2e2; color:#dc2626; } .badge-perbaikan .badge-dot      { background:#dc2626; }
 
     .jenis-pill { display:inline-block; padding:2px 9px; border-radius:5px; font-family:'Plus Jakarta Sans',sans-serif; font-size:12px; font-weight:700; }
     .jenis-kelas                 { background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe; }
@@ -150,7 +150,8 @@
                     </div>
                     <div class="info-item">
                         <p class="info-label">Gedung</p>
-                        <p class="info-value">{{ $ruang->gedung->nama_gedung ?? '-' }}</p>
+                        {{-- FIX BUG: Gunakan optional() agar tidak error jika relasi gedung null --}}
+                        <p class="info-value">{{ optional($ruang->gedung)->nama_gedung ?? '-' }}</p>
                     </div>
                     <div class="info-item">
                         <p class="info-label">Lantai</p>
@@ -192,7 +193,7 @@
                     <svg width="15" height="15" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                     <p class="card-title">Kelas yang Menggunakan Ruang Ini</p>
                 </div>
-                @if($ruang->kelas && $ruang->kelas->count())
+                @if($ruang->kelas && $ruang->kelas->isNotEmpty())
                 <table>
                     <thead><tr>
                         <th>Nama Kelas</th>
@@ -204,9 +205,10 @@
                         @foreach($ruang->kelas as $k)
                         <tr>
                             <td style="font-weight:700;font-family:'Plus Jakarta Sans',sans-serif">{{ $k->nama_kelas }}</td>
-                            <td>{{ $k->tingkat }}</td>
-                            <td>{{ $k->tahunAjaran->tahun ?? '-' }}</td>
-                            <td>{{ $k->waliKelas->nama_lengkap ?? '-' }}</td>
+                            <td>{{ $k->tingkat ?? '-' }}</td>
+                            {{-- FIX BUG: Gunakan optional() pada relasi bersarang agar aman jika null --}}
+                            <td>{{ optional($k->tahunAjaran)->tahun ?? '-' }}</td>
+                            <td>{{ optional($k->waliKelas)->nama_lengkap ?? '-' }}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -255,11 +257,11 @@
                 <div class="info-grid">
                     <div class="info-item">
                         <p class="info-label">Dibuat</p>
-                        <p class="info-value">{{ $ruang->created_at->format('d M Y') }}</p>
+                        <p class="info-value">{{ $ruang->created_at->format('d M Y, H:i') }}</p>
                     </div>
                     <div class="info-item">
                         <p class="info-label">Diperbarui</p>
-                        <p class="info-value">{{ $ruang->updated_at->format('d M Y') }}</p>
+                        <p class="info-value">{{ $ruang->updated_at->format('d M Y, H:i') }}</p>
                     </div>
                 </div>
             </div>
@@ -279,7 +281,7 @@
     function confirmDelete() {
         Swal.fire({
             title: 'Hapus Ruang?',
-            html: `Ruang <strong>{{ $ruang->nama_ruang }}</strong> akan dihapus permanen.<br>Pastikan ruang tidak sedang digunakan kelas atau jadwal.`,
+            html: `Ruang <strong>{{ e($ruang->nama_ruang) }}</strong> akan dihapus permanen.<br>Pastikan ruang tidak sedang digunakan kelas atau jadwal.`,
             icon: 'warning', showCancelButton: true,
             confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
             confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',

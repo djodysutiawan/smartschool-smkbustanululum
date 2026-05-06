@@ -105,8 +105,11 @@
     .badge-izin  {background:#eff6ff;color:#1d4ed8} .badge-izin   .badge-dot{background:#1d4ed8}
     .badge-sakit {background:#fdf4ff;color:#7c3aed} .badge-sakit  .badge-dot{background:#7c3aed}
     .badge-alfa  {background:#fee2e2;color:#dc2626} .badge-alfa   .badge-dot{background:#dc2626}
-    .badge-manual{background:var(--surface3);color:var(--text2)} .badge-manual .badge-dot{background:var(--text3)}
-    .badge-qr    {background:#ecfdf5;color:#065f46} .badge-qr     .badge-dot{background:#065f46}
+    .badge-manual  {background:var(--surface3);color:var(--text2)}   .badge-manual   .badge-dot{background:var(--text3)}
+    .badge-qr_scan {background:#ecfdf5;color:#065f46}                .badge-qr_scan  .badge-dot{background:#065f46}
+    .badge-wajah   {background:#fdf4ff;color:#7c3aed}                .badge-wajah    .badge-dot{background:#7c3aed}
+    .badge-rfid    {background:#fff7ed;color:#c2410c}                .badge-rfid     .badge-dot{background:#c2410c}
+    .badge-import  {background:#f0f9ff;color:#0369a1}                .badge-import   .badge-dot{background:#0369a1}
 
     /* ── Two-line cell ── */
     .two-line .primary{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
@@ -155,6 +158,17 @@
     }
 </style>
 
+@php
+    // Label metode untuk ditampilkan di tabel
+    $metodeLabel = [
+        'manual'  => 'Manual',
+        'qr_scan' => 'QR Code',
+        'wajah'   => 'Face Recog.',
+        'rfid'    => 'RFID',
+        'import'  => 'Import',
+    ];
+@endphp
+
 <div class="page">
 
     {{-- ── Page Header ── --}}
@@ -165,13 +179,11 @@
         </div>
         <div class="header-actions">
 
-            {{-- Catat Absensi --}}
             <a href="{{ route('admin.absensi.create') }}" class="btn btn-primary">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Catat Absensi
             </a>
 
-            {{-- Rekap Kelas --}}
             <button type="button" onclick="toggleRekap()" class="btn btn-secondary" id="rekapBtn">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
                 Rekap Kelas
@@ -185,8 +197,6 @@
                     <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <div class="dropdown-menu">
-
-                    {{-- Export data tabel (mengikuti filter aktif) --}}
                     <div class="dropdown-section-label">Data Absensi</div>
                     <a href="{{ route('admin.absensi.export.pdf', request()->query()) }}" class="dropdown-item">
                         <svg width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -196,35 +206,18 @@
                         <svg width="14" height="14" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                         Export Excel
                     </a>
-
                     <hr class="dropdown-divider">
-
-                    {{--
-                        Export Rekap — hanya aktif kalau ada parameter rekap.
-                        Link diarahkan ke route rekap-kelas.export.pdf / excel
-                        yang menerima kelas_id + tanggal_dari + tanggal_sampai via GET.
-                        Jika parameter belum diisi, gunakan JS untuk tampilkan rekap panel dulu.
-                    --}}
                     <div class="dropdown-section-label">Rekap Per Kelas</div>
                     @if(request()->filled('kelas_id') && request()->filled('tanggal_dari') && request()->filled('tanggal_sampai'))
-                        <a href="{{ route('admin.absensi.rekap-kelas.export.pdf', [
-                                'kelas_id'       => request('kelas_id'),
-                                'tanggal_dari'   => request('tanggal_dari'),
-                                'tanggal_sampai' => request('tanggal_sampai'),
-                            ]) }}" class="dropdown-item">
+                        <a href="{{ route('admin.absensi.rekap-kelas.export.pdf', ['kelas_id' => request('kelas_id'), 'tanggal_dari' => request('tanggal_dari'), 'tanggal_sampai' => request('tanggal_sampai')]) }}" class="dropdown-item">
                             <svg width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
                             Export Rekap PDF
                         </a>
-                        <a href="{{ route('admin.absensi.rekap-kelas.export.excel', [
-                                'kelas_id'       => request('kelas_id'),
-                                'tanggal_dari'   => request('tanggal_dari'),
-                                'tanggal_sampai' => request('tanggal_sampai'),
-                            ]) }}" class="dropdown-item">
+                        <a href="{{ route('admin.absensi.rekap-kelas.export.excel', ['kelas_id' => request('kelas_id'), 'tanggal_dari' => request('tanggal_dari'), 'tanggal_sampai' => request('tanggal_sampai')]) }}" class="dropdown-item">
                             <svg width="14" height="14" fill="none" stroke="#16a34a" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
                             Export Rekap Excel
                         </a>
                     @else
-                        {{-- Belum ada parameter rekap → arahkan user isi form rekap dulu --}}
                         <button type="button" class="dropdown-item" onclick="onRekapExportClick()">
                             <svg width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
                             Export Rekap PDF
@@ -259,8 +252,6 @@
         </div>
     </div>
 
-    {{-- ── Rekap alert jika parameter belum terisi ── --}}
-    {{-- Hanya muncul bila ada session hint --}}
     @if(session('rekap_hint'))
     <div class="alert alert-warning" id="rekapAlert">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -314,18 +305,11 @@
     </div>
 
     {{-- ── Rekap Kelas Form ── --}}
-    {{-- Panel ini muncul/sembunyi via JS, dan auto-tampil kalau URL punya parameter rekap --}}
     <div class="rekap-panel" id="rekapPanel" style="display:none">
         <p class="rekap-title">
             <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             Filter Rekap Absensi Per Kelas
         </p>
-
-        {{--
-            FIX PENTING: method GET agar query string tersedia di request()
-            sehingga link export rekap bisa baca parameter tanpa session/POST.
-            Route admin.absensi.rekap-kelas menggunakan GET (sudah diperbaiki di controller).
-        --}}
         <form action="{{ route('admin.absensi.rekap-kelas') }}" method="GET" id="rekapForm">
             <div class="rekap-form-row">
                 <div class="field">
@@ -333,9 +317,7 @@
                     <select name="kelas_id" required style="min-width:180px">
                         <option value="">— Pilih Kelas —</option>
                         @foreach($kelasList as $k)
-                            <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                                {{ $k->nama_kelas }}
-                            </option>
+                            <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -348,42 +330,16 @@
                     <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}" required>
                 </div>
                 <div style="display:flex;gap:8px;align-items:flex-end">
-                    <button type="submit" class="btn-filter">
-                        Lihat Rekap &amp; Aktifkan Export
-                    </button>
+                    <button type="submit" class="btn-filter">Lihat Rekap &amp; Aktifkan Export</button>
                     <button type="button" onclick="closeRekap()" class="btn-reset">Tutup</button>
                 </div>
             </div>
         </form>
-
-        {{-- Jika sudah ada hasil rekap, tampilkan link export langsung di panel --}}
         @if(request()->filled('kelas_id') && request()->filled('tanggal_dari') && request()->filled('tanggal_sampai'))
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3)">Export rekap ini:</span>
-            <a href="{{ route('admin.absensi.rekap-kelas.export.pdf', [
-                    'kelas_id'       => request('kelas_id'),
-                    'tanggal_dari'   => request('tanggal_dari'),
-                    'tanggal_sampai' => request('tanggal_sampai'),
-                ]) }}" class="btn btn-sm" style="background:#fff0f0;color:#dc2626;border:1px solid #fecaca">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
-                PDF
-            </a>
-            <a href="{{ route('admin.absensi.rekap-kelas.export.excel', [
-                    'kelas_id'       => request('kelas_id'),
-                    'tanggal_dari'   => request('tanggal_dari'),
-                    'tanggal_sampai' => request('tanggal_sampai'),
-                ]) }}" class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
-                Excel
-            </a>
-            <a href="{{ route('admin.absensi.rekap-kelas', [
-                    'kelas_id'       => request('kelas_id'),
-                    'tanggal_dari'   => request('tanggal_dari'),
-                    'tanggal_sampai' => request('tanggal_sampai'),
-                ]) }}" class="btn btn-sm btn-detail">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-                Lihat Halaman Rekap
-            </a>
+            <a href="{{ route('admin.absensi.rekap-kelas.export.pdf', ['kelas_id' => request('kelas_id'), 'tanggal_dari' => request('tanggal_dari'), 'tanggal_sampai' => request('tanggal_sampai')]) }}" class="btn btn-sm" style="background:#fff0f0;color:#dc2626;border:1px solid #fecaca">PDF</a>
+            <a href="{{ route('admin.absensi.rekap-kelas.export.excel', ['kelas_id' => request('kelas_id'), 'tanggal_dari' => request('tanggal_dari'), 'tanggal_sampai' => request('tanggal_sampai')]) }}" class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0">Excel</a>
         </div>
         @endif
     </div>
@@ -395,35 +351,27 @@
                 <select name="kelas_id">
                     <option value="">Semua Kelas</option>
                     @foreach($kelasList as $k)
-                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                            {{ $k->nama_kelas }}
-                        </option>
+                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
                     @endforeach
                 </select>
-
                 <select name="status">
                     <option value="">Semua Status</option>
                     @foreach($statusList as $s)
-                        <option value="{{ $s }}" {{ request('status') == $s ? 'selected' : '' }}>
-                            {{ ucfirst($s) }}
-                        </option>
+                        <option value="{{ $s }}" {{ request('status') == $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
                     @endforeach
                 </select>
-
                 <select name="metode">
                     <option value="">Semua Metode</option>
                     @foreach($metodeList as $m)
+                        {{-- FIX: value 'qr_scan', label dari array $metodeLabel --}}
                         <option value="{{ $m }}" {{ request('metode') == $m ? 'selected' : '' }}>
-                            {{ $m === 'qr' ? 'QR Code' : 'Manual' }}
+                            {{ $metodeLabel[$m] ?? ucfirst($m) }}
                         </option>
                     @endforeach
                 </select>
-
-                <input type="date" name="tanggal_dari"   value="{{ request('tanggal_dari') }}"   placeholder="Dari tanggal">
-                <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}" placeholder="Sampai tanggal">
-
+                <input type="date" name="tanggal_dari"   value="{{ request('tanggal_dari') }}">
+                <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}">
                 <div class="filter-sep"></div>
-
                 <a href="{{ route('admin.absensi.index') }}" class="btn-reset">Reset</a>
                 <button type="submit" class="btn-filter">Terapkan</button>
             </div>
@@ -462,51 +410,43 @@
                     @forelse($absensi as $index => $a)
                     <tr>
                         <td><span class="no-col">{{ $absensi->firstItem() + $index }}</span></td>
-
                         <td>
                             <div class="two-line">
                                 <p class="primary">{{ $a->siswa->nama_lengkap ?? '—' }}</p>
                                 <p class="secondary">NIS: {{ $a->siswa->nis ?? '—' }}</p>
                             </div>
                         </td>
-
                         <td class="muted" style="font-size:12.5px">{{ $a->kelas->nama_kelas ?? '—' }}</td>
-
                         <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px">
                             {{ \Carbon\Carbon::parse($a->tanggal)->format('d M Y') }}
                         </td>
-
                         <td class="center">
                             <span class="badge badge-{{ $a->status }}">
                                 <span class="badge-dot"></span>
                                 {{ ucfirst($a->status) }}
                             </span>
                         </td>
-
                         <td class="center">
-                            @if($a->metode === 'qr')
-                                <span class="badge badge-qr">
-                                    <span class="badge-dot"></span>QR Code
-                                </span>
-                            @elseif($a->metode === 'manual')
-                                <span class="badge badge-manual">
-                                    <span class="badge-dot"></span>Manual
+                            {{-- FIX: gunakan $a->metode langsung sebagai CSS class key
+                                 Badge class: badge-manual, badge-qr_scan, badge-wajah, badge-rfid, badge-import
+                                 Label: dari array $metodeLabel --}}
+                            @if($a->metode)
+                                <span class="badge badge-{{ $a->metode }}">
+                                    <span class="badge-dot"></span>
+                                    {{ $metodeLabel[$a->metode] ?? ucfirst($a->metode) }}
                                 </span>
                             @else
                                 <span class="muted" style="font-size:12px">—</span>
                             @endif
                         </td>
-
                         <td class="muted" style="font-size:13px">
                             {{ $a->jam_masuk ? \Carbon\Carbon::parse($a->jam_masuk)->format('H:i') : '—' }}
                         </td>
-
                         <td style="font-size:12.5px;color:var(--text2);max-width:160px">
                             <p style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
                                 {{ $a->keterangan ?? '—' }}
                             </p>
                         </td>
-
                         <td class="center">
                             <div class="action-group">
                                 <a href="{{ route('admin.absensi.show', $a->id) }}" class="btn btn-sm btn-detail">Detail</a>
@@ -519,9 +459,7 @@
                                             document.getElementById('delAbsensi-{{ $a->id }}'),
                                             '{{ addslashes($a->siswa->nama_lengkap ?? '') }}',
                                             '{{ \Carbon\Carbon::parse($a->tanggal)->format('d M Y') }}'
-                                        )">
-                                        Hapus
-                                    </button>
+                                        )">Hapus</button>
                                 </form>
                             </div>
                         </td>
@@ -543,24 +481,15 @@
             </table>
         </div>
 
-        {{-- Pagination --}}
         @if($absensi->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">
-                Menampilkan {{ $absensi->firstItem() }} – {{ $absensi->lastItem() }}
-                dari {{ $absensi->total() }} absensi
-            </p>
+            <p class="pag-info">Menampilkan {{ $absensi->firstItem() }} – {{ $absensi->lastItem() }} dari {{ $absensi->total() }} absensi</p>
             <div class="pag-btns">
                 @if($absensi->onFirstPage())
-                    <span class="pag-btn disabled">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                    </span>
+                    <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
                 @else
-                    <a href="{{ $absensi->previousPageUrl() }}" class="pag-btn">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                    </a>
+                    <a href="{{ $absensi->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
                 @endif
-
                 @foreach($absensi->getUrlRange(1, $absensi->lastPage()) as $page => $url)
                     @if($page == $absensi->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
@@ -570,15 +499,10 @@
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
-
                 @if($absensi->hasMorePages())
-                    <a href="{{ $absensi->nextPageUrl() }}" class="pag-btn">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                    </a>
+                    <a href="{{ $absensi->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
                 @else
-                    <span class="pag-btn disabled">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
-                    </span>
+                    <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
                 @endif
             </div>
         </div>
@@ -603,8 +527,7 @@
                     <a href="{{ route('admin.absensi.import.template') }}" style="color:#1750c0;text-decoration:underline;margin-left:4px">Download template</a>
                 </div>
                 <div class="upload-area" onclick="document.getElementById('importFileInput').click()">
-                    <input type="file" name="file" id="importFileInput" accept=".xlsx,.xls"
-                           onchange="onFileChange(this)">
+                    <input type="file" name="file" id="importFileInput" accept=".xlsx,.xls" onchange="onFileChange(this)">
                     <svg width="32" height="32" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     <p class="upload-area-label">Klik untuk pilih file Excel</p>
                     <p class="upload-area-hint">.xlsx atau .xls — maks. 5 MB</p>
@@ -624,112 +547,68 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-/* ── Toast notifications ── */
 @if(session('success'))
-Swal.fire({
-    icon: 'success', title: 'Berhasil!',
-    text: @json(session('success')),
-    timer: 2800, showConfirmButton: false,
-    toast: true, position: 'top-end'
-});
+Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
 @endif
 @if(session('error'))
-Swal.fire({
-    icon: 'error', title: 'Gagal!',
-    text: @json(session('error')),
-    confirmButtonColor: '#1f63db'
-});
+Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
 @endif
 @if($errors->any())
-Swal.fire({
-    icon: 'warning', title: 'Perhatian!',
-    html: `{!! implode('<br>', $errors->all()) !!}`,
-    confirmButtonColor: '#1f63db'
-});
+Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
 @endif
 
-/* ── Confirm delete ── */
 function confirmDelete(form, nama, tanggal) {
     Swal.fire({
-        title: 'Hapus Absensi?',
-        html: `Absensi <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal',
-    }).then(r => { if (r.isConfirmed) form.submit(); });
+        title:'Hapus Absensi?',
+        html:`Absensi <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
+        icon:'warning', showCancelButton:true,
+        confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b',
+        confirmButtonText:'Ya, Hapus!', cancelButtonText:'Batal',
+    }).then(r => { if(r.isConfirmed) form.submit(); });
 }
 
-/* ── Rekap panel toggle ── */
 const REKAP_HAS_PARAMS = {{ (request()->filled('kelas_id') && request()->filled('tanggal_dari') && request()->filled('tanggal_sampai')) ? 'true' : 'false' }};
 
 function toggleRekap() {
     const panel = document.getElementById('rekapPanel');
     const isVisible = panel.style.display !== 'none';
     panel.style.display = isVisible ? 'none' : 'block';
-    if (!isVisible) panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (!isVisible) panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
 }
+function closeRekap() { document.getElementById('rekapPanel').style.display = 'none'; }
+if (REKAP_HAS_PARAMS) document.getElementById('rekapPanel').style.display = 'block';
 
-function closeRekap() {
-    document.getElementById('rekapPanel').style.display = 'none';
-}
-
-/* Auto-buka rekap panel kalau URL sudah punya parameter rekap */
-if (REKAP_HAS_PARAMS) {
-    document.getElementById('rekapPanel').style.display = 'block';
-}
-
-/* Kalau user klik export rekap tapi parameter belum ada */
 function onRekapExportClick() {
     document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
     document.getElementById('rekapPanel').style.display = 'block';
-    document.getElementById('rekapPanel').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    Swal.fire({
-        icon: 'info',
-        title: 'Isi Filter Rekap Dulu',
-        text: 'Pilih kelas dan rentang tanggal, lalu klik "Lihat Rekap & Aktifkan Export" untuk mengaktifkan export rekap.',
-        confirmButtonColor: '#1f63db',
-        confirmButtonText: 'Mengerti',
-    });
+    document.getElementById('rekapPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+    Swal.fire({ icon:'info', title:'Isi Filter Rekap Dulu', text:'Pilih kelas dan rentang tanggal, lalu klik "Lihat Rekap & Aktifkan Export".', confirmButtonColor:'#1f63db', confirmButtonText:'Mengerti' });
 }
 
-/* ── Dropdown helper ── */
 function toggleDropdown(id) {
     const el = document.getElementById(id);
     const isOpen = el.classList.contains('open');
     document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
     if (!isOpen) el.classList.add('open');
 }
-
 document.addEventListener('click', function(e) {
-    if (!e.target.closest('.dropdown')) {
-        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-    }
+    if (!e.target.closest('.dropdown')) document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
 });
 
-/* ── Import modal ── */
 function openImportModal() {
     document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
     document.getElementById('importModal').classList.add('active');
 }
-
-function closeImportModal() {
-    document.getElementById('importModal').classList.remove('active');
-}
-
-document.getElementById('importModal').addEventListener('click', function(e) {
-    if (e.target === this) closeImportModal();
-});
+function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+document.getElementById('importModal').addEventListener('click', function(e) { if(e.target === this) closeImportModal(); });
 
 function onFileChange(input) {
-    const name     = input.files[0]?.name || '';
-    const label    = document.getElementById('importFilename');
-    const submitBtn = document.getElementById('importSubmitBtn');
+    const name = input.files[0]?.name || '';
+    const label = document.getElementById('importFilename');
+    const btn   = document.getElementById('importSubmitBtn');
     label.textContent = name;
     label.style.display = name ? 'block' : 'none';
-    submitBtn.disabled = !name;
+    btn.disabled = !name;
 }
 </script>
 </x-app-layout>

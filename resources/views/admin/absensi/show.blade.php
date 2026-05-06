@@ -33,7 +33,8 @@
     .dl-item:nth-last-child(-n+2){border-bottom:none}
     .dl-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
     .dl-val{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);font-weight:500}
-    .dl-full{grid-column:span 2}
+    .dl-full{grid-column:span 2;border-bottom:1px solid var(--border)!important}
+    .dl-full:last-child{border-bottom:none!important}
     .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700}
     .badge-dot{width:6px;height:6px;border-radius:50%}
     .badge-hadir{background:#dcfce7;color:#15803d}.badge-hadir .badge-dot{background:#15803d}
@@ -41,11 +42,23 @@
     .badge-izin{background:#eff6ff;color:#1d4ed8}.badge-izin .badge-dot{background:#1d4ed8}
     .badge-sakit{background:#fdf4ff;color:#7c3aed}.badge-sakit .badge-dot{background:#7c3aed}
     .badge-alfa{background:#fee2e2;color:#dc2626}.badge-alfa .badge-dot{background:#dc2626}
+    .badge-metode{background:var(--surface2);color:var(--text2);border:1px solid var(--border);padding:3px 10px;font-size:11.5px}
     .surat-preview{border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface2)}
     .surat-preview a{display:flex;align-items:center;gap:10px;padding:12px;text-decoration:none;color:var(--brand);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700}
     .surat-preview a:hover{background:var(--surface3)}
     @media(max-width:900px){.detail-grid{grid-template-columns:1fr}.page{padding:16px 16px 40px}}
 </style>
+
+@php
+    // Label metode sesuai enum DB ENUM('manual','qr_scan','wajah','rfid','import')
+    $metodeLabel = [
+        'manual'  => 'Manual',
+        'qr_scan' => 'QR Code',
+        'wajah'   => 'Face Recognition',
+        'rfid'    => 'RFID',
+        'import'  => 'Import',
+    ];
+@endphp
 
 <div class="page">
     <nav class="breadcrumb">
@@ -108,15 +121,20 @@
                         <div class="dl-item">
                             <p class="dl-label">Status Kehadiran</p>
                             <p class="dl-val">
-                                <span class="badge badge-{{ $absensi->status }}">
-                                    <span class="badge-dot"></span>{{ ucfirst($absensi->status) }}
+                                @php $st = $absensi->status; @endphp
+                                <span class="badge badge-{{ $st }}">
+                                    <span class="badge-dot"></span>{{ ucfirst($st) }}
                                 </span>
                             </p>
                         </div>
                         <div class="dl-item">
                             <p class="dl-label">Metode</p>
-                            {{-- FIX: enum('manual','qr') — bukan 'qr_code' --}}
-                            <p class="dl-val">{{ $absensi->metode === 'qr' ? 'QR Code' : 'Manual' }}</p>
+                            {{-- FIX: gunakan $metodeLabel map, bukan cek '=== qr' (enum DB adalah 'qr_scan') --}}
+                            <p class="dl-val">
+                                <span class="badge badge-metode">
+                                    {{ $metodeLabel[$absensi->metode] ?? ucfirst($absensi->metode ?? '—') }}
+                                </span>
+                            </p>
                         </div>
                         <div class="dl-item">
                             <p class="dl-label">Jam Masuk</p>
@@ -143,7 +161,7 @@
                         </div>
                         @endif
                         @if($absensi->path_surat_izin)
-                        <div class="dl-item dl-full">
+                        <div class="dl-item dl-full" style="border-bottom:none!important">
                             <p class="dl-label">Surat Izin / Keterangan</p>
                             <div class="surat-preview" style="margin-top:6px">
                                 <a href="{{ asset('storage/'.$absensi->path_surat_izin) }}" target="_blank">
@@ -165,19 +183,25 @@
                     <span class="card-title">Informasi Pencatatan</span>
                 </div>
                 <div class="card-body">
-                    <div style="display:flex;flex-direction:column;gap:12px">
+                    <div style="display:flex;flex-direction:column;gap:14px">
                         <div>
                             <p class="dl-label">Dicatat Oleh</p>
-                            <p class="dl-val">{{ $absensi->dicatatOleh->name ?? '—' }}</p>
+                            <p class="dl-val" style="margin-top:4px">{{ $absensi->dicatatOleh->name ?? '—' }}</p>
                         </div>
                         <div>
                             <p class="dl-label">Dibuat</p>
-                            <p class="dl-val">{{ $absensi->created_at->format('d M Y, H:i') }}</p>
+                            <p class="dl-val" style="margin-top:4px">{{ $absensi->created_at->format('d M Y, H:i') }}</p>
                         </div>
                         <div>
                             <p class="dl-label">Diperbarui</p>
-                            <p class="dl-val">{{ $absensi->updated_at->format('d M Y, H:i') }}</p>
+                            <p class="dl-val" style="margin-top:4px">{{ $absensi->updated_at->format('d M Y, H:i') }}</p>
                         </div>
+                        @if($absensi->metode && in_array($absensi->metode, ['wajah','rfid','qr_scan']))
+                        <div style="padding:10px 12px;background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius-sm)">
+                            <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--brand-700);margin-bottom:2px">Dicatat Otomatis</p>
+                            <p style="font-size:12px;color:var(--brand-700);opacity:.8">Absensi ini dicatat otomatis oleh sistem via {{ $metodeLabel[$absensi->metode] ?? $absensi->metode }}.</p>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -196,7 +220,7 @@
     function confirmDelete() {
         Swal.fire({
             title:'Hapus Absensi?',
-            text:'Data absensi ini akan dihapus permanen.',
+            text:'Data absensi ini akan dihapus permanen dan tidak dapat dikembalikan.',
             icon:'warning', showCancelButton:true,
             confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b',
             confirmButtonText:'Ya, Hapus!', cancelButtonText:'Batal',

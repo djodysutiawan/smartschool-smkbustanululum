@@ -113,11 +113,15 @@
                         <div class="toggle-row" style="margin-top:8px">
                             <label class="toggle-switch">
                                 <input type="hidden" name="is_active" value="0">
+                                {{-- FIX: bandingkan dengan integer 1, bukan string '1', untuk konsistensi --}}
                                 <input type="checkbox" name="is_active" value="1" id="isActiveToggle"
-                                    {{ old('is_active', '1') == '1' ? 'checked' : '' }}>
+                                    {{ old('is_active', 1) == 1 ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="toggleLabel">Aktif</span>
+                            {{-- FIX: label awal ditentukan dari nilai old() agar konsisten saat ada error validasi --}}
+                            <span class="toggle-label" id="toggleLabel">
+                                {{ old('is_active', 1) == 1 ? 'Aktif' : 'Nonaktif' }}
+                            </span>
                         </div>
                     </div>
                     <div class="field col-span-2">
@@ -142,6 +146,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    @if(session('success'))
+    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    @endif
     @if(session('error'))
     Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
     @endif

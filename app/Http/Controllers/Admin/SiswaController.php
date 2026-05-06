@@ -6,11 +6,13 @@ use App\Exports\SiswaExport;
 use App\Http\Controllers\Controller;
 use App\Imports\SiswaImport;
 use App\Models\Kelas;
+use App\Models\RiwayatKelasSiswa;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +21,6 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SiswaController extends Controller
 {
-    protected $table = 'siswa';
     private function validasiPesan(): array
     {
         return [
@@ -49,35 +50,32 @@ class SiswaController extends Controller
         ];
     }
 
+    // ─── INDEX ───────────────────────────────────────────────────────────────────
+
     public function index(Request $request)
     {
         $query = Siswa::with(['kelas', 'tahunAjaran', 'pengguna'])->withTrashed();
 
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-        if ($request->filled('tahun_ajaran_id')) {
-            $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('jenis_kelamin')) {
-            $query->where('jenis_kelamin', $request->jenis_kelamin);
-        }
+        if ($request->filled('kelas_id'))        $query->where('kelas_id', $request->kelas_id);
+        if ($request->filled('tahun_ajaran_id')) $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
+        if ($request->filled('status'))          $query->where('status', $request->status);
+        if ($request->filled('jenis_kelamin'))   $query->where('jenis_kelamin', $request->jenis_kelamin);
+
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where(fn($q) => $q->where('nama_lengkap', 'like', "%{$s}%")
-                                      ->orWhere('nis', 'like', "%{$s}%")
-                                      ->orWhere('nisn', 'like', "%{$s}%"));
+            $query->where(fn($q) => $q
+                ->where('nama_lengkap', 'like', "%{$s}%")
+                ->orWhere('nis', 'like', "%{$s}%")
+                ->orWhere('nisn', 'like', "%{$s}%"));
         }
 
         $siswa        = $query->orderBy('nama_lengkap')->paginate(25)->withQueryString();
         $kelas        = Kelas::aktif()->orderBy('nama_kelas')->get();
         $tahunAjarans = TahunAjaran::orderByDesc('id')->get();
 
+        // Hitung dari DB langsung agar akurat
         $stats = [
-            'total'     => Siswa::count(),
+            'total'     => Siswa::withTrashed()->count(),
             'aktif'     => Siswa::aktif()->count(),
             'laki'      => Siswa::aktif()->where('jenis_kelamin', 'L')->count(),
             'perempuan' => Siswa::aktif()->where('jenis_kelamin', 'P')->count(),
@@ -85,6 +83,8 @@ class SiswaController extends Controller
 
         return view('admin.siswa.index', compact('siswa', 'kelas', 'tahunAjarans', 'stats'));
     }
+
+    // ─── CREATE & STORE ───────────────────────────────────────────────────────────
 
     public function create()
     {
@@ -133,7 +133,7 @@ class SiswaController extends Controller
             return back()->withInput()->with('error', 'Kelas yang dipilih sudah penuh, silakan pilih kelas lain.');
         }
 
-        DB::transaction(function () use ($request, $validated) {
+        DB::transaction(function () use ($request, $validated, $kelas) {
             if ($request->boolean('buat_akun_baru')) {
                 $user = User::create([
                     'name'      => $validated['nama_lengkap'],
@@ -152,32 +152,57 @@ class SiswaController extends Controller
 
             unset($validated['buat_akun_baru'], $validated['user_email'], $validated['user_password']);
 
-            Siswa::create($validated);
+            $siswa = Siswa::create($validated);
+
+            // Buat riwayat kelas awal otomatis saat siswa pertama kali didaftarkan
+            RiwayatKelasSiswa::create([
+                'siswa_id'            => $siswa->id,
+                'kelas_id'            => $kelas->id,
+                'tahun_ajaran_id'     => $siswa->tahun_ajaran_id,
+                'tingkat'             => $kelas->tingkat,
+                'status_akhir'        => RiwayatKelasSiswa::STATUS_AKTIF,
+                'tanggal_masuk_kelas' => $siswa->tanggal_masuk ?? today(),
+                'dicatat_oleh'        => Auth::id(),
+            ]);
         });
 
         return redirect()->route('admin.siswa.index')
             ->with('success', 'Data siswa berhasil ditambahkan.');
     }
 
+    // ─── SHOW ─────────────────────────────────────────────────────────────────────
+
     public function show(Siswa $siswa)
     {
         $siswa->load([
             'pengguna',
             'kelas.tahunAjaran',
+            'kelas.jurusan',
             'orangTua',
-            'absensi'    => fn($q) => $q->latest()->limit(20),
+            // PERBAIKAN: Tabel absensi tidak punya mata_pelajaran_id.
+            // Nama mapel diakses via jadwalPelajaran → mataPelajaran.
+            'absensi' => fn($q) => $q
+                ->with(['jadwalPelajaran.mataPelajaran', 'kelas'])
+                ->latest()
+                ->limit(20),
             'nilai.mataPelajaran',
             'pelanggaran' => fn($q) => $q->with('kategori')->latest()->limit(10),
+            // Riwayat semua kelas yang pernah diikuti siswa
+            'riwayatKelas' => fn($q) => $q
+                ->with(['kelas.jurusan', 'tahunAjaran', 'dicatatOleh'])
+                ->orderByDesc('tanggal_masuk_kelas'),
         ]);
 
         $stats = [
             'persentase_kehadiran'   => $siswa->persentase_kehadiran,
             'total_poin_pelanggaran' => $siswa->total_poin_pelanggaran,
-            'total_nilai'            => $siswa->nilai()->count(),
+            'total_nilai'            => $siswa->nilai->count(),
         ];
 
         return view('admin.siswa.show', compact('siswa', 'stats'));
     }
+
+    // ─── EDIT & UPDATE ────────────────────────────────────────────────────────────
 
     public function edit(Siswa $siswa)
     {
@@ -227,7 +252,7 @@ class SiswaController extends Controller
             $validated['foto'] = $request->file('foto')->store('siswa/foto', 'public');
         }
 
-        if (!in_array($validated['status'], ['lulus', 'pindah', 'keluar'])) {
+        if (! in_array($validated['status'], ['lulus', 'pindah', 'keluar'])) {
             $validated['tanggal_keluar'] = null;
         }
 
@@ -236,6 +261,8 @@ class SiswaController extends Controller
         return redirect()->route('admin.siswa.show', $siswa)
             ->with('success', 'Data siswa berhasil diperbarui.');
     }
+
+    // ─── DESTROY & RESTORE ───────────────────────────────────────────────────────
 
     public function destroy(Siswa $siswa)
     {
@@ -256,6 +283,8 @@ class SiswaController extends Controller
         return back()->with('success', 'Data siswa berhasil dipulihkan.');
     }
 
+    // ─── PINDAH KELAS ────────────────────────────────────────────────────────────
+
     public function pindahKelas(Request $request, Siswa $siswa)
     {
         $request->validate([
@@ -275,46 +304,64 @@ class SiswaController extends Controller
             return back()->with('error', 'Siswa sudah berada di kelas tersebut.');
         }
 
-        $siswa->update(['kelas_id' => $kelas->id]);
+        DB::transaction(function () use ($siswa, $kelas) {
+            // Tutup riwayat kelas lama
+            RiwayatKelasSiswa::where('siswa_id', $siswa->id)
+                ->where('status_akhir', RiwayatKelasSiswa::STATUS_AKTIF)
+                ->update([
+                    'status_akhir'         => RiwayatKelasSiswa::STATUS_PINDAH_KELUAR,
+                    'tanggal_keluar_kelas' => today(),
+                    'dicatat_oleh'         => Auth::id(),
+                    'keterangan'           => 'Pindah kelas manual oleh admin',
+                ]);
+
+            // Pindahkan ke kelas baru
+            $siswa->update(['kelas_id' => $kelas->id]);
+
+            // Buat riwayat kelas baru
+            RiwayatKelasSiswa::create([
+                'siswa_id'            => $siswa->id,
+                'kelas_id'            => $kelas->id,
+                'tahun_ajaran_id'     => $kelas->tahun_ajaran_id,
+                'tingkat'             => $kelas->tingkat,
+                'status_akhir'        => RiwayatKelasSiswa::STATUS_AKTIF,
+                'tanggal_masuk_kelas' => today(),
+                'dicatat_oleh'        => Auth::id(),
+                'keterangan'          => 'Pindah kelas manual oleh admin',
+            ]);
+        });
 
         return back()->with('success', "Siswa berhasil dipindah ke kelas {$kelas->nama_kelas}.");
     }
+
+    // ─── EXPORT & IMPORT ─────────────────────────────────────────────────────────
 
     public function exportPdf(Request $request)
     {
         $query = Siswa::with(['kelas', 'tahunAjaran']);
 
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-        if ($request->filled('tahun_ajaran_id')) {
-            $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-        if ($request->filled('jenis_kelamin')) {
-            $query->where('jenis_kelamin', $request->jenis_kelamin);
-        }
+        if ($request->filled('kelas_id'))        $query->where('kelas_id', $request->kelas_id);
+        if ($request->filled('tahun_ajaran_id')) $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
+        if ($request->filled('status'))          $query->where('status', $request->status);
+        if ($request->filled('jenis_kelamin'))   $query->where('jenis_kelamin', $request->jenis_kelamin);
+
         if ($request->filled('search')) {
             $s = $request->search;
-            $query->where(fn($q) => $q->where('nama_lengkap', 'like', "%{$s}%")
-                                      ->orWhere('nis', 'like', "%{$s}%")
-                                      ->orWhere('nisn', 'like', "%{$s}%"));
+            $query->where(fn($q) => $q
+                ->where('nama_lengkap', 'like', "%{$s}%")
+                ->orWhere('nis', 'like', "%{$s}%")
+                ->orWhere('nisn', 'like', "%{$s}%"));
         }
 
         $siswa = $query->orderBy('nama_lengkap')->get();
 
         $filterParts = [];
-        if ($request->filled('status')) {
+        if ($request->filled('status'))
             $filterParts[] = 'Status: ' . ucfirst(str_replace('_', ' ', $request->status));
-        }
-        if ($request->filled('jenis_kelamin')) {
+        if ($request->filled('jenis_kelamin'))
             $filterParts[] = 'JK: ' . ($request->jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan');
-        }
-        if ($request->filled('search')) {
+        if ($request->filled('search'))
             $filterParts[] = 'Cari: ' . $request->search;
-        }
         $filterLabel = $filterParts ? implode(', ', $filterParts) : 'Semua Data';
 
         $pdf = Pdf::loadView('admin.siswa.pdf', compact('siswa', 'filterLabel'))

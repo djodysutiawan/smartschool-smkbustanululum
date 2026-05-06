@@ -10,6 +10,7 @@ use App\Models\MataPelajaran;
 use App\Models\TahunAjaran;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -52,10 +53,11 @@ class MateriController extends Controller
         $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList   = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
+        $tahunAktif  = TahunAjaran::getAktif();
         $jenisMateri = ['file', 'video', 'link', 'teks'];
 
         return view('admin.materi.create',
-            compact('guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisMateri'));
+            compact('guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'tahunAktif', 'jenisMateri'));
     }
 
     public function store(Request $request)
@@ -106,8 +108,12 @@ class MateriController extends Controller
         $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
         $jenisMateri = ['file', 'video', 'link', 'teks'];
 
+        // Mapel & kelas milik guru ini (untuk pre-populate saat edit)
+        $mapelGuru = $this->_getMapelByGuru($materi->guru_id);
+        $kelasGuru = $this->_getKelasByGuru($materi->guru_id);
+
         return view('admin.materi.edit',
-            compact('materi', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisMateri'));
+            compact('materi', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisMateri', 'mapelGuru', 'kelasGuru'));
     }
 
     public function update(Request $request, Materi $materi)
@@ -172,13 +178,13 @@ class MateriController extends Controller
     {
         if ($materi->dipublikasikan) {
             $materi->update([
-                'dipublikasikan'     => false,
+                'dipublikasikan'      => false,
                 'dipublikasikan_pada' => null,
             ]);
             $status = 'disembunyikan';
         } else {
             $materi->update([
-                'dipublikasikan'     => true,
+                'dipublikasikan'      => true,
                 'dipublikasikan_pada' => now(),
             ]);
             $status = 'dipublikasikan';
@@ -186,6 +192,36 @@ class MateriController extends Controller
 
         return back()->with('success', "Materi berhasil {$status}.");
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AJAX — Cascade Dropdown
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * GET /admin/materi/ajax/mapel-by-guru/{guru}
+     * Kembalikan daftar mata pelajaran yang diampu guru (via pivot guru_mata_pelajaran).
+     * Fallback: semua mapel aktif jika guru tidak punya data pivot.
+     */
+    public function ajaxMapelByGuru(Guru $guru)
+    {
+        $mapel = $this->_getMapelByGuru($guru->id);
+        return response()->json($mapel);
+    }
+
+    /**
+     * GET /admin/materi/ajax/kelas-by-guru/{guru}
+     * Kembalikan daftar kelas yang diajar guru (via jadwal_pelajaran aktif).
+     * Fallback: semua kelas aktif jika guru tidak punya jadwal.
+     */
+    public function ajaxKelasByGuru(Guru $guru)
+    {
+        $kelas = $this->_getKelasByGuru($guru->id);
+        return response()->json($kelas);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Export / Import
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function exportPdf(Request $request)
     {
@@ -235,6 +271,67 @@ class MateriController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal mengimpor data: ' . $e->getMessage());
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Private Helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Ambil mapel yang diampu guru via pivot guru_mata_pelajaran.
+     * Fallback: semua mapel aktif jika pivot kosong.
+     */
+    private function _getMapelByGuru(int $guruId): \Illuminate\Support\Collection
+    {
+        $guru = Guru::find($guruId);
+
+        if (!$guru) {
+            return MataPelajaran::aktif()->orderBy('nama_mapel')->get(['id', 'nama_mapel', 'kode_mapel']);
+        }
+
+        try {
+            $mapel = $guru->mataPelajaran()
+                ->where('guru_mata_pelajaran.is_active', true)
+                ->where('mata_pelajaran.is_active', true)
+                ->orderBy('nama_mapel')
+                ->get(['mata_pelajaran.id', 'mata_pelajaran.nama_mapel', 'mata_pelajaran.kode_mapel']);
+        } catch (\Exception $e) {
+            $mapel = collect();
+        }
+
+        if ($mapel->isEmpty()) {
+            $mapel = MataPelajaran::aktif()->orderBy('nama_mapel')->get(['id', 'nama_mapel', 'kode_mapel']);
+        }
+
+        return $mapel;
+    }
+
+    /**
+     * Ambil kelas yang diajar guru via jadwal_pelajaran aktif.
+     * Fallback: semua kelas aktif jika jadwal kosong.
+     */
+    private function _getKelasByGuru(int $guruId): \Illuminate\Support\Collection
+    {
+        $kelasIds = DB::table('jadwal_pelajaran')
+            ->where('guru_id', $guruId)
+            ->where('is_active', true)
+            ->pluck('kelas_id')
+            ->unique();
+
+        if ($kelasIds->isNotEmpty()) {
+            $kelas = Kelas::whereIn('id', $kelasIds)
+                ->where('status', 'aktif')
+                ->orderBy('nama_kelas')
+                ->get(['id', 'nama_kelas', 'tingkat', 'kode_kelas']);
+        } else {
+            $kelas = collect();
+        }
+
+        if ($kelas->isEmpty()) {
+            $kelas = Kelas::aktif()->orderBy('nama_kelas')->get(['id', 'nama_kelas', 'tingkat', 'kode_kelas']);
+        }
+
+        return $kelas;
     }
 
     private function messages(): array

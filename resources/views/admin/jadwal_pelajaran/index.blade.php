@@ -29,6 +29,8 @@
     .btn-import:hover{background:#ffedd5;filter:none}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
+
+    /* ── Stats ── */
     .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -36,6 +38,9 @@
     .stat-icon.orange{background:#fff7ed}.stat-icon.purple{background:#fdf4ff}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.03em;text-transform:uppercase}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
+    .stat-sub{font-size:11px;color:var(--text3);margin-top:2px}
+
+    /* ── Filter ── */
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px}
     .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
     .filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
@@ -45,6 +50,8 @@
     .btn-filter:hover{background:var(--brand-700)}
     .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
     .btn-reset:hover{background:var(--surface3)}
+
+    /* ── Table ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
@@ -62,6 +69,8 @@
     td.center{text-align:center}
     td.muted{color:var(--text3)}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)}
+
+    /* ── Badges ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%}
     .badge-aktif{background:#dcfce7;color:#15803d}.badge-aktif .badge-dot{background:#15803d}
@@ -74,10 +83,14 @@
     .hari-jumat{background:#fdf4ff;color:#7c3aed;border:1px solid #e9d5ff}
     .hari-sabtu{background:#f0f9ff;color:#0369a1;border:1px solid #bae6fd}
     .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap}
+
+    /* ── Empty state ── */
     .empty-state{padding:60px 20px;text-align:center}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
     .empty-sub{font-size:13px;color:var(--text3)}
+
+    /* ── Pagination ── */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
     .pag-btns{display:flex;gap:4px;align-items:center}
@@ -85,6 +98,8 @@
     .pag-btn:hover{background:var(--surface2);border-color:var(--border2)}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
+
+    /* ── Modal Import ── */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:999;align-items:center;justify-content:center}
     .modal-overlay.show{display:flex}
     .modal-box{background:#fff;border-radius:12px;padding:28px;width:100%;max-width:420px;margin:0 16px;box-shadow:0 20px 60px rgba(0,0,0,.15)}
@@ -93,6 +108,7 @@
     .modal-field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2);display:block;margin-bottom:6px}
     .modal-field input[type=file]{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--surface2)}
     .modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:20px}
+
     @media(max-width:640px){.stats-strip{grid-template-columns:1fr 1fr}.page{padding:16px}}
 </style>
 
@@ -108,6 +124,7 @@
         </a>
     </div>
 
+    {{-- ── FIX: Stats dihitung dari $stats (dari DB langsung via controller), bukan dari $jadwal paginate ── --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -115,7 +132,8 @@
             </div>
             <div>
                 <p class="stat-label">Total Jadwal</p>
-                <p class="stat-val">{{ $jadwal->total() }}</p>
+                <p class="stat-val">{{ $stats['total'] }}</p>
+                <p class="stat-sub">sesuai filter aktif</p>
             </div>
         </div>
         <div class="stat-card">
@@ -124,7 +142,8 @@
             </div>
             <div>
                 <p class="stat-label">Aktif</p>
-                <p class="stat-val">{{ $jadwal->where('is_active', true)->count() }}</p>
+                <p class="stat-val">{{ $stats['total_aktif'] }}</p>
+                <p class="stat-sub">jadwal aktif</p>
             </div>
         </div>
         <div class="stat-card">
@@ -132,8 +151,9 @@
                 <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             </div>
             <div>
-                <p class="stat-label">Guru</p>
-                <p class="stat-val">{{ $guruList->count() }}</p>
+                <p class="stat-label">Guru Terlibat</p>
+                <p class="stat-val">{{ $stats['total_guru'] }}</p>
+                <p class="stat-sub">unik sesuai filter</p>
             </div>
         </div>
         <div class="stat-card">
@@ -141,8 +161,9 @@
                 <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
             </div>
             <div>
-                <p class="stat-label">Kelas</p>
-                <p class="stat-val">{{ $kelasList->count() }}</p>
+                <p class="stat-label">Kelas Terlibat</p>
+                <p class="stat-val">{{ $stats['total_kelas'] }}</p>
+                <p class="stat-sub">unik sesuai filter</p>
             </div>
         </div>
     </div>
@@ -153,7 +174,9 @@
                 <select name="tahun_ajaran_id">
                     <option value="">Semua Tahun Ajaran</option>
                     @foreach($tahunAjaran as $ta)
-                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>{{ $ta->tahun }}</option>
+                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>
+                            {{ $ta->tahun }}{{ $ta->semester ? ' – '.ucfirst($ta->semester) : '' }}
+                        </option>
                     @endforeach
                 </select>
                 <select name="kelas_id">
@@ -223,7 +246,7 @@
                         <th>Kelas</th>
                         <th>Ruang</th>
                         <th>Status</th>
-                        <th class="center" style="width:180px">Aksi</th>
+                        <th class="center" style="width:190px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -235,11 +258,15 @@
                             {{ \Carbon\Carbon::parse($j->jam_mulai)->format('H:i') }} – {{ \Carbon\Carbon::parse($j->jam_selesai)->format('H:i') }}
                         </td>
                         <td>
-                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">{{ $j->mataPelajaran->nama_mapel ?? '-' }}</span>
+                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">
+                                {{ $j->mataPelajaran->nama_mapel ?? '-' }}
+                            </span>
                         </td>
                         <td class="muted" style="font-size:12.5px">{{ $j->guru->nama_lengkap ?? '-' }}</td>
                         <td>
-                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:12.5px">{{ $j->kelas->nama_kelas ?? '-' }}</span>
+                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:12.5px">
+                                {{ $j->kelas->nama_kelas ?? '-' }}
+                            </span>
                         </td>
                         <td class="muted" style="font-size:12.5px">{{ $j->ruang->nama_ruang ?? '-' }}</td>
                         <td>
@@ -279,14 +306,19 @@
                 </tbody>
             </table>
         </div>
+
         @if($jadwal->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $jadwal->firstItem() }} – {{ $jadwal->lastItem() }} dari {{ $jadwal->total() }} jadwal</p>
             <div class="pag-btns">
                 @if($jadwal->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $jadwal->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $jadwal->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
                 @foreach($jadwal->getUrlRange(1, $jadwal->lastPage()) as $page => $url)
                     @if($page == $jadwal->currentPage())
@@ -298,9 +330,13 @@
                     @endif
                 @endforeach
                 @if($jadwal->hasMorePages())
-                    <a href="{{ $jadwal->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $jadwal->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -320,7 +356,8 @@
                 <input type="file" name="file" accept=".xlsx,.xls,.csv" required>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary btn-sm" onclick="document.getElementById('modalImport').classList.remove('show')">Batal</button>
+                <button type="button" class="btn btn-secondary btn-sm"
+                    onclick="document.getElementById('modalImport').classList.remove('show')">Batal</button>
                 <button type="submit" class="btn btn-primary btn-sm">Upload & Import</button>
             </div>
         </form>

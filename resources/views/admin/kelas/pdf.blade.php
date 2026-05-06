@@ -39,7 +39,7 @@
         <div class="stat-label">Total Kelas</div>
     </div>
     <div class="stat">
-        <div class="stat-val">{{ $kelas->where('status','aktif')->count() }}</div>
+        <div class="stat-val">{{ $kelas->where('status', 'aktif')->count() }}</div>
         <div class="stat-label">Aktif</div>
     </div>
     <div class="stat">
@@ -47,7 +47,9 @@
         <div class="stat-label">Total Siswa</div>
     </div>
     <div class="stat">
-        <div class="stat-val">{{ $kelas->where('siswa_count','>=','kapasitas_maks')->count() }}</div>
+        {{-- FIX: gunakan filter() dengan arrow function agar perbandingan dilakukan
+             antar nilai aktual, bukan string nama kolom seperti sebelumnya. --}}
+        <div class="stat-val">{{ $kelas->filter(fn($k) => $k->siswa_count >= $k->kapasitas_maks)->count() }}</div>
         <div class="stat-label">Kelas Penuh</div>
     </div>
 </div>

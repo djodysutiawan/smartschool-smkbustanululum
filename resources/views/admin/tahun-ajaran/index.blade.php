@@ -13,11 +13,9 @@
     }
     *{box-sizing:border-box;}
     .page{padding:28px 28px 60px;max-width:2000px;margin:0 auto;}
-
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2;}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px;}
-
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap;}
     .btn:hover{filter:brightness(.93);}
     .btn-primary{background:var(--brand);color:#fff;}
@@ -36,7 +34,6 @@
     .btn-excel:hover{background:#dcfce7;filter:none;}
     .btn-import{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
     .btn-import:hover{background:#fef9c3;filter:none;}
-
     .stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -46,7 +43,6 @@
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.03em;text-transform:uppercase;}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px;}
     .stat-val-sm{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;color:var(--text);line-height:1.3;margin-top:1px;}
-
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;}
     .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
     .filter-row input,.filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;}
@@ -58,7 +54,6 @@
     .btn-filter:hover{background:var(--brand-700);}
     .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;}
     .btn-reset:hover{background:var(--surface3);}
-
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);gap:12px;flex-wrap:wrap;}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
@@ -78,7 +73,6 @@
     td.center{text-align:center;}
     td.muted{color:var(--text3);}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3);}
-
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap;}
     .badge-dot{width:5px;height:5px;border-radius:50%;}
     .badge-aktif{background:#dcfce7;color:var(--green);}
@@ -89,14 +83,11 @@
     .pill-ganjil{background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;}
     .pill-genap{background:#fdf4ff;color:#7c3aed;border:1px solid #e9d5ff;}
     .tag-aktif{display:inline-block;background:var(--brand);color:#fff;font-size:9.5px;font-weight:800;padding:1px 6px;border-radius:4px;margin-left:5px;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:.03em;vertical-align:middle;}
-
     .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap;}
-
     .empty-state{padding:60px 20px;text-align:center;}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;}
     .empty-sub{font-size:13px;color:var(--text3);}
-
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;}
     .pag-info{font-size:12.5px;color:var(--text3);}
     .pag-btns{display:flex;gap:4px;align-items:center;}
@@ -104,7 +95,6 @@
     .pag-btn:hover{background:var(--surface2);border-color:var(--border2);}
     .pag-btn.active{background:var(--brand);border-color:var(--brand);color:#fff;}
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px;}
-
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
     .modal-box{background:#fff;border-radius:12px;padding:28px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2);}
     .modal-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px;}
@@ -112,11 +102,9 @@
     .modal-footer{display:flex;justify-content:flex-end;gap:8px;}
     .btn-modal-cancel{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
     .btn-modal-submit{background:var(--brand);color:#fff;}
-
     .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13.5px;}
     .alert-success{background:#f0fdf4;color:var(--green);border:1px solid var(--green-border);}
     .alert-error{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
-
     @media(max-width:640px){
         .stats-strip{grid-template-columns:1fr 1fr;}
         .page{padding:16px;}
@@ -165,7 +153,8 @@
             </div>
             <div>
                 <p class="stat-label">Aktif Sekarang</p>
-                <p class="stat-val-sm">{{ $aktif ? $aktif->label : '—' }}</p>
+                {{-- FIX: guard null sebelum akses property --}}
+                <p class="stat-val-sm">{{ $aktif?->label ?? '—' }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -212,11 +201,12 @@
                 @endif
             </p>
             <div class="topbar-actions">
-                <a href="{{ route('admin.tahun-ajaran.export-pdf') }}" class="btn btn-sm btn-pdf">
+                {{-- FIX: teruskan query string filter ke export PDF --}}
+                <a href="{{ route('admin.tahun-ajaran.export-pdf', request()->query()) }}" class="btn btn-sm btn-pdf">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     PDF
                 </a>
-                <a href="{{ route('admin.tahun-ajaran.export-excel') }}" class="btn btn-sm btn-excel">
+                <a href="{{ route('admin.tahun-ajaran.export-excel', request()->query()) }}" class="btn btn-sm btn-excel">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
                     Excel
                 </a>
@@ -276,7 +266,7 @@
                                 <form action="{{ route('admin.tahun-ajaran.aktifkan', $ta->id) }}" method="POST" id="aktifForm-{{ $ta->id }}">
                                     @csrf @method('PATCH')
                                     <button type="button" class="btn btn-sm btn-aktif"
-                                        onclick="confirmAktifkan(document.getElementById('aktifForm-{{ $ta->id }}'), '{{ addslashes($ta->tahun) }}')">
+                                        onclick="confirmAktifkan(document.getElementById('aktifForm-{{ $ta->id }}'), @json($ta->tahun))">
                                         Aktifkan
                                     </button>
                                 </form>
@@ -284,7 +274,7 @@
                                 <form action="{{ route('admin.tahun-ajaran.destroy', $ta->id) }}" method="POST" id="delForm-{{ $ta->id }}">
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('delForm-{{ $ta->id }}'), '{{ addslashes($ta->tahun) }}')">
+                                        onclick="confirmDelete(document.getElementById('delForm-{{ $ta->id }}'), @json($ta->tahun))">
                                         Hapus
                                     </button>
                                 </form>
@@ -308,28 +298,56 @@
             </table>
         </div>
 
+        {{-- FIX: Pagination yang benar — tidak ada duplikat ellipsis --}}
         @if($tahunAjaran->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $tahunAjaran->firstItem() }}–{{ $tahunAjaran->lastItem() }} dari {{ $tahunAjaran->total() }} data</p>
             <div class="pag-btns">
                 @if($tahunAjaran->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $tahunAjaran->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $tahunAjaran->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
-                @foreach($tahunAjaran->getUrlRange(1, $tahunAjaran->lastPage()) as $page => $url)
-                    @if($page == $tahunAjaran->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $tahunAjaran->lastPage() || abs($page - $tahunAjaran->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $tahunAjaran->currentPage()) == 2)
+
+                @php
+                    $current  = $tahunAjaran->currentPage();
+                    $last     = $tahunAjaran->lastPage();
+                    $pages    = [];
+                    // Selalu tampilkan: 1, last, dan window 2 di kiri-kanan current
+                    for ($p = 1; $p <= $last; $p++) {
+                        if ($p === 1 || $p === $last || abs($p - $current) <= 1) {
+                            $pages[] = $p;
+                        }
+                    }
+                    $pages = array_unique($pages);
+                    sort($pages);
+                @endphp
+
+                @php $prev = null; @endphp
+                @foreach($pages as $p)
+                    @if($prev !== null && $p - $prev > 1)
                         <span class="pag-ellipsis">…</span>
                     @endif
+                    @if($p === $current)
+                        <span class="pag-btn active">{{ $p }}</span>
+                    @else
+                        <a href="{{ $tahunAjaran->url($p) }}" class="pag-btn">{{ $p }}</a>
+                    @endif
+                    @php $prev = $p; @endphp
                 @endforeach
+
                 @if($tahunAjaran->hasMorePages())
-                    <a href="{{ $tahunAjaran->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $tahunAjaran->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -342,7 +360,7 @@
     <div class="modal-box">
         <p class="modal-title">Import Data Tahun Ajaran</p>
         <p class="modal-sub">Unggah file Excel (.xlsx / .xls) atau CSV. Pastikan format kolom sesuai template.</p>
-        <form action="{{ route('admin.tahun-ajaran.import') }}" method="POST" enctype="multipart/form-data" id="importForm">
+        <form action="{{ route('admin.tahun-ajaran.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div style="margin-bottom:16px;">
                 <label style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:#475569;display:block;margin-bottom:6px;">
@@ -374,6 +392,7 @@
     Swal.fire({ icon:'warning', title:'Perhatian', text:@json(session('warning')), confirmButtonColor:'#1f63db' });
     @endif
 
+    {{-- FIX: gunakan parameter langsung (sudah @json), tidak pakai addslashes --}}
     function confirmDelete(form, nama) {
         Swal.fire({
             title: 'Hapus Tahun Ajaran?',

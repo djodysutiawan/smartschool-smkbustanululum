@@ -7,14 +7,21 @@ use App\Http\Controllers\Controller;
 use App\Imports\TahunAjaranImport;
 use App\Models\TahunAjaran;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;          // ← TAMBAHAN: untuk transaction
+use Illuminate\View\View;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 use Maatwebsite\Excel\Validators\ValidationException as ExcelValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+// use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class TahunAjaranController extends Controller
 {
-    public function index(Request $request)
+    // ── Index ─────────────────────────────────────────────────────────────────
+
+    public function index(Request $request): View
     {
         $query = TahunAjaran::query();
 
@@ -29,22 +36,28 @@ class TahunAjaranController extends Controller
         }
 
         $tahunAjaran = $query->latest()->paginate(15)->withQueryString();
-        $aktif       = TahunAjaran::getAktif();
+        $aktif       = TahunAjaran::getAktif();   // bisa null — view sudah handle dengan ternary
 
+        // FIX: tambah kunci 'aktif' agar view punya data lengkap jika diperlukan
         $stats = [
-            'total'      => TahunAjaran::count(),
-            'tidak_aktif'=> TahunAjaran::where('status', 'tidak_aktif')->count(),
+            'total'       => TahunAjaran::count(),
+            'aktif'       => TahunAjaran::where('status', 'aktif')->count(),
+            'tidak_aktif' => TahunAjaran::where('status', 'tidak_aktif')->count(),
         ];
 
         return view('admin.tahun-ajaran.index', compact('tahunAjaran', 'aktif', 'stats'));
     }
 
-    public function create()
+    // ── Create ────────────────────────────────────────────────────────────────
+
+    public function create(): View
     {
         return view('admin.tahun-ajaran.create');
     }
 
-    public function store(Request $request)
+    // ── Store ─────────────────────────────────────────────────────────────────
+
+    public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'tahun'           => ['required', 'string', 'max:20',
@@ -56,19 +69,34 @@ class TahunAjaranController extends Controller
             'keterangan'      => ['nullable', 'string', 'max:500'],
         ], $this->pesanValidasi());
 
-        $tahun = TahunAjaran::create($validated);
+        // FIX: bungkus dalam transaction agar aktifkan() atomik
+        $tahun = DB::transaction(function () use ($validated) {
+            $tahun = TahunAjaran::create($validated);
 
-        if ($tahun->status === 'aktif') {
-            $tahun->aktifkan();
-        }
+            if ($tahun->status === 'aktif') {
+                $tahun->aktifkan();
+            }
 
-        return redirect()->route('admin.tahun-ajaran.index')
-            ->with('success', 'Tahun ajaran berhasil ditambahkan.');
+            return $tahun;
+        });
+
+        // FIX: redirect ke show (konsisten dengan update)
+        return redirect()->route('admin.tahun-ajaran.show', $tahun)
+            ->with('success', "Tahun ajaran {$tahun->label} berhasil ditambahkan.");
     }
 
-    public function show(TahunAjaran $tahunAjaran)
+    // ── Show ──────────────────────────────────────────────────────────────────
+
+    public function show(TahunAjaran $tahunAjaran): View
     {
-        $tahunAjaran->loadCount(['kelas', 'jadwalPelajaran', 'nilai', 'siswa']);
+        // FIX: nama relasi harus konsisten (camelCase) — Laravel akan buat
+        // accessor snake_case otomatis: jadwal_pelajaran_count, dst.
+        $tahunAjaran->loadCount([
+            'kelas',
+            'jadwalPelajaran',   // → $tahunAjaran->jadwal_pelajaran_count
+            'nilai',
+            'siswa',
+        ]);
 
         $stats = [
             'total_kelas'  => $tahunAjaran->kelas_count,
@@ -80,12 +108,16 @@ class TahunAjaranController extends Controller
         return view('admin.tahun-ajaran.show', compact('tahunAjaran', 'stats'));
     }
 
-    public function edit(TahunAjaran $tahunAjaran)
+    // ── Edit ──────────────────────────────────────────────────────────────────
+
+    public function edit(TahunAjaran $tahunAjaran): View
     {
         return view('admin.tahun-ajaran.edit', compact('tahunAjaran'));
     }
 
-    public function update(Request $request, TahunAjaran $tahunAjaran)
+    // ── Update ────────────────────────────────────────────────────────────────
+
+    public function update(Request $request, TahunAjaran $tahunAjaran): RedirectResponse
     {
         $validated = $request->validate([
             'tahun'           => ['required', 'string', 'max:20',
@@ -99,46 +131,76 @@ class TahunAjaranController extends Controller
             'keterangan'      => ['nullable', 'string', 'max:500'],
         ], $this->pesanValidasi());
 
-        $tahunAjaran->update($validated);
+        // FIX: bungkus dalam transaction
+        DB::transaction(function () use ($validated, $tahunAjaran) {
+            $tahunAjaran->update($validated);
 
-        if ($tahunAjaran->fresh()->status === 'aktif') {
-            $tahunAjaran->aktifkan();
-        }
+            if ($tahunAjaran->fresh()->status === 'aktif') {
+                $tahunAjaran->aktifkan();
+            }
+        });
 
         return redirect()->route('admin.tahun-ajaran.show', $tahunAjaran)
-            ->with('success', 'Tahun ajaran berhasil diperbarui.');
+            ->with('success', "Tahun ajaran {$tahunAjaran->label} berhasil diperbarui.");
     }
 
-    public function destroy(TahunAjaran $tahunAjaran)
+    // ── Destroy ───────────────────────────────────────────────────────────────
+
+    public function destroy(TahunAjaran $tahunAjaran): RedirectResponse
     {
         if ($tahunAjaran->isAktif()) {
             return back()->with('error', 'Tidak dapat menghapus tahun ajaran yang sedang aktif.');
         }
 
-        if ($tahunAjaran->kelas()->exists() || $tahunAjaran->jadwalPelajaran()->exists()) {
-            return back()->with('error', 'Tidak dapat menghapus tahun ajaran yang masih memiliki data kelas atau jadwal pelajaran.');
+        // FIX: cek relasi nilai juga, bukan hanya kelas dan jadwal
+        if (
+            $tahunAjaran->kelas()->exists() ||
+            $tahunAjaran->jadwalPelajaran()->exists() ||
+            $tahunAjaran->nilai()->exists()             // ← TAMBAHAN
+        ) {
+            return back()->with('error',
+                'Tidak dapat menghapus tahun ajaran yang masih memiliki data kelas, jadwal pelajaran, atau nilai.');
         }
 
+        $label = $tahunAjaran->label; // simpan dulu sebelum dihapus
         $tahunAjaran->delete();
 
         return redirect()->route('admin.tahun-ajaran.index')
-            ->with('success', 'Tahun ajaran berhasil dihapus.');
+            ->with('success', "Tahun ajaran {$label} berhasil dihapus.");
     }
 
-    public function aktifkan(TahunAjaran $tahunAjaran)
+    // ── Aktifkan ──────────────────────────────────────────────────────────────
+
+    public function aktifkan(TahunAjaran $tahunAjaran): RedirectResponse
     {
         if ($tahunAjaran->isAktif()) {
             return back()->with('error', 'Tahun ajaran ini sudah aktif.');
         }
 
-        $tahunAjaran->aktifkan();
+        // FIX: bungkus dalam transaction (aktifkan() melakukan 2 query)
+        DB::transaction(fn () => $tahunAjaran->aktifkan());
 
         return back()->with('success', "Tahun ajaran {$tahunAjaran->label} berhasil diaktifkan.");
     }
 
-    public function exportPdf(Request $request)
+    // ── Export PDF ────────────────────────────────────────────────────────────
+
+    public function exportPdf(Request $request): mixed
     {
-        $tahunAjaran = TahunAjaran::orderByDesc('id')->get();
+        // FIX: ikuti filter yang sedang aktif di halaman (konsisten dengan exportExcel)
+        $query = TahunAjaran::query();
+
+        if ($request->filled('search')) {
+            $query->where('tahun', 'like', '%' . $request->search . '%');
+        }
+        if ($request->filled('semester')) {
+            $query->where('semester', $request->semester);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $tahunAjaran = $query->orderByDesc('id')->get();
 
         $pdf = Pdf::loadView('admin.tahun-ajaran.pdf', compact('tahunAjaran'))
             ->setPaper('a4', 'portrait');
@@ -146,7 +208,9 @@ class TahunAjaranController extends Controller
         return $pdf->download('data-tahun-ajaran-' . now()->format('Ymd-His') . '.pdf');
     }
 
-    public function exportExcel(Request $request)
+    // ── Export Excel ──────────────────────────────────────────────────────────
+
+    public function exportExcel(Request $request): BinaryFileResponse
     {
         return Excel::download(
             new TahunAjaranExport($request->all()),
@@ -154,7 +218,9 @@ class TahunAjaranController extends Controller
         );
     }
 
-    public function import(Request $request)
+    // ── Import ────────────────────────────────────────────────────────────────
+
+    public function import(Request $request): RedirectResponse
     {
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:2048'],
@@ -168,7 +234,7 @@ class TahunAjaranController extends Controller
             Excel::import(new TahunAjaranImport, $request->file('file'));
         } catch (ExcelValidationException $e) {
             $errors = collect($e->failures())
-                ->map(fn($f) => "Baris {$f->row()}: " . implode(', ', $f->errors()))
+                ->map(fn ($f) => "Baris {$f->row()}: " . implode(', ', $f->errors()))
                 ->implode(' | ');
 
             return back()->with('error', 'Import gagal: ' . $errors);
@@ -178,6 +244,8 @@ class TahunAjaranController extends Controller
 
         return back()->with('success', 'Data tahun ajaran berhasil diimpor.');
     }
+
+    // ── Private Helpers ───────────────────────────────────────────────────────
 
     private function pesanValidasi(): array
     {

@@ -88,9 +88,9 @@
 
     .badge { display:inline-flex; align-items:center; gap:4px; padding:3px 10px; border-radius:99px; font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; font-weight:700; white-space:nowrap; }
     .badge-dot { width:5px; height:5px; border-radius:50%; }
-    .badge-tersedia     { background:#dcfce7; color:#15803d; } .badge-tersedia .badge-dot     { background:#15803d; }
-    .badge-tidak_tersedia { background:#fef3c7; color:#92400e; } .badge-tidak_tersedia .badge-dot { background:#d97706; }
-    .badge-perbaikan    { background:#fee2e2; color:#dc2626; } .badge-perbaikan .badge-dot    { background:#dc2626; }
+    .badge-tersedia       { background:#dcfce7; color:#15803d; } .badge-tersedia .badge-dot       { background:#15803d; }
+    .badge-tidak_tersedia { background:#fef3c7; color:#92400e; } .badge-tidak_tersedia .badge-dot  { background:#d97706; }
+    .badge-perbaikan      { background:#fee2e2; color:#dc2626; } .badge-perbaikan .badge-dot      { background:#dc2626; }
 
     .jenis-pill { display:inline-block; padding:2px 9px; border-radius:5px; font-family:'Plus Jakarta Sans',sans-serif; font-size:11.5px; font-weight:700; white-space:nowrap; }
     .jenis-kelas                 { background:#eef2ff; color:#4338ca; border:1px solid #c7d2fe; }
@@ -157,6 +157,7 @@
         </div>
     </div>
 
+    {{-- FIX BUG: Statistik kini dari $stats yang dihitung di controller, bukan query langsung di view --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -164,7 +165,7 @@
             </div>
             <div>
                 <p class="stat-label">Total Ruang</p>
-                <p class="stat-val">{{ $ruang->total() }}</p>
+                <p class="stat-val">{{ $stats['total'] }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -173,7 +174,7 @@
             </div>
             <div>
                 <p class="stat-label">Tersedia</p>
-                <p class="stat-val">{{ \App\Models\Ruang::where('status','tersedia')->count() }}</p>
+                <p class="stat-val">{{ $stats['tersedia'] }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -182,7 +183,7 @@
             </div>
             <div>
                 <p class="stat-label">Tidak Tersedia</p>
-                <p class="stat-val">{{ \App\Models\Ruang::where('status','tidak_tersedia')->count() }}</p>
+                <p class="stat-val">{{ $stats['tidak_tersedia'] }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -191,7 +192,7 @@
             </div>
             <div>
                 <p class="stat-label">Perbaikan</p>
-                <p class="stat-val">{{ \App\Models\Ruang::where('status','perbaikan')->count() }}</p>
+                <p class="stat-val">{{ $stats['perbaikan'] }}</p>
             </div>
         </div>
     </div>
@@ -214,9 +215,9 @@
                 </select>
                 <select name="status">
                     <option value="">Semua Status</option>
-                    <option value="tersedia"      {{ request('status')=='tersedia'      ? 'selected' : '' }}>Tersedia</option>
-                    <option value="tidak_tersedia"{{ request('status')=='tidak_tersedia'? 'selected' : '' }}>Tidak Tersedia</option>
-                    <option value="perbaikan"     {{ request('status')=='perbaikan'     ? 'selected' : '' }}>Perbaikan</option>
+                    <option value="tersedia"       {{ request('status')=='tersedia'       ? 'selected' : '' }}>Tersedia</option>
+                    <option value="tidak_tersedia" {{ request('status')=='tidak_tersedia' ? 'selected' : '' }}>Tidak Tersedia</option>
+                    <option value="perbaikan"      {{ request('status')=='perbaikan'      ? 'selected' : '' }}>Perbaikan</option>
                 </select>
                 <div class="filter-sep"></div>
                 <a href="{{ route('admin.ruang.index') }}" class="btn-reset">Reset</a>
@@ -269,7 +270,7 @@
                         <td><span class="no-col">{{ $ruang->firstItem() + $index }}</span></td>
                         <td><span class="kode-pill">{{ $r->kode_ruang }}</span></td>
                         <td style="font-family:'Plus Jakarta Sans',sans-serif; font-weight:700; font-size:13.5px">{{ $r->nama_ruang }}</td>
-                        <td class="muted" style="font-size:12.5px">{{ $r->gedung->nama_gedung ?? '-' }}</td>
+                        <td class="muted" style="font-size:12.5px">{{ optional($r->gedung)->nama_gedung ?? '-' }}</td>
                         <td>
                             <span class="jenis-pill jenis-{{ $r->jenis_ruang }}">{{ ucfirst(str_replace('_',' ',$r->jenis_ruang)) }}</span>
                         </td>
@@ -327,28 +328,49 @@
             </table>
         </div>
 
+        {{-- FIX BUG: Pagination ellipsis diperbaiki agar tidak muncul ganda --}}
         @if($ruang->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $ruang->firstItem() }} – {{ $ruang->lastItem() }} dari {{ $ruang->total() }} ruang</p>
             <div class="pag-btns">
+                {{-- Tombol Prev --}}
                 @if($ruang->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $ruang->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $ruang->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
+
+                {{-- Nomor halaman dengan ellipsis yang benar --}}
+                @php $shownEllipsisBefore = false; $shownEllipsisAfter = false; @endphp
                 @foreach($ruang->getUrlRange(1, $ruang->lastPage()) as $page => $url)
                     @if($page == $ruang->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
+                        @php $shownEllipsisBefore = false; $shownEllipsisAfter = false; @endphp
                     @elseif($page == 1 || $page == $ruang->lastPage() || abs($page - $ruang->currentPage()) <= 1)
                         <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $ruang->currentPage()) == 2)
+                        @php $shownEllipsisBefore = false; @endphp
+                    @elseif($page < $ruang->currentPage() && !$shownEllipsisBefore)
                         <span class="pag-ellipsis">…</span>
+                        @php $shownEllipsisBefore = true; @endphp
+                    @elseif($page > $ruang->currentPage() && !$shownEllipsisAfter)
+                        <span class="pag-ellipsis">…</span>
+                        @php $shownEllipsisAfter = true; @endphp
                     @endif
                 @endforeach
+
+                {{-- Tombol Next --}}
                 @if($ruang->hasMorePages())
-                    <a href="{{ $ruang->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $ruang->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>

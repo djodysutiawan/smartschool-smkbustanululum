@@ -54,6 +54,7 @@
     .file-existing { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12px; font-weight: 700; color: var(--text2); text-decoration: none; }
     .file-existing:hover { background: var(--surface3); }
     .form-footer { display: flex; align-items: center; justify-content: flex-end; gap: 10px; padding: 16px 24px; background: var(--surface2); border-top: 1px solid var(--border); }
+    select:disabled { opacity: .55; cursor: not-allowed; }
     @media (max-width: 680px) { .page { padding: 16px 16px 40px; } .form-grid { grid-template-columns: 1fr; } .col-span-2 { grid-column: span 1; } }
     @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -98,48 +99,72 @@
                         @error('judul')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
+                    {{-- Guru — perubahan guru akan reload mapel & kelas via AJAX --}}
                     <div class="field">
                         <label>Guru <span class="req">*</span></label>
-                        <select name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
+                        <select name="guru_id" id="guruSelect" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Guru —</option>
                             @foreach($guruList as $g)
-                                <option value="{{ $g->id }}" {{ old('guru_id', $tugas->guru_id) == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
+                                <option value="{{ $g->id }}"
+                                    {{ old('guru_id', $tugas->guru_id) == $g->id ? 'selected' : '' }}>
+                                    {{ $g->nama_lengkap }}
+                                </option>
                             @endforeach
                         </select>
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
+                    {{-- Tahun Ajaran — pakai $tahunAjaranList sesuai controller --}}
+                    <div class="field">
+                        <label>Tahun Ajaran <span class="req">*</span></label>
+                        <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
+                            <option value="">— Pilih Tahun Ajaran —</option>
+                            @foreach($tahunAjaranList as $ta)
+                                <option value="{{ $ta->id }}"
+                                    {{ old('tahun_ajaran_id', $tugas->tahun_ajaran_id) == $ta->id ? 'selected' : '' }}>
+                                    {{ $ta->tahun }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('tahun_ajaran_id')<span class="field-error">{{ $message }}</span>@enderror
+                    </div>
+
+                    {{--
+                        Mata Pelajaran — di-preload dari $mapelList (dikirim controller edit()).
+                        Jika guru diganti, akan di-reload via AJAX.
+                    --}}
                     <div class="field">
                         <label>Mata Pelajaran <span class="req">*</span></label>
-                        <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
+                        <select name="mata_pelajaran_id" id="mapelSelect"
+                            class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Mata Pelajaran —</option>
                             @foreach($mapelList as $m)
-                                <option value="{{ $m->id }}" {{ old('mata_pelajaran_id', $tugas->mata_pelajaran_id) == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
+                                <option value="{{ $m->id }}"
+                                    {{ old('mata_pelajaran_id', $tugas->mata_pelajaran_id) == $m->id ? 'selected' : '' }}>
+                                    {{ $m->nama_mapel }}
+                                </option>
                             @endforeach
                         </select>
                         @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
+                    {{--
+                        Kelas — di-preload dari $kelasList (dikirim controller edit()).
+                        Jika guru diganti, akan di-reload via AJAX.
+                    --}}
                     <div class="field">
                         <label>Kelas <span class="req">*</span></label>
-                        <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
+                        <select name="kelas_id" id="kelasSelect"
+                            class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Kelas —</option>
                             @foreach($kelasList as $k)
-                                <option value="{{ $k->id }}" {{ old('kelas_id', $tugas->kelas_id) == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
+                                <option value="{{ $k->id }}"
+                                    {{ old('kelas_id', $tugas->kelas_id) == $k->id ? 'selected' : '' }}>
+                                    {{ $k->nama_kelas }}
+                                </option>
                             @endforeach
                         </select>
                         @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
-                    </div>
-
-                    <div class="field">
-                        <label>Tahun Ajaran <span class="req">*</span></label>
-                        <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
-                            <option value="">— Pilih Tahun Ajaran —</option>
-                            @foreach($tahunAjaran as $ta)
-                                <option value="{{ $ta->id }}" {{ old('tahun_ajaran_id', $tugas->tahun_ajaran_id) == $ta->id ? 'selected' : '' }}>{{ $ta->tahun }}</option>
-                            @endforeach
-                        </select>
-                        @error('tahun_ajaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
                     <div class="field col-span-2">
@@ -164,7 +189,10 @@
                         <label>Jenis Pengumpulan <span class="req">*</span></label>
                         <select name="jenis_pengumpulan" class="{{ $errors->has('jenis_pengumpulan') ? 'is-invalid' : '' }}">
                             @foreach($jenisPengumpulan as $jp)
-                                <option value="{{ $jp }}" {{ old('jenis_pengumpulan', $tugas->jenis_pengumpulan) == $jp ? 'selected' : '' }}>{{ ucfirst($jp) }}</option>
+                                <option value="{{ $jp }}"
+                                    {{ old('jenis_pengumpulan', $tugas->jenis_pengumpulan) == $jp ? 'selected' : '' }}>
+                                    {{ ucfirst($jp) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('jenis_pengumpulan')<span class="field-error">{{ $message }}</span>@enderror
@@ -180,7 +208,9 @@
 
                     <div class="field">
                         <label>Nilai Maksimal</label>
-                        <input type="number" name="nilai_maksimal" value="{{ old('nilai_maksimal', $tugas->nilai_maksimal ?? 100) }}" min="0" max="100"
+                        <input type="number" name="nilai_maksimal"
+                            value="{{ old('nilai_maksimal', $tugas->nilai_maksimal ?? 100) }}"
+                            min="0" max="100"
                             class="{{ $errors->has('nilai_maksimal') ? 'is-invalid' : '' }}">
                         @error('nilai_maksimal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
@@ -208,7 +238,9 @@
                                     {{ old('izinkan_terlambat', $tugas->izinkan_terlambat) ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="terlambatLabel">{{ old('izinkan_terlambat', $tugas->izinkan_terlambat) ? 'Ya' : 'Tidak' }}</span>
+                            <span class="toggle-label" id="terlambatLabel">
+                                {{ old('izinkan_terlambat', $tugas->izinkan_terlambat) ? 'Ya' : 'Tidak' }}
+                            </span>
                         </div>
                     </div>
 
@@ -221,7 +253,9 @@
                                     {{ old('dipublikasikan', $tugas->dipublikasikan) ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="pubLabel">{{ old('dipublikasikan', $tugas->dipublikasikan) ? 'Dipublikasikan' : 'Draft' }}</span>
+                            <span class="toggle-label" id="pubLabel">
+                                {{ old('dipublikasikan', $tugas->dipublikasikan) ? 'Dipublikasikan' : 'Draft' }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -251,16 +285,98 @@
     });
     @endif
 
-    document.getElementById('izinkanTerlambat').addEventListener('change', function() {
+    // ── Toggle labels ──────────────────────────────────────
+    document.getElementById('izinkanTerlambat').addEventListener('change', function () {
         document.getElementById('terlambatLabel').textContent = this.checked ? 'Ya' : 'Tidak';
     });
-    document.getElementById('dipublikasikanToggle').addEventListener('change', function() {
+    document.getElementById('dipublikasikanToggle').addEventListener('change', function () {
         document.getElementById('pubLabel').textContent = this.checked ? 'Dipublikasikan' : 'Draft';
     });
-    document.getElementById('tugasForm').addEventListener('submit', function() {
+
+    // ── Submit guard ───────────────────────────────────────
+    document.getElementById('tugasForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
     });
+
+    // ── AJAX Dependent Dropdowns ───────────────────────────
+    const guruSelect  = document.getElementById('guruSelect');
+    const mapelSelect = document.getElementById('mapelSelect');
+    const kelasSelect = document.getElementById('kelasSelect');
+
+    // Nilai yang sudah tersimpan di DB (untuk preselect setelah AJAX reload)
+    // Prioritas: old() setelah validasi gagal, lalu nilai dari $tugas
+    const savedMapel = '{{ old('mata_pelajaran_id', $tugas->mata_pelajaran_id) }}';
+    const savedKelas = '{{ old('kelas_id', $tugas->kelas_id) }}';
+
+    function populateSelect(selectEl, items, valueKey, labelKey, savedValue, emptyLabel) {
+        selectEl.innerHTML = '';
+        if (!items.length) {
+            selectEl.innerHTML = `<option value="">${emptyLabel}</option>`;
+            selectEl.disabled = true;
+            return;
+        }
+        selectEl.innerHTML = `<option value="">— Pilih —</option>`;
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item[valueKey];
+            opt.textContent = item[labelKey];
+            if (String(item[valueKey]) === String(savedValue)) opt.selected = true;
+            selectEl.appendChild(opt);
+        });
+        selectEl.disabled = false;
+    }
+
+    async function loadDependents(guruId, selectedMapel = '', selectedKelas = '') {
+        mapelSelect.innerHTML = '<option value="">Memuat…</option>';
+        mapelSelect.disabled = true;
+        kelasSelect.innerHTML = '<option value="">Memuat…</option>';
+        kelasSelect.disabled = true;
+
+        try {
+            const [mapelRes, kelasRes] = await Promise.all([
+                fetch(`/admin/tugas/ajax/guru/${guruId}/mapel`),
+                fetch(`/admin/tugas/ajax/guru/${guruId}/kelas`),
+            ]);
+
+            if (!mapelRes.ok || !kelasRes.ok) throw new Error('Server error');
+
+            const mapelData = await mapelRes.json();
+            const kelasData = await kelasRes.json();
+
+            populateSelect(mapelSelect, mapelData, 'id', 'nama_mapel', selectedMapel, '— Tidak ada mata pelajaran —');
+            populateSelect(kelasSelect, kelasData, 'id', 'nama_kelas', selectedKelas, '— Tidak ada kelas —');
+        } catch (e) {
+            mapelSelect.innerHTML = '<option value="">Gagal memuat</option>';
+            kelasSelect.innerHTML = '<option value="">Gagal memuat</option>';
+            mapelSelect.disabled = true;
+            kelasSelect.disabled = true;
+        }
+    }
+
+    guruSelect.addEventListener('change', function () {
+        if (!this.value) {
+            // Reset ke pilihan kosong jika guru dihapus
+            mapelSelect.innerHTML = '<option value="">— Pilih Guru dulu —</option>';
+            mapelSelect.disabled = true;
+            kelasSelect.innerHTML = '<option value="">— Pilih Guru dulu —</option>';
+            kelasSelect.disabled = true;
+            return;
+        }
+        // Jika guru diganti, jangan preselect nilai lama (guru berbeda = mapel/kelas berbeda)
+        const isSameGuru = this.value === '{{ $tugas->guru_id }}';
+        loadDependents(
+            this.value,
+            isSameGuru ? savedMapel : '',
+            isSameGuru ? savedKelas : ''
+        );
+    });
+
+    /*
+     * Saat halaman pertama kali load, dropdown mapel & kelas sudah terisi dari
+     * $mapelList / $kelasList yang di-preload controller edit(). Tidak perlu AJAX.
+     * AJAX hanya berjalan jika pengguna mengganti guru.
+     */
 </script>
 </x-app-layout>

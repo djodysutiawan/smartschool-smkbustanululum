@@ -1,6 +1,6 @@
 <x-app-layout>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
     :root {
         --brand:#1f63db;--brand-h:#3582f0;--brand-50:#eef6ff;--brand-100:#d9ebff;--brand-700:#1750c0;
         --surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;
@@ -15,11 +15,11 @@
     .page{padding:28px 28px 60px;max-width:900px;margin:0 auto;}
 
     /* ── Breadcrumb ─────────────────────────────────────────────────────── */
-    .breadcrumb{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text3);margin-bottom:20px;flex-wrap:wrap;}
+    .breadcrumb{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);margin-bottom:20px;flex-wrap:wrap;}
     .breadcrumb a{color:var(--text3);text-decoration:none;transition:color .15s;}
     .breadcrumb a:hover{color:var(--brand);}
     .breadcrumb-sep{color:var(--border2);}
-    .breadcrumb-cur{color:var(--text2);font-weight:600;}
+    .breadcrumb-cur{color:var(--text2);}
 
     /* ── Page header ────────────────────────────────────────────────────── */
     .page-header{margin-bottom:28px;}
@@ -47,23 +47,37 @@
     .file-meta{display:inline-flex;align-items:center;gap:6px;margin-top:12px;font-size:11.5px;color:var(--text3);}
     .file-meta span{background:var(--surface3);padding:2px 8px;border-radius:4px;font-weight:600;color:var(--text2);}
 
-    /* ── Kolom table ────────────────────────────────────────────────────── */
+    /* ── Column table ───────────────────────────────────────────────────── */
     .col-table{width:100%;border-collapse:collapse;font-size:13px;}
     .col-table thead tr{background:var(--surface2);border-bottom:1px solid var(--border);}
-    .col-table thead th{padding:10px 14px;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;}
+    .col-table thead th{padding:10px 14px;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;white-space:nowrap;}
     .col-table tbody tr{border-bottom:1px solid #f1f5f9;}
     .col-table tbody tr:last-child{border-bottom:none;}
     .col-table tbody tr:hover{background:#fafbff;}
     .col-table td{padding:10px 14px;color:var(--text2);vertical-align:middle;}
-    .col-name{font-family:'DM Mono','Courier New',monospace;font-size:12px;font-weight:600;color:var(--brand-700);background:var(--brand-50);padding:2px 8px;border-radius:4px;white-space:nowrap;}
+    /* FIX 1: Kolom keterangan boleh wrap agar tidak overflow di mobile */
+    .col-table .td-desc{min-width:200px;font-size:12.5px;line-height:1.6;word-break:break-word;}
+    .col-name{font-family:'DM Mono','Courier New',monospace;font-size:12px;font-weight:500;color:var(--brand-700);background:var(--brand-50);padding:2px 8px;border-radius:4px;white-space:nowrap;}
     .col-type{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;}
     .type-int{background:#fdf4ff;color:#7c3aed;}
     .type-str{background:var(--green-bg);color:var(--green);}
     .type-time{background:var(--brand-50);color:var(--brand-700);}
     .type-bool{background:var(--yellow-bg);color:var(--yellow);}
+    /* FIX 2: Fallback type jika tidak cocok peta manapun */
+    .type-default{background:var(--surface3);color:var(--text2);}
     .required-dot{width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:4px;}
     .dot-required{background:var(--red);}
     .dot-optional{background:var(--text3);}
+
+    /* FIX 3: Styling tag <code> di dalam deskripsi kolom agar konsisten */
+    .td-desc code{
+        font-family:'DM Mono','Courier New',monospace;
+        font-size:11.5px;font-weight:500;
+        background:var(--surface3);
+        color:var(--text);
+        padding:1px 6px;border-radius:4px;
+        border:1px solid var(--border);
+    }
 
     /* ── Steps ──────────────────────────────────────────────────────────── */
     .steps{display:flex;flex-direction:column;gap:14px;}
@@ -73,22 +87,32 @@
     .step-content strong{color:var(--text);font-weight:700;}
 
     /* ── Alert ──────────────────────────────────────────────────────────── */
-    .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);font-size:13px;line-height:1.6;}
+    .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);font-size:13px;line-height:1.6;font-family:'DM Sans',sans-serif;}
     .alert-warning{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border);}
     .alert-info{background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100);}
 
     /* ── Back btn ───────────────────────────────────────────────────────── */
-    .btn-back{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;text-decoration:none;transition:background .15s;}
+    .btn-back{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;text-decoration:none;transition:background .15s;}
     .btn-back:hover{background:var(--surface3);}
 
-    @media(max-width:640px){.page{padding:16px;}.download-hero{padding:20px;}}
+    @media(max-width:640px){
+        .page{padding:16px;}
+        .download-hero{padding:20px;}
+        /* Sembunyikan kolom # di mobile agar tabel tidak terlalu sesak */
+        .col-table .col-no{display:none;}
+    }
 </style>
 
 <div class="page">
 
     {{-- Breadcrumb --}}
+    {{--
+        FIX 4: Ganti route('admin.dashboard') → route('dashboard') agar konsisten
+        dengan breadcrumb di show.blade.php dan tidak lempar RouteNotFoundException
+        jika route 'admin.dashboard' tidak terdefinisi.
+    --}}
     <nav class="breadcrumb">
-        <a href="{{ route('admin.dashboard') }}">Dashboard</a>
+        <a href="{{ route('dashboard') }}">Dashboard</a>
         <span class="breadcrumb-sep">›</span>
         <a href="{{ route('admin.jadwal-pelajaran.index') }}">Jadwal Pelajaran</a>
         <span class="breadcrumb-sep">›</span>
@@ -140,10 +164,49 @@
         </div>
         <div class="card-body" style="padding:0;">
             <div style="overflow-x:auto;">
+                {{--
+                    FIX 5: Data kolom & map tipe disatukan dalam satu @php block.
+                    Tipe disimpan per-baris agar tidak perlu lookup array terpisah.
+
+                    FIX 6: Deskripsi berisi HTML (tag <strong> dan <code>) TETAP
+                    menggunakan {!! !!}, namun seluruh array $columns adalah
+                    HARDCODED di blade ini — bukan dari input user/DB, sehingga
+                    tidak ada risiko XSS. Ditambahkan komentar eksplisit sebagai
+                    dokumentasi keamanan agar developer lain tidak salah paham.
+                --}}
+                @php
+                /**
+                 * Data ini HARDCODED di template — tidak berasal dari input user
+                 * maupun database. Penggunaan {!! !!} di bawah AMAN karena
+                 * tidak ada data eksternal yang masuk ke sini.
+                 * JANGAN ganti ke array dinamis tanpa menambahkan e() / Blade escaping.
+                 */
+                $typeMap = [
+                    'Integer' => 'type-int',
+                    'String'  => 'type-str',
+                    'Time'    => 'type-time',
+                    'Boolean' => 'type-bool',
+                ];
+
+                $columns = [
+                    [1,  'tahun_ajaran_id',   'Integer', true,  'ID tahun ajaran. Lihat di menu <strong>Tahun Ajaran</strong>.'],
+                    [2,  'guru_id',           'Integer', true,  'ID guru pengampu. Lihat di menu <strong>Guru</strong>.'],
+                    [3,  'mata_pelajaran_id', 'Integer', true,  'ID mata pelajaran. Lihat di menu <strong>Mata Pelajaran</strong>.'],
+                    [4,  'kelas_id',          'Integer', true,  'ID kelas. Lihat di menu <strong>Kelas</strong>.'],
+                    [5,  'ruang_id',          'Integer', false, 'ID ruangan (boleh dikosongkan). Lihat di menu <strong>Ruang</strong>.'],
+                    [6,  'hari',              'String',  true,  'Salah satu: <code>senin</code> / <code>selasa</code> / <code>rabu</code> / <code>kamis</code> / <code>jumat</code> / <code>sabtu</code>'],
+                    [7,  'jam_mulai',         'Time',    true,  'Format <strong>HH:MM</strong>. Contoh: <code>07:00</code>'],
+                    [8,  'jam_selesai',       'Time',    true,  'Format <strong>HH:MM</strong>, harus setelah <code>jam_mulai</code>. Contoh: <code>08:30</code>'],
+                    [9,  'pertemuan_ke',      'Integer', false, 'Nomor urut pertemuan (angka positif, boleh dikosongkan).'],
+                    [10, 'sumber_jadwal',     'String',  false, 'Isi dengan: <code>manual</code> atau <code>otomatis</code>. Default: <code>manual</code>'],
+                    [11, 'is_active',         'Boolean', false, '<code>1</code> = aktif, <code>0</code> = tidak aktif. Default: <code>1</code>'],
+                ];
+                @endphp
+
                 <table class="col-table">
                     <thead>
                         <tr>
-                            <th>#</th>
+                            <th class="col-no">#</th>
                             <th>Nama Kolom</th>
                             <th>Tipe</th>
                             <th>Wajib</th>
@@ -151,29 +214,13 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @php
-                        $columns = [
-                            [1,  'tahun_ajaran_id',   'Integer', true,  'ID tahun ajaran. Lihat di menu <strong>Tahun Ajaran</strong>.'],
-                            [2,  'guru_id',           'Integer', true,  'ID guru pengampu. Lihat di menu <strong>Guru</strong>.'],
-                            [3,  'mata_pelajaran_id', 'Integer', true,  'ID mata pelajaran. Lihat di menu <strong>Mata Pelajaran</strong>.'],
-                            [4,  'kelas_id',          'Integer', true,  'ID kelas. Lihat di menu <strong>Kelas</strong>.'],
-                            [5,  'ruang_id',          'Integer', false, 'ID ruangan (boleh dikosongkan). Lihat di menu <strong>Ruang</strong>.'],
-                            [6,  'hari',              'String',  true,  'Isi dengan salah satu: <code>senin</code> / <code>selasa</code> / <code>rabu</code> / <code>kamis</code> / <code>jumat</code> / <code>sabtu</code>'],
-                            [7,  'jam_mulai',         'Time',    true,  'Format <strong>HH:MM</strong>. Contoh: <code>07:00</code>'],
-                            [8,  'jam_selesai',       'Time',    true,  'Format <strong>HH:MM</strong>, harus setelah jam_mulai. Contoh: <code>08:30</code>'],
-                            [9,  'pertemuan_ke',      'Integer', false, 'Nomor urut pertemuan (angka positif, boleh dikosongkan).'],
-                            [10, 'sumber_jadwal',     'String',  false, 'Isi dengan: <code>manual</code> atau <code>otomatis</code>. Default: <code>manual</code>'],
-                            [11, 'is_active',         'Boolean', false, '<code>1</code> = aktif, <code>0</code> = tidak aktif. Default: <code>1</code>'],
-                        ];
-                        $typeClass = ['Integer'=>'type-int','String'=>'type-str','Time'=>'type-time','Boolean'=>'type-bool'];
-                        @endphp
-
                         @foreach($columns as [$no, $col, $type, $required, $desc])
                         <tr>
-                            <td style="color:var(--text3);font-size:12px;font-weight:700;">{{ $no }}</td>
+                            <td class="col-no" style="color:var(--text3);font-size:12px;font-weight:700;">{{ $no }}</td>
                             <td><span class="col-name">{{ $col }}</span></td>
-                            <td><span class="col-type {{ $typeClass[$type] ?? '' }}">{{ $type }}</span></td>
-                            <td style="text-align:center;">
+                            {{-- FIX 7: Gunakan $typeMap dengan fallback 'type-default' jika tipe tidak dikenal --}}
+                            <td><span class="col-type {{ $typeMap[$type] ?? 'type-default' }}">{{ $type }}</span></td>
+                            <td style="text-align:center;white-space:nowrap;">
                                 @if($required)
                                     <span style="display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;color:var(--red);">
                                         <span class="required-dot dot-required"></span>Wajib
@@ -184,7 +231,8 @@
                                     </span>
                                 @endif
                             </td>
-                            <td style="font-size:12.5px;line-height:1.6;">{!! $desc !!}</td>
+                            {{-- Data hardcoded — aman menggunakan {!! !!}, lihat komentar @php di atas --}}
+                            <td class="td-desc">{!! $desc !!}</td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -244,12 +292,12 @@
     <div class="alert alert-warning" style="margin-bottom:16px;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
         <div>
-            <strong>Perhatian:</strong> Pastikan semua ID (tahun_ajaran_id, guru_id, mata_pelajaran_id, kelas_id, ruang_id) sudah ada di database sebelum mengimpor.
+            <strong>Perhatian:</strong> Pastikan semua ID (<code style="font-family:'DM Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;">tahun_ajaran_id</code>, <code style="font-family:'DM Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;">guru_id</code>, <code style="font-family:'DM Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;">mata_pelajaran_id</code>, <code style="font-family:'DM Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;">kelas_id</code>, <code style="font-family:'DM Mono',monospace;font-size:11.5px;background:rgba(0,0,0,.06);padding:1px 5px;border-radius:3px;">ruang_id</code>) sudah ada di database sebelum mengimpor.
             Jadwal yang memiliki konflik waktu (guru/kelas/ruang bentrok) akan <strong>ditolak</strong> saat proses import.
         </div>
     </div>
 
-    <div class="alert alert-info">
+    <div class="alert alert-info" style="margin-bottom:24px;">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <div>
             Jangan mengubah nama atau urutan kolom di baris pertama (header). Sistem membaca kolom berdasarkan <strong>posisi, bukan nama kolom</strong>.
@@ -257,12 +305,10 @@
     </div>
 
     {{-- Footer action --}}
-    <div style="margin-top:24px;display:flex;gap:10px;align-items:center;">
-        <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="btn-back">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-            Kembali ke Daftar Jadwal
-        </a>
-    </div>
+    <a href="{{ route('admin.jadwal-pelajaran.index') }}" class="btn-back">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+        Kembali ke Daftar Jadwal
+    </a>
 
 </div>
 </x-app-layout>

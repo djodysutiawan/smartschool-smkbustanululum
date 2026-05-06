@@ -114,11 +114,15 @@
                         <div class="toggle-row" style="margin-top:8px">
                             <label class="toggle-switch">
                                 <input type="hidden" name="is_active" value="0">
+                                {{-- FIX: old() prioritas pertama, fallback ke nilai dari DB --}}
                                 <input type="checkbox" name="is_active" value="1" id="isActiveToggle"
-                                    {{ old('is_active', $gedung->is_active) ? 'checked' : '' }}>
+                                    {{ old('is_active', $gedung->is_active ? 1 : 0) == 1 ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="toggleLabel">{{ $gedung->is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                            {{-- FIX: label awal konsisten dengan state checkbox (old() atau DB) --}}
+                            <span class="toggle-label" id="toggleLabel">
+                                {{ old('is_active', $gedung->is_active ? 1 : 0) == 1 ? 'Aktif' : 'Nonaktif' }}
+                            </span>
                         </div>
                     </div>
                     <div class="field col-span-2">

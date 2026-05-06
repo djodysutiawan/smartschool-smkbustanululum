@@ -18,47 +18,44 @@ use App\Imports\TugasImport;
 
 class TugasController extends Controller
 {
+    // ─────────────────────────────────────────────
+    //  INDEX
+    // ─────────────────────────────────────────────
     public function index(Request $request)
     {
         $query = Tugas::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran'])->withTrashed();
 
-        if ($request->filled('guru_id')) {
-            $query->where('guru_id', $request->guru_id);
-        }
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-        if ($request->filled('mata_pelajaran_id')) {
-            $query->where('mata_pelajaran_id', $request->mata_pelajaran_id);
-        }
-        if ($request->filled('dipublikasikan')) {
-            $query->where('dipublikasikan', $request->boolean('dipublikasikan'));
-        }
-        if ($request->filled('search')) {
-            $query->where('judul', 'like', "%{$request->search}%");
-        }
+        if ($request->filled('guru_id'))           $query->where('guru_id', $request->guru_id);
+        if ($request->filled('kelas_id'))          $query->where('kelas_id', $request->kelas_id);
+        if ($request->filled('mata_pelajaran_id')) $query->where('mata_pelajaran_id', $request->mata_pelajaran_id);
+        if ($request->filled('dipublikasikan'))    $query->where('dipublikasikan', $request->boolean('dipublikasikan'));
+        if ($request->filled('search'))            $query->where('judul', 'like', "%{$request->search}%");
 
         $tugas     = $query->latest()->paginate(20)->withQueryString();
         $guruList  = Guru::aktif()->orderBy('nama_lengkap')->get();
         $kelasList = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
 
-        return view('admin.tugas.index',
-            compact('tugas', 'guruList', 'kelasList', 'mapelList'));
+        return view('admin.tugas.index', compact('tugas', 'guruList', 'kelasList', 'mapelList'));
     }
 
+    // ─────────────────────────────────────────────
+    //  CREATE
+    // ─────────────────────────────────────────────
     public function create()
     {
         $guruList         = Guru::aktif()->orderBy('nama_lengkap')->get();
-        $kelasList        = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $mapelList        = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
-        $tahunAjaran      = TahunAjaran::orderByDesc('tahun')->get();
+        $tahunAjaranAktif = TahunAjaran::aktif()->latest('tahun')->first();
+        $tahunAjaranList  = TahunAjaran::orderByDesc('tahun')->get();
         $jenisPengumpulan = ['file', 'teks', 'link', 'foto'];
 
         return view('admin.tugas.create',
-            compact('guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisPengumpulan'));
+            compact('guruList', 'tahunAjaranAktif', 'tahunAjaranList', 'jenisPengumpulan'));
     }
 
+    // ─────────────────────────────────────────────
+    //  STORE
+    // ─────────────────────────────────────────────
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -76,6 +73,8 @@ class TugasController extends Controller
             'dipublikasikan'    => ['boolean'],
         ], $this->messages());
 
+        $this->validateGuruRelasi($validated['guru_id'], $validated['mata_pelajaran_id'], $validated['kelas_id']);
+
         if ($request->hasFile('path_file_soal')) {
             $validated['path_file_soal'] = $request->file('path_file_soal')
                 ->store('tugas/soal', 'public');
@@ -87,6 +86,9 @@ class TugasController extends Controller
             ->with('success', 'Tugas berhasil ditambahkan.');
     }
 
+    // ─────────────────────────────────────────────
+    //  SHOW
+    // ─────────────────────────────────────────────
     public function show(Tugas $tugas)
     {
         $tugas->load(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran', 'pengumpulan.siswa']);
@@ -100,18 +102,29 @@ class TugasController extends Controller
         return view('admin.tugas.show', compact('tugas', 'stats'));
     }
 
+    // ─────────────────────────────────────────────
+    //  EDIT
+    // ─────────────────────────────────────────────
     public function edit(Tugas $tugas)
     {
+        $tugas->load('guru');
+
         $guruList         = Guru::aktif()->orderBy('nama_lengkap')->get();
-        $kelasList        = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $mapelList        = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
-        $tahunAjaran      = TahunAjaran::orderByDesc('tahun')->get();
+        $tahunAjaranAktif = TahunAjaran::aktif()->latest('tahun')->first();
+        $tahunAjaranList  = TahunAjaran::orderByDesc('tahun')->get();
         $jenisPengumpulan = ['file', 'teks', 'link', 'foto'];
 
+        $kelasList = $this->getKelasByGuru($tugas->guru_id);
+        $mapelList = $this->getMapelByGuru($tugas->guru_id);
+
         return view('admin.tugas.edit',
-            compact('tugas', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisPengumpulan'));
+            compact('tugas', 'guruList', 'kelasList', 'mapelList',
+                    'tahunAjaranAktif', 'tahunAjaranList', 'jenisPengumpulan'));
     }
 
+    // ─────────────────────────────────────────────
+    //  UPDATE
+    // ─────────────────────────────────────────────
     public function update(Request $request, Tugas $tugas)
     {
         $validated = $request->validate([
@@ -129,6 +142,8 @@ class TugasController extends Controller
             'dipublikasikan'    => ['boolean'],
         ], $this->messages());
 
+        $this->validateGuruRelasi($validated['guru_id'], $validated['mata_pelajaran_id'], $validated['kelas_id']);
+
         if ($request->hasFile('path_file_soal')) {
             if ($tugas->path_file_soal) {
                 Storage::disk('public')->delete($tugas->path_file_soal);
@@ -143,19 +158,18 @@ class TugasController extends Controller
             ->with('success', 'Tugas berhasil diperbarui.');
     }
 
+    // ─────────────────────────────────────────────
+    //  DESTROY / RESTORE / TOGGLE
+    // ─────────────────────────────────────────────
     public function destroy(Tugas $tugas)
     {
         $tugas->delete();
-
-        return redirect()->route('admin.tugas.index')
-            ->with('success', 'Tugas berhasil dihapus.');
+        return redirect()->route('admin.tugas.index')->with('success', 'Tugas berhasil dihapus.');
     }
 
     public function restore(int $id)
     {
-        $tugas = Tugas::onlyTrashed()->findOrFail($id);
-        $tugas->restore();
-
+        Tugas::onlyTrashed()->findOrFail($id)->restore();
         return back()->with('success', 'Tugas berhasil dipulihkan.');
     }
 
@@ -163,24 +177,21 @@ class TugasController extends Controller
     {
         $tugas->update(['dipublikasikan' => !$tugas->dipublikasikan]);
         $status = $tugas->dipublikasikan ? 'dipublikasikan' : 'disembunyikan';
-
         return back()->with('success', "Tugas berhasil {$status}.");
     }
 
+    // ─────────────────────────────────────────────
+    //  EXPORT / IMPORT
+    // ─────────────────────────────────────────────
     public function exportPdf(Request $request)
     {
         $query = Tugas::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran']);
-
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-
+        if ($request->filled('kelas_id')) $query->where('kelas_id', $request->kelas_id);
         $tugas = $query->latest()->get();
 
-        $pdf = Pdf::loadView('admin.tugas.export-pdf', compact('tugas'))
-            ->setPaper('a4', 'landscape');
-
-        return $pdf->download('data-tugas-' . now()->format('YmdHis') . '.pdf');
+        return Pdf::loadView('admin.tugas.export-pdf', compact('tugas'))
+            ->setPaper('a4', 'landscape')
+            ->download('data-tugas-' . now()->format('YmdHis') . '.pdf');
     }
 
     public function exportExcel(Request $request)
@@ -193,10 +204,7 @@ class TugasController extends Controller
 
     public function importTemplate()
     {
-        return Excel::download(
-            new \App\Exports\TugasTemplateExport(),
-            'template-tugas.xlsx'
-        );
+        return Excel::download(new \App\Exports\TugasTemplateExport(), 'template-tugas.xlsx');
     }
 
     public function import(Request $request)
@@ -214,6 +222,101 @@ class TugasController extends Controller
             return back()->with('success', 'Data tugas berhasil diimpor.');
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal mengimpor data: ' . $e->getMessage());
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    //  AJAX ENDPOINTS — Dependent Dropdown
+    // ─────────────────────────────────────────────
+
+    public function ajaxMapelByGuru(Guru $guru)
+    {
+        $mapel = $this->getMapelByGuru($guru->id);
+        return response()->json($mapel);
+    }
+
+    public function ajaxKelasByGuru(Guru $guru)
+    {
+        $kelas = $this->getKelasByGuru($guru->id);
+        return response()->json($kelas);
+    }
+
+    public function ajaxTahunAjaranAktif()
+    {
+        // ✅ FIX: pakai scopeAktif() — kolom `status` bukan `is_aktif`
+        $tahun = TahunAjaran::aktif()
+            ->orderByDesc('tahun')
+            ->get(['id', 'tahun']);
+
+        return response()->json($tahun);
+    }
+
+    // ─────────────────────────────────────────────
+    //  PRIVATE HELPERS
+    // ─────────────────────────────────────────────
+
+    /**
+     * Ambil mapel yang diampu guru ini via pivot guru_mata_pelajaran.
+     * Filter: pivot is_active = true & mata_pelajaran.is_active = true
+     */
+    private function getMapelByGuru(int $guruId)
+    {
+        $guru = Guru::findOrFail($guruId);
+
+        return $guru->mataPelajaran()
+            ->where('guru_mata_pelajaran.is_active', true)
+            ->where('mata_pelajaran.is_active', true)
+            ->orderBy('nama_mapel')
+            ->get(['mata_pelajaran.id', 'nama_mapel']);
+    }
+
+    /**
+     * Ambil kelas yang diajar guru ini via jadwal_pelajaran.
+     * Guru tidak punya relasi BelongsToMany ke kelas secara langsung,
+     * melainkan lewat jadwal_pelajaran.
+     */
+    private function getKelasByGuru(int $guruId)
+    {
+        return Kelas::aktif()
+            ->whereHas('jadwalPelajaran', function ($q) use ($guruId) {
+                $q->where('guru_id', $guruId)
+                  ->where('is_active', true);
+            })
+            ->orderBy('nama_kelas')
+            ->get(['id', 'nama_kelas']);
+    }
+
+    /**
+     * Validasi silang: mapel & kelas wajib sesuai guru yang dipilih.
+     */
+    private function validateGuruRelasi(int $guruId, int $mapelId, int $kelasId): void
+    {
+        $guru = Guru::findOrFail($guruId);
+
+        // ✅ Cek mapel via pivot guru_mata_pelajaran
+        $mapelValid = $guru->mataPelajaran()
+            ->where('mata_pelajaran.id', $mapelId)
+            ->where('guru_mata_pelajaran.is_active', true)
+            ->exists();
+
+        if (!$mapelValid) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'mata_pelajaran_id' => 'Mata pelajaran yang dipilih tidak sesuai dengan guru ini.',
+            ]);
+        }
+
+        // ✅ Cek kelas via jadwal_pelajaran (bukan relasi langsung guru→kelas)
+        $kelasValid = Kelas::where('id', $kelasId)
+            ->whereHas('jadwalPelajaran', function ($q) use ($guruId) {
+                $q->where('guru_id', $guruId)
+                  ->where('is_active', true);
+            })
+            ->exists();
+
+        if (!$kelasValid) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'kelas_id' => 'Kelas yang dipilih tidak sesuai dengan guru ini.',
+            ]);
         }
     }
 

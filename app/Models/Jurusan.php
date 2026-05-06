@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -67,9 +68,13 @@ class Jurusan extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────
 
+    /**
+     * FIX: Hapus orderBy dari dalam scope agar tidak konflik saat dirantai.
+     * Panggil ->orderBy('urutan') secara eksplisit di pemanggil.
+     */
     public function scopePublished($query)
     {
-        return $query->where('is_published', true)->orderBy('urutan');
+        return $query->where('is_published', true);
     }
 
     public function scopePenerimaanBuka($query)
@@ -77,31 +82,63 @@ class Jurusan extends Model
         return $query->where('is_penerimaan_buka', true)->where('is_published', true);
     }
 
-    // ── Accessors ─────────────────────────────────────────────────────────
+    // ── Accessors (Laravel 9+ Attribute style) ────────────────────────────
 
-    public function getFotoCoverSrcAttribute(): ?string
+    /**
+     * FIX: Gunakan Attribute::make() (modern Laravel 9+), 
+     * gantikan getFotoCoverSrcAttribute() yang akan deprecated.
+     */
+    protected function fotoCoverSrc(): Attribute
     {
-        if ($this->foto_cover_path) return Storage::url($this->foto_cover_path);
-        return $this->foto_cover_url;
+        return Attribute::make(
+            get: fn() => $this->foto_cover_path
+                ? Storage::url($this->foto_cover_path)
+                : $this->foto_cover_url,
+        );
     }
 
-    public function getLogoSrcAttribute(): ?string
+    protected function logoSrc(): Attribute
     {
-        if ($this->logo_path) return Storage::url($this->logo_path);
-        return $this->logo_url;
+        return Attribute::make(
+            get: fn() => $this->logo_path
+                ? Storage::url($this->logo_path)
+                : $this->logo_url,
+        );
     }
 
-    public function getFotoKajurSrcAttribute(): ?string
+    protected function fotoKajurSrc(): Attribute
     {
-        if ($this->foto_kajur_path) return Storage::url($this->foto_kajur_path);
-        return $this->foto_kajur_url;
+        return Attribute::make(
+            get: fn() => $this->foto_kajur_path
+                ? Storage::url($this->foto_kajur_path)
+                : $this->foto_kajur_url,
+        );
     }
+
+    // ── Booted ────────────────────────────────────────────────────────────
 
     protected static function booted(): void
     {
         static::saving(function ($model) {
+            /**
+             * FIX: Cek keunikan slug sebelum assign.
+             * Sebelumnya slug di-generate tanpa cek duplikat → crash jika
+             * ada unique constraint di DB dan nama sama dibuat dari seeder/API.
+             */
             if (empty($model->slug)) {
-                $model->slug = Str::slug($model->nama);
+                $base = Str::slug($model->nama);
+                $slug = $base;
+                $i    = 1;
+
+                while (
+                    static::where('slug', $slug)
+                           ->where('id', '!=', $model->id ?? 0)
+                           ->exists()
+                ) {
+                    $slug = $base . '-' . $i++;
+                }
+
+                $model->slug = $slug;
             }
         });
     }

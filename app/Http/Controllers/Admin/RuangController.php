@@ -43,7 +43,15 @@ class RuangController extends Controller
             ->paginate(20)->withQueryString();
         $gedungs = Gedung::aktif()->orderBy('nama_gedung')->get();
 
-        return view('admin.ruang.index', compact('ruang', 'gedungs'));
+        // FIX BUG: Hitung stats di controller, bukan di view
+        $stats = [
+            'total'          => Ruang::count(),
+            'tersedia'       => Ruang::where('status', 'tersedia')->count(),
+            'tidak_tersedia' => Ruang::where('status', 'tidak_tersedia')->count(),
+            'perbaikan'      => Ruang::where('status', 'perbaikan')->count(),
+        ];
+
+        return view('admin.ruang.index', compact('ruang', 'gedungs', 'stats'));
     }
 
     // ─── CREATE & STORE ───────────────────────────────────────────────────────────
@@ -66,14 +74,17 @@ class RuangController extends Controller
             'lantai'         => ['required', 'integer', 'min:1'],
             'jenis_ruang'    => ['required', Rule::in(self::JENIS_RUANG)],
             'kapasitas'      => ['required', 'integer', 'min:1', 'max:500'],
-            'ada_proyektor'  => ['boolean'],
-            'ada_ac'         => ['boolean'],
-            'ada_wifi'       => ['boolean'],
-            'ada_komputer'   => ['boolean'],
             'fasilitas_lain' => ['nullable', 'string', 'max:500'],
             'status'         => ['required', Rule::in(self::STATUS_OPTIONS)],
             'keterangan'     => ['nullable', 'string', 'max:500'],
         ], $this->pesanValidasi());
+
+        // FIX BUG: Gunakan $request->boolean() untuk handle input checkbox
+        // agar string "0"/"1" dari hidden input + checkbox dikonversi dengan benar
+        $validated['ada_proyektor'] = $request->boolean('ada_proyektor');
+        $validated['ada_ac']        = $request->boolean('ada_ac');
+        $validated['ada_wifi']      = $request->boolean('ada_wifi');
+        $validated['ada_komputer']  = $request->boolean('ada_komputer');
 
         Ruang::create($validated);
 
@@ -85,7 +96,15 @@ class RuangController extends Controller
 
     public function show(Ruang $ruang)
     {
-        $ruang->load(['gedung', 'kelas.tahunAjaran', 'jadwalPelajaran.guru', 'jadwalPelajaran.mataPelajaran']);
+        // FIX BUG: Eager load semua relasi yang dibutuhkan view show.blade.php
+        // termasuk waliKelas agar tidak terjadi N+1 query dan null-access error
+        $ruang->load([
+            'gedung',
+            'kelas.tahunAjaran',
+            'kelas.waliKelas',
+            'jadwalPelajaran.guru',
+            'jadwalPelajaran.mataPelajaran',
+        ]);
 
         return view('admin.ruang.show', compact('ruang'));
     }
@@ -110,14 +129,16 @@ class RuangController extends Controller
             'lantai'         => ['required', 'integer', 'min:1'],
             'jenis_ruang'    => ['required', Rule::in(self::JENIS_RUANG)],
             'kapasitas'      => ['required', 'integer', 'min:1', 'max:500'],
-            'ada_proyektor'  => ['boolean'],
-            'ada_ac'         => ['boolean'],
-            'ada_wifi'       => ['boolean'],
-            'ada_komputer'   => ['boolean'],
             'fasilitas_lain' => ['nullable', 'string', 'max:500'],
             'status'         => ['required', Rule::in(self::STATUS_OPTIONS)],
             'keterangan'     => ['nullable', 'string', 'max:500'],
         ], $this->pesanValidasi());
+
+        // FIX BUG: Gunakan $request->boolean() untuk handle input checkbox
+        $validated['ada_proyektor'] = $request->boolean('ada_proyektor');
+        $validated['ada_ac']        = $request->boolean('ada_ac');
+        $validated['ada_wifi']      = $request->boolean('ada_wifi');
+        $validated['ada_komputer']  = $request->boolean('ada_komputer');
 
         $ruang->update($validated);
 
@@ -166,7 +187,9 @@ class RuangController extends Controller
         if ($request->filled('jenis_ruang')) $filterParts[] = 'Jenis: ' . ucfirst(str_replace('_', ' ', $request->jenis_ruang));
         if ($request->filled('status'))      $filterParts[] = 'Status: ' . ucfirst(str_replace('_', ' ', $request->status));
         if ($request->filled('search'))      $filterParts[] = 'Cari: ' . $request->search;
-        $filterLabel = implode(', ', $filterParts);
+
+        // FIX BUG: Escape filterLabel agar aman di-render ke PDF
+        $filterLabel = e(implode(', ', $filterParts));
 
         $pdf = Pdf::loadView('admin.ruang.pdf', compact('ruang', 'filterLabel'))
             ->setPaper('a4', 'landscape');

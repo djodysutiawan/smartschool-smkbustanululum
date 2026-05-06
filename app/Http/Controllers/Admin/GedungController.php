@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\GedungExport;
+use App\Exports\GedungTemplateExport;
 use App\Http\Controllers\Controller;
 use App\Imports\GedungImport;
 use App\Models\Gedung;
@@ -63,12 +64,13 @@ class GedungController extends Controller
 
     public function show(Gedung $gedung)
     {
+        // Eager-load sekali, semua stats pakai collection — tidak ada query N+1
         $gedung->load(['ruang' => fn ($q) => $q->orderBy('lantai')->orderBy('kode_ruang')]);
 
         $stats = [
             'total_ruang'    => $gedung->ruang->count(),
-            'ruang_tersedia' => $gedung->ruangTersedia()->count(),
-            'ruang_terpakai' => $gedung->ruang()->where('status', '!=', 'tersedia')->count(),
+            'ruang_tersedia' => $gedung->ruang->where('status', 'tersedia')->count(),
+            'ruang_terpakai' => $gedung->ruang->where('status', '!=', 'tersedia')->count(),
         ];
 
         return view('admin.gedung.show', compact('gedung', 'stats'));
@@ -126,6 +128,11 @@ class GedungController extends Controller
     public function exportPdf(Request $request)
     {
         $query = Gedung::withCount('ruang');
+
+        // FIX: support filter by single gedung id (dipakai dari halaman show)
+        if ($request->filled('id')) {
+            $query->where('id', $request->id);
+        }
 
         if ($request->filled('is_active')) {
             $query->where('is_active', $request->boolean('is_active'));
@@ -190,6 +197,14 @@ class GedungController extends Controller
         }
 
         return back()->with('success', 'Data gedung berhasil diimpor.');
+    }
+
+    // ─── IMPORT TEMPLATE ─────────────────────────────────────────────────────────
+    // FIX: method ini sebelumnya tidak ada — menyebabkan error 500 saat link diklik
+
+    public function importTemplate()
+    {
+        return Excel::download(new GedungTemplateExport, 'template-gedung.xlsx');
     }
 
     // ─── PRIVATE HELPERS ─────────────────────────────────────────────────────────

@@ -40,8 +40,6 @@
     .btn-primary:hover { filter:brightness(.93); }
     .btn-primary:disabled { opacity:.6; cursor:not-allowed; filter:none; }
 
-    .alert { display:flex; align-items:flex-start; gap:10px; padding:12px 16px; border-radius:var(--radius-sm); margin-bottom:20px; font-size:13.5px; background:var(--red-bg); color:var(--red); border:1px solid var(--red-border); }
-
     .form-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
     .form-section { padding:20px 24px 24px; }
     .section-divider { border:none; border-top:1px solid var(--border); margin:0; }
@@ -64,7 +62,7 @@
     .checkbox-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
     .checkbox-item { display:flex; align-items:center; gap:8px; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; transition:border-color .15s, background .15s; }
     .checkbox-item:hover { border-color:var(--brand-h); background:var(--surface2); }
-    .checkbox-item input[type="checkbox"] { width:16px; height:16px; accent-color:var(--brand); cursor:pointer; }
+    .checkbox-item input[type="checkbox"] { width:16px; height:16px; accent-color:var(--brand); cursor:pointer; flex-shrink:0; }
     .checkbox-item .cb-label { font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:700; color:var(--text2); }
     .checkbox-item.checked { border-color:#bfdbfe; background:#eff6ff; }
     .checkbox-item.checked .cb-label { color:var(--brand); }
@@ -175,6 +173,13 @@
                     Fasilitas Ruang
                     <span class="section-label-line"></span>
                 </p>
+
+                {{--
+                    FIX BUG: Hapus <input type="hidden"> dari setiap checkbox fasilitas.
+                    Pola hidden+checkbox menyebabkan Laravel menerima array [0,1] saat
+                    checkbox dicentang, sehingga validasi boolean gagal.
+                    Konversi boolean kini dilakukan di controller via $request->boolean().
+                --}}
                 <div class="checkbox-grid">
                     @foreach([
                         ['ada_proyektor','Proyektor'],
@@ -183,7 +188,6 @@
                         ['ada_komputer','Komputer'],
                     ] as [$name, $label])
                     <label class="checkbox-item {{ old($name) ? 'checked' : '' }}" id="wrap-{{ $name }}">
-                        <input type="hidden" name="{{ $name }}" value="0">
                         <input type="checkbox" name="{{ $name }}" value="1" {{ old($name) ? 'checked' : '' }}
                             onchange="toggleCheck(this, 'wrap-{{ $name }}')">
                         <span class="cb-label">{{ $label }}</span>

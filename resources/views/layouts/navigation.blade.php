@@ -338,7 +338,6 @@
         </div>
     </div>
 
-
     {{-- ════════════════════════════════════════════════════════
         ADMIN
     ════════════════════════════════════════════════════════ --}}
@@ -463,6 +462,66 @@
             </div>
         </details>
 
+        {{-- Kenaikan Kelas --}}
+        <details class="sb-group" {{ request()->routeIs('admin.kenaikan-kelas.*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M5 15l7-7 7 7"/>
+                </svg>
+                Kenaikan Kelas
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M6 9l6 6 6-6"/>
+                </svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('admin.kenaikan-kelas.index') }}"
+                class="sb-item {{ request()->routeIs('admin.kenaikan-kelas.index') ? 'active' : '' }}">
+                    Riwayat Proses
+                </a>
+                <a href="{{ route('admin.kenaikan-kelas.create') }}"
+                class="sb-item {{ request()->routeIs('admin.kenaikan-kelas.create') ? 'active' : '' }}">
+                    + Proses Baru
+                </a>
+
+                @if(request()->route('kenaikan_kelas'))
+                    @php $kk = request()->route('kenaikan_kelas') @endphp
+                    <details class="sb-group sb-group--nested" open>
+                        <summary class="sb-group-header sb-group-header--nested">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M5 15l7-7 7 7"/>
+                            </svg>
+                            {{ $kk->label_tingkat ?? 'Detail Batch' }}
+                            <svg class="sb-chevron" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </summary>
+                        <div class="sb-sub sb-sub--nested">
+                            <a href="{{ route('admin.kenaikan-kelas.show', $kk) }}"
+                            class="sb-item {{ request()->routeIs('admin.kenaikan-kelas.show') ? 'active' : '' }}">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                                Detail Batch
+                            </a>
+                            @if(! $kk->isSelesai() && ! $kk->isDibatalkan())
+                                <a href="{{ route('admin.kenaikan-kelas.batalkan', $kk) }}"
+                                class="sb-item text-red-500 hover:text-red-600"
+                                onclick="return confirm('Batalkan proses ini?')">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <line x1="15" y1="9" x2="9" y2="15"/>
+                                        <line x1="9" y1="9" x2="15" y2="15"/>
+                                    </svg>
+                                    Batalkan
+                                </a>
+                            @endif
+                        </div>
+                    </details>
+                @endif
+            </div>
+        </details>
+
         {{-- LMS / Pembelajaran --}}
         <details class="sb-group" {{ request()->routeIs('admin.materi.*','admin.tugas.*','admin.pengumpulan-tugas.*','admin.ujian.*','admin.nilai.*','admin.jurnal-mengajar.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
@@ -576,10 +635,15 @@
         </details>
 
         {{-- ── MONITORING PIKET ──────────────────────────────── --}}
+        {{--
+            PERBAIKAN: "Laporan Harian Piket" sebelumnya berdiri sendiri sebagai
+            group terpisah. Sekarang digabung ke dalam satu group "Piket Guru"
+            karena secara konteks keduanya satu domain (piket).
+        --}}
         <p class="sb-section">Monitoring Piket</p>
 
-        {{-- Piket Guru --}}
-        <details class="sb-group" {{ request()->routeIs('admin.jadwal-piket-guru.*','admin.log-piket.*') ? 'open' : '' }}>
+        {{-- Piket Guru (menggabungkan Jadwal Piket, Log Piket, dan Laporan Harian) --}}
+        <details class="sb-group" {{ request()->routeIs('admin.jadwal-piket-guru.*','admin.log-piket.*','admin.laporan-harian-piket.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
@@ -590,23 +654,8 @@
             <div class="sb-sub">
                 <a href="{{ route('admin.jadwal-piket-guru.index') }}" class="sb-item {{ request()->routeIs('admin.jadwal-piket-guru.*') ? 'active' : '' }}">Jadwal Piket</a>
                 <a href="{{ route('admin.log-piket.index') }}"         class="sb-item {{ request()->routeIs('admin.log-piket.*') ? 'active' : '' }}">Log Piket</a>
-            </div>
-        </details>
 
-        {{-- Laporan Harian Piket --}}
-        <details class="sb-group" {{ request()->routeIs('admin.laporan-harian-piket.*') ? 'open' : '' }}>
-            <summary class="sb-group-header">
-                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <line x1="10" y1="9" x2="8" y2="9"/>
-                </svg>
-                Laporan Harian Piket
-                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-            </summary>
-            <div class="sb-sub">
+                {{-- Laporan Harian dipindah ke sini dari group terpisah --}}
                 <a href="{{ route('admin.laporan-harian-piket.index') }}"
                 class="sb-item {{ request()->routeIs('admin.laporan-harian-piket.index') && !request('tanggal_dari') ? 'active' : '' }}">
                     Semua Laporan
@@ -648,6 +697,11 @@
         </details>
 
         {{-- ── WEBSITE SEKOLAH ───────────────────────────────── --}}
+        {{--
+            PERBAIKAN: Profil Sekolah, Berita & Konten, Gallery, Prestasi,
+            dan Pesan Masuk semuanya berada dalam seksi "Website Sekolah".
+            Sebelumnya Prestasi dan Pesan Masuk tidak punya seksi yang jelas.
+        --}}
         <p class="sb-section">Website Sekolah</p>
 
         {{-- Profil Sekolah --}}
@@ -700,7 +754,7 @@
             </div>
         </details>
 
-        {{-- Prestasi --}}
+        {{-- Prestasi (dipindah ke dalam seksi Website Sekolah) --}}
         <details class="sb-group" {{ request()->routeIs('admin.prestasi.*') ? 'open' : '' }}>
             <summary class="sb-group-header">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -716,7 +770,7 @@
             </div>
         </details>
 
-        {{-- Pesan Masuk --}}
+        {{-- Pesan Masuk (dipindah ke dalam seksi Website Sekolah) --}}
         <a href="{{ route('admin.kontak-pesan.index') }}"
         class="sb-item {{ request()->routeIs('admin.kontak-pesan.*') ? 'active' : '' }}">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
@@ -732,6 +786,11 @@
         </a>
 
         {{-- ── SISTEM ────────────────────────────────────────── --}}
+        {{--
+            PERBAIKAN: Seksi "Sistem" hanya berisi Notifikasi.
+            Pengumuman dipindah ke sini juga karena bersifat internal sistem,
+            bukan konten website publik.
+        --}}
         <p class="sb-section">Sistem</p>
 
         <a href="{{ route('admin.notifikasi.index') }}"
@@ -851,17 +910,38 @@
         </details>
 
         {{-- ── MONITORING KELAS ──────────────────────────────── --}}
+        {{--
+            PERBAIKAN: "Izin Keluar Siswa" sebelumnya berdiri sendiri sebagai
+            sb-item biasa. Dibungkus dengan details group agar konsisten
+            dengan tampilan di role admin dan guru_piket.
+        --}}
         <p class="sb-section">Monitoring Kelas</p>
 
-        <a href="{{ route('guru.izin-keluar-siswa.index') }}"
-        class="sb-item {{ request()->routeIs('guru.izin-keluar-siswa.*') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
-                <polyline points="10 17 15 12 10 7"/>
-                <line x1="15" y1="12" x2="3" y2="12"/>
-            </svg>
-            Izin Keluar Siswa
-        </a>
+        <details class="sb-group" {{ request()->routeIs('guru.izin-keluar-siswa.*') ? 'open' : '' }}>
+            <summary class="sb-group-header">
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                    <polyline points="10 17 15 12 10 7"/>
+                    <line x1="15" y1="12" x2="3" y2="12"/>
+                </svg>
+                Izin Keluar Siswa
+                <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="sb-sub">
+                <a href="{{ route('guru.izin-keluar-siswa.index', ['status' => 'menunggu']) }}"
+                class="sb-item {{ request()->routeIs('guru.izin-keluar-siswa.index') && request('status') === 'menunggu' ? 'active' : '' }}">
+                    Menunggu Proses
+                </a>
+                <a href="{{ route('guru.izin-keluar-siswa.index', ['status' => 'disetujui']) }}"
+                class="sb-item {{ request()->routeIs('guru.izin-keluar-siswa.index') && request('status') === 'disetujui' ? 'active' : '' }}">
+                    Sedang Keluar
+                </a>
+                <a href="{{ route('guru.izin-keluar-siswa.index') }}"
+                class="sb-item {{ request()->routeIs('guru.izin-keluar-siswa.index') && !request('status') ? 'active' : '' }}">
+                    Semua Riwayat
+                </a>
+            </div>
+        </details>
 
         {{-- ── SISTEM ────────────────────────────────────────── --}}
         <p class="sb-section">Sistem</p>
@@ -993,6 +1073,13 @@
         </details>
 
         {{-- ── ABSENSI GURU ──────────────────────────────────── --}}
+        {{--
+            PERBAIKAN: Seksi "Absensi Guru" sebelumnya muncul SETELAH seksi "Sistem"
+            sehingga urutannya terbalik. Sekarang dipindah ke posisi yang benar,
+            yaitu SEBELUM seksi "Sistem".
+            Selain itu "Scan QR Guru" yang sebelumnya berdiri sendiri di luar group
+            kini dimasukkan ke dalam group "Input Absensi" agar konsisten.
+        --}}
         <p class="sb-section">Absensi Guru</p>
 
         <a href="{{ route('piket.absensi-guru.dashboard') }}"
@@ -1006,7 +1093,8 @@
             Dashboard Absensi
         </a>
 
-        <details class="sb-group" {{ request()->routeIs('piket.absensi-guru.massal*','piket.absensi-guru.riwayat') ? 'open' : '' }}>
+        {{-- Input Absensi (menggabungkan Absen Massal, Scan QR Guru, dan Riwayat) --}}
+        <details class="sb-group" {{ request()->routeIs('piket.absensi-guru.massal*','piket.absensi-guru.riwayat','piket.absensi-guru.scan-qr') ? 'open' : '' }}>
             <summary class="sb-group-header">
                 <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -1017,22 +1105,20 @@
             </summary>
             <div class="sb-sub">
                 <a href="{{ route('piket.absensi-guru.massal.form') }}" class="sb-item {{ request()->routeIs('piket.absensi-guru.massal*') ? 'active' : '' }}">Absen Massal</a>
+                <a href="{{ route('piket.absensi-guru.scan-qr') }}"     class="sb-item {{ request()->routeIs('piket.absensi-guru.scan-qr') ? 'active' : '' }}">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                        <rect x="3" y="3" width="5" height="5"/>
+                        <rect x="16" y="3" width="5" height="5"/>
+                        <rect x="3" y="16" width="5" height="5"/>
+                        <path d="M21 16h-3v3"/>
+                        <path d="M21 21h-3"/>
+                        <path d="M16 21v-3"/>
+                    </svg>
+                    Scan QR Guru
+                </a>
                 <a href="{{ route('piket.absensi-guru.riwayat') }}"     class="sb-item {{ request()->routeIs('piket.absensi-guru.riwayat') ? 'active' : '' }}">Riwayat Saya</a>
             </div>
         </details>
-
-        <a href="{{ route('piket.absensi-guru.scan-qr') }}"
-        class="sb-item {{ request()->routeIs('piket.absensi-guru.scan-qr') ? 'active' : '' }}">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                <rect x="3" y="3" width="5" height="5"/>
-                <rect x="16" y="3" width="5" height="5"/>
-                <rect x="3" y="16" width="5" height="5"/>
-                <path d="M21 16h-3v3"/>
-                <path d="M21 21h-3"/>
-                <path d="M16 21v-3"/>
-            </svg>
-            Scan QR Guru
-        </a>
 
         {{-- ── SISTEM ────────────────────────────────────────── --}}
         <p class="sb-section">Sistem</p>
@@ -1136,11 +1222,11 @@
                 Absensi Saya
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
-                <div class="sb-sub">
-                    <a href="{{ route('siswa.absensi.scan') }}"    class="sb-item {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">Scan QR Hadir</a>
-                    <a href="{{ route('siswa.absensi.jadwal') }}"  class="sb-item {{ request()->routeIs('siswa.absensi.jadwal') ? 'active' : '' }}">QR Per Pelajaran</a>
-                    <a href="{{ route('siswa.absensi.riwayat') }}" class="sb-item {{ request()->routeIs('siswa.absensi.riwayat') ? 'active' : '' }}">Riwayat Kehadiran</a>
-                </div>
+            <div class="sb-sub">
+                <a href="{{ route('siswa.absensi.scan') }}"    class="sb-item {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">Scan QR Hadir</a>
+                <a href="{{ route('siswa.absensi.jadwal') }}"  class="sb-item {{ request()->routeIs('siswa.absensi.jadwal') ? 'active' : '' }}">QR Per Pelajaran</a>
+                <a href="{{ route('siswa.absensi.riwayat') }}" class="sb-item {{ request()->routeIs('siswa.absensi.riwayat') ? 'active' : '' }}">Riwayat Kehadiran</a>
+            </div>
         </details>
 
         {{-- ── AKADEMIK ──────────────────────────────────────── --}}

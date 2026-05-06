@@ -20,24 +20,43 @@ class AbsensiController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | CATATAN KONSISTENSI MIGRASI
+    | CATATAN KONSISTENSI ENUM DB
     |--------------------------------------------------------------------------
-    | Kolom `metode` pada tabel absensi: enum('manual', 'qr') — bukan 'qr_code'.
-    | Kolom `tanggal`: date (bukan timestamp).
-    | Semua export rekap menggunakan GET agar parameter tersedia di request.
+    | Kolom `metode` pada tabel absensi (setelah migrasi fix):
+    |   ENUM('manual','qr','qr_scan','wajah','rfid','import')
+    |
+    | Kolom `status`:
+    |   ENUM('hadir','telat','izin','sakit','alfa')
+    |
+    | Di form admin (create/edit), metode yang bisa dipilih manual adalah
+    | 'manual' saja. Nilai lain dicatat otomatis oleh sistem.
     |--------------------------------------------------------------------------
     */
 
-    private const STATUS_LIST = ['hadir', 'telat', 'izin', 'sakit', 'alfa'];
-    private const METODE_LIST = ['manual', 'qr'];
+    // Status sesuai enum DB — ambil dari konstanta model agar konsisten
+    private const STATUS_LIST = [
+        Absensi::STATUS_HADIR,
+        Absensi::STATUS_TELAT,
+        Absensi::STATUS_IZIN,
+        Absensi::STATUS_SAKIT,
+        Absensi::STATUS_ALFA,
+    ];
 
-    // -------------------------------------------------------------------------
-    // INDEX
-    // -------------------------------------------------------------------------
+    // Metode yang ditampilkan di form admin (input manual)
+    private const METODE_FORM = ['manual'];
+
+    /**
+     * PERBAIKAN: Semua metode valid di DB setelah migrasi fix.
+     * Sebelumnya mengandung 'qr_scan','wajah','rfid','import' yang tidak ada di DB asal.
+     * Sekarang menggunakan konstanta dari model Absensi agar satu sumber kebenaran.
+     */
+    private const METODE_ALL = Absensi::METODE_ALL;
+
+    // ── INDEX ─────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
     {
-        $query = Absensi::with(['siswa', 'kelas', 'jadwalPelajaran', 'dicatatOleh']);
+        $query = Absensi::with(['siswa', 'kelas', 'jadwalPelajaran', 'dicatatOleh', 'mataPelajaran']);
 
         $this->applyFilters($query, $request);
 
@@ -45,33 +64,40 @@ class AbsensiController extends Controller
         $kelasList  = Kelas::aktif()->orderBy('nama_kelas')->get();
         $siswaList  = Siswa::aktif()->orderBy('nama_lengkap')->get();
         $statusList = self::STATUS_LIST;
-        $metodeList = self::METODE_LIST;
+        $metodeList = self::METODE_FORM;
+
+        /**
+         * PERBAIKAN: Rekap hari ini pakai 1 query groupBy, bukan 4 query COUNT terpisah.
+         * Lebih efisien dan hasilnya sama.
+         */
+        $rekapRaw = Absensi::whereDate('tanggal', today())
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
 
         $rekap = [
-            'hadir' => Absensi::whereIn('status', ['hadir', 'telat'])->whereDate('tanggal', today())->count(),
-            'izin'  => Absensi::where('status', 'izin')->whereDate('tanggal', today())->count(),
-            'sakit' => Absensi::where('status', 'sakit')->whereDate('tanggal', today())->count(),
-            'alfa'  => Absensi::where('status', 'alfa')->whereDate('tanggal', today())->count(),
+            'hadir' => ($rekapRaw['hadir'] ?? 0) + ($rekapRaw['telat'] ?? 0),
+            'izin'  => $rekapRaw['izin']  ?? 0,
+            'sakit' => $rekapRaw['sakit'] ?? 0,
+            'alfa'  => $rekapRaw['alfa']  ?? 0,
         ];
 
         return view('admin.absensi.index',
             compact('absensi', 'kelasList', 'siswaList', 'statusList', 'metodeList', 'rekap'));
     }
 
-    // -------------------------------------------------------------------------
-    // CREATE & STORE
-    // -------------------------------------------------------------------------
+    // ── CREATE & STORE ────────────────────────────────────────────────────────
 
     public function create()
     {
         $kelasList  = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $siswaList  = Siswa::aktif()->orderBy('nama_lengkap')->get();
-        $jadwalList = JadwalPelajaran::aktif()->with(['mataPelajaran', 'kelas'])->get();
         $statusList = self::STATUS_LIST;
-        $metodeList = self::METODE_LIST;
+        $metodeList = self::METODE_FORM;
 
+        // Siswa dan jadwal tidak dimuat semua — diisi via AJAX berdasarkan kelas dipilih
+        // Lihat endpoint getByKelas() di bawah
         return view('admin.absensi.create',
-            compact('kelasList', 'siswaList', 'jadwalList', 'statusList', 'metodeList'));
+            compact('kelasList', 'statusList', 'metodeList'));
     }
 
     public function store(Request $request)
@@ -80,22 +106,33 @@ class AbsensiController extends Controller
             'siswa_id'            => ['required', 'exists:siswa,id'],
             'kelas_id'            => ['required', 'exists:kelas,id'],
             'jadwal_pelajaran_id' => ['nullable', 'exists:jadwal_pelajaran,id'],
-            'dicatat_oleh'        => ['nullable', 'exists:users,id'],
             'tanggal'             => ['required', 'date'],
             'status'              => ['required', Rule::in(self::STATUS_LIST)],
-            'metode'              => ['nullable', Rule::in(self::METODE_LIST)],
+            'metode'              => ['nullable', Rule::in(self::METODE_ALL)],
             'jam_masuk'           => ['nullable', 'date_format:H:i'],
             'jam_keluar'          => ['nullable', 'date_format:H:i', 'after:jam_masuk'],
             'keterangan'          => ['nullable', 'string', 'max:500'],
             'path_surat_izin'     => ['nullable', 'file', 'mimes:pdf,jpg,jpeg,png', 'max:2048'],
         ]);
 
+        // Cek apakah sudah ada absensi untuk siswa di tanggal dan kelas yang sama
+        $sudahAda = Absensi::where('siswa_id', $validated['siswa_id'])
+            ->where('kelas_id', $validated['kelas_id'])
+            ->whereDate('tanggal', $validated['tanggal'])
+            ->exists();
+
+        if ($sudahAda) {
+            return back()->withInput()
+                ->with('error', 'Siswa ini sudah memiliki data absensi pada tanggal dan kelas tersebut.');
+        }
+
         if ($request->hasFile('path_surat_izin')) {
             $validated['path_surat_izin'] = $request->file('path_surat_izin')
                 ->store('absensi/surat_izin', 'public');
         }
 
-        $validated['dicatat_oleh'] = $validated['dicatat_oleh'] ?? Auth::id();
+        $validated['dicatat_oleh'] = Auth::id();
+        $validated['metode']       ??= Absensi::METODE_MANUAL;
 
         Absensi::create($validated);
 
@@ -103,38 +140,32 @@ class AbsensiController extends Controller
             ->with('success', 'Data absensi berhasil ditambahkan.');
     }
 
-    // -------------------------------------------------------------------------
-    // SHOW
-    // -------------------------------------------------------------------------
+    // ── SHOW ──────────────────────────────────────────────────────────────────
 
     public function show(Absensi $absensi)
     {
-        $absensi->load(['siswa', 'kelas', 'jadwalPelajaran', 'dicatatOleh']);
-
+        $absensi->load(['siswa', 'kelas', 'jadwalPelajaran', 'mataPelajaran', 'dicatatOleh']);
         return view('admin.absensi.show', compact('absensi'));
     }
 
-    // -------------------------------------------------------------------------
-    // EDIT & UPDATE
-    // -------------------------------------------------------------------------
+    // ── EDIT & UPDATE ─────────────────────────────────────────────────────────
 
     public function edit(Absensi $absensi)
     {
         $kelasList  = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $siswaList  = Siswa::aktif()->orderBy('nama_lengkap')->get();
-        $jadwalList = JadwalPelajaran::aktif()->with(['mataPelajaran', 'kelas'])->get();
         $statusList = self::STATUS_LIST;
-        $metodeList = self::METODE_LIST;
+        $metodeList = self::METODE_FORM;
 
         return view('admin.absensi.edit',
-            compact('absensi', 'kelasList', 'siswaList', 'jadwalList', 'statusList', 'metodeList'));
+            compact('absensi', 'kelasList', 'statusList', 'metodeList'));
     }
 
     public function update(Request $request, Absensi $absensi)
     {
         $validated = $request->validate([
             'status'          => ['required', Rule::in(self::STATUS_LIST)],
-            'metode'          => ['nullable', Rule::in(self::METODE_LIST)],
+            // Validasi terima semua nilai DB agar data lama (qr, rfid, dll) tidak ditolak
+            'metode'          => ['nullable', Rule::in(self::METODE_ALL)],
             'jam_masuk'       => ['nullable', 'date_format:H:i'],
             'jam_keluar'      => ['nullable', 'date_format:H:i', 'after:jam_masuk'],
             'keterangan'      => ['nullable', 'string', 'max:500'],
@@ -152,30 +183,53 @@ class AbsensiController extends Controller
             ->with('success', 'Data absensi berhasil diperbarui.');
     }
 
-    // -------------------------------------------------------------------------
-    // DESTROY
-    // -------------------------------------------------------------------------
+    // ── DESTROY ───────────────────────────────────────────────────────────────
 
     public function destroy(Absensi $absensi)
     {
         $absensi->delete();
-
         return redirect()->route('admin.absensi.index')
             ->with('success', 'Data absensi berhasil dihapus.');
     }
 
-    // -------------------------------------------------------------------------
-    // REKAP KELAS
-    // -------------------------------------------------------------------------
+    // ── AJAX: GET SISWA & JADWAL BY KELAS ────────────────────────────────────
 
     /**
-     * Tampilkan rekap absensi per kelas.
-     * Menggunakan GET agar parameter query string tersedia
-     * untuk link export PDF / Excel di view rekap.
+     * TAMBAHAN: Endpoint AJAX untuk mengisi dropdown siswa dan jadwal
+     * secara otomatis ketika kelas dipilih di form create/edit.
+     * Route: GET /admin/absensi/kelas/{kelas}/data
      */
+    public function getByKelas(Kelas $kelas, Request $request)
+    {
+        $siswa = $kelas->siswa()
+            ->where('status', 'aktif')
+            ->orderBy('nama_lengkap')
+            ->get(['id', 'nama_lengkap', 'nis']);
+
+        $jadwal = [];
+        if ($request->filled('tanggal')) {
+            $hariIndo = [
+                0 => 'minggu', 1 => 'senin', 2 => 'selasa',
+                3 => 'rabu', 4 => 'kamis', 5 => 'jumat', 6 => 'sabtu',
+            ];
+            $hariAngka = date('w', strtotime($request->tanggal));
+            $hariStr   = $hariIndo[$hariAngka] ?? 'senin';
+
+            $jadwal = $kelas->jadwalPelajaran()
+                ->with(['mataPelajaran', 'guru'])
+                ->where('hari', $hariStr)
+                ->where('is_active', true)
+                ->orderBy('jam_mulai')
+                ->get(['id', 'mata_pelajaran_id', 'guru_id', 'jam_mulai', 'jam_selesai']);
+        }
+
+        return response()->json(compact('siswa', 'jadwal'));
+    }
+
+    // ── REKAP KELAS ───────────────────────────────────────────────────────────
+
     public function rekapKelas(Request $request)
     {
-        // Jika belum ada parameter, tampilkan halaman kosong (form saja)
         if (! $request->filled('kelas_id')) {
             $kelasList = Kelas::aktif()->orderBy('nama_kelas')->get();
             return view('admin.absensi.rekap', [
@@ -205,16 +259,12 @@ class AbsensiController extends Controller
             compact('absensi', 'kelas', 'kelasList', 'request'));
     }
 
-    // -------------------------------------------------------------------------
-    // EXPORT PDF
-    // -------------------------------------------------------------------------
+    // ── EXPORT PDF ────────────────────────────────────────────────────────────
 
     public function exportPdf(Request $request)
     {
         $query = Absensi::with(['siswa', 'kelas', 'jadwalPelajaran', 'dicatatOleh']);
-
         $this->applyFilters($query, $request);
-
         $absensi    = $query->orderByDesc('tanggal')->get();
         $statusList = self::STATUS_LIST;
 
@@ -246,9 +296,7 @@ class AbsensiController extends Controller
         return $pdf->download('rekap_absensi_' . $kelas->nama_kelas . '_' . now()->format('Ymd') . '.pdf');
     }
 
-    // -------------------------------------------------------------------------
-    // EXPORT EXCEL
-    // -------------------------------------------------------------------------
+    // ── EXPORT EXCEL ──────────────────────────────────────────────────────────
 
     public function exportExcel(Request $request)
     {
@@ -281,18 +329,14 @@ class AbsensiController extends Controller
         );
     }
 
-    // -------------------------------------------------------------------------
-    // IMPORT EXCEL
-    // -------------------------------------------------------------------------
+    // ── IMPORT ────────────────────────────────────────────────────────────────
 
     public function importTemplate()
     {
         $path = storage_path('app/templates/absensi_template.xlsx');
-
         if (! file_exists($path)) {
             return Excel::download(new \App\Exports\AbsensiTemplateExport, 'absensi_template.xlsx');
         }
-
         return response()->download($path, 'absensi_template.xlsx');
     }
 
@@ -304,16 +348,13 @@ class AbsensiController extends Controller
 
         $import = new AbsensiImport();
         Excel::import($import, $request->file('file'));
-
         $rowCount = $import->getRowCount();
 
         return redirect()->route('admin.absensi.index')
             ->with('success', "Import berhasil! {$rowCount} data absensi berhasil diimport.");
     }
 
-    // -------------------------------------------------------------------------
-    // HELPER
-    // -------------------------------------------------------------------------
+    // ── PRIVATE HELPER ────────────────────────────────────────────────────────
 
     private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, Request $request): void
     {

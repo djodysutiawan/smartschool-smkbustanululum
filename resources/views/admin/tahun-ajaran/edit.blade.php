@@ -82,12 +82,7 @@
         </div>
     </div>
 
-    @if(session('error'))
-    <div class="alert">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        {{ session('error') }}
-    </div>
-    @endif
+    {{-- Fallback alert jika JS disabled --}}
     @if($errors->any())
     <div class="alert">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -182,19 +177,48 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    {{--
+        FIX: Semua variabel Blade di dalam JS wajib pakai @json().
+        Versi lama memakai @foreach Blade di dalam template literal JS —
+        jika pesan error mengandung karakter seperti ' " < > & maka
+        JS akan syntax error atau terjadi XSS.
+        @json() encode + escape semua karakter berbahaya secara aman.
+    --}}
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end',
+    });
     @endif
+
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
-    @endif
-    @if($errors->any())
     Swal.fire({
         icon: 'error',
-        title: 'Terdapat {{ $errors->count() }} Kesalahan',
-        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        title: 'Gagal!',
+        text: @json(session('error')),
         confirmButtonColor: '#1f63db',
     });
+    @endif
+
+    @if($errors->any())
+    (function () {
+        const errs  = @json($errors->all());
+        const count = @json($errors->count());
+        const html  = '<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">'
+            + errs.map(e => `<li>${e}</li>`).join('')
+            + '</ul>';
+        Swal.fire({
+            icon: 'error',
+            title: `Terdapat ${count} Kesalahan`,
+            html: html,
+            confirmButtonColor: '#1f63db',
+        });
+    })();
     @endif
 
     document.getElementById('taForm').addEventListener('submit', function () {

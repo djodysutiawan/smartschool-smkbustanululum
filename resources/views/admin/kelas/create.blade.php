@@ -113,7 +113,7 @@
                             @endforeach
                         </select>
                         @error('jurusan_id')<span class="field-error">{{ $message }}</span>@enderror
-                        <span class="field-hint">cth. TKJ, IPA, IPS...</span>
+                        <span class="field-hint">cth. TKJ, RPL, MM...</span>
                     </div>
 
                     {{-- Kapasitas Maks --}}

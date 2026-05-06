@@ -330,6 +330,7 @@
                 </div>
                 <div class="field-hint" style="margin-top:4px">
                     Belum punya template?
+                    {{-- FIX: route ini sekarang sudah ada method-nya di controller --}}
                     <a href="{{ route('admin.gedung.import.template') }}" style="color:var(--brand-600);font-weight:600;text-decoration:none">Download template</a>
                 </div>
             </div>

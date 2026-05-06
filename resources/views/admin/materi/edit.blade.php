@@ -35,15 +35,26 @@
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .col-span-2 { grid-column: span 2; }
     .field { display: flex; flex-direction: column; gap: 6px; }
-    .field label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--text2); }
+    .field label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--text2); display: flex; align-items: center; gap: 6px; }
     .field label .req { color: var(--brand); margin-left: 2px; }
     .field input, .field select, .field textarea { height: 38px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: var(--text); background: var(--surface2); width: 100%; outline: none; transition: border-color .15s, background .15s; }
     .field textarea { height: auto; padding: 10px 12px; resize: vertical; }
     .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--brand-h); background: #fff; box-shadow: 0 0 0 3px rgba(53,130,240,.1); }
     .field input::placeholder, .field textarea::placeholder { color: var(--text3); }
     .field input.is-invalid, .field select.is-invalid { border-color: var(--red); background: #fff8f8; }
+    .field select:disabled { opacity: .55; cursor: not-allowed; }
     .field-error { font-size: 12px; color: var(--red); }
     .field-hint  { font-size: 12px; color: var(--text3); }
+
+    /* Cascade */
+    .select-wrap { position: relative; }
+    .select-wrap .spin-icon { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); display: none; pointer-events: none; }
+    .select-wrap.loading .spin-icon { display: block; }
+    .select-wrap.loading select { padding-right: 36px; }
+    .cascade-hint { font-size: 11.5px; color: var(--brand); font-weight: 600; display: none; align-items: center; gap: 4px; }
+    .cascade-hint.show { display: flex; }
+    .cascade-badge { display: inline-flex; align-items: center; gap: 4px; background: var(--brand-50); border: 1px solid var(--brand-100); border-radius: 99px; padding: 2px 9px; font-size: 11px; font-weight: 700; color: var(--brand-700); font-family: 'Plus Jakarta Sans', sans-serif; }
+
     .jenis-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
     .jenis-card { border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 14px 12px; cursor: pointer; text-align: center; transition: all .15s; background: var(--surface2); }
     .jenis-card:hover { border-color: var(--brand-h); background: var(--brand-50); }
@@ -113,45 +124,96 @@
                         @error('judul')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
+                    {{-- ① GURU --}}
                     <div class="field">
                         <label>Guru <span class="req">*</span></label>
-                        <select name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
-                            <option value="">— Pilih Guru —</option>
-                            @foreach($guruList as $g)
-                                <option value="{{ $g->id }}" {{ old('guru_id', $materi->guru_id) == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
-                            @endforeach
-                        </select>
+                        <div class="select-wrap" id="wrapGuru">
+                            <select name="guru_id" id="selGuru" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}"
+                                onchange="onGuruChange(this.value)">
+                                <option value="">— Pilih Guru —</option>
+                                @foreach($guruList as $g)
+                                    <option value="{{ $g->id }}"
+                                        {{ old('guru_id', $materi->guru_id) == $g->id ? 'selected' : '' }}>
+                                        {{ $g->nama_lengkap }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <svg class="spin-icon" width="14" height="14" fill="none" stroke="#1f63db" stroke-width="2.5"
+                                viewBox="0 0 24 24" style="animation:spin .6s linear infinite">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                        </div>
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
+                    {{-- ② MATA PELAJARAN — pre-filled dari server --}}
                     <div class="field">
-                        <label>Mata Pelajaran <span class="req">*</span></label>
-                        <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
-                            <option value="">— Pilih Mapel —</option>
-                            @foreach($mapelList as $m)
-                                <option value="{{ $m->id }}" {{ old('mata_pelajaran_id', $materi->mata_pelajaran_id) == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
-                            @endforeach
-                        </select>
+                        <label>
+                            Mata Pelajaran <span class="req">*</span>
+                            <span class="cascade-badge" id="mapelBadge">Auto</span>
+                        </label>
+                        <div class="select-wrap" id="wrapMapel">
+                            <select name="mata_pelajaran_id" id="selMapel"
+                                class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
+                                <option value="">— Pilih Mapel —</option>
+                                @foreach($mapelGuru as $m)
+                                    <option value="{{ $m->id }}"
+                                        {{ old('mata_pelajaran_id', $materi->mata_pelajaran_id) == $m->id ? 'selected' : '' }}>
+                                        {{ $m->nama_mapel }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <svg class="spin-icon" width="14" height="14" fill="none" stroke="#1f63db" stroke-width="2.5"
+                                viewBox="0 0 24 24" style="animation:spin .6s linear infinite">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                        </div>
                         @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
+                        <span class="cascade-hint show" id="mapelHint">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Menampilkan mapel yang diampu guru ini
+                        </span>
                     </div>
 
+                    {{-- ③ KELAS — pre-filled dari server --}}
                     <div class="field">
-                        <label>Kelas <span class="req">*</span></label>
-                        <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
-                            <option value="">— Pilih Kelas —</option>
-                            @foreach($kelasList as $k)
-                                <option value="{{ $k->id }}" {{ old('kelas_id', $materi->kelas_id) == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
-                            @endforeach
-                        </select>
+                        <label>
+                            Kelas <span class="req">*</span>
+                            <span class="cascade-badge" id="kelasBadge">Auto</span>
+                        </label>
+                        <div class="select-wrap" id="wrapKelas">
+                            <select name="kelas_id" id="selKelas"
+                                class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
+                                <option value="">— Pilih Kelas —</option>
+                                @foreach($kelasGuru as $k)
+                                    <option value="{{ $k->id }}"
+                                        {{ old('kelas_id', $materi->kelas_id) == $k->id ? 'selected' : '' }}>
+                                        {{ $k->nama_kelas }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <svg class="spin-icon" width="14" height="14" fill="none" stroke="#1f63db" stroke-width="2.5"
+                                viewBox="0 0 24 24" style="animation:spin .6s linear infinite">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                            </svg>
+                        </div>
                         @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
+                        <span class="cascade-hint show" id="kelasHint">
+                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            Menampilkan kelas yang diajar guru ini
+                        </span>
                     </div>
 
+                    {{-- ④ TAHUN AJARAN --}}
                     <div class="field">
                         <label>Tahun Ajaran <span class="req">*</span></label>
                         <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Tahun —</option>
                             @foreach($tahunAjaran as $t)
-                                <option value="{{ $t->id }}" {{ old('tahun_ajaran_id', $materi->tahun_ajaran_id) == $t->id ? 'selected' : '' }}>{{ $t->tahun }}</option>
+                                <option value="{{ $t->id }}"
+                                    {{ old('tahun_ajaran_id', $materi->tahun_ajaran_id) == $t->id ? 'selected' : '' }}>
+                                    {{ $t->label }}{{ $t->isAktif() ? ' ✓' : '' }}
+                                </option>
                             @endforeach
                         </select>
                         @error('tahun_ajaran_id')<span class="field-error">{{ $message }}</span>@enderror
@@ -295,10 +357,85 @@
     Swal.fire({ icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan', html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`, confirmButtonColor:'#1f63db' });
     @endif
 
+    const AJAX_BASE       = '{{ url("admin/materi/ajax") }}';
+    const CURRENT_MAPEL   = '{{ old("mata_pelajaran_id", $materi->mata_pelajaran_id) }}';
+    const CURRENT_KELAS   = '{{ old("kelas_id", $materi->kelas_id) }}';
+
+    // ── Cascade saat guru diganti ──────────────────────────────────────────────
+    async function onGuruChange(guruId) {
+        const selMapel  = document.getElementById('selMapel');
+        const selKelas  = document.getElementById('selKelas');
+        const wrapMapel = document.getElementById('wrapMapel');
+        const wrapKelas = document.getElementById('wrapKelas');
+        const mapelHint = document.getElementById('mapelHint');
+        const kelasHint = document.getElementById('kelasHint');
+
+        if (!guruId) {
+            setSelectEmpty(selMapel, '— Pilih Guru dulu —', true);
+            setSelectEmpty(selKelas, '— Pilih Guru dulu —', true);
+            mapelHint.classList.remove('show');
+            kelasHint.classList.remove('show');
+            return;
+        }
+
+        wrapMapel.classList.add('loading');
+        wrapKelas.classList.add('loading');
+        selMapel.disabled = true;
+        selKelas.disabled = true;
+
+        try {
+            const [resMapel, resKelas] = await Promise.all([
+                fetch(`${AJAX_BASE}/mapel-by-guru/${guruId}`).then(r => r.json()),
+                fetch(`${AJAX_BASE}/kelas-by-guru/${guruId}`).then(r => r.json()),
+            ]);
+
+            // Saat ganti guru, jangan preserve selection lama (beda guru beda mapel)
+            const keepMapel = String(document.getElementById('selGuru').dataset.initialGuru) === String(guruId) ? CURRENT_MAPEL : '';
+            const keepKelas = String(document.getElementById('selGuru').dataset.initialGuru) === String(guruId) ? CURRENT_KELAS : '';
+
+            populateSelect(selMapel, resMapel, 'nama_mapel', '— Pilih Mapel —', keepMapel);
+            populateSelect(selKelas, resKelas, 'nama_kelas', '— Pilih Kelas —', keepKelas);
+
+            selMapel.disabled = false;
+            selKelas.disabled = false;
+            mapelHint.classList.add('show');
+            kelasHint.classList.add('show');
+
+        } catch(e) {
+            console.error('Cascade error:', e);
+            selMapel.disabled = false;
+            selKelas.disabled = false;
+        } finally {
+            wrapMapel.classList.remove('loading');
+            wrapKelas.classList.remove('loading');
+        }
+    }
+
+    function populateSelect(sel, items, labelKey, placeholder, selectedVal = '') {
+        sel.innerHTML = `<option value="">${placeholder}</option>`;
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item.id;
+            opt.textContent = item[labelKey];
+            if (String(item.id) === String(selectedVal)) opt.selected = true;
+            sel.appendChild(opt);
+        });
+    }
+
+    function setSelectEmpty(sel, placeholder, disabled = false) {
+        sel.innerHTML = `<option value="">${placeholder}</option>`;
+        sel.disabled = disabled;
+    }
+
+    // Simpan guru ID awal supaya bisa detect apakah guru berubah
+    document.getElementById('selGuru').dataset.initialGuru = '{{ $materi->guru_id }}';
+
+    // ── Toggle publikasi ───────────────────────────────────────────────────────
     document.getElementById('pubToggle').addEventListener('change', function() {
         document.getElementById('pubLabel').textContent = this.checked ? 'Dipublikasikan' : 'Draft';
     });
 
+    // ── Jenis materi ───────────────────────────────────────────────────────────
     function onJenisChange(jenis) {
         ['file','link','teks'].forEach(s => {
             const el = document.getElementById('section-' + s);

@@ -2,27 +2,27 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 :root {
-    --brand:      #1f63db;
-    --brand-h:    #3582f0;
-    --brand-50:   #eef6ff;
-    --brand-100:  #d9ebff;
-    --brand-700:  #1750c0;
-    --surface:    #fff;
-    --surface2:   #f8fafc;
-    --surface3:   #f1f5f9;
-    --border:     #e2e8f0;
-    --border2:    #cbd5e1;
-    --text:       #0f172a;
-    --text2:      #475569;
-    --text3:      #94a3b8;
-    --red:        #dc2626;
-    --red-bg:     #fee2e2;
-    --red-border: #fecaca;
-    --green:      #15803d;
-    --green-bg:   #dcfce7;
-    --green-bd:   #bbf7d0;
-    --radius:     10px;
-    --radius-sm:  7px;
+    --brand:    #1f63db;
+    --brand-h:  #3582f0;
+    --brand-50: #eef6ff;
+    --brand-100:#d9ebff;
+    --brand-700:#1750c0;
+    --surface:  #fff;
+    --surface2: #f8fafc;
+    --surface3: #f1f5f9;
+    --border:   #e2e8f0;
+    --border2:  #cbd5e1;
+    --text:     #0f172a;
+    --text2:    #475569;
+    --text3:    #94a3b8;
+    --red:      #dc2626;
+    --red-bg:   #fee2e2;
+    --red-border:#fecaca;
+    --green:    #15803d;
+    --green-bg: #dcfce7;
+    --green-bd: #bbf7d0;
+    --radius:   10px;
+    --radius-sm:7px;
 }
 .page { padding:28px 28px 60px; max-width:2000px; margin:0 auto; }
 .page-header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap; }
@@ -49,9 +49,9 @@
 .btn-export:hover { background:#dcfce7; filter:none; }
 .btn-import { background:#fefce8; color:#a16207; border:1px solid #fde68a; }
 .btn-import:hover { background:#fef9c3; filter:none; }
-.filter-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px 20px; margin-bottom:16px; }
-.filter-row { display:flex; flex-wrap:wrap; gap:10px; align-items:center; }
-.filter-row select { height:36px; padding:0 12px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:13px; color:var(--text); background:var(--surface2); outline:none; }
+.filter-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:14px 20px; margin-bottom:16px; }
+.filter-row { display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.filter-row select { height:36px; padding:0 10px; border:1px solid var(--border); border-radius:var(--radius-sm); font-family:'DM Sans',sans-serif; font-size:12.5px; color:var(--text); background:var(--surface2); outline:none; min-width:140px; }
 .filter-row select:focus { border-color:var(--brand-h); background:#fff; }
 .filter-sep { flex:1; }
 .btn-filter { height:36px; padding:0 18px; background:var(--brand); color:#fff; border:none; border-radius:var(--radius-sm); font-family:'Plus Jakarta Sans',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
@@ -86,6 +86,7 @@ td.muted { color:var(--text3); }
 .badge-dot { width:5px; height:5px; border-radius:50%; }
 .badge-tersedia { background:#dcfce7; color:#15803d; } .badge-tersedia .badge-dot { background:#15803d; }
 .badge-tidak    { background:#fee2e2; color:#dc2626; } .badge-tidak .badge-dot { background:#dc2626; }
+.mapel-tag { font-size:12px; color:var(--brand-700); background:var(--brand-50); border:1px solid var(--brand-100); border-radius:4px; padding:1px 7px; display:inline-block; max-width:160px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .action-group { display:flex; align-items:center; gap:5px; justify-content:center; flex-wrap:wrap; }
 .empty-state { padding:60px 20px; text-align:center; }
 .empty-icon { width:56px; height:56px; background:var(--surface2); border-radius:14px; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; }
@@ -97,7 +98,8 @@ td.muted { color:var(--text3); }
 .pag-btn { height:32px; min-width:32px; padding:0 8px; border-radius:7px; display:flex; align-items:center; justify-content:center; border:1px solid var(--border); background:var(--surface); color:var(--text2); font-family:'Plus Jakarta Sans',sans-serif; font-size:12.5px; font-weight:700; cursor:pointer; transition:all .15s; text-decoration:none; }
 .pag-btn:hover { background:var(--surface2); border-color:var(--border2); }
 .pag-btn.active { background:var(--brand); border-color:var(--brand); color:#fff; }
-.pag-ellipsis { color:var(--text3); font-size:13px; padding:0 4px; }
+.pag-btn.disabled { opacity:.4; cursor:not-allowed; pointer-events:none; }
+.pag-ellipsis { color:var(--text3); font-size:13px; padding:0 4px; line-height:32px; }
 .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.45); display:flex; align-items:center; justify-content:center; z-index:9999; padding:16px; }
 .modal-box { background:#fff; border-radius:var(--radius); border:1px solid var(--border); width:100%; max-width:480px; overflow:hidden; }
 .modal-header { padding:16px 20px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
@@ -130,6 +132,21 @@ td.muted { color:var(--text3); }
         </div>
     </div>
 
+    {{-- ── FLASH MESSAGES ── --}}
+    @if(session('success'))
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:13.5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:16px;font-size:13.5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            {{ session('error') }}
+        </div>
+    @endif
+
+    {{-- ── FILTER ── --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.ketersediaan-guru.index') }}">
             <div class="filter-row">
@@ -139,17 +156,34 @@ td.muted { color:var(--text3); }
                         <option value="{{ $g->id }}" {{ request('guru_id') == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
                     @endforeach
                 </select>
+
                 <select name="hari">
                     <option value="">Semua Hari</option>
                     @foreach($hariList as $h)
                         <option value="{{ $h }}" {{ request('hari') == $h ? 'selected' : '' }}>{{ ucfirst($h) }}</option>
                     @endforeach
                 </select>
+
+                <select name="mata_pelajaran_id">
+                    <option value="">Semua Mapel</option>
+                    @foreach($mapels as $m)
+                        <option value="{{ $m->id }}" {{ request('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
+                    @endforeach
+                </select>
+
+                <select name="jurusan_id">
+                    <option value="">Semua Jurusan</option>
+                    @foreach($jurusans as $j)
+                        <option value="{{ $j->id }}" {{ request('jurusan_id') == $j->id ? 'selected' : '' }}>{{ $j->nama_jurusan }}</option>
+                    @endforeach
+                </select>
+
                 <select name="tersedia">
                     <option value="">Semua Status</option>
                     <option value="1" {{ request('tersedia')==='1' ? 'selected' : '' }}>Tersedia</option>
                     <option value="0" {{ request('tersedia')==='0' ? 'selected' : '' }}>Tidak Tersedia</option>
                 </select>
+
                 <div class="filter-sep"></div>
                 <a href="{{ route('admin.ketersediaan-guru.index') }}" class="btn-reset">Reset</a>
                 <button type="submit" class="btn-filter">Terapkan Filter</button>
@@ -157,6 +191,7 @@ td.muted { color:var(--text3); }
         </form>
     </div>
 
+    {{-- ── TABEL ── --}}
     <div class="table-card">
         <div class="table-topbar">
             <p class="table-info">
@@ -189,8 +224,10 @@ td.muted { color:var(--text3); }
                         <th class="center">Jam Mulai</th>
                         <th class="center">Jam Selesai</th>
                         <th class="center">Durasi</th>
+                        <th>Mapel</th>
+                        <th>Jurusan</th>
                         <th>Status</th>
-                        <th class="center" style="width:240px">Aksi</th>
+                        <th class="center" style="width:220px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -205,6 +242,20 @@ td.muted { color:var(--text3); }
                         <td class="center" style="font-family:'DM Sans',sans-serif;font-weight:600">{{ \Carbon\Carbon::parse($k->jam_mulai)->format('H:i') }}</td>
                         <td class="center" style="font-family:'DM Sans',sans-serif;font-weight:600">{{ \Carbon\Carbon::parse($k->jam_selesai)->format('H:i') }}</td>
                         <td class="center muted" style="font-size:12.5px">{{ $k->durasi_menit }} menit</td>
+                        <td>
+                            @if($k->mataPelajaran)
+                                <span class="mapel-tag" title="{{ $k->mataPelajaran->nama_mapel }}">{{ $k->mataPelajaran->nama_mapel }}</span>
+                            @else
+                                <span style="font-size:12px;color:var(--text3)">—</span>
+                            @endif
+                        </td>
+                        <td>
+                            @if($k->jurusan)
+                                <span style="font-size:12.5px;color:var(--text2)">{{ $k->jurusan->nama_jurusan }}</span>
+                            @else
+                                <span style="font-size:12px;color:var(--text3)">—</span>
+                            @endif
+                        </td>
                         <td>
                             @if($k->tersedia)
                                 <span class="badge badge-tersedia"><span class="badge-dot"></span>Tersedia</span>
@@ -235,7 +286,7 @@ td.muted { color:var(--text3); }
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="8">
+                        <td colspan="10">
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -250,28 +301,59 @@ td.muted { color:var(--text3); }
             </table>
         </div>
 
+        {{-- ── PAGINATION — FIX: elipsis tidak lagi ganda ── --}}
         @if($ketersediaan->hasPages())
+        @php
+            $current  = $ketersediaan->currentPage();
+            $last     = $ketersediaan->lastPage();
+            $pages    = [];
+            $showLeft = false;
+            $showRight= false;
+            for ($p = 1; $p <= $last; $p++) {
+                if ($p === 1 || $p === $last || abs($p - $current) <= 1) {
+                    $pages[] = $p;
+                }
+            }
+            $pages = array_unique($pages);
+            sort($pages);
+        @endphp
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $ketersediaan->firstItem() }}–{{ $ketersediaan->lastItem() }} dari {{ $ketersediaan->total() }} slot</p>
             <div class="pag-btns">
+                {{-- Prev --}}
                 @if($ketersediaan->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn disabled">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $ketersediaan->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $ketersediaan->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
-                @foreach($ketersediaan->getUrlRange(1, $ketersediaan->lastPage()) as $page => $url)
-                    @if($page == $ketersediaan->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $ketersediaan->lastPage() || abs($page - $ketersediaan->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $ketersediaan->currentPage()) == 2)
+
+                {{-- Page numbers dengan elipsis yang benar --}}
+                @php $prevPage = null; @endphp
+                @foreach($pages as $page)
+                    @if($prevPage !== null && $page - $prevPage > 1)
                         <span class="pag-ellipsis">…</span>
                     @endif
+                    @if($page === $current)
+                        <span class="pag-btn active">{{ $page }}</span>
+                    @else
+                        <a href="{{ $ketersediaan->url($page) }}" class="pag-btn">{{ $page }}</a>
+                    @endif
+                    @php $prevPage = $page; @endphp
                 @endforeach
+
+                {{-- Next --}}
                 @if($ketersediaan->hasMorePages())
-                    <a href="{{ $ketersediaan->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $ketersediaan->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn disabled">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -279,6 +361,7 @@ td.muted { color:var(--text3); }
     </div>
 </div>
 
+{{-- ── MODAL IMPORT ── --}}
 <div class="modal-overlay" id="modalImport" style="display:none" onclick="if(event.target===this)this.style.display='none'">
     <div class="modal-box">
         <div class="modal-header">
@@ -298,7 +381,7 @@ td.muted { color:var(--text3); }
                 </div>
                 <input type="file" name="file" id="fileInput" accept=".xlsx,.xls,.csv" style="display:none">
                 <div class="info-note">
-                    <strong>Format kolom:</strong> guru_id, hari, jam_mulai, jam_selesai, tersedia (1/0). Pastikan guru_id valid dan hari menggunakan huruf kecil (senin, selasa, dst).
+                    <strong>Format kolom:</strong> guru_id, mata_pelajaran_id, jurusan_id, hari, jam_mulai, jam_selesai, tersedia (1/0), catatan, berlaku_mulai, berlaku_selesai.
                 </div>
             </div>
             <div class="modal-footer">
@@ -314,6 +397,7 @@ td.muted { color:var(--text3); }
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// FIX: Notifikasi hanya via SweetAlert toast — tidak ada duplikat HTML alert
 @if(session('success'))
 Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
 @endif
@@ -363,9 +447,8 @@ uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag
 uploadZone.addEventListener('drop', e => {
     e.preventDefault();
     uploadZone.classList.remove('dragover');
-    const dt = e.dataTransfer;
-    if (dt.files.length) {
-        fileInput.files = dt.files;
+    if (e.dataTransfer.files.length) {
+        fileInput.files = e.dataTransfer.files;
         fileInput.dispatchEvent(new Event('change'));
     }
 });

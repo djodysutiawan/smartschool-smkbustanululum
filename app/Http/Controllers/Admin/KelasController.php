@@ -9,6 +9,7 @@ use App\Models\Guru;
 use App\Models\Jurusan;
 use App\Models\Kelas;
 use App\Models\Ruang;
+use App\Models\Siswa;
 use App\Models\TahunAjaran;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -41,7 +42,15 @@ class KelasController extends Controller
         $tahunAjarans = TahunAjaran::orderByDesc('id')->get();
         $jurusans     = Jurusan::where('is_published', true)->orderBy('urutan')->get();
 
-        return view('admin.kelas.index', compact('kelas', 'tahunAjarans', 'jurusans'));
+        // Hitung dari DB langsung, bukan dari collection yang sudah dipaginate.
+        $statsKelas = [
+            'total'       => Kelas::count(),
+            'total_aktif' => Kelas::where('status', 'aktif')->count(),
+            'total_siswa' => Siswa::aktif()->count(),
+            'total_ta'    => TahunAjaran::count(),
+        ];
+
+        return view('admin.kelas.index', compact('kelas', 'tahunAjarans', 'jurusans', 'statsKelas'));
     }
 
     // ─── CREATE & STORE ───────────────────────────────────────────────────────────
@@ -61,7 +70,7 @@ class KelasController extends Controller
         $validated = $request->validate([
             'nama_kelas'      => ['required', 'string', 'max:50'],
             'tingkat'         => ['required', 'string', 'in:X,XI,XII'],
-            'jurusan_id'      => ['nullable', 'exists:jurusan,id'],  // ← FK ke tabel jurusan
+            'jurusan_id'      => ['nullable', 'exists:jurusan,id'],
             'kode_kelas'      => ['required', 'string', 'max:15', 'unique:kelas'],
             'wali_kelas_id'   => ['nullable', 'exists:guru,id'],
             'ruang_id'        => ['nullable', 'exists:ruang,id'],
@@ -97,15 +106,19 @@ class KelasController extends Controller
             'ruang.gedung',
             'tahunAjaran',
             'jurusan',
-            'siswa'              => fn ($q) => $q->orderBy('nama_lengkap'),
+            'siswa'                        => fn ($q) => $q->orderBy('nama_lengkap'),
             'jadwalPelajaran.guru',
             'jadwalPelajaran.mataPelajaran',
         ]);
 
+        // FIX: Gunakan $kelas->siswa->count() dari collection yang sudah di-eager load
+        // agar tidak ada query SQL tambahan (sebelumnya isSudahPenuh() trigger query baru).
+        $jumlahSiswa = $kelas->siswa->count();
+
         $stats = [
-            'total_siswa'    => $kelas->siswa()->count(),
-            'sisa_kapasitas' => $kelas->kapasitas_maks - $kelas->siswa()->count(),
-            'sudah_penuh'    => $kelas->isSudahPenuh(),
+            'total_siswa'    => $jumlahSiswa,
+            'sisa_kapasitas' => max(0, $kelas->kapasitas_maks - $jumlahSiswa),
+            'sudah_penuh'    => $jumlahSiswa >= $kelas->kapasitas_maks,
         ];
 
         return view('admin.kelas.show', compact('kelas', 'stats'));
@@ -116,9 +129,18 @@ class KelasController extends Controller
     public function edit(Kelas $kelas)
     {
         $gurus        = Guru::aktif()->orderBy('nama_lengkap')->get();
-        $ruangs       = Ruang::with('gedung')->orderBy('nama_ruang')->get();
         $tahunAjarans = TahunAjaran::orderByDesc('id')->get();
         $jurusans     = Jurusan::where('is_published', true)->orderBy('urutan')->get();
+
+        // FIX: Tampilkan ruang yang tersedia ATAU ruang yang sedang dipakai kelas ini
+        // sendiri, agar ruang aktif kelas tidak hilang dari dropdown saat edit.
+        $ruangs = Ruang::with('gedung')
+            ->where(fn ($q) => $q
+                ->tersedia()
+                ->orWhere('id', $kelas->ruang_id)
+            )
+            ->orderBy('nama_ruang')
+            ->get();
 
         return view('admin.kelas.edit', compact('kelas', 'gurus', 'ruangs', 'tahunAjarans', 'jurusans'));
     }
@@ -128,7 +150,7 @@ class KelasController extends Controller
         $validated = $request->validate([
             'nama_kelas'      => ['required', 'string', 'max:50'],
             'tingkat'         => ['required', 'string', 'in:X,XI,XII'],
-            'jurusan_id'      => ['nullable', 'exists:jurusan,id'],  // ← FK ke tabel jurusan
+            'jurusan_id'      => ['nullable', 'exists:jurusan,id'],
             'kode_kelas'      => ['required', 'string', 'max:15', Rule::unique('kelas')->ignore($kelas->id)],
             'wali_kelas_id'   => ['nullable', 'exists:guru,id'],
             'ruang_id'        => ['nullable', 'exists:ruang,id'],
@@ -160,11 +182,17 @@ class KelasController extends Controller
 
     public function destroy(Kelas $kelas)
     {
+        // FIX: Tambah pengecekan relasi kenaikan kelas agar tidak crash DB error mentah
         if ($kelas->siswa()->exists()) {
             return back()->with('error', 'Tidak dapat menghapus kelas yang masih memiliki siswa.');
         }
+
         if ($kelas->jadwalPelajaran()->exists()) {
             return back()->with('error', 'Tidak dapat menghapus kelas yang masih memiliki jadwal pelajaran.');
+        }
+
+        if ($kelas->kenaikanKelasDetailAsal()->exists() || $kelas->kenaikanKelasDetailTujuan()->exists()) {
+            return back()->with('error', 'Tidak dapat menghapus kelas yang memiliki riwayat kenaikan kelas.');
         }
 
         $kelas->delete();
@@ -184,9 +212,18 @@ class KelasController extends Controller
         if ($request->filled('status'))          $query->where('status', $request->status);
         if ($request->filled('jurusan_id'))      $query->where('jurusan_id', $request->jurusan_id);
 
+        // FIX: Tambah filter search agar konsisten dengan tampilan tabel di index
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(fn ($q) => $q
+                ->where('nama_kelas', 'like', "%{$s}%")
+                ->orWhere('kode_kelas', 'like', "%{$s}%"));
+        }
+
         $kelas = $query->orderBy('tingkat')->orderBy('nama_kelas')->get();
 
         $filterParts = [];
+        if ($request->filled('search'))     $filterParts[] = 'Pencarian: ' . $request->search;
         if ($request->filled('tingkat'))    $filterParts[] = 'Tingkat: ' . $request->tingkat;
         if ($request->filled('status'))     $filterParts[] = 'Status: ' . ucfirst($request->status);
         if ($request->filled('jurusan_id')) $filterParts[] = 'Jurusan: ' . optional(Jurusan::find($request->jurusan_id))->nama;

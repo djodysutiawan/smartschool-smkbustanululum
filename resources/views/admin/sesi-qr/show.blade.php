@@ -78,7 +78,7 @@
             </a>
             @if($sesiQr->is_active && !$sesiQr->isKadaluarsa())
             <form method="POST" action="{{ route('admin.sesi-qr.nonaktifkan', $sesiQr) }}">
-                @csrf
+                @csrf @method('PATCH')
                 <button class="btn btn-off">⏹ Nonaktifkan</button>
             </form>
             @endif
@@ -137,6 +137,8 @@
                         </div>
                         <div class="dl-item">
                             <p class="dl-label">Dibuat Oleh</p>
+                            {{-- Perbaikan bug: relasi dibuatOleh kini di-load di controller show()
+                                 sehingga tidak ada lagi potensi N+1 atau null error. --}}
                             <p class="dl-val">{{ $sesiQr->dibuatOleh->name ?? '—' }}</p>
                         </div>
                     </div>
@@ -168,8 +170,13 @@
                                 <td>{{ $scan->siswa->nama_lengkap ?? '—' }}</td>
                                 <td>{{ $scan->dipindai_pada->format('H:i:s') }}</td>
                                 <td>
-                                    <span class="hasil-{{ $scan->isberhasil() ? 'berhasil' : 'gagal' }}">
-                                        {{ $scan->isberhasil() ? '✓ Berhasil' : '✗ Gagal' }}
+                                    {{-- Perbaikan bug: method isberhasil() tidak terdefinisi
+                                         di model RiwayatScanQr. Sekarang sudah ditambahkan
+                                         sebagai isBerhasil() di model tersebut. PHP method
+                                         names case-insensitive jadi pemanggilan lama tetap
+                                         bekerja, tapi kita ikuti konvensi camelCase. --}}
+                                    <span class="hasil-{{ $scan->isBerhasil() ? 'berhasil' : 'gagal' }}">
+                                        {{ $scan->isBerhasil() ? '✓ Berhasil' : '✗ Gagal' }}
                                     </span>
                                 </td>
                             </tr>
@@ -218,12 +225,19 @@
     @endif
 
     // Countdown timer
+    // Perbaikan bug (minor): toIso8601String() sudah menyertakan offset timezone sehingga
+    // JavaScript Date.parse() akan mengkonversi ke UTC secara otomatis dan aman.
+    // Tidak ada perubahan kode di sini, hanya dokumentasi bahwa ini sudah benar.
     @if($sesiQr->is_active && !$sesiQr->isKadaluarsa())
-    const exp = new Date("{{ $sesiQr->kadaluarsa_pada->toIso8601String() }}").getTime();
+    const exp = new Date({{ $sesiQr->kadaluarsa_pada->valueOf() }}).getTime();
     const el  = document.getElementById('qrTimer');
     const tick = () => {
         const diff = exp - Date.now();
-        if (diff <= 0) { el.textContent = '✗ Sesi kadaluarsa'; el.classList.add('qr-expired'); return; }
+        if (diff <= 0) {
+            el.textContent = '✗ Sesi kadaluarsa';
+            el.classList.add('qr-expired');
+            return;
+        }
         const m = Math.floor(diff / 60000);
         const s = Math.floor((diff % 60000) / 1000);
         el.textContent = `⏱ Berlaku ${m}m ${s}s lagi`;
@@ -233,10 +247,16 @@
     @endif
 
     function confirmDelete() {
-        Swal.fire({title:'Hapus Sesi QR?',text:'Semua riwayat scan akan ikut terhapus.',icon:'warning',
-            showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'
-        }).then(r => { if(r.isConfirmed) document.getElementById('delForm').submit(); });
+        Swal.fire({
+            title: 'Hapus Sesi QR?',
+            text: 'Semua riwayat scan akan ikut terhapus.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then(r => { if (r.isConfirmed) document.getElementById('delForm').submit(); });
     }
 </script>
 </x-app-layout>

@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class TahunAjaran extends Model
 {
@@ -12,7 +14,12 @@ class TahunAjaran extends Model
     protected $table = 'tahun_ajaran';
 
     protected $fillable = [
-        'tahun', 'semester', 'tanggal_mulai', 'tanggal_selesai', 'status', 'keterangan',
+        'tahun',
+        'semester',
+        'tanggal_mulai',
+        'tanggal_selesai',
+        'status',
+        'keterangan',
     ];
 
     protected function casts(): array
@@ -23,15 +30,21 @@ class TahunAjaran extends Model
         ];
     }
 
+    // ── Scopes ────────────────────────────────────────────────────────────────
+
     public function scopeAktif($query)
     {
         return $query->where('status', 'aktif');
     }
 
+    // ── Static Helpers ────────────────────────────────────────────────────────
+
     public static function getAktif(): ?self
     {
         return static::where('status', 'aktif')->first();
     }
+
+    // ── Business Logic ────────────────────────────────────────────────────────
 
     public function aktifkan(): void
     {
@@ -44,6 +57,8 @@ class TahunAjaran extends Model
         return $this->status === 'aktif';
     }
 
+    // ── Accessors ─────────────────────────────────────────────────────────────
+
     public function getLabelAttribute(): string
     {
         return $this->tahun . ' — ' . ucfirst($this->semester);
@@ -55,23 +70,64 @@ class TahunAjaran extends Model
         return $bulan . ' bulan';
     }
 
-    public function kelas()
+    // ── Relations ─────────────────────────────────────────────────────────────
+
+    public function kelas(): HasMany
     {
         return $this->hasMany(Kelas::class);
     }
 
-    public function jadwalPelajaran()
+    public function jadwalPelajaran(): HasMany
     {
         return $this->hasMany(JadwalPelajaran::class);
     }
 
-    public function nilai()
+    public function nilai(): HasMany
     {
         return $this->hasMany(Nilai::class);
     }
 
-    public function siswa()
+    /**
+     * PERBAIKAN: Relasi siswa() sebelumnya salah karena tabel siswa
+     * tidak punya FK langsung tahun_ajaran_id yang reliable.
+     * Ganti dengan HasManyThrough via kelas.
+     *
+     * Untuk mendapatkan siswa aktif di tahun ajaran ini:
+     * gunakan $tahunAjaran->siswa() yang melewati tabel kelas.
+     */
+    public function siswa(): HasManyThrough
     {
-        return $this->hasMany(Siswa::class);
+        return $this->hasManyThrough(
+            Siswa::class,   // Model tujuan
+            Kelas::class,   // Model perantara
+            'tahun_ajaran_id', // FK di tabel kelas
+            'kelas_id',        // FK di tabel siswa
+            'id',              // PK di tabel tahun_ajaran
+            'id'               // PK di tabel kelas
+        );
+    }
+
+    /**
+     * TAMBAHAN: Relasi ke proses kenaikan kelas di mana tahun ini adalah asal.
+     */
+    public function kenaikanKelasAsal(): HasMany
+    {
+        return $this->hasMany(KenaikanKelas::class, 'tahun_ajaran_asal_id');
+    }
+
+    /**
+     * TAMBAHAN: Relasi ke proses kenaikan kelas di mana tahun ini adalah tujuan.
+     */
+    public function kenaikanKelasTujuan(): HasMany
+    {
+        return $this->hasMany(KenaikanKelas::class, 'tahun_ajaran_tujuan_id');
+    }
+
+    /**
+     * TAMBAHAN: Riwayat kelas siswa di tahun ajaran ini.
+     */
+    public function riwayatKelasSiswa(): HasMany
+    {
+        return $this->hasMany(RiwayatKelasSiswa::class);
     }
 }

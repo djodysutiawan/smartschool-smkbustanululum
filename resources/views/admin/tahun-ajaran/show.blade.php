@@ -61,8 +61,6 @@
     .pill-ganjil{background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;}
     .pill-genap{background:#fdf4ff;color:var(--purple);border:1px solid #e9d5ff;}
     .tag-aktif{display:inline-block;background:var(--brand);color:#fff;font-size:10px;font-weight:800;padding:2px 8px;border-radius:5px;margin-left:6px;font-family:'Plus Jakarta Sans',sans-serif;vertical-align:middle;}
-    .alert-success{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13.5px;background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
-    .alert-error{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13.5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
     @media(max-width:768px){
         .stats-strip{grid-template-columns:1fr 1fr;}
         .page{padding:16px;}
@@ -96,7 +94,7 @@
             <form action="{{ route('admin.tahun-ajaran.aktifkan', $tahunAjaran->id) }}" method="POST" id="aktifForm">
                 @csrf @method('PATCH')
                 <button type="button" class="btn btn-aktif"
-                    onclick="confirmAktifkan(document.getElementById('aktifForm'), '{{ addslashes($tahunAjaran->tahun) }}')">
+                    onclick="confirmAktifkan(document.getElementById('aktifForm'), @json($tahunAjaran->tahun))">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     Aktifkan
                 </button>
@@ -110,7 +108,7 @@
             <form action="{{ route('admin.tahun-ajaran.destroy', $tahunAjaran->id) }}" method="POST" id="delForm">
                 @csrf @method('DELETE')
                 <button type="button" class="btn btn-del"
-                    onclick="confirmDelete(document.getElementById('delForm'), '{{ addslashes($tahunAjaran->tahun) }}')">
+                    onclick="confirmDelete(document.getElementById('delForm'), @json($tahunAjaran->tahun))">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                     Hapus
                 </button>
@@ -123,18 +121,11 @@
         </div>
     </div>
 
-    @if(session('success'))
-    <div class="alert-success">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        {{ session('success') }}
-    </div>
-    @endif
-    @if(session('error'))
-    <div class="alert-error">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        {{ session('error') }}
-    </div>
-    @endif
+    {{--
+        FIX: Hapus inline HTML alert untuk session flash.
+        SweetAlert di bawah sudah menangani semua notifikasi success/error.
+        Menampilkan keduanya sekaligus (inline + toast) menyebabkan double notifikasi.
+    --}}
 
     <div class="stats-strip">
         <div class="stat-card">
@@ -231,11 +222,37 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    {{--
+        FIX 1: Semua variabel Blade di JS wajib pakai @json() — aman dari XSS
+                dan tidak menyebabkan syntax error jika nilai mengandung ' " < > &
+
+        FIX 2: Hapus inline HTML alert di atas (sudah dihapus dari HTML).
+                SweetAlert di sini adalah satu-satunya notifikasi.
+                Controller store/update/aktifkan/destroy semuanya pakai ->with('success'/'error')
+                sehingga cukup ditangani di sini saja.
+
+        FIX 3: onclick confirmAktifkan/confirmDelete di tombol atas sudah diganti
+                dari addslashes() + string concatenation → @json() yang lebih aman.
+    --}}
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end',
+    });
     @endif
+
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db',
+    });
     @endif
 
     function confirmAktifkan(form, nama) {
