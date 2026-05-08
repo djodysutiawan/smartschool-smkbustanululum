@@ -20,7 +20,8 @@
     .btn-back{padding:8px 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}.btn-back:hover{background:var(--surface3);filter:none}
     .btn-edit{background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100)}.btn-edit:hover{background:var(--brand-100);filter:none}
     .btn-del{background:#fff0f0;color:#dc2626;border:1px solid #fecaca}.btn-del:hover{background:#fee2e2;filter:none}
-    .btn-toggle{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}.btn-toggle:hover{background:#ffedd5;filter:none}
+    .btn-toggle-on{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}.btn-toggle-on:hover{background:#ffedd5;filter:none}
+    .btn-toggle-off{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}.btn-toggle-off:hover{background:#dcfce7;filter:none}
     .btn-pdf{background:#fdf4ff;color:#7c3aed;border:1px solid #e9d5ff}.btn-pdf:hover{background:#f3e8ff;filter:none}
     .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
     .detail-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
@@ -45,6 +46,7 @@
     .jam-display{font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:var(--text)}
     .jam-sep{color:var(--text3);margin:0 6px}
     .catatan-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text2);line-height:1.6;margin-top:4px}
+    .header-actions{display:flex;gap:8px;flex-wrap:wrap}
     @media(max-width:768px){.detail-grid{grid-template-columns:1fr}.page{padding:16px}}
 </style>
 
@@ -62,7 +64,7 @@
             <h1 class="page-title">Detail Jadwal Piket Guru</h1>
             <p class="page-sub">{{ $jadwalPiketGuru->guru->nama_lengkap ?? '-' }} — {{ ucfirst($jadwalPiketGuru->hari) }}</p>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div class="header-actions">
             <a href="{{ route('admin.jadwal-piket-guru.index') }}" class="btn btn-back">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
@@ -75,14 +77,29 @@
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit
             </a>
-            <form action="{{ route('admin.jadwal-piket-guru.toggle-status', $jadwalPiketGuru->id) }}" method="POST" id="toggleForm" style="display:inline">
-                @csrf @method('PATCH')
-                <button type="button" class="btn btn-toggle" onclick="confirmToggle()">
-                    {{ $jadwalPiketGuru->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+
+            {{-- Toggle status — gunakan class berbeda berdasarkan kondisi aktif --}}
+            <form action="{{ route('admin.jadwal-piket-guru.toggle-status', $jadwalPiketGuru->id) }}"
+                  method="POST" id="toggleForm" style="display:inline">
+                @csrf
+                @method('PATCH')
+                <button type="button"
+                    class="btn {{ $jadwalPiketGuru->is_active ? 'btn-toggle-on' : 'btn-toggle-off' }}"
+                    onclick="confirmToggle({{ $jadwalPiketGuru->is_active ? 'true' : 'false' }})">
+                    @if($jadwalPiketGuru->is_active)
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728L5.636 5.636"/></svg>
+                        Nonaktifkan
+                    @else
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                        Aktifkan
+                    @endif
                 </button>
             </form>
-            <form action="{{ route('admin.jadwal-piket-guru.destroy', $jadwalPiketGuru->id) }}" method="POST" id="delForm" style="display:inline">
-                @csrf @method('DELETE')
+
+            <form action="{{ route('admin.jadwal-piket-guru.destroy', $jadwalPiketGuru->id) }}"
+                  method="POST" id="delForm" style="display:inline">
+                @csrf
+                @method('DELETE')
                 <button type="button" class="btn btn-del" onclick="confirmDelete()">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
                     Hapus
@@ -92,6 +109,7 @@
     </div>
 
     <div class="detail-grid">
+        {{-- Kartu kiri: detail jadwal --}}
         <div class="detail-card">
             <div class="detail-card-header">
                 <svg width="15" height="15" fill="none" stroke="#1f63db" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -100,14 +118,19 @@
             <div class="detail-body">
                 <div class="detail-row">
                     <span class="detail-label">Hari</span>
-                    <span class="detail-val"><span class="hari-pill hari-{{ $jadwalPiketGuru->hari }}">{{ ucfirst($jadwalPiketGuru->hari) }}</span></span>
+                    <span class="detail-val">
+                        <span class="hari-pill hari-{{ $jadwalPiketGuru->hari }}">{{ ucfirst($jadwalPiketGuru->hari) }}</span>
+                    </span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Jam Piket</span>
-                    <div>
+                    <div style="margin-top:2px">
                         <span class="jam-display">{{ \Carbon\Carbon::parse($jadwalPiketGuru->jam_mulai)->format('H:i') }}</span>
                         <span class="jam-sep">–</span>
                         <span class="jam-display">{{ \Carbon\Carbon::parse($jadwalPiketGuru->jam_selesai)->format('H:i') }}</span>
+                        @if($jadwalPiketGuru->durasi_menit)
+                            <span style="font-size:12px;color:var(--text3);margin-left:8px">({{ $jadwalPiketGuru->durasi_menit }} menit)</span>
+                        @endif
                     </div>
                 </div>
                 <div class="detail-row">
@@ -131,6 +154,7 @@
             </div>
         </div>
 
+        {{-- Kartu kanan: info guru & tahun ajaran --}}
         <div class="detail-card">
             <div class="detail-card-header">
                 <svg width="15" height="15" fill="none" stroke="#1f63db" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
@@ -151,11 +175,11 @@
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Dibuat</span>
-                    <span class="detail-val">{{ $jadwalPiketGuru->created_at->format('d M Y, H:i') }}</span>
+                    <span class="detail-val">{{ $jadwalPiketGuru->created_at->translatedFormat('d M Y, H:i') }}</span>
                 </div>
                 <div class="detail-row">
                     <span class="detail-label">Terakhir Diperbarui</span>
-                    <span class="detail-val">{{ $jadwalPiketGuru->updated_at->format('d M Y, H:i') }}</span>
+                    <span class="detail-val">{{ $jadwalPiketGuru->updated_at->translatedFormat('d M Y, H:i') }}</span>
                 </div>
             </div>
         </div>
@@ -164,32 +188,56 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // ── Flash messages ────────────────────────────────────────────────────────
     @if(session('success'))
-    Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
-    @endif
-    @if(session('error'))
-    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    document.addEventListener('DOMContentLoaded', function () {
+        Swal.fire({
+            icon: 'success', title: 'Berhasil!',
+            text: @json(session('success')),
+            timer: 2500, showConfirmButton: false,
+            toast: true, position: 'top-end'
+        });
+    });
     @endif
 
+    @if(session('error'))
+    document.addEventListener('DOMContentLoaded', function () {
+        Swal.fire({ icon: 'error', title: 'Gagal!', text: @json(session('error')), confirmButtonColor: '#1f63db' });
+    });
+    @endif
+
+    // ── Konfirmasi hapus ──────────────────────────────────────────────────────
     function confirmDelete() {
         Swal.fire({
-            title:'Hapus Jadwal Piket?',
-            text:'Jadwal piket ini akan dihapus permanen.',
-            icon:'warning',showCancelButton:true,
-            confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) document.getElementById('delForm').submit(); });
+            title: 'Hapus Jadwal Piket?',
+            text: 'Jadwal piket ini akan dihapus secara permanen dan tidak dapat dikembalikan.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(function (result) {
+            if (result.isConfirmed) document.getElementById('delForm').submit();
+        });
     }
 
-    function confirmToggle() {
-        const aksi = '{{ $jadwalPiketGuru->is_active ? "nonaktifkan" : "aktifkan" }}';
+    // ── Konfirmasi toggle status ──────────────────────────────────────────────
+    function confirmToggle(isCurrentlyActive) {
+        const aksi     = isCurrentlyActive ? 'nonaktifkan' : 'aktifkan';
+        const aksiKap  = aksi.charAt(0).toUpperCase() + aksi.slice(1);
         Swal.fire({
-            title:`${aksi.charAt(0).toUpperCase()+aksi.slice(1)} Jadwal?`,
-            text:`Jadwal piket ini akan di${aksi}.`,
-            icon:'question',showCancelButton:true,
-            confirmButtonColor:'#1f63db',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Lanjutkan!',cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) document.getElementById('toggleForm').submit(); });
+            title: aksiKap + ' Jadwal?',
+            text: 'Jadwal piket ini akan di' + aksi + '.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1f63db',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Lanjutkan!',
+            cancelButtonText: 'Batal',
+        }).then(function (result) {
+            if (result.isConfirmed) document.getElementById('toggleForm').submit();
+        });
     }
 </script>
 </x-app-layout>

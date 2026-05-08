@@ -10,13 +10,15 @@
         --radius:10px;--radius-sm:7px;
     }
 
+    *,*::before,*::after{box-sizing:border-box}
     .page{padding:28px 28px 40px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
     .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap;line-height:1}
     .btn:hover{filter:brightness(.93)}
     .btn-primary{background:var(--brand-600);color:#fff}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
@@ -28,15 +30,19 @@
     .btn-del:hover{background:#fee2e2;filter:none}
     .btn-detail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
     .btn-detail:hover{background:#dcfce7;filter:none}
+    .btn-print{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa}
+    .btn-print:hover{background:#ffedd5;filter:none}
 
+    /* ── Dropdown ── */
     .dropdown{position:relative;display:inline-flex}
     .dropdown-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 8px 28px rgba(0,0,0,.1);min-width:200px;z-index:200;overflow:hidden}
     .dropdown.open .dropdown-menu{display:block}
     .dropdown-item{display:flex;align-items:center;gap:8px;padding:9px 14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text2);text-decoration:none;background:none;border:none;width:100%;cursor:pointer;transition:background .12s;text-align:left}
     .dropdown-item:hover{background:var(--surface2);color:var(--text)}
 
+    /* ── Stats ── */
     .stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
-    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;transition:box-shadow .2s;text-decoration:none}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;transition:box-shadow .2s;text-decoration:none;cursor:pointer}
     .stat-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
     .stat-card.active-filter{border-color:var(--brand-500);background:var(--brand-50)}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -47,12 +53,13 @@
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
     .stat-sub{font-size:11px;color:var(--text3);margin-top:1px}
 
+    /* ── Filter ── */
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px}
     .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-    .filter-row select,.filter-row input[type=text]{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
+    .filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;cursor:pointer}
     .filter-row input[type=date]{height:36px;padding:0 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;width:148px}
     .filter-row select:focus,.filter-row input:focus{border-color:var(--brand-500);background:#fff}
-    .filter-sep{flex:1}
+    .filter-sep{flex:1;min-width:0}
     .btn-filter{height:36px;padding:0 18px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
     .btn-filter:hover{background:var(--brand-700)}
     .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:background .15s}
@@ -62,6 +69,7 @@
     .search-wrap{position:relative;display:flex;align-items:center}
     .search-wrap svg{position:absolute;left:10px;pointer-events:none;color:var(--text3)}
 
+    /* ── Table ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
@@ -79,46 +87,64 @@
     td.muted{color:var(--text3)}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)}
 
+    /* ── Badges ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .badge-menunggu{background:#fefce8;color:#a16207} .badge-menunggu .badge-dot{background:#a16207}
-    .badge-disetujui{background:#dcfce7;color:#15803d} .badge-disetujui .badge-dot{background:#15803d}
-    .badge-ditolak{background:#fee2e2;color:#dc2626} .badge-ditolak .badge-dot{background:#dc2626}
-    .badge-sudah_kembali{background:#eff6ff;color:#1d4ed8} .badge-sudah_kembali .badge-dot{background:#1d4ed8}
-    .badge-keperluan_keluarga{background:#fff7ed;color:#c2410c} .badge-keperluan_keluarga .badge-dot{background:#c2410c}
-    .badge-keperluan_sekolah{background:#ecfdf5;color:#065f46} .badge-keperluan_sekolah .badge-dot{background:#065f46}
-    .badge-berobat{background:#fdf4ff;color:#7c3aed} .badge-berobat .badge-dot{background:#7c3aed}
-    .badge-lainnya{background:var(--surface3);color:var(--text2)} .badge-lainnya .badge-dot{background:var(--text3)}
+    .badge-menunggu{background:#fefce8;color:#a16207}.badge-menunggu .badge-dot{background:#a16207}
+    .badge-disetujui{background:#dcfce7;color:#15803d}.badge-disetujui .badge-dot{background:#15803d}
+    .badge-ditolak{background:#fee2e2;color:#dc2626}.badge-ditolak .badge-dot{background:#dc2626}
+    .badge-sudah_kembali{background:#eff6ff;color:#1d4ed8}.badge-sudah_kembali .badge-dot{background:#1d4ed8}
+    .badge-keperluan_keluarga{background:#fff7ed;color:#c2410c}.badge-keperluan_keluarga .badge-dot{background:#c2410c}
+    .badge-keperluan_sekolah{background:#ecfdf5;color:#065f46}.badge-keperluan_sekolah .badge-dot{background:#065f46}
+    .badge-berobat{background:#fdf4ff;color:#7c3aed}.badge-berobat .badge-dot{background:#7c3aed}
+    .badge-lainnya{background:var(--surface3);color:var(--text2)}.badge-lainnya .badge-dot{background:var(--text3)}
 
+    /* ── Two-line cell ── */
     .two-line .primary{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
     .two-line .secondary{font-size:12px;color:var(--text3);margin-top:1px}
 
-    .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap}
+    /* ── Action group ── */
+    .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:nowrap}
 
+    /* ── Empty state ── */
     .empty-state{padding:60px 20px;text-align:center}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
     .empty-sub{font-size:13px;color:var(--text3)}
 
+    /* ── Pagination ── */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
     .pag-btns{display:flex;gap:4px;align-items:center}
-    .pag-btn{height:32px;min-width:32px;padding:0 8px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none}
+    .pag-btn{height:32px;min-width:32px;padding:0 8px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none;user-select:none}
     .pag-btn:hover{background:var(--surface2);border-color:var(--border2)}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
     .pag-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
-    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
+    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px;user-select:none}
 
+    /* ── Tujuan truncate ── */
+    .tujuan-cell{font-size:12.5px;color:var(--text2);max-width:180px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+
+    @media(max-width:900px){
+        .stats-strip{grid-template-columns:1fr 1fr}
+        .filter-row{gap:8px}
+        .search-input{width:180px}
+    }
     @media(max-width:640px){
         .stats-strip{grid-template-columns:1fr}
         .page{padding:16px}
         .header-actions{width:100%}
+        .filter-row{flex-direction:column;align-items:stretch}
+        .filter-sep{display:none}
+        .search-input{width:100%}
+        .filter-row select,.filter-row input[type=date]{width:100%}
+        .action-group{flex-wrap:wrap}
     }
 </style>
 
 <div class="page">
 
-    {{-- Header --}}
+    {{-- ── Header ── --}}
     <div class="page-header">
         <div>
             <h1 class="page-title">Izin Keluar Siswa</h1>
@@ -136,7 +162,8 @@
                     <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
                 <div class="dropdown-menu">
-                    <a href="{{ route('admin.izin-keluar-siswa.export.pdf', request()->query()) }}" class="dropdown-item">
+                    {{-- Sertakan query string filter aktif ke URL export --}}
+                    <a href="{{ route('admin.izin-keluar-siswa.export.pdf', request()->only(['search','status','kategori','tanggal_dari','tanggal_sampai','tahun_ajaran_id'])) }}" class="dropdown-item">
                         <svg width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                         Export PDF
                     </a>
@@ -145,7 +172,7 @@
         </div>
     </div>
 
-    {{-- Stats --}}
+    {{-- ── Stats ── --}}
     <div class="stats-strip">
         <a href="{{ route('admin.izin-keluar-siswa.index') }}" class="stat-card {{ !request('status') ? 'active-filter' : '' }}">
             <div class="stat-icon blue">
@@ -157,7 +184,7 @@
                 <p class="stat-sub">semua izin</p>
             </div>
         </a>
-        <a href="{{ route('admin.izin-keluar-siswa.index', ['status' => 'menunggu']) }}" class="stat-card {{ request('status') === 'menunggu' ? 'active-filter' : '' }}">
+        <a href="{{ route('admin.izin-keluar-siswa.index', array_merge(request()->only(['search','kategori','tanggal_dari','tanggal_sampai','tahun_ajaran_id']), ['status' => 'menunggu'])) }}" class="stat-card {{ request('status') === 'menunggu' ? 'active-filter' : '' }}">
             <div class="stat-icon yellow">
                 <svg width="18" height="18" fill="none" stroke="#a16207" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
@@ -167,7 +194,7 @@
                 <p class="stat-sub">perlu diproses</p>
             </div>
         </a>
-        <a href="{{ route('admin.izin-keluar-siswa.index', ['status' => 'disetujui']) }}" class="stat-card {{ request('status') === 'disetujui' ? 'active-filter' : '' }}">
+        <a href="{{ route('admin.izin-keluar-siswa.index', array_merge(request()->only(['search','kategori','tanggal_dari','tanggal_sampai','tahun_ajaran_id']), ['status' => 'disetujui'])) }}" class="stat-card {{ request('status') === 'disetujui' ? 'active-filter' : '' }}">
             <div class="stat-icon orange">
                 <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
             </div>
@@ -179,36 +206,36 @@
         </a>
     </div>
 
-    {{-- Filter --}}
+    {{-- ── Filter ── --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.izin-keluar-siswa.index') }}">
             <div class="filter-row">
                 <div class="search-wrap">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    <input type="text" name="search" class="search-input" placeholder="Cari nama / nomor surat / tujuan…" value="{{ request('search') }}">
+                    <input type="text" name="search" class="search-input" placeholder="Cari nama / no. surat / tujuan…" value="{{ request('search') }}">
                 </div>
 
                 <select name="status">
                     <option value="">Semua Status</option>
                     @foreach($statusList as $val => $label)
-                        <option value="{{ $val }}" {{ request('status') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                        <option value="{{ $val }}" {{ request('status') === $val ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
 
                 <select name="kategori">
                     <option value="">Semua Kategori</option>
                     @foreach($kategoriList as $val => $label)
-                        <option value="{{ $val }}" {{ request('kategori') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                        <option value="{{ $val }}" {{ request('kategori') === $val ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
 
-                <input type="date" name="tanggal_dari" value="{{ request('tanggal_dari') }}">
-                <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}">
+                <input type="date" name="tanggal_dari"    value="{{ request('tanggal_dari') }}"    title="Dari tanggal">
+                <input type="date" name="tanggal_sampai"  value="{{ request('tanggal_sampai') }}"  title="Sampai tanggal">
 
                 <select name="tahun_ajaran_id">
                     <option value="">Semua Tahun Ajaran</option>
                     @foreach($tahunAjarans as $ta)
-                        <option value="{{ $ta->id }}" {{ $tahunAjaranId == $ta->id ? 'selected' : '' }}>
+                        <option value="{{ $ta->id }}" {{ (string)$tahunAjaranId === (string)$ta->id ? 'selected' : '' }}>
                             {{ $ta->label }}{{ $ta->isAktif() ? ' (Aktif)' : '' }}
                         </option>
                     @endforeach
@@ -221,7 +248,7 @@
         </form>
     </div>
 
-    {{-- Table --}}
+    {{-- ── Table ── --}}
     <div class="table-card">
         <div class="table-topbar">
             <p class="table-info">
@@ -238,7 +265,7 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width:48px">#</th>
+                        <th style="width:44px">#</th>
                         <th>Siswa</th>
                         <th>Tanggal</th>
                         <th>Tujuan / Keperluan</th>
@@ -247,7 +274,7 @@
                         <th>Jam Kembali</th>
                         <th class="center">Status</th>
                         <th>No. Surat</th>
-                        <th class="center" style="width:200px">Aksi</th>
+                        <th class="center" style="width:210px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -263,22 +290,20 @@
                         </td>
 
                         <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px;white-space:nowrap">
-                            {{ \Carbon\Carbon::parse($izin->tanggal)->format('d M Y') }}
+                            {{ \Carbon\Carbon::parse($izin->tanggal)->translatedFormat('d M Y') }}
                         </td>
 
-                        <td style="font-size:12.5px;color:var(--text2);max-width:180px">
-                            <p style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
-                                {{ $izin->tujuan }}
-                            </p>
+                        <td>
+                            <p class="tujuan-cell">{{ $izin->tujuan }}</p>
                         </td>
 
                         <td class="center">
                             @php
-                                $kategoriKey = $izin->kategori ?? 'lainnya';
-                                $allowedBadges = ['keperluan_keluarga','keperluan_sekolah','berobat','lainnya'];
-                                $badgeClass = in_array($kategoriKey, $allowedBadges) ? 'badge-'.$kategoriKey : 'badge-lainnya';
+                                $kategoriKey  = $izin->kategori ?? 'lainnya';
+                                $allowedBadge = ['keperluan_keluarga','keperluan_sekolah','berobat','lainnya'];
+                                $badgeKelas   = in_array($kategoriKey, $allowedBadge) ? 'badge-'.$kategoriKey : 'badge-lainnya';
                             @endphp
-                            <span class="badge {{ $badgeClass }}">
+                            <span class="badge {{ $badgeKelas }}">
                                 <span class="badge-dot"></span>
                                 {{ $kategoriList[$izin->kategori] ?? ucfirst($izin->kategori) }}
                             </span>
@@ -307,7 +332,7 @@
                             </span>
                         </td>
 
-                        <td style="font-size:12px;color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600">
+                        <td style="font-size:12px;color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;white-space:nowrap">
                             {{ $izin->nomor_surat ?? '—' }}
                         </td>
 
@@ -315,30 +340,36 @@
                             <div class="action-group">
                                 <a href="{{ route('admin.izin-keluar-siswa.show', $izin->id) }}" class="btn btn-sm btn-detail">Detail</a>
 
-                                @if($izin->status === 'menunggu')
+                                @if($izin->isMenunggu())
                                     <a href="{{ route('admin.izin-keluar-siswa.edit', $izin->id) }}" class="btn btn-sm btn-edit">Edit</a>
                                 @endif
 
-                                @if(in_array($izin->status, ['disetujui', 'sudah_kembali']))
-                                    <a href="{{ route('admin.izin-keluar-siswa.cetak-surat', $izin->id) }}" target="_blank"
-                                       class="btn btn-sm" style="background:#fff7ed;color:#c2410c;border:1px solid #fed7aa">
+                                @if(in_array($izin->status, [\App\Models\IzinKeluarSiswa::STATUS_DISETUJUI, \App\Models\IzinKeluarSiswa::STATUS_SUDAH_KEMBALI]))
+                                    <a href="{{ route('admin.izin-keluar-siswa.cetak-surat', $izin->id) }}"
+                                       target="_blank" class="btn btn-sm btn-print">
                                         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                                         Cetak
                                     </a>
                                 @endif
 
-                                <form action="{{ route('admin.izin-keluar-siswa.destroy', $izin->id) }}" method="POST"
-                                      id="delIzin-{{ $izin->id }}" style="display:inline">
-                                    @csrf @method('DELETE')
-                                    <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(
-                                            document.getElementById('delIzin-{{ $izin->id }}'),
-                                            '{{ addslashes($izin->siswa->nama_lengkap ?? '') }}',
-                                            '{{ \Carbon\Carbon::parse($izin->tanggal)->format('d M Y') }}'
-                                        )">
-                                        Hapus
-                                    </button>
-                                </form>
+                                {{-- Tombol hapus hanya untuk status selain 'disetujui' (aktif) --}}
+                                @if($izin->status !== \App\Models\IzinKeluarSiswa::STATUS_DISETUJUI)
+                                    <form action="{{ route('admin.izin-keluar-siswa.destroy', $izin->id) }}"
+                                          method="POST"
+                                          id="delIzin-{{ $izin->id }}"
+                                          style="display:inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" class="btn btn-sm btn-del"
+                                            onclick="confirmDelete(
+                                                document.getElementById('delIzin-{{ $izin->id }}'),
+                                                @js($izin->siswa->nama_lengkap ?? ''),
+                                                @js(\Carbon\Carbon::parse($izin->tanggal)->translatedFormat('d M Y'))
+                                            )">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -359,31 +390,57 @@
             </table>
         </div>
 
-        {{-- Pagination --}}
+        {{-- ── Pagination ── --}}
         @if($izins->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $izins->firstItem() }} – {{ $izins->lastItem() }} dari {{ $izins->total() }} izin</p>
             <div class="pag-btns">
                 @if($izins->onFirstPage())
-                    <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn disabled">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $izins->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $izins->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
 
-                @foreach($izins->getUrlRange(1, $izins->lastPage()) as $page => $url)
-                    @if($page == $izins->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $izins->lastPage() || abs($page - $izins->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $izins->currentPage()) == 2)
-                        <span class="pag-ellipsis">…</span>
+                @php
+                    $current  = $izins->currentPage();
+                    $last     = $izins->lastPage();
+                    $window   = 2; // halaman di kiri & kanan current
+                    $shown    = [];
+                @endphp
+
+                @foreach($izins->getUrlRange(1, $last) as $page => $url)
+                    @php
+                        $isFirst  = $page === 1;
+                        $isLast   = $page === $last;
+                        $inWindow = abs($page - $current) <= $window;
+                        $visible  = $isFirst || $isLast || $inWindow;
+                        $prevPage = $loop->first ? null : $loop->index; // pakai index loop
+                    @endphp
+
+                    @if($visible)
+                        @if(!$loop->first && !in_array($page - 1, array_keys(collect($izins->getUrlRange(1,$last))->filter(fn($u,$p) => $p===1||$p===$last||abs($p-$current)<=$window)->keys()->toArray())))
+                            <span class="pag-ellipsis">…</span>
+                        @endif
+                        @if($page === $current)
+                            <span class="pag-btn active">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
+                        @endif
                     @endif
                 @endforeach
 
                 @if($izins->hasMorePages())
-                    <a href="{{ $izins->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $izins->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn disabled">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -393,39 +450,42 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-@if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
-@endif
-@if(session('error'))
-Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
-@endif
-@if($errors->any())
-Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
-@endif
+    // ── Flash messages ──
+    @if(session('success'))
+        Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+    @endif
+    @if(session('error'))
+        Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    @endif
+    @if($errors->any())
+        Swal.fire({ icon:'warning', title:'Perhatian!', html:@json(implode('<br>', $errors->all())), confirmButtonColor:'#1f63db' });
+    @endif
 
-function confirmDelete(form, nama, tanggal) {
-    Swal.fire({
-        title: 'Hapus Izin?',
-        html: `Izin keluar <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal',
-    }).then(r => { if (r.isConfirmed) form.submit(); });
-}
-
-function toggleDropdown(id) {
-    const el = document.getElementById(id);
-    const isOpen = el.classList.contains('open');
-    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-    if (!isOpen) el.classList.add('open');
-}
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.dropdown')) {
-        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+    // ── Delete confirm ──
+    function confirmDelete(form, nama, tanggal) {
+        Swal.fire({
+            title: 'Hapus Izin?',
+            html: `Izin keluar <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
-});
+
+    // ── Dropdown export ──
+    function toggleDropdown(id) {
+        const el = document.getElementById(id);
+        const isOpen = el.classList.contains('open');
+        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+        if (!isOpen) el.classList.add('open');
+    }
+    document.addEventListener('click', function (e) {
+        if (!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+        }
+    });
 </script>
 </x-app-layout>

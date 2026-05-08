@@ -75,17 +75,19 @@
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
             </a>
-            <a href="{{ route('admin.log-piket.export-pdf-single', $logPiket->id) }}" class="btn btn-pdf" target="_blank">
+            <a href="{{ route('admin.log-piket.export-pdf-single', $logPiket->id) }}"
+               class="btn btn-pdf" target="_blank">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Export PDF
             </a>
         </div>
     </div>
 
+    {{-- Card: Informasi Guru & Status --}}
     <div class="detail-card">
         <div class="card-header">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-            <span class="card-header-title">Informasi Guru & Status</span>
+            <span class="card-header-title">Informasi Guru &amp; Status</span>
         </div>
         <div class="card-body">
             <div class="dl-grid">
@@ -99,13 +101,17 @@
                 </div>
                 <div class="dl-item">
                     <p class="dl-label">Tanggal Piket</p>
-                    <p class="dl-value">{{ \Carbon\Carbon::parse($logPiket->tanggal)->translatedFormat('l, d F Y') }}</p>
+                    {{--
+                        FIX: $logPiket->tanggal sudah di-cast sebagai 'date' (Carbon).
+                        Tidak perlu Carbon::parse().
+                    --}}
+                    <p class="dl-value">{{ $logPiket->tanggal->translatedFormat('l, d F Y') }}</p>
                 </div>
                 <div class="dl-item">
                     <p class="dl-label">Shift</p>
-                    @if($logPiket->shift == 'pagi')
+                    @if($logPiket->shift === 'pagi')
                         <span class="badge badge-pagi">Pagi</span>
-                    @elseif($logPiket->shift == 'siang')
+                    @elseif($logPiket->shift === 'siang')
                         <span class="badge badge-siang">Siang</span>
                     @else
                         <p class="dl-value">-</p>
@@ -129,6 +135,7 @@
         </div>
     </div>
 
+    {{-- Card: Timeline Waktu --}}
     <div class="detail-card">
         <div class="card-header">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -141,7 +148,8 @@
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                     <p class="tl-label">CHECK-IN</p>
-                    <p class="tl-time">{{ $logPiket->masuk_pada ? \Carbon\Carbon::parse($logPiket->masuk_pada)->format('H:i') : '—' }}</p>
+                    {{-- FIX: masuk_pada sudah Carbon, tidak perlu parse() --}}
+                    <p class="tl-time">{{ $logPiket->masuk_pada ? $logPiket->masuk_pada->format('H:i') : '—' }}</p>
                 </div>
                 <div class="tl-line {{ $logPiket->masuk_pada ? 'done' : '' }}"></div>
                 <div class="tl-step">
@@ -149,19 +157,21 @@
                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     </div>
                     <p class="tl-label">CHECK-OUT</p>
-                    <p class="tl-time">{{ $logPiket->keluar_pada ? \Carbon\Carbon::parse($logPiket->keluar_pada)->format('H:i') : '—' }}</p>
+                    {{-- FIX: keluar_pada sudah Carbon, tidak perlu parse() --}}
+                    <p class="tl-time">{{ $logPiket->keluar_pada ? $logPiket->keluar_pada->format('H:i') : '—' }}</p>
                 </div>
             </div>
 
-            @if($logPiket->masuk_pada && $logPiket->keluar_pada)
-            @php
-                $durasi = \Carbon\Carbon::parse($logPiket->masuk_pada)->diff(\Carbon\Carbon::parse($logPiket->keluar_pada));
-                $jam = $durasi->h; $menit = $durasi->i;
-            @endphp
+            {{--
+                FIX: Gunakan accessor durasi_format dari model.
+                Hindari kalkulasi duplikat di view.
+                durasi_format sudah null-safe: return null jika salah satu timestamp null.
+            --}}
+            @if($logPiket->durasi_format)
             <div class="durasi-box">
                 <svg width="20" height="20" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                 <div>
-                    <p class="durasi-val">{{ $jam }}j {{ $menit }}m</p>
+                    <p class="durasi-val">{{ $logPiket->durasi_format }}</p>
                     <p class="durasi-sub">Total durasi piket</p>
                 </div>
             </div>
@@ -169,6 +179,7 @@
         </div>
     </div>
 
+    {{-- Card: Catatan (opsional) --}}
     @if($logPiket->catatan)
     <div class="detail-card">
         <div class="card-header">
@@ -181,19 +192,26 @@
     </div>
     @endif
 
+    {{-- Action Bar --}}
     <div class="detail-card">
         <div class="action-bar">
-            @if($logPiket->masuk_pada && !$logPiket->keluar_pada)
-            <form action="{{ route('admin.log-piket.check-out', $logPiket->id) }}" method="POST" id="coForm">
-                @csrf @method('PATCH')
+            {{-- FIX: Gunakan isSedangBertugas() dari model untuk konsistensi logic --}}
+            @if($logPiket->isSedangBertugas())
+            <form action="{{ route('admin.log-piket.check-out', $logPiket->id) }}"
+                  method="POST" id="coForm">
+                @csrf
+                @method('PATCH')
                 <button type="button" class="btn btn-checkout" onclick="confirmCheckout()">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                     Catat Check-Out Sekarang
                 </button>
             </form>
             @endif
-            <form action="{{ route('admin.log-piket.destroy', $logPiket->id) }}" method="POST" id="delForm">
-                @csrf @method('DELETE')
+
+            <form action="{{ route('admin.log-piket.destroy', $logPiket->id) }}"
+                  method="POST" id="delForm">
+                @csrf
+                @method('DELETE')
                 <button type="button" class="btn btn-del" onclick="confirmDelete()">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
                     Hapus Log
@@ -206,30 +224,46 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+    Swal.fire({
+        icon: 'success', title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500, showConfirmButton: false,
+        toast: true, position: 'top-end'
+    });
     @endif
+
     @if(session('error'))
-    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    Swal.fire({
+        icon: 'error', title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
     @endif
 
     function confirmCheckout() {
         Swal.fire({
-            title:'Konfirmasi Check-Out?',
-            text:'Catat waktu keluar untuk guru ini sekarang?',
-            icon:'question',showCancelButton:true,
-            confirmButtonColor:'#1f63db',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Check-Out!',cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) document.getElementById('coForm').submit(); });
+            title: 'Konfirmasi Check-Out?',
+            text: 'Catat waktu keluar untuk guru ini sekarang?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1f63db',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Check-Out!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) document.getElementById('coForm').submit(); });
     }
 
     function confirmDelete() {
         Swal.fire({
-            title:'Hapus Log Piket?',
-            text:'Log piket ini akan dihapus permanen.',
-            icon:'warning',showCancelButton:true,
-            confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) document.getElementById('delForm').submit(); });
+            title: 'Hapus Log Piket?',
+            text: 'Log piket ini akan dihapus permanen.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) document.getElementById('delForm').submit(); });
     }
 </script>
 </x-app-layout>

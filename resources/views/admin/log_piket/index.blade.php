@@ -110,6 +110,7 @@
         </div>
     </div>
 
+    {{-- Stats Strip --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -144,11 +145,13 @@
             </div>
             <div>
                 <p class="stat-label">Log Hari Ini</p>
+                {{-- Gunakan data yang sudah di-pass dari controller via $logs atau hitung langsung --}}
                 <p class="stat-val">{{ \App\Models\LogPiket::whereDate('tanggal', today())->count() }}</p>
             </div>
         </div>
     </div>
 
+    {{-- Sedang Bertugas --}}
     @if($sedangBertugas->count())
     <div class="bertugas-card">
         <p class="bertugas-title">
@@ -160,29 +163,36 @@
             <div class="bertugas-chip">
                 <svg width="13" height="13" fill="none" stroke="#1f63db" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                 {{ $b->guru->nama_lengkap ?? '-' }}
-                <span class="bertugas-time">masuk {{ \Carbon\Carbon::parse($b->masuk_pada)->format('H:i') }}</span>
+                {{--
+                    FIX: $b->masuk_pada sudah di-cast sebagai datetime (Carbon instance),
+                    tidak perlu Carbon::parse() lagi. Cukup panggil ->format() langsung.
+                --}}
+                <span class="bertugas-time">masuk {{ $b->masuk_pada->format('H:i') }}</span>
             </div>
             @endforeach
         </div>
     </div>
     @endif
 
+    {{-- Filter --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.log-piket.index') }}">
             <div class="filter-row">
                 <select name="guru_id">
                     <option value="">Semua Guru</option>
                     @foreach($guruPiket as $g)
-                        <option value="{{ $g->id }}" {{ request('guru_id') == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
+                        <option value="{{ $g->id }}" {{ request('guru_id') == $g->id ? 'selected' : '' }}>
+                            {{ $g->nama_lengkap }}
+                        </option>
                     @endforeach
                 </select>
                 <select name="shift">
                     <option value="">Semua Shift</option>
-                    <option value="pagi" {{ request('shift') == 'pagi' ? 'selected' : '' }}>Pagi</option>
+                    <option value="pagi"  {{ request('shift') == 'pagi'  ? 'selected' : '' }}>Pagi</option>
                     <option value="siang" {{ request('shift') == 'siang' ? 'selected' : '' }}>Siang</option>
                 </select>
-                <input type="date" name="tanggal_dari" value="{{ request('tanggal_dari') }}" title="Dari Tanggal">
-                <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}" title="Sampai Tanggal">
+                <input type="date" name="tanggal_dari"    value="{{ request('tanggal_dari') }}"    title="Dari Tanggal">
+                <input type="date" name="tanggal_sampai"  value="{{ request('tanggal_sampai') }}"  title="Sampai Tanggal">
                 <div class="filter-sep"></div>
                 <a href="{{ route('admin.log-piket.index') }}" class="btn-reset">Reset</a>
                 <button type="submit" class="btn-filter">Terapkan Filter</button>
@@ -190,22 +200,35 @@
         </form>
     </div>
 
+    {{-- Table --}}
     <div class="table-card">
         <div class="table-topbar">
             <p class="table-info">
                 Daftar Log Piket
+                @if($logs->total() > 0)
                 <span>— menampilkan {{ $logs->firstItem() }}–{{ $logs->lastItem() }} dari {{ $logs->total() }} data</span>
+                @else
+                <span>— tidak ada data</span>
+                @endif
             </p>
             <div class="table-actions">
-                <a href="{{ route('admin.log-piket.export-pdf') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="btn btn-sm btn-pdf" target="_blank">
+                {{--
+                    FIX: Cara membuat URL export dengan query string yang benar.
+                    Menggunakan route() helper + array parameter jauh lebih aman
+                    daripada string-concatenation manual.
+                --}}
+                <a href="{{ route('admin.log-piket.export-pdf', request()->query()) }}"
+                   class="btn btn-sm btn-pdf" target="_blank">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     Export PDF
                 </a>
-                <a href="{{ route('admin.log-piket.export-excel') }}{{ request()->getQueryString() ? '?'.request()->getQueryString() : '' }}" class="btn btn-sm btn-export">
+                <a href="{{ route('admin.log-piket.export-excel', request()->query()) }}"
+                   class="btn btn-sm btn-export">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Export Excel
                 </a>
-                <button type="button" class="btn btn-sm btn-import" onclick="document.getElementById('modalImport').classList.add('show')">
+                <button type="button" class="btn btn-sm btn-import"
+                        onclick="document.getElementById('modalImport').classList.add('show')">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Import
                 </button>
@@ -222,6 +245,7 @@
                         <th>Shift</th>
                         <th>Masuk</th>
                         <th>Keluar</th>
+                        <th>Durasi</th>
                         <th>Status</th>
                         <th>Dicatat Oleh</th>
                         <th class="center" style="width:180px">Aksi</th>
@@ -235,11 +259,15 @@
                             <div class="guru-name">{{ $log->guru->nama_lengkap ?? '-' }}</div>
                             <div class="guru-nip">{{ $log->guru->nip ?? '' }}</div>
                         </td>
-                        <td style="font-size:13px">{{ \Carbon\Carbon::parse($log->tanggal)->translatedFormat('d M Y') }}</td>
+                        {{--
+                            FIX: $log->tanggal sudah di-cast sebagai 'date' (Carbon),
+                            tidak perlu Carbon::parse(). Panggil ->translatedFormat() langsung.
+                        --}}
+                        <td style="font-size:13px">{{ $log->tanggal->translatedFormat('d M Y') }}</td>
                         <td>
-                            @if($log->shift == 'pagi')
+                            @if($log->shift === 'pagi')
                                 <span class="badge badge-pagi">Pagi</span>
-                            @elseif($log->shift == 'siang')
+                            @elseif($log->shift === 'siang')
                                 <span class="badge badge-siang">Siang</span>
                             @else
                                 <span style="color:var(--text3);font-size:12.5px">-</span>
@@ -247,8 +275,9 @@
                         </td>
                         <td>
                             <div class="time-col">
+                                {{-- FIX: masuk_pada sudah Carbon, tidak perlu parse() --}}
                                 @if($log->masuk_pada)
-                                    <span class="time">{{ \Carbon\Carbon::parse($log->masuk_pada)->format('H:i') }}</span>
+                                    <span class="time">{{ $log->masuk_pada->format('H:i') }}</span>
                                 @else
                                     <span class="dash">—</span>
                                 @endif
@@ -256,8 +285,22 @@
                         </td>
                         <td>
                             <div class="time-col">
+                                {{-- FIX: keluar_pada sudah Carbon, tidak perlu parse() --}}
                                 @if($log->keluar_pada)
-                                    <span class="time">{{ \Carbon\Carbon::parse($log->keluar_pada)->format('H:i') }}</span>
+                                    <span class="time">{{ $log->keluar_pada->format('H:i') }}</span>
+                                @else
+                                    <span class="dash">—</span>
+                                @endif
+                            </div>
+                        </td>
+                        <td>
+                            {{--
+                                FIX: Gunakan accessor getDurasiFormatAttribute() dari model
+                                alih-alih menghitung durasi manual di view.
+                            --}}
+                            <div class="time-col">
+                                @if($log->durasi_format)
+                                    <span class="time" style="font-size:12px">{{ $log->durasi_format }}</span>
                                 @else
                                     <span class="dash">—</span>
                                 @endif
@@ -275,20 +318,36 @@
                         <td class="muted" style="font-size:12.5px">{{ $log->pengguna->name ?? '-' }}</td>
                         <td class="center">
                             <div class="action-group">
-                                <a href="{{ route('admin.log-piket.show', $log->id) }}" class="btn btn-sm btn-detail">Detail</a>
-                                @if($log->masuk_pada && !$log->keluar_pada)
-                                <form action="{{ route('admin.log-piket.check-out', $log->id) }}" method="POST" id="coForm-{{ $log->id }}">
-                                    @csrf @method('PATCH')
+                                <a href="{{ route('admin.log-piket.show', $log->id) }}"
+                                   class="btn btn-sm btn-detail">Detail</a>
+
+                                {{--
+                                    FIX: Gunakan isSedangBertugas() dari model agar logic konsisten.
+                                --}}
+                                @if($log->isSedangBertugas())
+                                <form action="{{ route('admin.log-piket.check-out', $log->id) }}"
+                                      method="POST" id="coForm-{{ $log->id }}">
+                                    @csrf
+                                    @method('PATCH')
                                     <button type="button" class="btn btn-sm btn-checkout"
-                                        onclick="confirmCheckout(document.getElementById('coForm-{{ $log->id }}'), '{{ addslashes($log->guru->nama_lengkap ?? '') }}')">
+                                        onclick="confirmCheckout(
+                                            document.getElementById('coForm-{{ $log->id }}'),
+                                            '{{ addslashes($log->guru->nama_lengkap ?? '') }}'
+                                        )">
                                         Check-Out
                                     </button>
                                 </form>
                                 @endif
-                                <form action="{{ route('admin.log-piket.destroy', $log->id) }}" method="POST" id="delForm-{{ $log->id }}">
-                                    @csrf @method('DELETE')
+
+                                <form action="{{ route('admin.log-piket.destroy', $log->id) }}"
+                                      method="POST" id="delForm-{{ $log->id }}">
+                                    @csrf
+                                    @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('delForm-{{ $log->id }}'), '{{ addslashes($log->guru->nama_lengkap ?? '') }}')">
+                                        onclick="confirmDelete(
+                                            document.getElementById('delForm-{{ $log->id }}'),
+                                            '{{ addslashes($log->guru->nama_lengkap ?? '') }}'
+                                        )">
                                         Hapus
                                     </button>
                                 </form>
@@ -297,7 +356,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9">
+                        <td colspan="10">
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -314,13 +373,20 @@
 
         @if($logs->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">Menampilkan {{ $logs->firstItem() }} – {{ $logs->lastItem() }} dari {{ $logs->total() }} log</p>
+            <p class="pag-info">
+                Menampilkan {{ $logs->firstItem() }} – {{ $logs->lastItem() }} dari {{ $logs->total() }} log
+            </p>
             <div class="pag-btns">
                 @if($logs->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $logs->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $logs->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
+
                 @foreach($logs->getUrlRange(1, $logs->lastPage()) as $page => $url)
                     @if($page == $logs->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
@@ -330,10 +396,15 @@
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
+
                 @if($logs->hasMorePages())
-                    <a href="{{ $logs->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $logs->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -345,16 +416,27 @@
 <div class="modal-overlay" id="modalImport">
     <div class="modal-box">
         <p class="modal-title">Import Log Piket</p>
-        <p class="modal-sub">Upload file Excel (.xlsx/.xls) sesuai format template. <a href="{{ route('admin.log-piket.import-template') }}" style="color:var(--brand-600);font-weight:600">Download template</a></p>
+        <p class="modal-sub">
+            Upload file Excel (.xlsx/.xls) sesuai format template.
+            <a href="{{ route('admin.log-piket.import-template') }}"
+               style="color:var(--brand-600);font-weight:600">Download template</a>
+        </p>
         <form action="{{ route('admin.log-piket.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="field">
                 <label>File Excel <span style="color:var(--brand-600)">*</span></label>
-                <input type="file" name="file" accept=".xlsx,.xls" required style="height:auto;padding:8px 12px">
+                <input type="file" name="file" accept=".xlsx,.xls" required
+                       style="height:auto;padding:8px 12px">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn-cancel-modal btn" onclick="document.getElementById('modalImport').classList.remove('show')">Batal</button>
-                <button type="submit" class="btn btn-primary" style="background:var(--brand-600);color:#fff">Upload & Import</button>
+                <button type="button" class="btn-cancel-modal btn"
+                        onclick="document.getElementById('modalImport').classList.remove('show')">
+                    Batal
+                </button>
+                <button type="submit" class="btn"
+                        style="background:var(--brand-600);color:#fff">
+                    Upload &amp; Import
+                </button>
             </div>
         </form>
     </div>
@@ -363,37 +445,64 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+    Swal.fire({
+        icon: 'success', title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500, showConfirmButton: false,
+        toast: true, position: 'top-end'
+    });
     @endif
+
     @if(session('error'))
-    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    Swal.fire({
+        icon: 'error', title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
     @endif
+
     @if(session('import_errors'))
-    Swal.fire({icon:'warning',title:'Import Selesai dengan Peringatan',html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach(session('import_errors') as $e)<li>{{ $e }}</li>@endforeach</ul>`,confirmButtonColor:'#1f63db'});
+    Swal.fire({
+        icon: 'warning',
+        title: 'Import Selesai dengan Peringatan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">
+            @foreach(session('import_errors') as $e)
+                <li>{{ $e }}</li>
+            @endforeach
+        </ul>`,
+        confirmButtonColor: '#1f63db'
+    });
     @endif
 
     function confirmCheckout(form, nama) {
         Swal.fire({
-            title:'Konfirmasi Check-Out?',
-            text:`Catat waktu keluar untuk "${nama}" sekarang?`,
-            icon:'question',showCancelButton:true,
-            confirmButtonColor:'#1f63db',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Check-Out!',cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) form.submit(); });
+            title: 'Konfirmasi Check-Out?',
+            text: `Catat waktu keluar untuk "${nama}" sekarang?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1f63db',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Check-Out!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 
     function confirmDelete(form, nama) {
         Swal.fire({
-            title:'Hapus Log Piket?',
-            text:`Log piket "${nama}" akan dihapus permanen.`,
-            icon:'warning',showCancelButton:true,
-            confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) form.submit(); });
+            title: 'Hapus Log Piket?',
+            text: `Log piket "${nama}" akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 
-    document.getElementById('modalImport').addEventListener('click', function(e) {
-        if(e.target === this) this.classList.remove('show');
+    // Tutup modal saat klik di luar modal-box
+    document.getElementById('modalImport').addEventListener('click', function (e) {
+        if (e.target === this) this.classList.remove('show');
     });
 </script>
 </x-app-layout>

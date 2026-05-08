@@ -22,6 +22,7 @@
     .btn-cancel{background:var(--surface);color:var(--text2);border:1px solid var(--border)}.btn-cancel:hover{background:var(--surface3);filter:none}
     .btn-primary{background:var(--brand);color:#fff}.btn-primary:disabled{opacity:.6;cursor:not-allowed;filter:none}
     .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13.5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+    .alert ul{margin:6px 0 0 16px;display:flex;flex-direction:column;gap:2px}
     .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .form-section{padding:20px 24px 24px}
     .section-label{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px}
@@ -31,14 +32,14 @@
     .field{display:flex;flex-direction:column;gap:6px}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2)}
     .field label .req{color:var(--brand);margin-left:2px}
-    .field input,.field select,.field textarea{height:38px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);background:var(--surface2);width:100%;outline:none;transition:border-color .15s,background .15s}
+    .field input,.field select,.field textarea{height:38px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);background:var(--surface2);width:100%;outline:none;transition:border-color .15s,background .15s;box-sizing:border-box}
     .field textarea{height:auto;padding:10px 12px;resize:vertical;min-height:90px}
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand-h);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.1)}
     .field input.is-invalid,.field select.is-invalid,.field textarea.is-invalid{border-color:var(--red);background:#fff8f8}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;margin-top:-2px}
     .toggle-row{display:flex;align-items:center;gap:12px}
-    .toggle-switch{position:relative;display:inline-block;width:42px;height:24px}
-    .toggle-switch input{opacity:0;width:0;height:0}
+    .toggle-switch{position:relative;display:inline-block;width:42px;height:24px;flex-shrink:0}
+    .toggle-switch input{opacity:0;width:0;height:0;position:absolute}
     .toggle-slider{position:absolute;inset:0;border-radius:99px;background:var(--border2);cursor:pointer;transition:background .2s}
     .toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
     .toggle-switch input:checked + .toggle-slider{background:var(--brand)}
@@ -71,17 +72,17 @@
 
     @if($errors->any())
         <div class="alert">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             <div>
                 <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">Terdapat {{ $errors->count() }} kesalahan:</strong>
-                <ul style="margin:6px 0 0 16px;display:flex;flex-direction:column;gap:2px">
+                <ul>
                     @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
                 </ul>
             </div>
         </div>
     @endif
 
-    <form action="{{ route('admin.jadwal-piket-guru.store') }}" method="POST" id="formPiket">
+    <form action="{{ route('admin.jadwal-piket-guru.store') }}" method="POST" id="formPiket" novalidate>
         @csrf
         <div class="form-card">
             <div class="form-section">
@@ -91,29 +92,38 @@
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-grid">
+                    {{-- Guru Piket --}}
                     <div class="field">
-                        <label>Guru Piket <span class="req">*</span></label>
-                        <select name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
+                        <label for="guru_id">Guru Piket <span class="req">*</span></label>
+                        <select id="guru_id" name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Guru Piket —</option>
                             @foreach($guruPiket as $g)
-                                <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
+                                <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>
+                                    {{ $g->nama_lengkap }}
+                                </option>
                             @endforeach
                         </select>
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Tahun Ajaran --}}
                     <div class="field">
-                        <label>Tahun Ajaran <span class="req">*</span></label>
-                        <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
+                        <label for="tahun_ajaran_id">Tahun Ajaran <span class="req">*</span></label>
+                        <select id="tahun_ajaran_id" name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Tahun Ajaran —</option>
                             @foreach($tahunAjaran as $ta)
-                                <option value="{{ $ta->id }}" {{ old('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>{{ $ta->tahun }}</option>
+                                <option value="{{ $ta->id }}" {{ old('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>
+                                    {{ $ta->tahun }}
+                                </option>
                             @endforeach
                         </select>
                         @error('tahun_ajaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Hari --}}
                     <div class="field">
-                        <label>Hari <span class="req">*</span></label>
-                        <select name="hari" class="{{ $errors->has('hari') ? 'is-invalid' : '' }}">
+                        <label for="hari">Hari <span class="req">*</span></label>
+                        <select id="hari" name="hari" class="{{ $errors->has('hari') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Hari —</option>
                             @foreach($hariList as $h)
                                 <option value="{{ $h }}" {{ old('hari') == $h ? 'selected' : '' }}>{{ ucfirst($h) }}</option>
@@ -121,30 +131,53 @@
                         </select>
                         @error('hari')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Jam Mulai --}}
                     <div class="field">
-                        <label>Jam Mulai <span class="req">*</span></label>
-                        <input type="time" name="jam_mulai" value="{{ old('jam_mulai') }}" class="{{ $errors->has('jam_mulai') ? 'is-invalid' : '' }}">
+                        <label for="jam_mulai">Jam Mulai <span class="req">*</span></label>
+                        <input type="time" id="jam_mulai" name="jam_mulai"
+                            value="{{ old('jam_mulai') }}"
+                            class="{{ $errors->has('jam_mulai') ? 'is-invalid' : '' }}">
                         @error('jam_mulai')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Jam Selesai --}}
                     <div class="field">
-                        <label>Jam Selesai <span class="req">*</span></label>
-                        <input type="time" name="jam_selesai" value="{{ old('jam_selesai') }}" class="{{ $errors->has('jam_selesai') ? 'is-invalid' : '' }}">
+                        <label for="jam_selesai">Jam Selesai <span class="req">*</span></label>
+                        <input type="time" id="jam_selesai" name="jam_selesai"
+                            value="{{ old('jam_selesai') }}"
+                            class="{{ $errors->has('jam_selesai') ? 'is-invalid' : '' }}">
                         @error('jam_selesai')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Toggle Aktif --}}
                     <div class="field" style="justify-content:flex-end;padding-bottom:4px">
                         <label>Status Aktif</label>
                         <div class="toggle-row" style="margin-top:8px">
-                            <label class="toggle-switch">
-                                <input type="hidden" name="is_active" value="0">
-                                <input type="checkbox" name="is_active" value="1" id="isActiveToggle" {{ old('is_active', '1') == '1' ? 'checked' : '' }}>
+                            {{--
+                                Hidden input memastikan nilai 0 terkirim saat checkbox tidak dicentang.
+                                Nama field hanya satu: is_active.
+                                Saat checkbox TIDAK dicentang → hidden (value="0") terkirim.
+                                Saat checkbox DICENTANG → nilai "1" menimpa hidden "0" di server.
+                            --}}
+                            <input type="hidden" name="is_active" value="0">
+                            <label class="toggle-switch" for="isActiveToggle">
+                                <input type="checkbox" id="isActiveToggle" name="is_active" value="1"
+                                    {{ old('is_active', '1') == '1' ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="toggleLabel">{{ old('is_active', '1') == '1' ? 'Aktif' : 'Nonaktif' }}</span>
+                            <span class="toggle-label" id="toggleLabel">
+                                {{ old('is_active', '1') == '1' ? 'Aktif' : 'Nonaktif' }}
+                            </span>
                         </div>
                     </div>
+
+                    {{-- Catatan --}}
                     <div class="field col-span-2">
-                        <label>Catatan</label>
-                        <textarea name="catatan" placeholder="Catatan tambahan untuk jadwal piket ini (opsional)..." class="{{ $errors->has('catatan') ? 'is-invalid' : '' }}">{{ old('catatan') }}</textarea>
+                        <label for="catatan">Catatan</label>
+                        <textarea id="catatan" name="catatan"
+                            placeholder="Catatan tambahan untuk jadwal piket ini (opsional)..."
+                            class="{{ $errors->has('catatan') ? 'is-invalid' : '' }}">{{ old('catatan') }}</textarea>
                         @error('catatan')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -162,29 +195,44 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // ── Popup error duplikat jadwal ──────────────────────────────────────────
+    // ── Popup error duplikat — tampilkan SEBELUM enable tombol ───────────────
     @if(session('duplicate_error'))
-    Swal.fire({
-        icon: 'error',
-        title: 'Jadwal Sudah Ada!',
-        text: @json(session('duplicate_error')),
-        confirmButtonColor: '#1f63db',
-        confirmButtonText: 'Mengerti',
+    document.addEventListener('DOMContentLoaded', function () {
+        Swal.fire({
+            icon: 'error',
+            title: 'Jadwal Sudah Ada!',
+            text: @json(session('duplicate_error')),
+            confirmButtonColor: '#1f63db',
+            confirmButtonText: 'Mengerti',
+        });
     });
     @endif
 
     @if(session('error'))
-    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    document.addEventListener('DOMContentLoaded', function () {
+        Swal.fire({ icon: 'error', title: 'Gagal!', text: @json(session('error')), confirmButtonColor: '#1f63db' });
+    });
     @endif
 
-    document.getElementById('isActiveToggle').addEventListener('change', function() {
+    // ── Toggle label ──────────────────────────────────────────────────────────
+    document.getElementById('isActiveToggle').addEventListener('change', function () {
         document.getElementById('toggleLabel').textContent = this.checked ? 'Aktif' : 'Nonaktif';
     });
 
-    document.getElementById('formPiket').addEventListener('submit', function() {
+    // ── Submit — disable tombol setelah klik untuk cegah double-submit ────────
+    document.getElementById('formPiket').addEventListener('submit', function (e) {
         const btn = document.getElementById('btnSubmit');
-        btn.disabled = true;
-        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
+
+        // Beri jeda 50ms agar browser sempat kirim request sebelum disabled
+        setTimeout(function () {
+            btn.disabled = true;
+            btn.innerHTML = `
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                    viewBox="0 0 24 24" style="animation:spin .7s linear infinite">
+                    <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+                </svg>
+                Menyimpan…`;
+        }, 50);
     });
 </script>
 </x-app-layout>

@@ -10,6 +10,7 @@
         --radius:10px;--radius-sm:7px;
     }
 
+    *,*::before,*::after{box-sizing:border-box}
     .page{padding:28px 28px 40px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
@@ -18,7 +19,8 @@
     .back-link:hover{color:var(--brand-600)}
     .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap;line-height:1}
     .btn:hover{filter:brightness(.93)}
     .btn-edit{background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100)}
     .btn-edit:hover{background:var(--brand-100);filter:none}
@@ -33,63 +35,86 @@
     .btn-kembali{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
     .btn-kembali:hover{background:#dbeafe;filter:none}
 
+    /* ── Layout ── */
     .detail-layout{display:grid;grid-template-columns:1fr 340px;gap:16px;align-items:start}
 
+    /* ── Cards ── */
     .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
     .card:last-child{margin-bottom:0}
     .card-header{display:flex;align-items:center;gap:8px;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
     .card-header-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
     .card-body{padding:20px}
 
+    /* ── Info rows ── */
     .info-row{display:flex;gap:12px;padding:9px 0;border-bottom:1px solid #f1f5f9}
     .info-row:last-child{border-bottom:none;padding-bottom:0}
     .info-row:first-child{padding-top:0}
-    .info-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);width:140px;flex-shrink:0;padding-top:1px}
-    .info-val{font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);flex:1}
+    .info-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);width:145px;flex-shrink:0;padding-top:1px}
+    .info-val{font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);flex:1;word-break:break-word}
     .info-val.bold{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700}
 
-    .siswa-hero{display:flex;align-items:center;gap:14px;padding:16px 20px;background:var(--brand-50);border-bottom:1px solid var(--brand-100)}
+    /* ── Siswa hero ── */
+    .siswa-hero{display:flex;align-items:center;gap:14px;padding:16px 20px;background:var(--brand-50);border-bottom:1px solid var(--brand-100);flex-wrap:wrap}
     .siswa-avatar{width:48px;height:48px;border-radius:12px;background:var(--brand-100);display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .siswa-hero-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:var(--text)}
     .siswa-hero-meta{font-size:12.5px;color:var(--text3);margin-top:2px}
+    .siswa-hero-badge{margin-left:auto}
 
+    /* ── Badges ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .badge-menunggu{background:#fefce8;color:#a16207} .badge-menunggu .badge-dot{background:#a16207}
-    .badge-disetujui{background:#dcfce7;color:#15803d} .badge-disetujui .badge-dot{background:#15803d}
-    .badge-ditolak{background:#fee2e2;color:#dc2626} .badge-ditolak .badge-dot{background:#dc2626}
-    .badge-sudah_kembali{background:#eff6ff;color:#1d4ed8} .badge-sudah_kembali .badge-dot{background:#1d4ed8}
+    .badge-menunggu{background:#fefce8;color:#a16207}.badge-menunggu .badge-dot{background:#a16207}
+    .badge-disetujui{background:#dcfce7;color:#15803d}.badge-disetujui .badge-dot{background:#15803d}
+    .badge-ditolak{background:#fee2e2;color:#dc2626}.badge-ditolak .badge-dot{background:#dc2626}
+    .badge-sudah_kembali{background:#eff6ff;color:#1d4ed8}.badge-sudah_kembali .badge-dot{background:#1d4ed8}
 
-    .timeline{display:flex;flex-direction:column;gap:0}
+    /* ── Tag aktif tahun ajaran ── */
+    .tag-aktif{font-size:11px;background:#dcfce7;color:#15803d;padding:1px 7px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;margin-left:4px;display:inline-block;vertical-align:middle}
+
+    /* ── Timeline ── */
+    .timeline{display:flex;flex-direction:column}
     .tl-item{display:flex;gap:12px;position:relative}
-    .tl-item:not(:last-child) .tl-line{flex:1;width:2px;background:var(--border);margin:4px auto 0;min-height:20px}
     .tl-dot-wrap{display:flex;flex-direction:column;align-items:center;width:20px;flex-shrink:0}
     .tl-dot{width:10px;height:10px;border-radius:50%;border:2px solid var(--border);background:var(--surface);flex-shrink:0;margin-top:4px}
     .tl-dot.done{background:var(--brand-600);border-color:var(--brand-600)}
     .tl-dot.green{background:#15803d;border-color:#15803d}
     .tl-dot.red{background:#dc2626;border-color:#dc2626}
+    .tl-line{width:2px;background:var(--border);margin:4px auto 0;flex:1;min-height:16px}
     .tl-content{padding-bottom:16px;flex:1}
+    .tl-item:last-child .tl-content{padding-bottom:0}
     .tl-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text)}
     .tl-sub{font-size:12px;color:var(--text3);margin-top:2px}
 
+    /* ── Action panel ── */
     .action-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
-    .action-panel-header{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase}
+    .action-panel-header{padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase}
     .action-panel-body{padding:14px 16px;display:flex;flex-direction:column;gap:8px}
     .action-btn-full{width:100%;justify-content:center}
 
+    /* ── Mini form (approve / reject / return) ── */
     .mini-form{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:4px;display:none}
     .mini-form.open{display:block}
     .mini-form label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px}
-    .mini-form textarea,.mini-form input[type=time]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface);outline:none;box-sizing:border-box;transition:border-color .15s}
-    .mini-form textarea:focus,.mini-form input[type=time]:focus{border-color:var(--brand-500)}
+    .mini-form textarea,
+    .mini-form input[type=time]{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface);outline:none;box-sizing:border-box;transition:border-color .15s}
+    .mini-form textarea:focus,
+    .mini-form input[type=time]:focus{border-color:var(--brand-500)}
     .mini-form textarea{resize:vertical;min-height:70px}
     .mini-form-actions{display:flex;gap:6px;margin-top:8px;justify-content:flex-end}
+    .mini-btn{padding:5px 14px;border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;border:none}
+    .mini-btn-cancel{background:var(--surface);border:1px solid var(--border) !important;border:none;color:var(--text2)}
+    .mini-btn-confirm-green{background:#15803d;color:#fff}
+    .mini-btn-confirm-red{background:#dc2626;color:#fff}
+    .mini-btn-confirm-blue{background:#1f63db;color:#fff}
+    .mini-required{color:#dc2626;margin-left:2px}
 
     @media(max-width:900px){.detail-layout{grid-template-columns:1fr}}
-    @media(max-width:640px){.page{padding:16px}}
+    @media(max-width:640px){.page{padding:16px}.siswa-hero-badge{margin-left:0;margin-top:8px;width:100%}}
 </style>
 
 <div class="page">
+
+    {{-- ── Header ── --}}
     <div class="page-header">
         <div>
             <a href="{{ route('admin.izin-keluar-siswa.index') }}" class="back-link">
@@ -98,37 +123,49 @@
             </a>
             <h1 class="page-title">Detail Izin Keluar Siswa</h1>
             <p class="page-sub">
-                @if($izin->nomor_surat) No. Surat: <strong>{{ $izin->nomor_surat }}</strong> &mdash; @endif
-                {{ \Carbon\Carbon::parse($izin->tanggal)->isoFormat('dddd, D MMMM Y') }}
+                @if($izin->nomor_surat)
+                    No. Surat: <strong>{{ $izin->nomor_surat }}</strong> &mdash;
+                @endif
+                {{ \Carbon\Carbon::parse($izin->tanggal)->translatedFormat('l, d F Y') }}
             </p>
         </div>
         <div class="header-actions">
-            @if($izin->status === 'menunggu')
+            @if($izin->isMenunggu())
                 <a href="{{ route('admin.izin-keluar-siswa.edit', $izin->id) }}" class="btn btn-edit">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                     Edit
                 </a>
             @endif
-            @if(in_array($izin->status, ['disetujui', 'sudah_kembali']))
+
+            @if(in_array($izin->status, [\App\Models\IzinKeluarSiswa::STATUS_DISETUJUI, \App\Models\IzinKeluarSiswa::STATUS_SUDAH_KEMBALI]))
                 <a href="{{ route('admin.izin-keluar-siswa.cetak-surat', $izin->id) }}" target="_blank" class="btn btn-print">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                     Cetak Surat
                 </a>
             @endif
-            <form action="{{ route('admin.izin-keluar-siswa.destroy', $izin->id) }}" method="POST" id="delForm" style="display:inline">
-                @csrf @method('DELETE')
-                <button type="button" class="btn btn-del" onclick="confirmDelete()">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-                    Hapus
-                </button>
-            </form>
+
+            {{-- Hapus tidak bisa dilakukan saat status disetujui (siswa masih di luar) --}}
+            @if($izin->status !== \App\Models\IzinKeluarSiswa::STATUS_DISETUJUI)
+                <form action="{{ route('admin.izin-keluar-siswa.destroy', $izin->id) }}"
+                      method="POST"
+                      id="delForm"
+                      style="display:inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="button" class="btn btn-del" onclick="confirmDelete()">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
+                        Hapus
+                    </button>
+                </form>
+            @endif
         </div>
     </div>
 
     <div class="detail-layout">
 
-        {{-- LEFT --}}
+        {{-- ══ LEFT ══ --}}
         <div>
+            {{-- Card utama --}}
             <div class="card">
                 <div class="siswa-hero">
                     <div class="siswa-avatar">
@@ -138,42 +175,54 @@
                         <p class="siswa-hero-name">{{ $izin->siswa->nama_lengkap ?? '—' }}</p>
                         <p class="siswa-hero-meta">
                             {{ $izin->siswa->kelas->nama_kelas ?? '—' }}
-                            @if($izin->siswa?->nis) &nbsp;·&nbsp; NIS: {{ $izin->siswa->nis }} @endif
+                            @if($izin->siswa?->nis)
+                                &nbsp;·&nbsp; NIS: {{ $izin->siswa->nis }}
+                            @endif
                         </p>
                     </div>
-                    <div style="margin-left:auto">
+                    <div class="siswa-hero-badge">
                         <span class="badge badge-{{ $izin->status }}">
                             <span class="badge-dot"></span>
                             {{ \App\Models\IzinKeluarSiswa::STATUS_LIST[$izin->status] ?? ucfirst($izin->status) }}
                         </span>
                     </div>
                 </div>
+
                 <div class="card-body">
                     <div class="info-row">
                         <span class="info-label">Tanggal</span>
-                        <span class="info-val bold">{{ \Carbon\Carbon::parse($izin->tanggal)->isoFormat('D MMMM Y') }}</span>
+                        <span class="info-val bold">{{ \Carbon\Carbon::parse($izin->tanggal)->translatedFormat('d F Y') }}</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Tahun Ajaran</span>
                         <span class="info-val">
                             {{ $izin->tahunAjaran?->label ?? '—' }}
                             @if($izin->tahunAjaran?->isAktif())
-                                <span style="font-size:11px;background:#dcfce7;color:#15803d;padding:1px 7px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;margin-left:4px">Aktif</span>
+                                <span class="tag-aktif">Aktif</span>
                             @endif
                         </span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Jam Keluar</span>
-                        <span class="info-val bold">{{ $izin->jam_keluar ? \Carbon\Carbon::parse($izin->jam_keluar)->format('H:i') : '—' }}</span>
+                        <span class="info-val bold">
+                            {{ $izin->jam_keluar ? \Carbon\Carbon::parse($izin->jam_keluar)->format('H:i') : '—' }}
+                        </span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Rencana Kembali</span>
-                        <span class="info-val">{{ $izin->jam_kembali ? \Carbon\Carbon::parse($izin->jam_kembali)->format('H:i') : '—' }}</span>
+                        <span class="info-val">
+                            {{ $izin->jam_kembali ? \Carbon\Carbon::parse($izin->jam_kembali)->format('H:i') : '—' }}
+                        </span>
                     </div>
                     @if($izin->jam_kembali_aktual)
                     <div class="info-row">
                         <span class="info-label">Kembali Aktual</span>
-                        <span class="info-val bold" style="color:#1d4ed8">{{ \Carbon\Carbon::parse($izin->jam_kembali_aktual)->format('H:i') }}</span>
+                        <span class="info-val bold" style="color:#1d4ed8">
+                            {{ \Carbon\Carbon::parse($izin->jam_kembali_aktual)->format('H:i') }}
+                            @if($izin->durasi_menit !== null)
+                                <span style="font-size:11.5px;font-weight:400;color:var(--text3);margin-left:6px">({{ $izin->durasi_formatted }} di luar)</span>
+                            @endif
+                        </span>
                     </div>
                     @endif
                     <div class="info-row">
@@ -199,6 +248,7 @@
                 </div>
             </div>
 
+            {{-- Catatan piket --}}
             @if($izin->catatan_piket)
             <div class="card">
                 <div class="card-header">
@@ -206,16 +256,17 @@
                     <span class="card-header-title">Catatan Piket</span>
                 </div>
                 <div class="card-body">
-                    <p style="font-size:13.5px;color:var(--text2);white-space:pre-line;line-height:1.6">{{ $izin->catatan_piket }}</p>
+                    <p style="font-size:13.5px;color:var(--text2);white-space:pre-line;line-height:1.6;margin:0">{{ $izin->catatan_piket }}</p>
                 </div>
             </div>
             @endif
         </div>
 
-        {{-- RIGHT --}}
+        {{-- ══ RIGHT ══ --}}
         <div>
-            {{-- Proses Izin --}}
-            @if($izin->status === 'menunggu')
+
+            {{-- ── Proses Izin (hanya jika menunggu) ── --}}
+            @if($izin->isMenunggu())
             <div class="action-panel">
                 <div class="action-panel-header">Proses Izin</div>
                 <div class="action-panel-body">
@@ -230,17 +281,11 @@
                             <form action="{{ route('admin.izin-keluar-siswa.setujui', $izin->id) }}" method="POST">
                                 @csrf
                                 @method('PATCH')
-                                <label>Catatan Piket (opsional)</label>
-                                <textarea name="catatan_piket" placeholder="Tambahkan catatan jika diperlukan…"></textarea>
+                                <label>Catatan Piket <span style="font-size:11px;font-weight:400;color:var(--text3)">(opsional)</span></label>
+                                <textarea name="catatan_piket" placeholder="Tambahkan catatan jika diperlukan…" maxlength="500"></textarea>
                                 <div class="mini-form-actions">
-                                    <button type="button" onclick="toggleMiniForm('formSetujui')"
-                                        style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">
-                                        Batal
-                                    </button>
-                                    <button type="submit"
-                                        style="padding:5px 14px;border-radius:6px;border:none;background:#15803d;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
-                                        Konfirmasi Setujui
-                                    </button>
+                                    <button type="button" class="mini-btn mini-btn-cancel" onclick="toggleMiniForm('formSetujui')">Batal</button>
+                                    <button type="submit" class="mini-btn mini-btn-confirm-green">Konfirmasi Setujui</button>
                                 </div>
                             </form>
                         </div>
@@ -256,17 +301,11 @@
                             <form action="{{ route('admin.izin-keluar-siswa.tolak', $izin->id) }}" method="POST">
                                 @csrf
                                 @method('PATCH')
-                                <label>Alasan Penolakan <span style="color:#dc2626">*</span></label>
-                                <textarea name="catatan_piket" required placeholder="Tuliskan alasan penolakan…"></textarea>
+                                <label>Alasan Penolakan<span class="mini-required">*</span></label>
+                                <textarea name="catatan_piket" required placeholder="Tuliskan alasan penolakan…" maxlength="500"></textarea>
                                 <div class="mini-form-actions">
-                                    <button type="button" onclick="toggleMiniForm('formTolak')"
-                                        style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">
-                                        Batal
-                                    </button>
-                                    <button type="submit"
-                                        style="padding:5px 14px;border-radius:6px;border:none;background:#dc2626;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
-                                        Konfirmasi Tolak
-                                    </button>
+                                    <button type="button" class="mini-btn mini-btn-cancel" onclick="toggleMiniForm('formTolak')">Batal</button>
+                                    <button type="submit" class="mini-btn mini-btn-confirm-red">Konfirmasi Tolak</button>
                                 </div>
                             </form>
                         </div>
@@ -276,8 +315,8 @@
             </div>
             @endif
 
-            {{-- Catat Kembali --}}
-            @if($izin->status === 'disetujui')
+            {{-- ── Catat Kembali (hanya jika disetujui) ── --}}
+            @if($izin->isDisetujui())
             <div class="action-panel">
                 <div class="action-panel-header">Catat Kembali</div>
                 <div class="action-panel-body">
@@ -289,19 +328,17 @@
                         <form action="{{ route('admin.izin-keluar-siswa.catat-kembali', $izin->id) }}" method="POST">
                             @csrf
                             @method('PATCH')
-                            <label>Jam Kembali Aktual <span style="color:#dc2626">*</span></label>
-                            <input type="time" name="jam_kembali_aktual" value="{{ now()->format('H:i') }}" required>
-                            <label style="margin-top:10px">Catatan Piket (opsional)</label>
-                            <textarea name="catatan_piket" placeholder="Catatan tambahan saat kembali…">{{ $izin->catatan_piket }}</textarea>
+                            <label>Jam Kembali Aktual<span class="mini-required">*</span></label>
+                            <input type="time"
+                                   name="jam_kembali_aktual"
+                                   value="{{ now()->format('H:i') }}"
+                                   min="{{ $izin->jam_keluar ? \Carbon\Carbon::parse($izin->jam_keluar)->addMinute()->format('H:i') : '' }}"
+                                   required>
+                            <label style="margin-top:10px">Catatan Piket <span style="font-size:11px;font-weight:400;color:var(--text3)">(opsional)</span></label>
+                            <textarea name="catatan_piket" placeholder="Catatan tambahan saat kembali…" maxlength="500">{{ $izin->catatan_piket }}</textarea>
                             <div class="mini-form-actions">
-                                <button type="button" onclick="toggleMiniForm('formKembali')"
-                                    style="padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">
-                                    Batal
-                                </button>
-                                <button type="submit"
-                                    style="padding:5px 14px;border-radius:6px;border:none;background:#1f63db;color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer">
-                                    Simpan
-                                </button>
+                                <button type="button" class="mini-btn mini-btn-cancel" onclick="toggleMiniForm('formKembali')">Batal</button>
+                                <button type="submit" class="mini-btn mini-btn-confirm-blue">Simpan</button>
                             </div>
                         </form>
                     </div>
@@ -309,7 +346,7 @@
             </div>
             @endif
 
-            {{-- Timeline --}}
+            {{-- ── Timeline ── --}}
             <div class="card">
                 <div class="card-header">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
@@ -317,6 +354,8 @@
                 </div>
                 <div class="card-body">
                     <div class="timeline">
+
+                        {{-- Step 1: Dibuat --}}
                         <div class="tl-item">
                             <div class="tl-dot-wrap">
                                 <div class="tl-dot done"></div>
@@ -324,21 +363,26 @@
                             </div>
                             <div class="tl-content">
                                 <p class="tl-title">Izin Dibuat</p>
-                                <p class="tl-sub">{{ $izin->created_at->isoFormat('D MMM Y, HH:mm') }}</p>
+                                <p class="tl-sub">{{ $izin->created_at->translatedFormat('d M Y, H:i') }}</p>
                             </div>
                         </div>
 
-                        @if(in_array($izin->status, ['disetujui', 'ditolak', 'sudah_kembali']))
+                        {{-- Step 2: Diproses (setujui / tolak / menunggu) --}}
+                        @if(in_array($izin->status, [\App\Models\IzinKeluarSiswa::STATUS_DISETUJUI, \App\Models\IzinKeluarSiswa::STATUS_DITOLAK, \App\Models\IzinKeluarSiswa::STATUS_SUDAH_KEMBALI]))
                         <div class="tl-item">
                             <div class="tl-dot-wrap">
-                                <div class="tl-dot {{ $izin->status === 'ditolak' ? 'red' : 'green' }}"></div>
-                                @if($izin->status === 'sudah_kembali')<div class="tl-line"></div>@endif
+                                <div class="tl-dot {{ $izin->isDitolak() ? 'red' : 'green' }}"></div>
+                                @if($izin->isSudahKembali())
+                                    <div class="tl-line"></div>
+                                @endif
                             </div>
                             <div class="tl-content">
-                                <p class="tl-title">{{ $izin->status === 'ditolak' ? 'Izin Ditolak' : 'Izin Disetujui' }}</p>
+                                <p class="tl-title">{{ $izin->isDitolak() ? 'Izin Ditolak' : 'Izin Disetujui' }}</p>
                                 <p class="tl-sub">
-                                    {{ $izin->diproses_pada ? $izin->diproses_pada->isoFormat('D MMM Y, HH:mm') : '—' }}
-                                    @if($izin->diprosesOleh) · oleh {{ $izin->diprosesOleh->name }} @endif
+                                    {{ $izin->diproses_pada ? $izin->diproses_pada->translatedFormat('d M Y, H:i') : '—' }}
+                                    @if($izin->diprosesOleh)
+                                        &middot; oleh {{ $izin->diprosesOleh->name }}
+                                    @endif
                                 </p>
                             </div>
                         </div>
@@ -354,7 +398,8 @@
                         </div>
                         @endif
 
-                        @if($izin->status === 'sudah_kembali')
+                        {{-- Step 3: Sudah kembali --}}
+                        @if($izin->isSudahKembali())
                         <div class="tl-item">
                             <div class="tl-dot-wrap">
                                 <div class="tl-dot done"></div>
@@ -362,44 +407,55 @@
                             <div class="tl-content">
                                 <p class="tl-title">Siswa Telah Kembali</p>
                                 <p class="tl-sub">
-                                    {{ $izin->dicatat_kembali_pada ? $izin->dicatat_kembali_pada->isoFormat('D MMM Y, HH:mm') : '—' }}
-                                    @if($izin->dicatatKembaliOleh) · oleh {{ $izin->dicatatKembaliOleh->name }} @endif
+                                    {{ $izin->dicatat_kembali_pada ? $izin->dicatat_kembali_pada->translatedFormat('d M Y, H:i') : '—' }}
+                                    @if($izin->dicatatKembaliOleh)
+                                        &middot; oleh {{ $izin->dicatatKembaliOleh->name }}
+                                    @endif
                                 </p>
                             </div>
                         </div>
                         @endif
+
                     </div>
                 </div>
             </div>
-        </div>
+
+        </div>{{-- /RIGHT --}}
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-@if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
-@endif
-@if(session('error'))
-Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
-@endif
+    // ── Flash messages ──
+    @if(session('success'))
+        Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+    @endif
+    @if(session('error'))
+        Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    @endif
 
-function toggleMiniForm(id) {
-    document.querySelectorAll('.mini-form.open').forEach(f => { if (f.id !== id) f.classList.remove('open'); });
-    document.getElementById(id).classList.toggle('open');
-}
+    // ── Toggle mini form — tutup lainnya sebelum buka ──
+    function toggleMiniForm(id) {
+        const target = document.getElementById(id);
+        const isOpen = target.classList.contains('open');
+        // Tutup semua
+        document.querySelectorAll('.mini-form.open').forEach(f => f.classList.remove('open'));
+        // Buka jika sebelumnya tertutup
+        if (!isOpen) target.classList.add('open');
+    }
 
-function confirmDelete() {
-    Swal.fire({
-        title: 'Hapus Izin?',
-        html: `Data izin keluar <strong>{{ addslashes($izin->siswa->nama_lengkap ?? '') }}</strong> akan dihapus permanen.`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc2626',
-        cancelButtonColor: '#64748b',
-        confirmButtonText: 'Ya, Hapus!',
-        cancelButtonText: 'Batal',
-    }).then(r => { if (r.isConfirmed) document.getElementById('delForm').submit(); });
-}
+    // ── Delete confirm ──
+    function confirmDelete() {
+        Swal.fire({
+            title: 'Hapus Izin?',
+            html: `Data izin keluar <strong>@js($izin->siswa->nama_lengkap ?? '')</strong> akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) document.getElementById('delForm').submit(); });
+    }
 </script>
 </x-app-layout>

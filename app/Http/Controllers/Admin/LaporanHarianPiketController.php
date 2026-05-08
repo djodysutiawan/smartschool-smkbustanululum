@@ -16,13 +16,13 @@ class LaporanHarianPiketController extends Controller
 {
     // ─── INDEX ────────────────────────────────────────────────────────────────
 
-    /**
-     * Daftar semua laporan harian piket dari seluruh guru piket.
-     * Admin bisa filter by tanggal, guru piket, dan search.
-     */
     public function index(Request $request)
     {
+        // FIX: tambahkan withCount('pelanggaran') agar $item->pelanggaran_count
+        // tersedia di view. Tanpa ini, blade akan selalu mendapat null/0 dan
+        // berpotensi error jika properti diakses langsung.
         $query = LaporanHarianPiket::with('dibuatOleh')
+            ->withCount('pelanggaran')
             ->orderByDesc('tanggal');
 
         if ($request->filled('dibuat_oleh')) {
@@ -45,7 +45,8 @@ class LaporanHarianPiketController extends Controller
             'total'       => LaporanHarianPiket::count(),
             'hari_ini'    => LaporanHarianPiket::whereDate('tanggal', today())->count(),
             'bulan_ini'   => LaporanHarianPiket::whereMonth('tanggal', now()->month)
-                                ->whereYear('tanggal', now()->year)->count(),
+                                ->whereYear('tanggal', now()->year)
+                                ->count(),
             'total_piket' => $guruPiketList->count(),
         ];
 
@@ -55,17 +56,11 @@ class LaporanHarianPiketController extends Controller
 
     // ─── SHOW ─────────────────────────────────────────────────────────────────
 
-    /**
-     * Detail satu laporan harian piket.
-     * Ditambahkan: ringkasan izin keluar siswa pada hari yang sama.
-     */
     public function show(LaporanHarianPiket $laporanHarianPiket)
     {
         $laporanHarianPiket->load('dibuatOleh');
 
         $tanggal = $laporanHarianPiket->tanggal;
-
-        // ── Data yang sudah ada ──────────────────────────────────────────────
 
         $pelanggaranHariItu = Pelanggaran::with(['siswa.kelas', 'kategori'])
             ->where('dicatat_oleh', $laporanHarianPiket->dibuat_oleh)
@@ -78,37 +73,35 @@ class LaporanHarianPiketController extends Controller
 
         $rekapAbsensi = $laporanHarianPiket->rekap_absensi ?? [];
 
+        // FIX: eager-load relasi 'guru' (bukan 'user') sesuai relasi AbsensiGuru.
+        // Sesuaikan nama relasi ('guru') dengan yang ada di model AbsensiGuru.
         $absensiHariItu = AbsensiGuru::with('guru')
             ->whereDate('tanggal', $tanggal)
             ->orderBy('guru_id')
             ->get();
 
-        // ── Tambahan: Izin keluar siswa pada hari yang sama ──────────────────
-        // Diambil dari seluruh data hari itu (bukan hanya yang dicatat piket
-        // yang bersangkutan) karena izin bersifat data sekolah secara global.
-
         $izinKeluarHariItu = IzinKeluarSiswa::with(['siswa.kelas', 'diprosesOleh'])
             ->whereDate('tanggal', $tanggal)
             ->orderBy('jam_keluar')
             ->get();
 
-        // Ringkasan izin untuk ditampilkan di header show
+        // FIX: Hitung dengan filter() agar collection tidak ter-mutate.
         $ringkasanIzin = [
             'total'         => $izinKeluarHariItu->count(),
-            'disetujui'     => $izinKeluarHariItu->whereIn('status', [
+            'disetujui'     => $izinKeluarHariItu->filter(fn($i) => in_array($i->status, [
                                     IzinKeluarSiswa::STATUS_DISETUJUI,
                                     IzinKeluarSiswa::STATUS_SUDAH_KEMBALI,
-                               ])->count(),
-            'ditolak'       => $izinKeluarHariItu->where('status', IzinKeluarSiswa::STATUS_DITOLAK)->count(),
-            'belum_kembali' => $izinKeluarHariItu->where('status', IzinKeluarSiswa::STATUS_DISETUJUI)->count(),
-            'sudah_kembali' => $izinKeluarHariItu->where('status', IzinKeluarSiswa::STATUS_SUDAH_KEMBALI)->count(),
+                               ]))->count(),
+            'ditolak'       => $izinKeluarHariItu->filter(fn($i) =>
+                                    $i->status === IzinKeluarSiswa::STATUS_DITOLAK
+                               )->count(),
+            'belum_kembali' => $izinKeluarHariItu->filter(fn($i) =>
+                                    $i->status === IzinKeluarSiswa::STATUS_DISETUJUI
+                               )->count(),
+            'sudah_kembali' => $izinKeluarHariItu->filter(fn($i) =>
+                                    $i->status === IzinKeluarSiswa::STATUS_SUDAH_KEMBALI
+                               )->count(),
         ];
-
-        // Reset collection setelah where() agar view tetap dapat koleksi penuh
-        $izinKeluarHariItu = IzinKeluarSiswa::with(['siswa.kelas', 'diprosesOleh'])
-            ->whereDate('tanggal', $tanggal)
-            ->orderBy('jam_keluar')
-            ->get();
 
         return view('admin.laporan-harian-piket.show', compact(
             'laporanHarianPiket',
@@ -116,8 +109,8 @@ class LaporanHarianPiketController extends Controller
             'logPiket',
             'rekapAbsensi',
             'absensiHariItu',
-            'izinKeluarHariItu',   // ← baru
-            'ringkasanIzin'        // ← baru
+            'izinKeluarHariItu',
+            'ringkasanIzin'
         ));
     }
 
@@ -133,9 +126,18 @@ class LaporanHarianPiketController extends Controller
 
     // ─── EXPORT PDF ──────────────────────────────────────────────────────────
 
+    /**
+     * FIX utama export PDF:
+     * 1. withCount('pelanggaran') agar $item->pelanggaran_count tersedia di blade
+     *    (menggantikan $item->jumlah_pelanggaran yang tidak ada di model/DB).
+     * 2. Pre-load semua LogPiket dalam satu query, di-key by pengguna_id+tanggal,
+     *    menghilangkan N+1 query (sebelumnya LogPiket::where() dipanggil per baris
+     *    di dalam loop @foreach di blade).
+     */
     public function exportPdf(Request $request)
     {
         $query = LaporanHarianPiket::with('dibuatOleh')
+            ->withCount('pelanggaran')
             ->orderByDesc('tanggal');
 
         if ($request->filled('dibuat_oleh')) {
@@ -150,21 +152,44 @@ class LaporanHarianPiketController extends Controller
 
         $laporan = $query->get();
 
-        // Sertakan juga data izin keluar untuk setiap tanggal yang ada di laporan
-        // agar PDF bisa menampilkan ringkasan per hari secara lengkap.
-        $tanggalList    = $laporan->pluck('tanggal')->unique();
-        $izinPerTanggal = IzinKeluarSiswa::with(['siswa.kelas'])
-            ->whereIn(\Illuminate\Support\Facades\DB::raw('DATE(tanggal)'),
-                $tanggalList->map(fn($t) => is_string($t) ? $t : $t->toDateString())
-            )
-            ->orderBy('tanggal')
-            ->orderBy('jam_keluar')
-            ->get()
-            ->groupBy(fn($item) => $item->tanggal->toDateString());
+        $tanggalList = $laporan->pluck('tanggal')
+            ->filter()
+            ->map(fn($t) => $t->toDateString())
+            ->unique()
+            ->sort()
+            ->values();
+
+        // FIX: Pre-load semua LogPiket yang dibutuhkan dalam SATU query,
+        // bukan N query di dalam loop blade. Di-key by "pengguna_id_tanggal"
+        // agar lookup O(1) di blade.
+        $logPiketMap = collect();
+        if ($tanggalList->isNotEmpty()) {
+            $logPiketMap = LogPiket::whereBetween('tanggal', [
+                    $tanggalList->first(),
+                    $tanggalList->last(),
+                ])
+                ->whereIn('pengguna_id', $laporan->pluck('dibuat_oleh')->unique()->filter())
+                ->get()
+                ->keyBy(fn($log) => $log->pengguna_id . '_' . $log->tanggal->toDateString());
+        }
+
+        $izinPerTanggal = collect();
+        if ($tanggalList->isNotEmpty()) {
+            $izinPerTanggal = IzinKeluarSiswa::with(['siswa.kelas'])
+                ->whereBetween('tanggal', [
+                    $tanggalList->first(),
+                    $tanggalList->last(),
+                ])
+                ->orderBy('tanggal')
+                ->orderBy('jam_keluar')
+                ->get()
+                ->groupBy(fn($item) => $item->tanggal->toDateString());
+        }
 
         $pdf = Pdf::loadView('admin.laporan-harian-piket.exports.pdf', compact(
             'laporan',
-            'izinPerTanggal'   // ← baru, opsional dipakai di blade PDF
+            'izinPerTanggal',
+            'logPiketMap'      // FIX: kirim map ke blade, bukan query per-row
         ))->setPaper('a4', 'landscape');
 
         return $pdf->download('laporan-harian-piket-' . now()->format('Ymd-His') . '.pdf');

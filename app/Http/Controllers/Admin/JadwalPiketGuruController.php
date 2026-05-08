@@ -36,8 +36,13 @@ class JadwalPiketGuruController extends Controller
             $query->where('hari', $request->hari);
         }
         if ($request->filled('is_active')) {
-            $query->where('is_active', $request->is_active);
+            $query->where('is_active', (bool) $request->is_active);
         }
+
+        // Hitung total sebelum paginate agar stat card akurat
+        $totalJadwal   = (clone $query)->count();
+        $totalAktif    = (clone $query)->where('is_active', true)->count();
+        $totalNonaktif = (clone $query)->where('is_active', false)->count();
 
         $jadwal      = $query->paginate(15)->withQueryString();
         $guruPiket   = Guru::orderBy('nama_lengkap')->get();
@@ -45,8 +50,11 @@ class JadwalPiketGuruController extends Controller
 
         $piketHariIni = JadwalPiketGuru::getPiketHariIni();
 
+        // Gabungkan data absensi hari ini ke setiap jadwal piket hari ini
+        $guruIdHariIni = $piketHariIni->pluck('guru_id')->filter()->unique();
+
         $absensiHariIni = AbsensiGuru::whereDate('tanggal', today())
-            ->whereIn('guru_id', $piketHariIni->pluck('guru_id')->filter()->unique())
+            ->whereIn('guru_id', $guruIdHariIni)
             ->get()
             ->keyBy('guru_id');
 
@@ -57,7 +65,14 @@ class JadwalPiketGuruController extends Controller
         });
 
         return view('admin.jadwal_piket_guru.index', compact(
-            'jadwal', 'guruPiket', 'tahunAjaran', 'piketHariIni', 'absensiHariIni'
+            'jadwal',
+            'guruPiket',
+            'tahunAjaran',
+            'piketHariIni',
+            'absensiHariIni',
+            'totalJadwal',
+            'totalAktif',
+            'totalNonaktif',
         ) + ['hariList' => $this->hariList]);
     }
 
@@ -89,18 +104,24 @@ class JadwalPiketGuruController extends Controller
             'is_active'       => 'nullable|boolean',
         ], [
             'guru_id.required'         => 'Guru piket wajib dipilih.',
+            'guru_id.exists'           => 'Guru yang dipilih tidak valid.',
             'tahun_ajaran_id.required' => 'Tahun ajaran wajib dipilih.',
+            'tahun_ajaran_id.exists'   => 'Tahun ajaran yang dipilih tidak valid.',
             'hari.required'            => 'Hari wajib dipilih.',
+            'hari.in'                  => 'Hari yang dipilih tidak valid.',
             'jam_mulai.required'       => 'Jam mulai wajib diisi.',
+            'jam_mulai.date_format'    => 'Format jam mulai tidak valid (HH:MM).',
             'jam_selesai.required'     => 'Jam selesai wajib diisi.',
+            'jam_selesai.date_format'  => 'Format jam selesai tidak valid (HH:MM).',
             'jam_selesai.after'        => 'Jam selesai harus lebih dari jam mulai.',
+            'catatan.max'              => 'Catatan maksimal 500 karakter.',
         ]);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
 
-        // ─── Cek duplikat: satu guru tidak boleh piket di hari + tahun ajaran yang sama ─
+        // Cek duplikat: satu guru tidak boleh piket di hari + tahun ajaran yang sama
         $duplicate = JadwalPiketGuru::where('guru_id', $request->guru_id)
             ->where('tahun_ajaran_id', $request->tahun_ajaran_id)
             ->where('hari', $request->hari)
@@ -110,7 +131,7 @@ class JadwalPiketGuruController extends Controller
             $namaGuru = Guru::find($request->guru_id)?->nama_lengkap ?? 'Guru ini';
             return back()
                 ->withInput()
-                ->with('duplicate_error', "\"$namaGuru\" sudah memiliki jadwal piket pada hari " . ucfirst($request->hari) . " di tahun ajaran yang dipilih. Setiap guru hanya boleh memiliki satu jadwal piket per hari.");
+                ->with('duplicate_error', "\"{$namaGuru}\" sudah memiliki jadwal piket pada hari " . ucfirst($request->hari) . " di tahun ajaran yang dipilih. Setiap guru hanya boleh memiliki satu jadwal piket per hari.");
         }
 
         JadwalPiketGuru::create([
@@ -164,18 +185,24 @@ class JadwalPiketGuruController extends Controller
             'is_active'       => 'nullable|boolean',
         ], [
             'guru_id.required'         => 'Guru piket wajib dipilih.',
+            'guru_id.exists'           => 'Guru yang dipilih tidak valid.',
             'tahun_ajaran_id.required' => 'Tahun ajaran wajib dipilih.',
+            'tahun_ajaran_id.exists'   => 'Tahun ajaran yang dipilih tidak valid.',
             'hari.required'            => 'Hari wajib dipilih.',
+            'hari.in'                  => 'Hari yang dipilih tidak valid.',
             'jam_mulai.required'       => 'Jam mulai wajib diisi.',
+            'jam_mulai.date_format'    => 'Format jam mulai tidak valid (HH:MM).',
             'jam_selesai.required'     => 'Jam selesai wajib diisi.',
+            'jam_selesai.date_format'  => 'Format jam selesai tidak valid (HH:MM).',
             'jam_selesai.after'        => 'Jam selesai harus lebih dari jam mulai.',
+            'catatan.max'              => 'Catatan maksimal 500 karakter.',
         ]);
 
         if ($validator->fails()) {
             return back()->withErrors($validator)->withInput();
         }
 
-        // ─── Cek duplikat: exclude record yang sedang diedit ─────────────────
+        // Cek duplikat: exclude record yang sedang diedit
         $duplicate = JadwalPiketGuru::where('guru_id', $request->guru_id)
             ->where('tahun_ajaran_id', $request->tahun_ajaran_id)
             ->where('hari', $request->hari)
@@ -186,7 +213,7 @@ class JadwalPiketGuruController extends Controller
             $namaGuru = Guru::find($request->guru_id)?->nama_lengkap ?? 'Guru ini';
             return back()
                 ->withInput()
-                ->with('duplicate_error', "\"$namaGuru\" sudah memiliki jadwal piket pada hari " . ucfirst($request->hari) . " di tahun ajaran yang dipilih. Setiap guru hanya boleh memiliki satu jadwal piket per hari.");
+                ->with('duplicate_error', "\"{$namaGuru}\" sudah memiliki jadwal piket pada hari " . ucfirst($request->hari) . " di tahun ajaran yang dipilih. Setiap guru hanya boleh memiliki satu jadwal piket per hari.");
         }
 
         $jadwalPiketGuru->update([
@@ -217,7 +244,7 @@ class JadwalPiketGuruController extends Controller
 
     public function toggleStatus(JadwalPiketGuru $jadwalPiketGuru)
     {
-        $jadwalPiketGuru->update(['is_active' => !$jadwalPiketGuru->is_active]);
+        $jadwalPiketGuru->update(['is_active' => ! $jadwalPiketGuru->is_active]);
         $status = $jadwalPiketGuru->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
         return back()->with('success', "Jadwal piket berhasil {$status}.");
@@ -247,7 +274,7 @@ class JadwalPiketGuruController extends Controller
             $query->where('hari', $request->hari);
         }
         if ($request->filled('is_active')) {
-            $query->where('is_active', $request->is_active);
+            $query->where('is_active', (bool) $request->is_active);
         }
 
         $jadwal = $query->get();
@@ -287,17 +314,17 @@ class JadwalPiketGuruController extends Controller
 
             $errors = $import->getErrors();
 
-            if (!empty($errors)) {
-                return redirect()->route('admin.jadwal_piket_guru.index')
+            if (! empty($errors)) {
+                return redirect()->route('admin.jadwal-piket-guru.index')
                     ->with('import_errors', $errors)
                     ->with('success', 'Import selesai dengan beberapa peringatan.');
             }
 
-            return redirect()->route('admin.jadwal_piket_guru.index')
+            return redirect()->route('admin.jadwal-piket-guru.index')
                 ->with('success', 'Data jadwal piket berhasil diimport.');
 
         } catch (\Exception $e) {
-            return redirect()->route('admin.jadwal_piket_guru.index')
+            return redirect()->route('admin.jadwal-piket-guru.index')
                 ->with('error', 'Gagal mengimport data: ' . $e->getMessage());
         }
     }

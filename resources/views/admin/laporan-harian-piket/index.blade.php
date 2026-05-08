@@ -80,6 +80,7 @@
     .badge-alfa {background:#fee2e2;color:#dc2626}
     .badge-ada  {background:#fef9c3;color:#a16207}
     .badge-num  {background:#fee2e2;color:#dc2626;font-size:13px;padding:2px 10px}
+    .badge-zero {background:var(--surface3);color:var(--text3);font-size:13px;padding:2px 10px}
 
     /* Rekap absensi inline */
     .rekap-pills{display:flex;gap:4px;flex-wrap:wrap}
@@ -115,7 +116,8 @@
             <p class="page-sub">Rekap seluruh laporan harian dari semua guru piket</p>
         </div>
         <div class="header-actions">
-            <a href="{{ route('admin.laporan-harian-piket.export-pdf', request()->query()) }}" class="btn btn-pdf">
+            <a href="{{ route('admin.laporan-harian-piket.export-pdf', request()->query()) }}"
+               class="btn btn-pdf" target="_blank">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Export PDF
             </a>
@@ -151,7 +153,8 @@
             <div>
                 <p class="stat-label">Bulan Ini</p>
                 <p class="stat-val">{{ $stats['bulan_ini'] }}</p>
-                <p class="stat-sub">{{ now()->locale('id')->isoFormat('MMMM Y') }}</p>
+                {{-- FIX: translatedFormat() lebih reliable daripada isoFormat() --}}
+                <p class="stat-sub">{{ now()->translatedFormat('F Y') }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -175,7 +178,8 @@
                     <select name="dibuat_oleh" style="min-width:200px">
                         <option value="">— Semua Guru Piket —</option>
                         @foreach($guruPiketList as $user)
-                            <option value="{{ $user->id }}" {{ request('dibuat_oleh') == $user->id ? 'selected' : '' }}>
+                            <option value="{{ $user->id }}"
+                                    {{ request('dibuat_oleh') == $user->id ? 'selected' : '' }}>
                                 {{ $user->name }}
                             </option>
                         @endforeach
@@ -225,14 +229,22 @@
                 </thead>
                 <tbody>
                     @forelse($laporan as $index => $item)
-                    @php $rekap = $item->rekap_absensi ?? []; @endphp
+                    @php
+                        $rekap = $item->rekap_absensi ?? [];
+                        $adaRekap = !empty($rekap);
+                        // FIX: pelanggaran_count tersedia karena withCount('pelanggaran')
+                        // sudah ditambahkan di controller. Fallback ke 0 jika null.
+                        $jmlPelanggaran = $item->pelanggaran_count ?? 0;
+                    @endphp
                     <tr>
                         <td><span class="no-col">{{ $laporan->firstItem() + $index }}</span></td>
 
                         <td>
                             <div class="two-line">
+                                {{-- tanggal sudah Carbon (cast 'date'), tidak perlu parse() --}}
                                 <p class="primary">{{ $item->tanggal->format('d M Y') }}</p>
-                                <p class="secondary">{{ $item->tanggal->locale('id')->dayName }}</p>
+                                {{-- translatedFormat('l') lebih reliable daripada locale()->dayName --}}
+                                <p class="secondary">{{ $item->tanggal->translatedFormat('l') }}</p>
                             </div>
                             @if($item->tanggal->isToday())
                                 <span class="badge badge-today" style="margin-top:4px">Hari ini</span>
@@ -241,31 +253,36 @@
 
                         <td>
                             <div class="two-line">
+                                {{-- Nullsafe operator untuk relasi opsional --}}
                                 <p class="primary">{{ $item->dibuatOleh?->name ?? '—' }}</p>
                                 <p class="secondary">{{ $item->dibuatOleh?->email ?? '' }}</p>
                             </div>
                         </td>
 
                         <td class="center">
-                            <span class="badge badge-num">{{ $item->jumlah_pelanggaran }}</span>
+                            @if($jmlPelanggaran > 0)
+                                <span class="badge badge-num">{{ $jmlPelanggaran }}</span>
+                            @else
+                                <span class="badge badge-zero">0</span>
+                            @endif
                         </td>
 
                         <td>
-                            @if(!empty($rekap))
+                            @if($adaRekap)
                             <div class="rekap-pills">
                                 <span class="badge badge-hadir">H: {{ $rekap['hadir'] ?? 0 }}</span>
-                                <span class="badge badge-izin">I: {{ $rekap['izin'] ?? 0 }}</span>
+                                <span class="badge badge-izin">I: {{ $rekap['izin']  ?? 0 }}</span>
                                 <span class="badge badge-sakit">S: {{ $rekap['sakit'] ?? 0 }}</span>
-                                <span class="badge badge-alfa">A: {{ $rekap['alfa'] ?? 0 }}</span>
+                                <span class="badge badge-alfa">A: {{ $rekap['alfa']  ?? 0 }}</span>
                             </div>
                             @else
-                                <span class="muted" style="font-size:12px;color:var(--text3)">—</span>
+                                <span style="font-size:12px;color:var(--text3)">—</span>
                             @endif
                         </td>
 
                         <td style="max-width:180px">
                             <p style="font-size:12.5px;color:var(--text2);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
-                                {{ $item->catatan_umum ? Str::limit($item->catatan_umum, 70) : '—' }}
+                                {{ $item->catatan_umum ? \Illuminate\Support\Str::limit($item->catatan_umum, 70) : '—' }}
                             </p>
                         </td>
 
@@ -281,12 +298,18 @@
 
                         <td class="center">
                             <div class="action-group">
-                                <a href="{{ route('admin.laporan-harian-piket.show', $item) }}" class="btn btn-sm btn-detail">Detail</a>
-                                <form action="{{ route('admin.laporan-harian-piket.destroy', $item) }}" method="POST"
-                                      id="del-{{ $item->id }}" style="display:inline">
-                                    @csrf @method('DELETE')
+                                <a href="{{ route('admin.laporan-harian-piket.show', $item) }}"
+                                   class="btn btn-sm btn-detail">Detail</a>
+                                <form action="{{ route('admin.laporan-harian-piket.destroy', $item) }}"
+                                      method="POST" id="del-{{ $item->id }}" style="display:inline">
+                                    @csrf
+                                    @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('del-{{ $item->id }}'), {{ Js::from($item->tanggal->format('d M Y')) }}, {{ Js::from($item->dibuatOleh?->name ?? '') }})">
+                                        onclick="confirmDelete(
+                                            document.getElementById('del-{{ $item->id }}'),
+                                            {{ Js::from($item->tanggal->format('d M Y')) }},
+                                            {{ Js::from($item->dibuatOleh?->name ?? '') }}
+                                        )">
                                         Hapus
                                     </button>
                                 </form>
@@ -312,13 +335,20 @@
 
         @if($laporan->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">Menampilkan {{ $laporan->firstItem() }} – {{ $laporan->lastItem() }} dari {{ $laporan->total() }}</p>
+            <p class="pag-info">
+                Menampilkan {{ $laporan->firstItem() }} – {{ $laporan->lastItem() }} dari {{ $laporan->total() }}
+            </p>
             <div class="pag-btns">
                 @if($laporan->onFirstPage())
-                    <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn disabled">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $laporan->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $laporan->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
+
                 @foreach($laporan->getUrlRange(1, $laporan->lastPage()) as $page => $url)
                     @if($page == $laporan->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
@@ -328,10 +358,15 @@
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
+
                 @if($laporan->hasMorePages())
-                    <a href="{{ $laporan->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $laporan->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn disabled">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -341,21 +376,31 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-@if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
-@endif
-@if(session('error'))
-Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
-@endif
-
-function confirmDelete(form, tanggal, nama) {
+    @if(session('success'))
     Swal.fire({
-        title: 'Hapus Laporan?',
-        html: `Laporan <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
-        icon: 'warning', showCancelButton: true,
-        confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
-        confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',
-    }).then(r => { if (r.isConfirmed) form.submit(); });
-}
+        icon: 'success', title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2800, showConfirmButton: false,
+        toast: true, position: 'top-end'
+    });
+    @endif
+    @if(session('error'))
+    Swal.fire({
+        icon: 'error', title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
+    @endif
+
+    function confirmDelete(form, tanggal, nama) {
+        Swal.fire({
+            title: 'Hapus Laporan?',
+            html: `Laporan <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
+    }
 </script>
+
 </x-app-layout>

@@ -26,11 +26,11 @@
         tbody tr:nth-child(even) { background: #f8fafc; }
         td { padding: 8px 10px; vertical-align: middle; }
         td.center { text-align: center; }
-        .badge-masuk { display: inline-block; padding: 2px 8px; border-radius: 99px; background: #dcfce7; color: #15803d; font-weight: 700; font-size: 9.5px; }
+        .badge-masuk   { display: inline-block; padding: 2px 8px; border-radius: 99px; background: #dcfce7; color: #15803d; font-weight: 700; font-size: 9.5px; }
         .badge-selesai { display: inline-block; padding: 2px 8px; border-radius: 99px; background: #eef6ff; color: #1750c0; font-weight: 700; font-size: 9.5px; }
-        .badge-belum { display: inline-block; padding: 2px 8px; border-radius: 99px; background: #f1f5f9; color: #64748b; font-weight: 700; font-size: 9.5px; }
-        .badge-pagi { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fff7ed; color: #c2410c; font-weight: 700; font-size: 9.5px; }
-        .badge-siang { display: inline-block; padding: 2px 8px; border-radius: 4px; background: #fefce8; color: #a16207; font-weight: 700; font-size: 9.5px; }
+        .badge-belum   { display: inline-block; padding: 2px 8px; border-radius: 99px; background: #f1f5f9; color: #64748b; font-weight: 700; font-size: 9.5px; }
+        .badge-pagi    { display: inline-block; padding: 2px 8px; border-radius: 4px;  background: #fff7ed; color: #c2410c; font-weight: 700; font-size: 9.5px; }
+        .badge-siang   { display: inline-block; padding: 2px 8px; border-radius: 4px;  background: #fefce8; color: #a16207; font-weight: 700; font-size: 9.5px; }
         .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 9.5px; color: #94a3b8; }
     </style>
 </head>
@@ -56,6 +56,7 @@
             </div>
             <div class="stat-box">
                 <p class="stat-label">Selesai</p>
+                {{-- FIX: keluar_pada sudah Carbon (cast datetime), truthy check langsung valid --}}
                 <p class="stat-val">{{ $logs->filter(fn($l) => $l->keluar_pada)->count() }}</p>
             </div>
             <div class="stat-box">
@@ -87,30 +88,58 @@
                 @forelse($logs as $index => $log)
                 <tr>
                     <td>{{ $index + 1 }}</td>
+
                     <td>
-                        <div style="font-weight:700">{{ $log->guru->nama_lengkap ?? '-' }}</div>
-                        <div style="color:#64748b;font-size:9px">{{ $log->guru->nip ?? '' }}</div>
+                        {{--
+                            FIX: Gunakan nullsafe operator ?-> agar tidak crash
+                            saat relasi 'guru' null (guru dihapus / data orphan).
+                            Carbon::parse() dihapus karena tanggal sudah di-cast 'date'.
+                        --}}
+                        <div style="font-weight:700">{{ $log->guru?->nama_lengkap ?? '—' }}</div>
+                        <div style="color:#64748b;font-size:9px">{{ $log->guru?->nip ?? '' }}</div>
                     </td>
-                    <td>{{ \Carbon\Carbon::parse($log->tanggal)->format('d M Y') }}</td>
+
+                    <td>
+                        {{--
+                            FIX: $log->tanggal sudah Carbon instance (cast 'date' di model LogPiket).
+                            Carbon::parse() redundant dan rawan double-parse error.
+                        --}}
+                        {{ $log->tanggal->format('d M Y') }}
+                    </td>
+
                     <td class="center">
-                        @if($log->shift == 'pagi')
+                        @if($log->shift === 'pagi')
                             <span class="badge-pagi">Pagi</span>
-                        @elseif($log->shift == 'siang')
+                        @elseif($log->shift === 'siang')
                             <span class="badge-siang">Siang</span>
-                        @else
-                            -
-                        @endif
-                    </td>
-                    <td class="center" style="font-weight:600">{{ $log->masuk_pada ? \Carbon\Carbon::parse($log->masuk_pada)->format('H:i') : '—' }}</td>
-                    <td class="center" style="font-weight:600">{{ $log->keluar_pada ? \Carbon\Carbon::parse($log->keluar_pada)->format('H:i') : '—' }}</td>
-                    <td class="center">
-                        @if($log->masuk_pada && $log->keluar_pada)
-                            @php $durasi = \Carbon\Carbon::parse($log->masuk_pada)->diff(\Carbon\Carbon::parse($log->keluar_pada)); @endphp
-                            {{ $durasi->h }}j {{ $durasi->i }}m
                         @else
                             —
                         @endif
                     </td>
+
+                    <td class="center" style="font-weight:600">
+                        {{--
+                            FIX: masuk_pada sudah Carbon (cast 'datetime' di model LogPiket).
+                            Tidak perlu Carbon::parse(). Nullsafe langsung.
+                        --}}
+                        {{ $log->masuk_pada?->format('H:i') ?? '—' }}
+                    </td>
+
+                    <td class="center" style="font-weight:600">
+                        {{-- FIX: sama seperti masuk_pada --}}
+                        {{ $log->keluar_pada?->format('H:i') ?? '—' }}
+                    </td>
+
+                    <td class="center">
+                        {{--
+                            FIX: Gunakan accessor durasi_format dari model LogPiket
+                            yang sudah ada dan teruji, menggantikan kalkulasi manual
+                            Carbon::parse()->diff() yang rawan error jika salah satu
+                            nilai null atau cast tidak konsisten.
+                        --}}
+                        {{ $log->durasi_format ?? '—' }}
+                    </td>
+
                     <td class="center">
                         @if($log->keluar_pada)
                             <span class="badge-selesai">Selesai</span>
@@ -120,11 +149,17 @@
                             <span class="badge-belum">Belum Masuk</span>
                         @endif
                     </td>
-                    <td style="color:#64748b">{{ $log->pengguna->name ?? '-' }}</td>
+
+                    <td style="color:#64748b">
+                        {{-- FIX: Nullsafe operator, relasi pengguna bisa null --}}
+                        {{ $log->pengguna?->name ?? '—' }}
+                    </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="9" style="text-align:center;padding:20px;color:#94a3b8">Tidak ada data log piket</td>
+                    <td colspan="9" style="text-align:center;padding:20px;color:#94a3b8">
+                        Tidak ada data log piket
+                    </td>
                 </tr>
                 @endforelse
             </tbody>

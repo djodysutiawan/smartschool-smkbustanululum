@@ -32,13 +32,15 @@ class LogPiketController extends Controller
             $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
         }
 
-        $logs           = $query->paginate(15)->withQueryString();
+        $logs = $query->paginate(15)->withQueryString();
+
         $sedangBertugas = LogPiket::with('guru')
             ->whereNotNull('masuk_pada')
             ->whereNull('keluar_pada')
             ->whereDate('tanggal', today())
             ->get();
-        $guruPiket      = Guru::orderBy('nama_lengkap')->get();
+
+        $guruPiket = Guru::orderBy('nama_lengkap')->get();
 
         return view('admin.log_piket.index', compact('logs', 'sedangBertugas', 'guruPiket'));
     }
@@ -46,37 +48,29 @@ class LogPiketController extends Controller
     public function show(LogPiket $logPiket)
     {
         $logPiket->load(['guru', 'pengguna']);
-
         return view('admin.log_piket.show', compact('logPiket'));
     }
 
     public function checkOut(LogPiket $logPiket)
     {
-        if (!$logPiket->masuk_pada) {
-            return back()->with('error', 'Guru belum melakukan check-in.');
+        try {
+            $logPiket->checkOut();
+            return back()->with('success', 'Check-out berhasil dicatat.');
+        } catch (\LogicException $e) {
+            return back()->with('error', $e->getMessage());
         }
-
-        if ($logPiket->keluar_pada) {
-            return back()->with('error', 'Guru sudah melakukan check-out sebelumnya.');
-        }
-
-        $logPiket->checkOut();
-
-        return back()->with('success', 'Check-out berhasil dicatat.');
     }
 
     public function destroy(LogPiket $logPiket)
     {
         $logPiket->delete();
-
-        return redirect()->route('admin.log_piket.index')
+        return redirect()->route('admin.log-piket.index')
             ->with('success', 'Log piket berhasil dihapus.');
     }
 
     public function export(Request $request)
     {
         $filename = 'log_piket_' . now()->format('Ymd_His') . '.xlsx';
-
         return Excel::download(new LogPiketExport($request->all()), $filename);
     }
 
@@ -110,7 +104,6 @@ class LogPiketController extends Controller
     public function exportPdfSingle(LogPiket $logPiket)
     {
         $logPiket->load(['guru', 'pengguna']);
-
         $logs = collect([$logPiket]);
 
         $pdf = Pdf::loadView('admin.log_piket.pdf', compact('logs'))
@@ -135,16 +128,17 @@ class LogPiketController extends Controller
 
             $errors = $import->getErrors();
 
-            if (!empty($errors)) {
-                return redirect()->route('admin.log_piket.index')
+            if (! empty($errors)) {
+                return redirect()->route('admin.log-piket.index')
                     ->with('import_errors', $errors)
                     ->with('success', 'Import selesai dengan beberapa peringatan.');
             }
 
-            return redirect()->route('admin.log_piket.index')
+            return redirect()->route('admin.log-piket.index')
                 ->with('success', 'Data log piket berhasil diimport.');
+
         } catch (\Exception $e) {
-            return redirect()->route('admin.log_piket.index')
+            return redirect()->route('admin.log-piket.index')
                 ->with('error', 'Gagal mengimport data: ' . $e->getMessage());
         }
     }
@@ -152,7 +146,6 @@ class LogPiketController extends Controller
     public function downloadTemplate()
     {
         $filename = 'template_log_piket.xlsx';
-
         return Excel::download(new \App\Exports\LogPiketTemplateExport(), $filename);
     }
 }

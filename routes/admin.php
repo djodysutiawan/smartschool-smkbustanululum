@@ -622,6 +622,9 @@ Route::prefix('admin')
             Route::get('/ujian',                    [ReportController::class, 'exam'])->name('ujian');
             Route::get('/ujian/export/pdf',         [ReportController::class, 'exportExamPdf'])->name('ujian.export.pdf');
             Route::get('/ujian/export/excel',       [ReportController::class, 'exportExamExcel'])->name('ujian.export.excel');
+            Route::get('/izin-keluar', [ReportController::class, 'izinKeluar'])->name('izin-keluar');
+            Route::get('/izin-keluar/export/pdf', [ReportController::class, 'exportIzinKeluarPdf'])->name('izin-keluar.export.pdf');
+            Route::get('/izin-keluar/export/excel', [ReportController::class, 'exportIzinKeluarExcel'])->name('izin-keluar.export.excel');
         });
 
         // ─── Absensi Guru (Admin penuh) ───────────────────────────────────────────

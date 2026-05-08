@@ -6,13 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/**
- * Model ini DIASUMSIKAN sudah ada di project Anda.
- * Yang ditambahkan: accessor tanggalFormatted, dan catatan untuk
- * relasi ke IzinKeluarSiswa (via tanggal, bukan FK langsung).
- *
- * Sesuaikan $fillable dan $casts dengan kolom migrasi Anda yang asli.
- */
 class LaporanHarianPiket extends Model
 {
     protected $table = 'laporan_harian_piket';
@@ -21,15 +14,15 @@ class LaporanHarianPiket extends Model
         'dibuat_oleh',
         'tanggal',
         'catatan_umum',
-        'rekap_absensi',    // JSON: snapshot absensi guru hari itu
+        'rekap_absensi',     // JSON: snapshot absensi guru hari itu
         'kondisi_sekolah',
         'tamu_penting',
         'kejadian_khusus',
     ];
 
     protected $casts = [
-        'tanggal'      => 'date',
-        'rekap_absensi' => 'array',     // cast JSON → array otomatis
+        'tanggal'       => 'date',
+        'rekap_absensi' => 'array',  // cast JSON → array otomatis
     ];
 
     // ─── Relasi ───────────────────────────────────────────────────────────────
@@ -37,6 +30,28 @@ class LaporanHarianPiket extends Model
     public function dibuatOleh(): BelongsTo
     {
         return $this->belongsTo(User::class, 'dibuat_oleh');
+    }
+
+    /**
+     * FIX: Relasi pelanggaran agar bisa dipakai withCount() di controller.
+     * Relasi ini meng-query pelanggaran berdasarkan dicatat_oleh + tanggal.
+     * Karena withCount() standar membutuhkan FK relasi, kita definisikan
+     * relasi HasMany berdasarkan dicatat_oleh, lalu filter tanggal via
+     * query scope di controller jika diperlukan.
+     *
+     * Untuk keperluan index (count per laporan), gunakan:
+     *   LaporanHarianPiket::withCount(['pelanggaran'])->...
+     * dengan kondisi bahwa tanggal pelanggaran = tanggal laporan,
+     * ini di-handle via whereColumn() di relasi.
+     */
+    public function pelanggaran(): HasMany
+    {
+        return $this->hasMany(Pelanggaran::class, 'dicatat_oleh', 'dibuat_oleh')
+                    ->whereColumn(
+                        \Illuminate\Support\Facades\DB::raw('DATE(pelanggaran.tanggal)'),
+                        '=',
+                        \Illuminate\Support\Facades\DB::raw('DATE(laporan_harian_piket.tanggal)')
+                    );
     }
 
     // ─── Accessor ─────────────────────────────────────────────────────────────
@@ -51,16 +66,11 @@ class LaporanHarianPiket extends Model
             : '-';
     }
 
-    // ─── Helper: ambil izin keluar siswa pada hari yang sama ─────────────────
-    //
-    // Tidak dibuat sebagai relasi Eloquent resmi karena join-nya berbasis
-    // kesamaan DATE (bukan FK). Gunakan method di controller / di view:
-    //
-    //   $izin = IzinKeluarSiswa::whereDate('tanggal', $laporan->tanggal)->get();
-    //
-    // Method di bawah ini tersedia sebagai shortcut jika perlu dipanggil
-    // langsung dari objek laporan (misal: di blade atau di job queue).
+    // ─── Helpers ──────────────────────────────────────────────────────────────
 
+    /**
+     * Ambil semua izin keluar siswa pada hari yang sama dengan laporan ini.
+     */
     public function getIzinKeluarSiswa()
     {
         return IzinKeluarSiswa::with(['siswa.kelas', 'diprosesOleh'])
@@ -69,18 +79,28 @@ class LaporanHarianPiket extends Model
             ->get();
     }
 
+    /**
+     * Ringkasan statistik izin keluar siswa untuk hari laporan ini.
+     */
     public function getRingkasanIzinKeluar(): array
     {
         $izin = $this->getIzinKeluarSiswa();
 
         return [
             'total'         => $izin->count(),
-            'disetujui'     => $izin->whereIn('status', [
+            'disetujui'     => $izin->filter(fn($i) => in_array($i->status, [
                                     IzinKeluarSiswa::STATUS_DISETUJUI,
                                     IzinKeluarSiswa::STATUS_SUDAH_KEMBALI,
-                               ])->count(),
-            'ditolak'       => $izin->where('status', IzinKeluarSiswa::STATUS_DITOLAK)->count(),
-            'belum_kembali' => $izin->where('status', IzinKeluarSiswa::STATUS_DISETUJUI)->count(),
+                               ]))->count(),
+            'ditolak'       => $izin->filter(fn($i) =>
+                                    $i->status === IzinKeluarSiswa::STATUS_DITOLAK
+                               )->count(),
+            'belum_kembali' => $izin->filter(fn($i) =>
+                                    $i->status === IzinKeluarSiswa::STATUS_DISETUJUI
+                               )->count(),
+            'sudah_kembali' => $izin->filter(fn($i) =>
+                                    $i->status === IzinKeluarSiswa::STATUS_SUDAH_KEMBALI
+                               )->count(),
         ];
     }
 }

@@ -40,7 +40,12 @@
 
 <div class="header">
     <h1>LAPORAN HARIAN GURU PIKET</h1>
-    <p>SmartSchool SMK Bustanul Ulum &mdash; Dicetak: {{ now()->isoFormat('dddd, D MMMM Y, HH:mm') }}</p>
+    {{--
+        FIX: isoFormat() membutuhkan locale Carbon di-set secara global dan
+        tidak selalu reliable di semua environment. Gunakan translatedFormat()
+        atau format() biasa untuk keamanan di DomPDF.
+    --}}
+    <p>SmartSchool SMK Bustanul Ulum &mdash; Dicetak: {{ now()->translatedFormat('l, d F Y, H:i') }}</p>
 </div>
 
 <div class="meta">
@@ -65,24 +70,41 @@
         @forelse($laporan as $i => $item)
             @php
                 $r = $item->rekap_absensi ?? [];
-                // Ambil log piket untuk guru ini pada tanggal ini
-                $log = \App\Models\LogPiket::where('pengguna_id', $item->dibuat_oleh)
-                           ->whereDate('tanggal', $item->tanggal)
-                           ->first();
+
+                // FIX: Gunakan $logPiketMap yang sudah di-pre-load di controller
+                // dengan key "pengguna_id_tanggal", menggantikan query N+1
+                // LogPiket::where()->first() yang sebelumnya dipanggil per baris.
+                $logKey = $item->dibuat_oleh . '_' . $item->tanggal->toDateString();
+                $log    = $logPiketMap->get($logKey);
+
+                // FIX: $item->pelanggaran_count tersedia karena withCount('pelanggaran')
+                // sudah ditambahkan di controller exportPdf().
+                // Tidak menggunakan $item->jumlah_pelanggaran yang tidak ada di model.
+                $jmlPelanggaran = $item->pelanggaran_count ?? 0;
             @endphp
             <tr>
                 <td>{{ $i + 1 }}</td>
                 <td>{{ $item->tanggal->format('d/m/Y') }}</td>
                 <td>{{ $item->dibuatOleh?->name ?? '—' }}</td>
-                <td>{{ $log?->masuk_pada ? \Carbon\Carbon::parse($log->masuk_pada)->format('H:i') : '—' }}</td>
-                <td>{{ $log?->keluar_pada ? \Carbon\Carbon::parse($log->keluar_pada)->format('H:i') : '—' }}</td>
+
+                {{--
+                    FIX: masuk_pada & keluar_pada sudah di-cast datetime (Carbon)
+                    di model LogPiket, tidak perlu Carbon::parse().
+                    Gunakan nullsafe operator.
+                --}}
+                <td>{{ $log?->masuk_pada ? $log->masuk_pada->format('H:i') : '—' }}</td>
+                <td>{{ $log?->keluar_pada ? $log->keluar_pada->format('H:i') : '—' }}</td>
+
                 <td>
                     <span class="badge-hadir">H:{{ $r['hadir'] ?? 0 }}</span>
                     <span class="badge-izin">I:{{ $r['izin'] ?? 0 }}</span>
                     <span class="badge-sakit">S:{{ $r['sakit'] ?? 0 }}</span>
                     <span class="badge-alfa">A:{{ $r['alfa'] ?? 0 }}</span>
                 </td>
-                <td style="text-align:center;">{{ $item->jumlah_pelanggaran }}</td>
+
+                {{-- FIX: gunakan pelanggaran_count, bukan jumlah_pelanggaran --}}
+                <td style="text-align:center;">{{ $jmlPelanggaran }}</td>
+
                 <td>{{ Str::limit($item->catatan_umum ?? '—', 80) }}</td>
                 <td>
                     @if($item->kejadian_khusus)
