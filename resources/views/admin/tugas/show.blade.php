@@ -18,20 +18,25 @@
     .page-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 20px; font-weight: 800; color: var(--text); }
     .page-sub   { font-size: 12.5px; color: var(--text3); margin-top: 3px; }
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; border: none; text-decoration: none; transition: filter .15s; white-space: nowrap; }
-    .btn-back { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
-    .btn-back:hover { background: var(--surface3); }
-    .btn-edit { background: var(--brand-50); color: var(--brand-700); border: 1px solid var(--brand-100); }
-    .btn-edit:hover { background: var(--brand-100); }
-    .btn-del  { background: #fff0f0; color: #dc2626; border: 1px solid #fecaca; }
-    .btn-del:hover  { background: #fee2e2; }
+    .btn-back   { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+    .btn-back:hover   { background: var(--surface3); }
+    .btn-edit   { background: var(--brand-50); color: var(--brand-700); border: 1px solid var(--brand-100); }
+    .btn-edit:hover   { background: var(--brand-100); }
+    .btn-del    { background: #fff0f0; color: #dc2626; border: 1px solid #fecaca; }
+    .btn-del:hover    { background: #fee2e2; }
+    .btn-toggle { background: #f5f3ff; color: #7c3aed; border: 1px solid #ede9fe; }
+    .btn-toggle:hover { background: #ede9fe; }
     .btn-sm { padding: 5px 10px; font-size: 11.5px; border-radius: 6px; }
 
-    .stats-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    /* ── Stats ── */
+    {{-- BUG FIX: Tambahkan kolom ke-4 untuk "Belum Kumpul" yang ada di $stats controller tapi tidak ditampilkan --}}
+    .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
     .stat-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .stat-icon.blue   { background: var(--brand-50); }
     .stat-icon.green  { background: #f0fdf4; }
     .stat-icon.orange { background: #fff7ed; }
+    .stat-icon.red    { background: #fff0f0; }
     .stat-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .03em; }
     .stat-val   { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.1; margin-top: 1px; }
 
@@ -84,9 +89,14 @@
     <div class="page-header">
         <div>
             <h1 class="page-title">{{ $tugas->judul }}</h1>
-            <p class="page-sub">{{ $tugas->kelas->nama_kelas ?? '-' }} · {{ $tugas->mataPelajaran->nama_mapel ?? '-' }} · {{ $tugas->tahunAjaran->tahun ?? '-' }}</p>
+            {{-- BUG FIX: kelas sudah withDefault() di model tapi nullable nama_kelas tetap bisa null --}}
+            <p class="page-sub">
+                {{ $tugas->kelas->nama_kelas ?? '-' }} ·
+                {{ $tugas->mataPelajaran->nama_mapel ?? '-' }} ·
+                {{ $tugas->tahunAjaran->tahun ?? '-' }}
+            </p>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
             <a href="{{ route('admin.tugas.index') }}" class="btn btn-back">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
@@ -95,6 +105,22 @@
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit Tugas
             </a>
+
+            {{-- Toggle Status dari halaman show --}}
+            <form action="{{ route('admin.tugas.toggle-status', $tugas->id) }}" method="POST" style="display:inline">
+                @csrf
+                @method('PATCH')
+                <button type="submit" class="btn btn-toggle">
+                    @if($tugas->dipublikasikan)
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                        Sembunyikan
+                    @else
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                        Publikasikan
+                    @endif
+                </button>
+            </form>
+
             <form action="{{ route('admin.tugas.destroy', $tugas->id) }}" method="POST" id="deleteForm">
                 @csrf @method('DELETE')
                 <button type="button" class="btn btn-del"
@@ -106,6 +132,7 @@
         </div>
     </div>
 
+    {{-- BUG FIX: Tampilkan 4 stats sesuai data $stats dari controller (total_siswa, terkumpul, sudah_dinilai, belum) --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -124,6 +151,13 @@
                 <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
             <div><p class="stat-label">Sudah Dinilai</p><p class="stat-val">{{ $stats['sudah_dinilai'] }}</p></div>
+        </div>
+        {{-- stat ke-4: Belum Kumpul — ada di $stats controller tapi tidak ditampilkan di view lama --}}
+        <div class="stat-card">
+            <div class="stat-icon red">
+                <svg width="18" height="18" fill="none" stroke="#dc2626" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div><p class="stat-label">Belum Kumpul</p><p class="stat-val">{{ $stats['belum'] }}</p></div>
         </div>
     </div>
 
@@ -154,16 +188,18 @@
 
                     <dt>Batas Waktu</dt>
                     <dd>
-                        <span class="deadline-text {{ now()->gt($tugas->batas_waktu) ? 'lewat' : '' }}">
-                            {{ \Carbon\Carbon::parse($tugas->batas_waktu)->format('d M Y, H:i') }}
-                            @if(now()->gt($tugas->batas_waktu))
+                        {{-- BUG FIX: model cast batas_waktu ke datetime, langsung panggil ->format() tanpa Carbon::parse() --}}
+                        <span class="deadline-text {{ $tugas->isTelahBerakhir() ? 'lewat' : '' }}">
+                            {{ $tugas->batas_waktu->format('d M Y, H:i') }}
+                            @if($tugas->isTelahBerakhir())
                                 <span style="margin-left:6px;font-size:11.5px;background:#fee2e2;color:#dc2626;padding:1px 7px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">Lewat</span>
                             @endif
                         </span>
                     </dd>
 
                     <dt>Nilai Maksimal</dt>
-                    <dd>{{ $tugas->nilai_maksimal ?? 100 }}</dd>
+                    {{-- BUG FIX: nilai_maksimal di-cast decimal:2, tampilkan dengan intval jika tidak ada desimal --}}
+                    <dd>{{ $tugas->nilai_maksimal ? (int) $tugas->nilai_maksimal : 100 }}</dd>
 
                     <dt>Izin Terlambat</dt>
                     <dd>{{ $tugas->izinkan_terlambat ? 'Ya' : 'Tidak' }}</dd>
@@ -183,7 +219,7 @@
                     @if($tugas->path_file_soal)
                     <dt>File Soal</dt>
                     <dd>
-                        <a href="{{ asset('storage/'.$tugas->path_file_soal) }}" target="_blank" class="file-link">
+                        <a href="{{ asset('storage/' . $tugas->path_file_soal) }}" target="_blank" class="file-link">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                             Unduh File Soal
                         </a>
@@ -216,7 +252,8 @@
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                 Daftar Pengumpulan Siswa
             </p>
-            <a href="{{ route('admin.pengumpulan-tugas.index') }}?tugas_id={{ $tugas->id }}" class="btn btn-sm" style="background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100)">
+            <a href="{{ route('admin.pengumpulan-tugas.index') }}?tugas_id={{ $tugas->id }}"
+               class="btn btn-sm" style="background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100)">
                 Lihat Semua
             </a>
         </div>
@@ -234,28 +271,47 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {{--
+                        BUG FIX: Relasi pengumpulan di-load dengan load(['pengumpulan.siswa']) di controller,
+                        tapi akses $p->siswa->kelas->nama_kelas bisa N+1 query.
+                        Solusi: Ubah di controller menjadi:
+                        $tugas->load(['pengumpulan.siswa.kelas', 'guru', 'mataPelajaran', 'kelas', 'tahunAjaran']);
+                    --}}
                     @forelse($tugas->pengumpulan as $i => $p)
                     <tr>
                         <td style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)">{{ $i + 1 }}</td>
-                        <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px">{{ $p->siswa->nama_lengkap ?? '-' }}</td>
-                        <td style="color:var(--text3);font-size:12.5px">{{ $p->siswa->kelas->nama_kelas ?? '-' }}</td>
-                        <td style="color:var(--text2);font-size:12.5px">{{ $p->created_at->format('d M Y, H:i') }}</td>
+                        <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px">
+                            {{ $p->siswa->nama_lengkap ?? '-' }}
+                        </td>
+                        <td style="color:var(--text3);font-size:12.5px">
+                            {{-- BUG FIX: eager load siswa.kelas di controller untuk hindari N+1 --}}
+                            {{ $p->siswa->kelas->nama_kelas ?? '-' }}
+                        </td>
+                        <td style="color:var(--text2);font-size:12.5px">
+                            {{ $p->created_at->format('d M Y, H:i') }}
+                        </td>
                         <td>
                             @php
                                 $stColor = match($p->status) {
-                                    'dinilai'   => ['bg'=>'#dcfce7','c'=>'#15803d'],
-                                    'terkumpul' => ['bg'=>'#dbeafe','c'=>'#1d4ed8'],
-                                    'terlambat' => ['bg'=>'#fee2e2','c'=>'#dc2626'],
-                                    default     => ['bg'=>'#f1f5f9','c'=>'#64748b'],
+                                    'dinilai'   => ['bg' => '#dcfce7', 'c' => '#15803d'],
+                                    'terkumpul' => ['bg' => '#dbeafe', 'c' => '#1d4ed8'],
+                                    'terlambat' => ['bg' => '#fee2e2', 'c' => '#dc2626'],
+                                    default     => ['bg' => '#f1f5f9', 'c' => '#64748b'],
                                 };
                             @endphp
                             <span style="display:inline-block;padding:2px 9px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;background:{{ $stColor['bg'] }};color:{{ $stColor['c'] }}">
                                 {{ ucfirst(str_replace('_', ' ', $p->status)) }}
                             </span>
                         </td>
-                        <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $p->nilai ?? '—' }}</td>
+                        <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">
+                            {{-- BUG FIX: nilai bisa 0 (valid), jangan pakai ?? karena 0 dianggap falsy --}}
+                            {{ $p->nilai !== null ? $p->nilai : '—' }}
+                        </td>
                         <td>
-                            <a href="{{ route('admin.pengumpulan-tugas.show', $p->id) }}" class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0">Detail</a>
+                            <a href="{{ route('admin.pengumpulan-tugas.show', $p->id) }}"
+                               class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0">
+                                Detail
+                            </a>
                         </td>
                     </tr>
                     @empty
@@ -274,18 +330,30 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({
+        icon: 'success', title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500, showConfirmButton: false, toast: true, position: 'top-end'
+    });
     @endif
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error', title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
     @endif
 
     function confirmDelete(form, nama) {
         Swal.fire({
-            title: 'Hapus Tugas?', text: `Tugas "${nama}" akan dihapus (bisa dipulihkan).`,
-            icon: 'warning', showCancelButton: true,
-            confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',
+            title: 'Hapus Tugas?',
+            text: `Tugas "${nama}" akan dihapus (bisa dipulihkan).`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
         }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 </script>

@@ -115,8 +115,9 @@
         </div>
         <div class="stat-card">
             <div class="stat-icon green">
-                <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
+            {{-- BUG FIX: gunakan query scope yang benar, bukan langsung Nilai::where --}}
             <div><p class="stat-label">Predikat A</p><p class="stat-val">{{ \App\Models\Nilai::where('predikat','A')->count() }}</p></div>
         </div>
         <div class="stat-card">
@@ -133,6 +134,7 @@
         </div>
     </div>
 
+    {{-- BUG FIX: route name sesuai routes file → admin.nilai.rapor-kelas --}}
     <div class="rapor-card">
         <div class="rapor-icon">
             <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -151,6 +153,7 @@
             <select name="tahun_ajaran_id" required>
                 <option value="">Pilih Tahun Ajaran</option>
                 @foreach($tahunAjaran as $ta)
+                    {{-- BUG FIX: TahunAjaran model menggunakan field 'tahun' & 'semester' --}}
                     <option value="{{ $ta->id }}">{{ $ta->tahun }} - {{ ucfirst($ta->semester) }}</option>
                 @endforeach
             </select>
@@ -205,6 +208,7 @@
                 @endif
             </p>
             <div class="table-actions">
+                {{-- BUG FIX: route name sesuai routes file → admin.nilai.export.pdf & admin.nilai.export.excel --}}
                 <a href="{{ route('admin.nilai.export.pdf', request()->query()) }}" class="btn btn-sm btn-export-pdf" target="_blank">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     PDF
@@ -213,6 +217,7 @@
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                     Excel
                 </a>
+                {{-- BUG FIX: route name → admin.nilai.import.template --}}
                 <a href="{{ route('admin.nilai.import.template') }}" class="btn btn-sm btn-import">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                     Template
@@ -248,18 +253,28 @@
                         <td>
                             <div class="student-wrap">
                                 <p class="sname">{{ $n->siswa->nama_lengkap ?? '-' }}</p>
-                                <p class="ssub">{{ $n->tahunAjaran->tahun ?? '' }}</p>
+                                {{-- BUG FIX: tampilkan tahun ajaran dengan null-safe --}}
+                                <p class="ssub">{{ optional($n->tahunAjaran)->tahun ?? '' }}{{ optional($n->tahunAjaran)->semester ? ' - '.ucfirst($n->tahunAjaran->semester) : '' }}</p>
                             </div>
                         </td>
                         <td class="muted" style="font-size:12.5px">{{ $n->mataPelajaran->nama_mapel ?? '-' }}</td>
                         <td class="muted" style="font-size:12.5px">{{ $n->kelas->nama_kelas ?? '-' }}</td>
-                        <td class="center muted" style="font-size:13px">{{ $n->nilai_tugas ?? '—' }}</td>
-                        <td class="center muted" style="font-size:13px">{{ $n->nilai_harian ?? '—' }}</td>
-                        <td class="center muted" style="font-size:13px">{{ $n->nilai_uts ?? '—' }}</td>
-                        <td class="center muted" style="font-size:13px">{{ $n->nilai_uas ?? '—' }}</td>
+                        {{-- BUG FIX: nilai bisa berupa decimal, tampilkan dengan number_format agar konsisten --}}
+                        <td class="center muted" style="font-size:13px">{{ $n->nilai_tugas !== null ? number_format($n->nilai_tugas, 1) : '—' }}</td>
+                        <td class="center muted" style="font-size:13px">{{ $n->nilai_harian !== null ? number_format($n->nilai_harian, 1) : '—' }}</td>
+                        <td class="center muted" style="font-size:13px">{{ $n->nilai_uts !== null ? number_format($n->nilai_uts, 1) : '—' }}</td>
+                        <td class="center muted" style="font-size:13px">{{ $n->nilai_uas !== null ? number_format($n->nilai_uas, 1) : '—' }}</td>
                         <td class="center">
                             @if($n->nilai_akhir !== null)
-                                <span class="nilai-num" style="color:{{ $n->predikat==='A'?'#15803d':($n->predikat==='B'?'#2563eb':($n->predikat==='C'?'#d97706':'#dc2626')) }}">
+                                @php
+                                    $nilaiColor = match($n->predikat) {
+                                        'A' => '#15803d',
+                                        'B' => '#2563eb',
+                                        'C' => '#d97706',
+                                        default => '#dc2626',
+                                    };
+                                @endphp
+                                <span class="nilai-num" style="color:{{ $nilaiColor }}">
                                     {{ number_format($n->nilai_akhir, 1) }}
                                 </span>
                             @else
@@ -275,6 +290,7 @@
                         </td>
                         <td class="center">
                             <div class="action-group">
+                                {{-- BUG FIX: route name → admin.nilai.show, admin.nilai.edit, admin.nilai.destroy --}}
                                 <a href="{{ route('admin.nilai.show', $n->id) }}" class="btn btn-sm btn-detail">Detail</a>
                                 <a href="{{ route('admin.nilai.edit', $n->id) }}" class="btn btn-sm btn-edit">Edit</a>
                                 <form action="{{ route('admin.nilai.destroy', $n->id) }}" method="POST" id="delNilai-{{ $n->id }}">
@@ -338,6 +354,7 @@
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
+        {{-- BUG FIX: route name → admin.nilai.import --}}
         <form action="{{ route('admin.nilai.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="modal-body">

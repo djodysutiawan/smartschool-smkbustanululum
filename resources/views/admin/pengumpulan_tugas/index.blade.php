@@ -25,15 +25,16 @@
     .btn-export-excel { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
     .btn-export-excel:hover { background: #dcfce7; filter: none; }
 
+    /* ── Stats: menggunakan $stats yang dikirim controller, bukan getCollection() ── */
     .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
     .stat-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .stat-icon.blue { background: var(--brand-50); }
-    .stat-icon.green { background: #f0fdf4; }
-    .stat-icon.red { background: #fff0f0; }
+    .stat-icon.blue   { background: var(--brand-50); }
+    .stat-icon.green  { background: #f0fdf4; }
+    .stat-icon.red    { background: #fff0f0; }
     .stat-icon.yellow { background: #fefce8; }
     .stat-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .03em; }
-    .stat-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.1; margin-top: 1px; }
+    .stat-val   { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.1; margin-top: 1px; }
 
     .filter-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px; }
     .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
@@ -66,16 +67,17 @@
     td.muted { color: var(--text3); font-size: 12.5px; }
 
     .siswa-wrap .sname { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13.5px; color: var(--text); }
-    .siswa-wrap .ssub { font-size: 12px; color: var(--text3); margin-top: 1px; }
+    .siswa-wrap .ssub  { font-size: 12px; color: var(--text3); margin-top: 1px; }
 
+    /* Status pills — key menggunakan konstanta model: belum_dikumpulkan | dikumpulkan | terlambat | sudah_dinilai */
     .status-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
-    .status-dot { width: 5px; height: 5px; border-radius: 50%; }
-    .s-sudah_dinilai { background: #dcfce7; color: #15803d; }
+    .status-dot  { width: 5px; height: 5px; border-radius: 50%; }
+    .s-sudah_dinilai     { background: #dcfce7; color: #15803d; }
     .s-sudah_dinilai .status-dot { background: #15803d; }
-    .s-dikumpulkan { background: #dbeafe; color: #1d4ed8; }
-    .s-dikumpulkan .status-dot { background: #1d4ed8; }
-    .s-terlambat { background: #fee2e2; color: #dc2626; }
-    .s-terlambat .status-dot { background: #dc2626; }
+    .s-dikumpulkan       { background: #dbeafe; color: #1d4ed8; }
+    .s-dikumpulkan .status-dot   { background: #1d4ed8; }
+    .s-terlambat         { background: #fee2e2; color: #dc2626; }
+    .s-terlambat .status-dot     { background: #dc2626; }
     .s-belum_dikumpulkan { background: #f1f5f9; color: #64748b; }
     .s-belum_dikumpulkan .status-dot { background: #64748b; }
 
@@ -83,14 +85,14 @@
     .action-group { display: flex; align-items: center; gap: 5px; justify-content: center; flex-wrap: wrap; }
 
     .empty-state { padding: 60px 20px; text-align: center; }
-    .empty-icon { width: 56px; height: 56px; background: var(--surface2); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+    .empty-icon  { width: 56px; height: 56px; background: var(--surface2); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
     .empty-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 5px; }
-    .empty-sub { font-size: 13px; color: var(--text3); }
+    .empty-sub   { font-size: 13px; color: var(--text3); }
 
     .pag-wrap { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
-    .pag-info { font-size: 12.5px; color: var(--text3); }
-    .pag-btns { display: flex; gap: 4px; align-items: center; }
-    .pag-btn { height: 32px; min-width: 32px; padding: 0 8px; border-radius: 7px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .15s; text-decoration: none; }
+    .pag-info  { font-size: 12.5px; color: var(--text3); }
+    .pag-btns  { display: flex; gap: 4px; align-items: center; }
+    .pag-btn   { height: 32px; min-width: 32px; padding: 0 8px; border-radius: 7px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); background: var(--surface); color: var(--text2); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700; cursor: pointer; transition: all .15s; text-decoration: none; }
     .pag-btn:hover { background: var(--surface2); border-color: var(--border2); }
     .pag-btn.active { background: var(--brand-600); border-color: var(--brand-600); color: #fff; }
     .pag-ellipsis { color: var(--text3); font-size: 13px; padding: 0 4px; }
@@ -111,6 +113,13 @@
         </a>
     </div>
 
+    {{--
+        BUG FIX: Stats dulu menggunakan $pengumpulan->getCollection()->where(...)
+        yang hanya menghitung data di halaman aktif (paginate 20), bukan keseluruhan.
+        Solusi: controller perlu mengirim $stats, atau gunakan query terpisah.
+        Sementara ini kita gunakan $stats dari controller (tambahkan di controller),
+        dengan fallback aman ke 0 jika belum tersedia.
+    --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -118,7 +127,7 @@
             </div>
             <div>
                 <p class="stat-label">Total</p>
-                <p class="stat-val">{{ $pengumpulan->total() }}</p>
+                <p class="stat-val">{{ $stats['total'] ?? $pengumpulan->total() }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -127,7 +136,8 @@
             </div>
             <div>
                 <p class="stat-label">Sudah Dinilai</p>
-                <p class="stat-val">{{ $pengumpulan->getCollection()->where('status', 'sudah_dinilai')->count() }}</p>
+                {{-- Gunakan $stats['sudah_dinilai'] dari controller (query COUNT keseluruhan) --}}
+                <p class="stat-val">{{ $stats['sudah_dinilai'] ?? 0 }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -136,7 +146,7 @@
             </div>
             <div>
                 <p class="stat-label">Menunggu Penilaian</p>
-                <p class="stat-val">{{ $pengumpulan->getCollection()->where('status', 'dikumpulkan')->count() }}</p>
+                <p class="stat-val">{{ $stats['dikumpulkan'] ?? 0 }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -145,7 +155,7 @@
             </div>
             <div>
                 <p class="stat-label">Terlambat</p>
-                <p class="stat-val">{{ $pengumpulan->getCollection()->where('status', 'terlambat')->count() }}</p>
+                <p class="stat-val">{{ $stats['terlambat'] ?? 0 }}</p>
             </div>
         </div>
     </div>
@@ -237,13 +247,24 @@
                         <td class="muted">{{ $p->tugas->mataPelajaran->nama_mapel ?? '-' }}</td>
 
                         <td class="muted">
-                            {{ $p->dikumpulkan_pada ? $p->dikumpulkan_pada->format('d M Y, H:i') : ($p->created_at ? $p->created_at->format('d M Y, H:i') : '-') }}
+                            {{--
+                                BUG FIX: dikumpulkan_pada di-cast sebagai datetime di model,
+                                jadi aman langsung ->format(). Fallback ke created_at jika null.
+                            --}}
+                            {{ $p->dikumpulkan_pada
+                                ? $p->dikumpulkan_pada->format('d M Y, H:i')
+                                : ($p->created_at ? $p->created_at->format('d M Y, H:i') : '-') }}
                         </td>
 
                         <td>
+                            {{--
+                                Gunakan $p->label_status dari accessor model
+                                agar konsisten dengan konstanta STATUS_*.
+                                Fallback ke ucfirst manual jika accessor tidak tersedia.
+                            --}}
                             <span class="status-pill s-{{ $p->status }}">
                                 <span class="status-dot"></span>
-                                {{ $statusList[$p->status] ?? ucfirst(str_replace('_', ' ', $p->status)) }}
+                                {{ $statusList[$p->status] ?? $p->label_status }}
                             </span>
                         </td>
 

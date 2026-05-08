@@ -46,6 +46,7 @@
 </style>
 
 <div class="page">
+    {{-- BUG FIX: route names → admin.nilai.index, admin.nilai.show --}}
     <nav class="breadcrumb">
         <a href="{{ route('dashboard') }}">Dashboard</a>
         <span class="sep">›</span>
@@ -57,17 +58,24 @@
     <div class="page-header">
         <div>
             <h1 class="page-title">{{ $nilai->siswa->nama_lengkap ?? 'Detail Nilai' }}</h1>
-            <p class="page-sub">{{ $nilai->mataPelajaran->nama_mapel ?? '' }} · {{ $nilai->kelas->nama_kelas ?? '' }} · {{ $nilai->tahunAjaran->tahun ?? '' }}</p>
+            {{-- BUG FIX: null-safe untuk tahunAjaran --}}
+            <p class="page-sub">
+                {{ $nilai->mataPelajaran->nama_mapel ?? '' }}
+                @if($nilai->kelas) · {{ $nilai->kelas->nama_kelas }} @endif
+                @if($nilai->tahunAjaran) · {{ $nilai->tahunAjaran->tahun }} - {{ ucfirst($nilai->tahunAjaran->semester) }} @endif
+            </p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
             <a href="{{ route('admin.nilai.index') }}" class="btn btn-back">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
             </a>
+            {{-- BUG FIX: route name → admin.nilai.edit --}}
             <a href="{{ route('admin.nilai.edit', $nilai->id) }}" class="btn btn-edit">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit
             </a>
+            {{-- BUG FIX: route name → admin.nilai.destroy --}}
             <form action="{{ route('admin.nilai.destroy', $nilai->id) }}" method="POST" id="deleteForm">
                 @csrf @method('DELETE')
                 <button type="button" class="btn btn-del" onclick="confirmDelete()">
@@ -90,7 +98,16 @@
                     <div class="info-row"><span class="info-label">Mata Pelajaran</span><span class="info-val">{{ $nilai->mataPelajaran->nama_mapel ?? '-' }}</span></div>
                     <div class="info-row"><span class="info-label">Guru</span><span class="info-val">{{ $nilai->guru->nama_lengkap ?? '-' }}</span></div>
                     <div class="info-row"><span class="info-label">Kelas</span><span class="info-val">{{ $nilai->kelas->nama_kelas ?? '-' }}</span></div>
-                    <div class="info-row"><span class="info-label">Tahun Ajaran</span><span class="info-val">{{ $nilai->tahunAjaran->tahun ?? '-' }} - {{ ucfirst($nilai->tahunAjaran->semester ?? '') }}</span></div>
+                    {{-- BUG FIX: null-safe untuk semester --}}
+                    <div class="info-row">
+                        <span class="info-label">Tahun Ajaran</span>
+                        <span class="info-val">
+                            {{ optional($nilai->tahunAjaran)->tahun ?? '-' }}
+                            @if(optional($nilai->tahunAjaran)->semester)
+                                - {{ ucfirst($nilai->tahunAjaran->semester) }}
+                            @endif
+                        </span>
+                    </div>
                     <div class="info-row"><span class="info-label">Dibuat</span><span class="info-val" style="color:var(--text3);font-size:12.5px">{{ $nilai->created_at->format('d M Y, H:i') }}</span></div>
                     <div class="info-row"><span class="info-label">Diperbarui</span><span class="info-val" style="color:var(--text3);font-size:12.5px">{{ $nilai->updated_at->format('d M Y, H:i') }}</span></div>
                 </div>
@@ -102,10 +119,23 @@
                     <p class="card-title">Rincian Nilai</p>
                 </div>
                 <div class="card-body">
-                    <div class="info-row"><span class="info-label">Nilai Tugas</span><span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $nilai->nilai_tugas ?? '—' }}</span></div>
-                    <div class="info-row"><span class="info-label">Nilai Harian</span><span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $nilai->nilai_harian ?? '—' }}</span></div>
-                    <div class="info-row"><span class="info-label">Nilai UTS</span><span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $nilai->nilai_uts ?? '—' }}</span></div>
-                    <div class="info-row"><span class="info-label">Nilai UAS</span><span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $nilai->nilai_uas ?? '—' }}</span></div>
+                    {{-- BUG FIX: tampilkan nilai dengan number_format agar konsisten dengan cast decimal:2 --}}
+                    <div class="info-row">
+                        <span class="info-label">Nilai Tugas</span>
+                        <span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $nilai->nilai_tugas !== null ? number_format($nilai->nilai_tugas, 1) : '—' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Nilai Harian</span>
+                        <span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $nilai->nilai_harian !== null ? number_format($nilai->nilai_harian, 1) : '—' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Nilai UTS</span>
+                        <span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $nilai->nilai_uts !== null ? number_format($nilai->nilai_uts, 1) : '—' }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Nilai UAS</span>
+                        <span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $nilai->nilai_uas !== null ? number_format($nilai->nilai_uas, 1) : '—' }}</span>
+                    </div>
                     <div class="info-row">
                         <span class="info-label">Nilai Akhir</span>
                         <span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;color:var(--brand-600)">
@@ -122,22 +152,41 @@
                 <p class="card-title">Rekap &amp; Predikat</p>
             </div>
             <div class="card-body">
-                @php $pred = strtolower($nilai->predikat ?? 'e'); @endphp
+                @php
+                    $pred = strtolower($nilai->predikat ?? 'e');
+                    $predColors = [
+                        'a' => '#15803d',
+                        'b' => '#2563eb',
+                        'c' => '#d97706',
+                        'd' => '#dc2626',
+                        'e' => '#9f1239',
+                    ];
+                    $predColor = $predColors[$pred] ?? '#9f1239';
+                @endphp
                 <div class="nilai-summary">
                     <div class="nilai-circle predikat-{{ $pred }}">
-                        <span class="circle-num">{{ $nilai->nilai_akhir !== null ? number_format($nilai->nilai_akhir, 0) : '—' }}</span>
+                        {{-- BUG FIX: tampilkan nilai_akhir dengan 1 desimal di lingkaran agar tidak overflow --}}
+                        <span class="circle-num">{{ $nilai->nilai_akhir !== null ? number_format($nilai->nilai_akhir, 1) : '—' }}</span>
                         <span class="circle-lbl">NILAI AKHIR</span>
                     </div>
-                    <p class="pred-text" style="color:{{ $pred==='a'?'#15803d':($pred==='b'?'#2563eb':($pred==='c'?'#d97706':($pred==='d'?'#dc2626':'#9f1239'))) }}">
+                    <p class="pred-text" style="color:{{ $predColor }}">
                         Predikat {{ strtoupper($pred) }}
                     </p>
                 </div>
+
+                {{-- BUG FIX: clamp bar-fill width 0–100 agar tidak overflow jika nilai ekstrem --}}
                 <div class="bar-wrap">
-                    @foreach(['Tugas' => $nilai->nilai_tugas, 'Harian' => $nilai->nilai_harian, 'UTS' => $nilai->nilai_uts, 'UAS' => $nilai->nilai_uas] as $lbl => $val)
+                    @foreach([
+                        'Tugas'  => $nilai->nilai_tugas,
+                        'Harian' => $nilai->nilai_harian,
+                        'UTS'    => $nilai->nilai_uts,
+                        'UAS'    => $nilai->nilai_uas,
+                    ] as $lbl => $val)
+                    @php $pct = min(100, max(0, (float)($val ?? 0))); @endphp
                     <div class="bar-row">
                         <span class="bar-label">{{ $lbl }}</span>
-                        <div class="bar-bg"><div class="bar-fill" style="width:{{ $val ?? 0 }}%"></div></div>
-                        <span class="bar-val">{{ $val ?? '—' }}</span>
+                        <div class="bar-bg"><div class="bar-fill" style="width:{{ $pct }}%"></div></div>
+                        <span class="bar-val">{{ $val !== null ? number_format($val, 1) : '—' }}</span>
                     </div>
                     @endforeach
                 </div>
@@ -164,12 +213,18 @@
     @if(session('error'))
     Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
     @endif
-    function confirmDelete(){
+
+    function confirmDelete() {
         Swal.fire({
-            title:'Hapus Nilai?',text:'Data nilai ini akan dihapus secara permanen.',icon:'warning',
-            showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'
-        }).then(r=>{if(r.isConfirmed)document.getElementById('deleteForm').submit();});
+            title:'Hapus Nilai?',
+            text:'Data nilai ini akan dihapus secara permanen.',
+            icon:'warning',
+            showCancelButton:true,
+            confirmButtonColor:'#dc2626',
+            cancelButtonColor:'#64748b',
+            confirmButtonText:'Ya, Hapus!',
+            cancelButtonText:'Batal'
+        }).then(r => { if (r.isConfirmed) document.getElementById('deleteForm').submit(); });
     }
 </script>
 </x-app-layout>

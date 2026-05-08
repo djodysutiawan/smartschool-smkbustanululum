@@ -53,6 +53,7 @@ use App\Http\Controllers\Admin\UjianController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\KenaikanKelasController;
+use App\Http\Controllers\Admin\PilihanJawabanController;
 
 
 Route::prefix('admin')
@@ -236,22 +237,6 @@ Route::prefix('admin')
             Route::patch('/{ketersediaanGuru}/toggle',       [KetersediaanGuruController::class, 'toggle'])->name('toggle');
         });
 
-        // Jadwal Pelajaran
-        // Route::prefix('jadwal-pelajaran')->name('jadwal-pelajaran.')->group(function () {
-        //     Route::get('/export/pdf',                        [JadwalPelajaranController::class, 'exportPdf'])->name('export.pdf');
-        //     Route::get('/export/excel',                      [JadwalPelajaranController::class, 'exportExcel'])->name('export.excel');
-        //     Route::get('/import/template',                   [JadwalPelajaranController::class, 'importTemplate'])->name('import.template');
-        //     Route::post('/import',                           [JadwalPelajaranController::class, 'import'])->name('import');
-        //     Route::get('/',                                  [JadwalPelajaranController::class, 'index'])->name('index');
-        //     Route::get('/create',                            [JadwalPelajaranController::class, 'create'])->name('create');
-        //     Route::post('/',                                 [JadwalPelajaranController::class, 'store'])->name('store');
-        //     Route::get('/{jadwalPelajaran}',                 [JadwalPelajaranController::class, 'show'])->name('show');
-        //     Route::get('/{jadwalPelajaran}/edit',            [JadwalPelajaranController::class, 'edit'])->name('edit');
-        //     Route::put('/{jadwalPelajaran}',                 [JadwalPelajaranController::class, 'update'])->name('update');
-        //     Route::delete('/{jadwalPelajaran}',              [JadwalPelajaranController::class, 'destroy'])->name('destroy');
-        //     Route::patch('/{jadwalPelajaran}/toggle-status', [JadwalPelajaranController::class, 'toggleStatus'])->name('toggle-status');
-        // });
-
         Route::prefix('jadwal-pelajaran')->name('jadwal-pelajaran.')->group(function () {
             Route::get('/export/pdf',                        [JadwalPelajaranController::class, 'exportPdf'])->name('export.pdf');
             Route::get('/export/excel',                      [JadwalPelajaranController::class, 'exportExcel'])->name('export.excel');
@@ -365,45 +350,77 @@ Route::prefix('admin')
 
         // Ujian
         Route::prefix('ujian')->name('ujian.')->group(function () {
-            Route::get('/',                        [UjianController::class, 'index'])->name('index');
-            Route::get('/create',                  [UjianController::class, 'create'])->name('create');
-            Route::post('/',                       [UjianController::class, 'store'])->name('store');
-            Route::get('/export/pdf',              [UjianController::class, 'exportPdf'])->name('export.pdf');
-            Route::get('/export/excel',            [UjianController::class, 'exportExcel'])->name('export.excel');
-            Route::get('/import/template',         [UjianController::class, 'importTemplate'])->name('import.template');
-            Route::post('/import',                 [UjianController::class, 'import'])->name('import');
-            Route::get('/{ujian}',                 [UjianController::class, 'show'])->name('show');
-            Route::get('/{ujian}/edit',            [UjianController::class, 'edit'])->name('edit');
-            Route::put('/{ujian}',                 [UjianController::class, 'update'])->name('update');
-            Route::delete('/{ujian}',              [UjianController::class, 'destroy'])->name('destroy');
-            Route::patch('/{ujian}/toggle-status', [UjianController::class, 'toggleStatus'])->name('toggle-status');
-
-            // Soal Ujian
+ 
+            // ── CRUD Ujian ─────────────────────────────────────────────────────
+            Route::get('/',                          [UjianController::class, 'index'])->name('index');
+            Route::get('/create',                    [UjianController::class, 'create'])->name('create');
+            Route::post('/',                         [UjianController::class, 'store'])->name('store');
+            Route::get('/export/pdf',                [UjianController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',              [UjianController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/import/template',           [UjianController::class, 'importTemplate'])->name('import.template');
+            Route::post('/import',                   [UjianController::class, 'import'])->name('import');
+ 
+            // AJAX Cascade — harus sebelum /{ujian} agar tidak tertangkap wildcard
+            Route::get('/ajax/mapel-by-guru/{guru}', [UjianController::class, 'ajaxMapelByGuru'])->name('ajax.mapel-by-guru');
+            Route::get('/ajax/kelas-by-guru/{guru}', [UjianController::class, 'ajaxKelasByGuru'])->name('ajax.kelas-by-guru');
+ 
+            Route::get('/{ujian}',                   [UjianController::class, 'show'])->name('show');
+            Route::get('/{ujian}/edit',              [UjianController::class, 'edit'])->name('edit');
+            Route::put('/{ujian}',                   [UjianController::class, 'update'])->name('update');
+            Route::delete('/{ujian}',                [UjianController::class, 'destroy'])->name('destroy');
+            Route::patch('/{ujian}/toggle-status',   [UjianController::class, 'toggleStatus'])->name('toggle-status');
+ 
+            // ── Soal Ujian ─────────────────────────────────────────────────────
             Route::prefix('/{ujian}/soal')->name('soal.')->group(function () {
-                Route::get('/',                    [SoalUjianController::class, 'index'])->name('index');
-                Route::get('/create',              [SoalUjianController::class, 'create'])->name('create');
-                Route::post('/',                   [SoalUjianController::class, 'store'])->name('store');
-                Route::get('/export/pdf',          [SoalUjianController::class, 'exportPdf'])->name('export.pdf');
-                Route::get('/export/excel',        [SoalUjianController::class, 'exportExcel'])->name('export.excel');
-                Route::get('/import/template',     [SoalUjianController::class, 'importTemplate'])->name('import.template');
-                Route::post('/import',             [SoalUjianController::class, 'import'])->name('import');
-                Route::post('/reorder',            [SoalUjianController::class, 'reorder'])->name('reorder');
-                Route::get('/{soal}',              [SoalUjianController::class, 'show'])->name('show');
-                Route::get('/{soal}/edit',         [SoalUjianController::class, 'edit'])->name('edit');
-                Route::put('/{soal}',              [SoalUjianController::class, 'update'])->name('update');
-                Route::delete('/{soal}',           [SoalUjianController::class, 'destroy'])->name('destroy');
+ 
+                Route::get('/',                      [SoalUjianController::class, 'index'])->name('index');
+                Route::get('/create',                [SoalUjianController::class, 'create'])->name('create');
+                Route::post('/',                     [SoalUjianController::class, 'store'])->name('store');
+                Route::get('/export/pdf',            [SoalUjianController::class, 'exportPdf'])->name('export.pdf');
+                Route::get('/export/excel',          [SoalUjianController::class, 'exportExcel'])->name('export.excel');
+                Route::get('/import/template',       [SoalUjianController::class, 'importTemplate'])->name('import.template');
+                Route::post('/import',               [SoalUjianController::class, 'import'])->name('import');
+                Route::post('/reorder',              [SoalUjianController::class, 'reorder'])->name('reorder');
+ 
+                Route::get('/{soal}',                [SoalUjianController::class, 'show'])->name('show');
+                Route::get('/{soal}/edit',           [SoalUjianController::class, 'edit'])->name('edit');
+                Route::put('/{soal}',                [SoalUjianController::class, 'update'])->name('update');
+                Route::delete('/{soal}',             [SoalUjianController::class, 'destroy'])->name('destroy');
+ 
+                // ── Koreksi Essay ──────────────────────────────────────────────
+                // GET  : halaman daftar jawaban essay soal ini
+                // POST : simpan koreksi satu jawaban
+                Route::get('/{soal}/koreksi-essay',              [SoalUjianController::class, 'koreksiEssayIndex'])->name('koreksi-essay.index');
+                Route::post('/{soal}/koreksi-essay/{jawaban}',   [SoalUjianController::class, 'koreksiEssayStore'])->name('koreksi-essay.store');
+ 
+                // ── Pilihan Jawaban (nested di bawah soal) ─────────────────────
+                Route::prefix('/{soal}/pilihan')->name('pilihan.')->group(function () {
+                    Route::post('/',                             [PilihanJawabanController::class, 'store'])->name('store');
+                    Route::put('/{pilihan}',                     [PilihanJawabanController::class, 'update'])->name('update');
+                    Route::delete('/{pilihan}',                  [PilihanJawabanController::class, 'destroy'])->name('destroy');
+                    Route::patch('/{pilihan}/tandai-benar',      [PilihanJawabanController::class, 'tandaiBenar'])->name('tandai-benar');
+                });
             });
-
-            // Sesi Ujian
+ 
+            // ── Sesi Ujian (Admin Monitor) ──────────────────────────────────────
+            // Diakses ADMIN untuk memantau / melihat hasil siswa
+            Route::prefix('/{ujian}/sesi')->name('sesi.')->group(function () {
+                Route::get('/',                      [SesiUjianController::class, 'indexAdmin'])->name('index-admin');
+                Route::get('/{sesi}',                [SesiUjianController::class, 'showAdmin'])->name('show-admin');
+                Route::get('/export/pdf',            [SesiUjianController::class, 'exportPdf'])->name('export.pdf');
+                Route::get('/export/excel',          [SesiUjianController::class, 'exportExcel'])->name('export.excel');
+            });
+ 
+            // ── Sesi Ujian (Siswa Mengerjakan) ────────────────────────────────
+            // Diakses SISWA untuk mengerjakan ujian
+            // Middleware disesuaikan jika ada middleware 'role:siswa'
             Route::prefix('/{ujian}')->name('sesi.')->group(function () {
-                Route::get('/mulai',               [SesiUjianController::class, 'mulai'])->name('mulai');
-                Route::post('/start',              [SesiUjianController::class, 'start'])->name('start');
-                Route::get('/kerjakan',            [SesiUjianController::class, 'kerjakan'])->name('kerjakan');
-                Route::post('/soal/{soal}/jawab',  [SesiUjianController::class, 'jawab'])->name('soal.jawab');
-                Route::post('/selesai',            [SesiUjianController::class, 'selesai'])->name('selesai');
-                Route::get('/hasil',               [SesiUjianController::class, 'hasil'])->name('hasil');
-                Route::get('/export/pdf',          [SesiUjianController::class, 'exportPdf'])->name('export.pdf');
-                Route::get('/export/excel',        [SesiUjianController::class, 'exportExcel'])->name('export.excel');
+                Route::get('/mulai',                 [SesiUjianController::class, 'mulai'])->name('mulai');
+                Route::post('/start',                [SesiUjianController::class, 'start'])->name('start');
+                Route::get('/kerjakan',              [SesiUjianController::class, 'kerjakan'])->name('kerjakan');
+                Route::post('/soal/{soal}/jawab',    [SesiUjianController::class, 'jawab'])->name('soal.jawab');
+                Route::post('/selesai',              [SesiUjianController::class, 'selesai'])->name('selesai');
+                Route::get('/hasil',                 [SesiUjianController::class, 'hasil'])->name('hasil');
             });
         });
 
@@ -443,6 +460,14 @@ Route::prefix('admin')
 
         // Absensi
         Route::prefix('absensi')->name('absensi.')->group(function () {
+        
+            // ── AJAX: harus di PALING ATAS sebelum route wildcard /{absensi} ──
+            // Nama route: admin.absensi.by-kelas
+            // URL yang dihasilkan: /admin/absensi/kelas/{kelas}/data
+            // Method controller: getByKelas()
+            Route::get('/kelas/{kelas}/data', [AbsensiController::class, 'getByKelas'])->name('by-kelas');
+        
+            // ── Non-wildcard routes (harus sebelum /{absensi}) ────────────────
             Route::get('/',                         [AbsensiController::class, 'index'])->name('index');
             Route::get('/create',                   [AbsensiController::class, 'create'])->name('create');
             Route::post('/',                        [AbsensiController::class, 'store'])->name('store');
@@ -453,6 +478,8 @@ Route::prefix('admin')
             Route::get('/rekap-kelas',              [AbsensiController::class, 'rekapKelas'])->name('rekap-kelas');
             Route::get('/rekap-kelas/export/pdf',   [AbsensiController::class, 'exportRekapPdf'])->name('rekap-kelas.export.pdf');
             Route::get('/rekap-kelas/export/excel', [AbsensiController::class, 'exportRekapExcel'])->name('rekap-kelas.export.excel');
+        
+            // ── Wildcard /{absensi} — HARUS PALING BAWAH ─────────────────────
             Route::get('/{absensi}',                [AbsensiController::class, 'show'])->name('show');
             Route::get('/{absensi}/edit',           [AbsensiController::class, 'edit'])->name('edit');
             Route::put('/{absensi}',                [AbsensiController::class, 'update'])->name('update');
@@ -461,24 +488,39 @@ Route::prefix('admin')
 
         // Sesi QR Code
         Route::prefix('sesi-qr')->name('sesi-qr.')->group(function () {
-            Route::get('/',                       [SesiQrController::class, 'index'])->name('index');
-            Route::get('/create',                 [SesiQrController::class, 'create'])->name('create');
-            Route::post('/',                      [SesiQrController::class, 'store'])->name('store');
-            Route::get('/export/pdf',             [SesiQrController::class, 'exportPdf'])->name('export.pdf');
-            Route::get('/export/excel',           [SesiQrController::class, 'exportExcel'])->name('export.excel');
-            Route::get('/{sesiQr}',               [SesiQrController::class, 'show'])->name('show');
-            Route::delete('/{sesiQr}',            [SesiQrController::class, 'destroy'])->name('destroy');
-            Route::patch('/{sesiQr}/nonaktifkan', [SesiQrController::class, 'nonaktifkan'])->name('nonaktifkan');
-            Route::get('/{sesiQr}/cetak-qr',      [SesiQrController::class, 'cetakQr'])->name('cetak-qr');
+        
+            // Daftar & CRUD dasar
+            Route::get('/',       [SesiQrController::class, 'index'])->name('index');
+            Route::get('/create', [SesiQrController::class, 'create'])->name('create');
+            Route::post('/',      [SesiQrController::class, 'store'])->name('store');
+        
+            // Export — HARUS sebelum /{sesiQr} agar tidak ditangkap sebagai wildcard
+            Route::get('/export/pdf',   [SesiQrController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel', [SesiQrController::class, 'exportExcel'])->name('export.excel');
+        
+            // Resource tunggal
+            Route::get('/{sesiQr}',                [SesiQrController::class, 'show'])->name('show');
+            Route::delete('/{sesiQr}',             [SesiQrController::class, 'destroy'])->name('destroy');
+            Route::patch('/{sesiQr}/nonaktifkan',  [SesiQrController::class, 'nonaktifkan'])->name('nonaktifkan');
+            Route::get('/{sesiQr}/cetak-qr',       [SesiQrController::class, 'cetakQr'])->name('cetak-qr');
+        
+            // Aksi tambahan (ada di controller, sekarang ditambahkan ke route)
+            Route::post('/{sesiQr}/tutup-sesi',      [SesiQrController::class, 'tutupSesi'])->name('tutup-sesi');
+            Route::post('/{sesiQr}/koreksi-absensi', [SesiQrController::class, 'koreksiAbsensi'])->name('koreksi-absensi');
+            Route::get('/{sesiQr}/status-ajax',      [SesiQrController::class, 'statusAjax'])->name('status-ajax');
         });
 
         // Riwayat Scan QR
         Route::prefix('riwayat-scan')->name('riwayat-scan.')->group(function () {
-            Route::get('/',                  [RiwayatScanController::class, 'index'])->name('index');
-            Route::get('/export/pdf',        [RiwayatScanController::class, 'exportPdf'])->name('export.pdf');
-            Route::get('/export/excel',      [RiwayatScanController::class, 'exportExcel'])->name('export.excel');
-            Route::get('/{riwayatScan}',     [RiwayatScanController::class, 'show'])->name('show');
-            Route::delete('/{riwayatScan}',  [RiwayatScanController::class, 'destroy'])->name('destroy');
+        
+            Route::get('/', [RiwayatScanController::class, 'index'])->name('index');
+        
+            // Export — HARUS sebelum /{riwayatScan}
+            Route::get('/export/pdf',   [RiwayatScanController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel', [RiwayatScanController::class, 'exportExcel'])->name('export.excel');
+        
+            Route::get('/{riwayatScan}',    [RiwayatScanController::class, 'show'])->name('show');
+            Route::delete('/{riwayatScan}', [RiwayatScanController::class, 'destroy'])->name('destroy');
         });
 
         // Kategori Pelanggaran

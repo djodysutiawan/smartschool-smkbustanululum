@@ -84,14 +84,13 @@
         </div>
     </div>
 
+    {{-- Stats --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
                 <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M14 17h.01M17 14h.01M17 17h.01M20 14h.01M20 17h.01M20 20h.01M17 20h.01M14 20h.01"/></svg>
             </div>
-            {{-- Perbaikan bug: sebelumnya $sesiQrs->total() di sini tapi variabel dari
-                 controller bernama $sesiList sehingga error "Undefined variable $sesiQrs".
-                 Sekarang controller sudah mengirim $sesiQrs. --}}
+            {{-- $sesiQrs berasal dari controller (sudah diperbaiki dari $sesiList) --}}
             <div><p class="stat-label">Total Sesi</p><p class="stat-val">{{ $sesiQrs->total() }}</p></div>
         </div>
         <div class="stat-card">
@@ -100,7 +99,7 @@
             </div>
             <div>
                 <p class="stat-label">Sesi Aktif</p>
-                <p class="stat-val">{{ \App\Models\SesiQr::where('is_active', true)->where('berlaku_mulai', '<=', now())->where('kadaluarsa_pada', '>=', now())->count() }}</p>
+                <p class="stat-val">{{ \App\Models\SesiQr::masihBerlaku()->count() }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -114,6 +113,7 @@
         </div>
     </div>
 
+    {{-- Filter --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.sesi-qr.index') }}">
             <div class="filter-row">
@@ -166,15 +166,14 @@
                         <th>Tanggal</th>
                         <th>Berlaku</th>
                         <th>Kadaluarsa</th>
-                        <th>Radius (m)</th>
+                        <th class="center">Radius (m)</th>
+                        <th class="center">Scan</th>
                         <th>Status</th>
                         <th>Dibuat Oleh</th>
-                        <th class="center" style="width:210px">Aksi</th>
+                        <th class="center" style="width:220px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {{-- Perbaikan bug: loop sebelumnya pakai $sesiQrs yang tidak terdefinisi
-                         (controller mengirim $sesiList). Sekarang controller sudah fix. --}}
                     @forelse($sesiQrs as $i => $sq)
                     @php
                         $now        = \Carbon\Carbon::now();
@@ -183,14 +182,29 @@
                     @endphp
                     <tr>
                         <td><span class="no-col">{{ $sesiQrs->firstItem() + $i }}</span></td>
-                        <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">{{ $sq->kelas->nama_kelas ?? '—' }}</td>
-                        <td style="font-size:13px;color:var(--text2)">{{ $sq->mataPelajaran->nama_mapel ?? '—' }}</td>
+                        <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">
+                            {{ $sq->kelas->nama_kelas ?? '—' }}
+                        </td>
+                        <td style="font-size:13px;color:var(--text2)">
+                            {{ $sq->mataPelajaran->nama_mapel ?? '—' }}
+                        </td>
                         <td style="font-size:12.5px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600">
                             {{ \Carbon\Carbon::parse($sq->tanggal)->isoFormat('D MMM Y') }}
                         </td>
-                        <td class="muted" style="font-size:12px">{{ \Carbon\Carbon::parse($sq->berlaku_mulai)->format('H:i') }}</td>
-                        <td class="muted" style="font-size:12px">{{ \Carbon\Carbon::parse($sq->kadaluarsa_pada)->format('H:i') }}</td>
-                        <td class="muted" style="font-size:12.5px;text-align:center">{{ $sq->radius_meter ?? '—' }}</td>
+                        <td class="muted" style="font-size:12px">
+                            {{ \Carbon\Carbon::parse($sq->berlaku_mulai)->format('H:i') }}
+                        </td>
+                        <td class="muted" style="font-size:12px">
+                            {{ \Carbon\Carbon::parse($sq->kadaluarsa_pada)->format('H:i') }}
+                        </td>
+                        <td class="center muted" style="font-size:12.5px">
+                            {{ $sq->radius_meter ?? '—' }}
+                        </td>
+                        <td class="center" style="font-size:12.5px;font-weight:700">
+                            <span title="{{ $sq->scan_valid_count }} valid / {{ $sq->riwayat_scan_count }} total">
+                                {{ $sq->scan_valid_count }}/{{ $sq->riwayat_scan_count }}
+                            </span>
+                        </td>
                         <td>
                             @if(!$sq->is_active)
                                 <span class="badge badge-nonaktif"><span class="badge-dot"></span>Nonaktif</span>
@@ -202,13 +216,14 @@
                                 <span class="badge" style="background:var(--surface3);color:var(--text3)">Menunggu</span>
                             @endif
                         </td>
-                        {{-- Perbaikan bug: relasi dibuatOleh kini di-eager-load di controller
-                             sehingga tidak ada N+1 query di setiap baris tabel. --}}
+                        {{-- dibuatOleh sudah di-eager-load di controller: tidak ada N+1 --}}
                         <td class="muted" style="font-size:12px">{{ $sq->dibuatOleh->name ?? '—' }}</td>
                         <td class="center">
                             <div class="action-group">
                                 <a href="{{ route('admin.sesi-qr.show', $sq->id) }}" class="btn btn-sm btn-detail">Detail</a>
-                                <a href="{{ route('admin.sesi-qr.cetak-qr', $sq->id) }}" class="btn btn-sm" style="background:var(--brand-50);color:var(--brand-600);border:1px solid var(--brand-100);" target="_blank">
+                                <a href="{{ route('admin.sesi-qr.cetak-qr', $sq->id) }}" class="btn btn-sm"
+                                   style="background:var(--brand-50);color:var(--brand-600);border:1px solid var(--brand-100);"
+                                   target="_blank">
                                     <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
                                     Cetak
                                 </a>
@@ -233,7 +248,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="10">
+                        <td colspan="11">
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
@@ -285,13 +300,31 @@
     @if(session('error'))
     Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
     @endif
+
     function confirmNonaktif(form) {
-        Swal.fire({title:'Nonaktifkan Sesi QR?',text:'Sesi ini tidak dapat digunakan lagi untuk scan.',icon:'warning',showCancelButton:true,confirmButtonColor:'#a16207',cancelButtonColor:'#64748b',confirmButtonText:'Ya, Nonaktifkan!',cancelButtonText:'Batal'})
-            .then(r => { if (r.isConfirmed) form.submit(); });
+        Swal.fire({
+            title:'Nonaktifkan Sesi QR?',
+            text:'Sesi ini tidak dapat digunakan lagi untuk scan.',
+            icon:'warning',
+            showCancelButton:true,
+            confirmButtonColor:'#a16207',
+            cancelButtonColor:'#64748b',
+            confirmButtonText:'Ya, Nonaktifkan!',
+            cancelButtonText:'Batal'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
+
     function confirmDelete(form) {
-        Swal.fire({title:'Hapus Sesi QR?',text:'Data sesi QR ini akan dihapus permanen.',icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'})
-            .then(r => { if (r.isConfirmed) form.submit(); });
+        Swal.fire({
+            title:'Hapus Sesi QR?',
+            text:'Data sesi QR ini akan dihapus permanen.',
+            icon:'warning',
+            showCancelButton:true,
+            confirmButtonColor:'#dc2626',
+            cancelButtonColor:'#64748b',
+            confirmButtonText:'Ya, Hapus!',
+            cancelButtonText:'Batal'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 </script>
 </x-app-layout>

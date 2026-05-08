@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\CascadeDropdownTrait;
 use App\Models\Guru;
 use App\Models\JadwalPelajaran;
 use App\Models\JurnalMengajar;
@@ -10,7 +11,6 @@ use App\Models\Kelas;
 use App\Models\MataPelajaran;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;   // ← fix: import facade, bukan global \Schema
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\JurnalMengajarExport;
 use App\Imports\JurnalMengajarImport;
@@ -18,24 +18,27 @@ use Illuminate\Support\Facades\Auth;
 
 class JurnalMengajarController extends Controller
 {
+    use CascadeDropdownTrait;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INDEX
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function index(Request $request)
     {
         $query = JurnalMengajar::with(['guru', 'kelas', 'mataPelajaran', 'jadwalPelajaran']);
 
-        if ($request->filled('guru_id')) {
-            $query->where('guru_id', $request->guru_id);
-        }
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-        if ($request->filled('mata_pelajaran_id')) {
-            $query->where('mata_pelajaran_id', $request->mata_pelajaran_id);
-        }
-        if ($request->filled('tanggal_dari')) {
-            $query->whereDate('tanggal', '>=', $request->tanggal_dari);
-        }
-        if ($request->filled('tanggal_sampai')) {
-            $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
+        if ($request->filled('guru_id'))           $query->where('guru_id', $request->guru_id);
+        if ($request->filled('kelas_id'))          $query->where('kelas_id', $request->kelas_id);
+        if ($request->filled('mata_pelajaran_id')) $query->where('mata_pelajaran_id', $request->mata_pelajaran_id);
+        if ($request->filled('tanggal_dari'))      $query->whereDate('tanggal', '>=', $request->tanggal_dari);
+        if ($request->filled('tanggal_sampai'))    $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
+        if ($request->filled('terverifikasi')) {
+            if ($request->boolean('terverifikasi')) {
+                $query->sudahDiverifikasi();
+            } else {
+                $query->belumDiverifikasi();
+            }
         }
 
         $jurnal    = $query->orderByDesc('tanggal')->paginate(20)->withQueryString();
@@ -47,39 +50,39 @@ class JurnalMengajarController extends Controller
             compact('jurnal', 'guruList', 'kelasList', 'mapelList'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // CREATE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function create()
     {
         $guruList   = Guru::aktif()->orderBy('nama_lengkap')->get();
         $kelasList  = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList  = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $jadwalList = JadwalPelajaran::aktif()->with(['kelas', 'mataPelajaran'])->get();
-        $metodeList = ['ceramah', 'diskusi', 'praktikum', 'demonstrasi', 'proyek', 'lainnya'];
+        $metodeList = $this->metodeList();
 
         return view('admin.jurnal_mengajar.create',
             compact('guruList', 'kelasList', 'mapelList', 'jadwalList', 'metodeList'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // STORE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'guru_id'             => ['required', 'exists:guru,id'],
-            'kelas_id'            => ['required', 'exists:kelas,id'],
-            'mata_pelajaran_id'   => ['required', 'exists:mata_pelajaran,id'],
-            'jadwal_pelajaran_id' => ['nullable', 'exists:jadwal_pelajaran,id'],
-            'tanggal'             => ['required', 'date', 'before_or_equal:today'],
-            'pertemuan_ke'        => ['nullable', 'integer', 'min:1', 'max:52'],
-            'materi_ajar'         => ['required', 'string', 'max:2000'],
-            'metode_pembelajaran' => ['nullable', 'string', 'max:100'],
-            'jumlah_hadir'        => ['nullable', 'integer', 'min:0'],
-            'jumlah_tidak_hadir'  => ['nullable', 'integer', 'min:0'],
-            'catatan_kelas'       => ['nullable', 'string', 'max:2000'],
-        ], $this->messages());
+        $validated = $request->validate($this->rules(), $this->messages());
 
         JurnalMengajar::create($validated);
 
         return redirect()->route('admin.jurnal-mengajar.index')
             ->with('success', 'Jurnal mengajar berhasil ditambahkan.');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHOW
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function show(JurnalMengajar $jurnalMengajar)
     {
@@ -88,39 +91,44 @@ class JurnalMengajarController extends Controller
         return view('admin.jurnal_mengajar.show', compact('jurnalMengajar'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // EDIT
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function edit(JurnalMengajar $jurnalMengajar)
     {
         $guruList   = Guru::aktif()->orderBy('nama_lengkap')->get();
         $kelasList  = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList  = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $jadwalList = JadwalPelajaran::aktif()->with(['kelas', 'mataPelajaran'])->get();
-        $metodeList = ['ceramah', 'diskusi', 'praktikum', 'demonstrasi', 'proyek', 'lainnya'];
+        $metodeList = $this->metodeList();
+
+        // Pre-populate cascade dropdown
+        $mapelGuru = $this->getMapelByGuru($jurnalMengajar->guru_id);
+        $kelasGuru = $this->getKelasByGuru($jurnalMengajar->guru_id);
 
         return view('admin.jurnal_mengajar.edit',
-            compact('jurnalMengajar', 'guruList', 'kelasList', 'mapelList', 'jadwalList', 'metodeList'));
+            compact('jurnalMengajar', 'guruList', 'kelasList', 'mapelList',
+                    'jadwalList', 'metodeList', 'mapelGuru', 'kelasGuru'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // UPDATE
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function update(Request $request, JurnalMengajar $jurnalMengajar)
     {
-        $validated = $request->validate([
-            'guru_id'             => ['required', 'exists:guru,id'],
-            'kelas_id'            => ['required', 'exists:kelas,id'],
-            'mata_pelajaran_id'   => ['required', 'exists:mata_pelajaran,id'],
-            'jadwal_pelajaran_id' => ['nullable', 'exists:jadwal_pelajaran,id'],
-            'tanggal'             => ['required', 'date', 'before_or_equal:today'],
-            'pertemuan_ke'        => ['nullable', 'integer', 'min:1', 'max:52'],
-            'materi_ajar'         => ['required', 'string', 'max:2000'],
-            'metode_pembelajaran' => ['nullable', 'string', 'max:100'],
-            'jumlah_hadir'        => ['nullable', 'integer', 'min:0'],
-            'jumlah_tidak_hadir'  => ['nullable', 'integer', 'min:0'],
-            'catatan_kelas'       => ['nullable', 'string', 'max:2000'],
-        ], $this->messages());
+        $validated = $request->validate($this->rules(), $this->messages());
 
         $jurnalMengajar->update($validated);
 
         return redirect()->route('admin.jurnal-mengajar.show', $jurnalMengajar)
             ->with('success', 'Jurnal mengajar berhasil diperbarui.');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DESTROY
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function destroy(JurnalMengajar $jurnalMengajar)
     {
@@ -130,13 +138,28 @@ class JurnalMengajarController extends Controller
             ->with('success', 'Jurnal mengajar berhasil dihapus.');
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // RESTORE (SoftDeletes)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function restore(int $id)
+    {
+        JurnalMengajar::onlyTrashed()->findOrFail($id)->restore();
+
+        return back()->with('success', 'Jurnal mengajar berhasil dipulihkan.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // VERIFIKASI
+    // FIX: Hapus Schema::hasColumn() per-request (sangat lambat di production).
+    // Kolom diverifikasi_oleh & diverifikasi_pada sudah ada di $fillable model.
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function verifikasi(JurnalMengajar $jurnalMengajar)
     {
-        abort_unless(
-            Schema::hasColumn('jurnal_mengajar', 'diverifikasi_pada'),
-            501,
-            'Fitur verifikasi belum tersedia.'
-        );
+        if ($jurnalMengajar->sudah_diverifikasi) {
+            return back()->with('error', 'Jurnal ini sudah diverifikasi sebelumnya.');
+        }
 
         /** @var \App\Models\User $user */
         $user = Auth::user();
@@ -149,19 +172,70 @@ class JurnalMengajarController extends Controller
         return back()->with('success', 'Jurnal mengajar berhasil diverifikasi.');
     }
 
+    /**
+     * Batalkan verifikasi (hanya admin).
+     */
+    public function batalVerifikasi(JurnalMengajar $jurnalMengajar)
+    {
+        if (! $jurnalMengajar->sudah_diverifikasi) {
+            return back()->with('error', 'Jurnal ini belum diverifikasi.');
+        }
+
+        $jurnalMengajar->update([
+            'diverifikasi_oleh' => null,
+            'diverifikasi_pada' => null,
+        ]);
+
+        return back()->with('success', 'Verifikasi jurnal berhasil dibatalkan.');
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AJAX — Cascade Dropdown
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function ajaxMapelByGuru(Guru $guru)
+    {
+        return response()->json($this->getMapelByGuru($guru->id));
+    }
+
+    public function ajaxKelasByGuru(Guru $guru)
+    {
+        return response()->json($this->getKelasByGuru($guru->id));
+    }
+
+    /**
+     * GET /admin/jurnal-mengajar/ajax/jadwal-by-guru/{guru}
+     * Kembalikan jadwal pelajaran aktif milik guru ini untuk cascade form.
+     */
+    public function ajaxJadwalByGuru(Guru $guru)
+    {
+        $jadwal = JadwalPelajaran::aktif()
+            ->where('guru_id', $guru->id)
+            ->with(['kelas', 'mataPelajaran'])
+            ->get()
+            ->map(fn($j) => [
+                'id'          => $j->id,
+                'label'       => $j->label,
+                'kelas_id'    => $j->kelas_id,
+                'mapel_id'    => $j->mata_pelajaran_id,
+                'kelas_nama'  => $j->kelas?->nama_kelas,
+                'mapel_nama'  => $j->mataPelajaran?->nama_mapel,
+            ]);
+
+        return response()->json($jadwal);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // EXPORT / IMPORT
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function exportPdf(Request $request)
     {
         $query = JurnalMengajar::with(['guru', 'kelas', 'mataPelajaran']);
 
-        if ($request->filled('guru_id')) {
-            $query->where('guru_id', $request->guru_id);
-        }
-        if ($request->filled('tanggal_dari')) {
-            $query->whereDate('tanggal', '>=', $request->tanggal_dari);
-        }
-        if ($request->filled('tanggal_sampai')) {
-            $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
-        }
+        if ($request->filled('guru_id'))        $query->where('guru_id', $request->guru_id);
+        if ($request->filled('tanggal_dari'))   $query->whereDate('tanggal', '>=', $request->tanggal_dari);
+        if ($request->filled('tanggal_sampai')) $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
 
         $jurnal = $query->orderByDesc('tanggal')->get();
 
@@ -203,6 +277,32 @@ class JurnalMengajarController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal mengimpor data: ' . $e->getMessage());
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function metodeList(): array
+    {
+        return ['ceramah', 'diskusi', 'praktikum', 'demonstrasi', 'proyek', 'lainnya'];
+    }
+
+    private function rules(): array
+    {
+        return [
+            'guru_id'             => ['required', 'exists:guru,id'],
+            'kelas_id'            => ['required', 'exists:kelas,id'],
+            'mata_pelajaran_id'   => ['required', 'exists:mata_pelajaran,id'],
+            'jadwal_pelajaran_id' => ['nullable', 'exists:jadwal_pelajaran,id'],
+            'tanggal'             => ['required', 'date', 'before_or_equal:today'],
+            'pertemuan_ke'        => ['nullable', 'integer', 'min:1', 'max:52'],
+            'materi_ajar'         => ['required', 'string', 'max:2000'],
+            'metode_pembelajaran' => ['nullable', 'string', 'max:100'],
+            'jumlah_hadir'        => ['nullable', 'integer', 'min:0'],
+            'jumlah_tidak_hadir'  => ['nullable', 'integer', 'min:0'],
+            'catatan_kelas'       => ['nullable', 'string', 'max:2000'],
+        ];
     }
 
     private function messages(): array

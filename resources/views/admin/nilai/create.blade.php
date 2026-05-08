@@ -44,6 +44,7 @@
 </style>
 
 <div class="page">
+    {{-- BUG FIX: route name → admin.nilai.index (sesuai prefix 'admin.' pada routes) --}}
     <nav class="breadcrumb">
         <a href="{{ route('dashboard') }}">Dashboard</a>
         <span class="sep">›</span>
@@ -63,6 +64,7 @@
         </a>
     </div>
 
+    {{-- BUG FIX: route name → admin.nilai.store --}}
     <form action="{{ route('admin.nilai.store') }}" method="POST" id="nilaiForm">
         @csrf
         <div class="form-card">
@@ -115,10 +117,14 @@
                     </div>
                     <div class="field">
                         <label>Tahun Ajaran <span class="req">*</span></label>
+                        {{-- BUG FIX: default ke tahunAktif jika old() kosong --}}
                         <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Tahun Ajaran —</option>
                             @foreach($tahunAjaran as $ta)
-                                <option value="{{ $ta->id }}" {{ old('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>{{ $ta->tahun }} - {{ ucfirst($ta->semester) }}</option>
+                                <option value="{{ $ta->id }}"
+                                    {{ old('tahun_ajaran_id', optional($tahunAktif)->id) == $ta->id ? 'selected' : '' }}>
+                                    {{ $ta->tahun }} - {{ ucfirst($ta->semester) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('tahun_ajaran_id')<span class="field-error">{{ $message }}</span>@enderror
@@ -190,7 +196,12 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if($errors->any())
-    Swal.fire({icon:'error',title:'Terdapat Kesalahan',html:`<ul style="text-align:left;padding-left:16px;margin:0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,confirmButtonColor:'#1f63db'});
+    Swal.fire({
+        icon:'error',
+        title:'Terdapat Kesalahan',
+        html:`<ul style="text-align:left;padding-left:16px;margin:0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor:'#1f63db'
+    });
     @endif
     @if(session('error'))
     Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
@@ -201,25 +212,38 @@
         const h = parseFloat(document.getElementById('nilaiHarian').value) || 0;
         const u = parseFloat(document.getElementById('nilaiUts').value) || 0;
         const a = parseFloat(document.getElementById('nilaiUas').value) || 0;
-        const hasAny = [t,h,u,a].some(v => v > 0);
+
+        // BUG FIX: tampilkan preview meski hanya satu nilai diisi
+        const hasAny = document.getElementById('nilaiTugas').value !== '' ||
+                       document.getElementById('nilaiHarian').value !== '' ||
+                       document.getElementById('nilaiUts').value !== '' ||
+                       document.getElementById('nilaiUas').value !== '';
+
         if (!hasAny) {
             document.getElementById('previewNum').textContent = '—';
-            document.getElementById('previewPred').textContent = '—';
             document.getElementById('previewNum').style.color = 'var(--brand)';
+            document.getElementById('previewPred').textContent = '—';
+            document.getElementById('previewPred').style.color = 'var(--brand)';
             return;
         }
+
         const avg = (t * 0.2) + (h * 0.3) + (u * 0.2) + (a * 0.3);
         document.getElementById('previewNum').textContent = avg.toFixed(1);
+
         let pred = '', col = '';
-        if (avg >= 90) { pred = 'A'; col = '#15803d'; }
+        if (avg >= 90)      { pred = 'A'; col = '#15803d'; }
         else if (avg >= 80) { pred = 'B'; col = '#2563eb'; }
         else if (avg >= 70) { pred = 'C'; col = '#d97706'; }
         else if (avg >= 60) { pred = 'D'; col = '#dc2626'; }
-        else { pred = 'E'; col = '#9f1239'; }
+        else                { pred = 'E'; col = '#9f1239'; }
+
         document.getElementById('previewPred').textContent = pred;
         document.getElementById('previewPred').style.color = col;
         document.getElementById('previewNum').style.color = col;
     }
+
+    // BUG FIX: jalankan calcPreview saat load jika ada nilai lama (setelah redirect back)
+    calcPreview();
 
     document.getElementById('nilaiForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');

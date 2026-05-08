@@ -26,7 +26,7 @@
     .field input,.field select,.field textarea{height:38px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);background:var(--surface2);width:100%;outline:none;transition:border-color .15s,background .15s;box-sizing:border-box;}
     .field textarea{height:auto;padding:10px 12px;resize:vertical;}
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand-h);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.1);}
-    .field input.is-invalid,.field select.is-invalid{border-color:var(--red);background:#fff8f8;}
+    .field input.is-invalid,.field select.is-invalid,.field textarea.is-invalid{border-color:var(--red);background:#fff8f8;}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;margin-top:-2px;}
     .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px;}
     .toggle-row{display:flex;align-items:center;gap:12px;}
@@ -70,7 +70,8 @@
     </div>
 
     <form action="{{ route('admin.kategori-pelanggaran.update', $kategoriPelanggaran->id) }}" method="POST" id="katForm">
-        @csrf @method('PUT')
+        @csrf
+        @method('PUT')
         <div class="form-card">
             <div class="form-section">
                 <p class="section-label">
@@ -81,20 +82,26 @@
                 <div class="form-grid">
                     <div class="field col-span-2">
                         <label>Nama Kategori <span class="req">*</span></label>
-                        <input type="text" name="nama" value="{{ old('nama', $kategoriPelanggaran->nama) }}"
+                        <input type="text" name="nama"
+                            value="{{ old('nama', $kategoriPelanggaran->nama) }}"
                             placeholder="cth. Membolos, Terlambat..."
                             class="{{ $errors->has('nama') ? 'is-invalid' : '' }}">
                         @error('nama')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Tingkat Pelanggaran <span class="req">*</span></label>
                         <select name="tingkat" class="{{ $errors->has('tingkat') ? 'is-invalid' : '' }}">
-                            @foreach(['ringan'=>'Ringan','sedang'=>'Sedang','berat'=>'Berat'] as $val => $label)
-                            <option value="{{ $val }}" {{ old('tingkat', $kategoriPelanggaran->tingkat) == $val ? 'selected' : '' }}>{{ $label }}</option>
+                            @foreach(['ringan' => 'Ringan', 'sedang' => 'Sedang', 'berat' => 'Berat'] as $val => $label)
+                                <option value="{{ $val }}"
+                                    {{ old('tingkat', $kategoriPelanggaran->tingkat) == $val ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
                             @endforeach
                         </select>
                         @error('tingkat')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Poin Default <span class="req">*</span></label>
                         <input type="number" name="poin_default" id="poinDefault"
@@ -102,8 +109,10 @@
                             min="1" max="100"
                             class="{{ $errors->has('poin_default') ? 'is-invalid' : '' }}"
                             oninput="updatePoin(this.value)">
+                        <span class="field-hint">Poin yang otomatis terisi saat mencatat pelanggaran.</span>
                         @error('poin_default')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Preview Poin</label>
                         <div class="poin-preview">
@@ -111,14 +120,17 @@
                             <span class="poin-label-txt">POIN PELANGGARAN</span>
                         </div>
                     </div>
+
                     <div class="field">
                         <label>Batas Poin Maksimum</label>
                         <input type="number" name="batas_poin"
                             value="{{ old('batas_poin', $kategoriPelanggaran->batas_poin) }}"
                             min="1" placeholder="opsional"
                             class="{{ $errors->has('batas_poin') ? 'is-invalid' : '' }}">
+                        <span class="field-hint">Batas akumulasi poin sebelum ada tindakan khusus. (opsional)</span>
                         @error('batas_poin')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Warna Indikator</label>
                         <div class="color-row">
@@ -126,21 +138,39 @@
                                 value="{{ old('warna', $kategoriPelanggaran->warna ?? '#3b82f6') }}"
                                 style="height:38px;width:60px;padding:2px 4px;cursor:pointer;"
                                 oninput="updateSwatch(this.value)">
-                            <div class="color-swatch" id="colorSwatch" style="background:{{ old('warna', $kategoriPelanggaran->warna ?? '#3b82f6') }}"></div>
+                            <div class="color-swatch" id="colorSwatch"
+                                style="background:{{ old('warna', $kategoriPelanggaran->warna ?? '#3b82f6') }}"></div>
+                            <span style="font-size:12.5px;color:var(--text3);">Pilih warna untuk tampilan UI</span>
                         </div>
+                        @error('warna')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field" style="justify-content:flex-end;padding-bottom:4px">
                         <label>Status Aktif</label>
+                        {{--
+                            Bug fix: is_active di model di-cast ke boolean.
+                            old() setelah validation fail mengembalikan string "0"/"1".
+                            Normalisasi dengan filter_var agar konsisten.
+                        --}}
+                        @php
+                            $isActiveChecked = old('is_active') !== null
+                                ? (bool) old('is_active')
+                                : (bool) $kategoriPelanggaran->is_active;
+                        @endphp
+                        {{-- hidden input HARUS sebelum checkbox --}}
+                        <input type="hidden" name="is_active" value="0">
                         <div class="toggle-row" style="margin-top:8px">
                             <label class="toggle-switch">
-                                <input type="hidden" name="is_active" value="0">
                                 <input type="checkbox" name="is_active" value="1" id="isActiveToggle"
-                                    {{ old('is_active', $kategoriPelanggaran->is_active) ? 'checked' : '' }}>
+                                    {{ $isActiveChecked ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="toggleLabel">{{ $kategoriPelanggaran->is_active ? 'Aktif' : 'Nonaktif' }}</span>
+                            <span class="toggle-label" id="toggleLabel">
+                                {{ $isActiveChecked ? 'Aktif' : 'Nonaktif' }}
+                            </span>
                         </div>
                     </div>
+
                     <div class="field col-span-2">
                         <label>Deskripsi / Contoh Pelanggaran</label>
                         <textarea name="deskripsi" rows="3"
@@ -165,19 +195,41 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if($errors->any())
-    Swal.fire({ icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">
+            @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+        </ul>`,
+        confirmButtonColor: '#1f63db'
+    });
     @endif
+
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({
+        icon: 'success',
+        title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500,
+        showConfirmButton: false,
+        toast: true,
+        position: 'top-end'
+    });
     @endif
-    function updatePoin(val) { document.getElementById('poinPreview').textContent = val || 0; }
-    function updateSwatch(val) { document.getElementById('colorSwatch').style.background = val; }
-    document.getElementById('isActiveToggle').addEventListener('change', function() {
+
+    function updatePoin(val) {
+        document.getElementById('poinPreview').textContent = val || 0;
+    }
+
+    function updateSwatch(val) {
+        document.getElementById('colorSwatch').style.background = val;
+    }
+
+    document.getElementById('isActiveToggle').addEventListener('change', function () {
         document.getElementById('toggleLabel').textContent = this.checked ? 'Aktif' : 'Nonaktif';
     });
-    document.getElementById('katForm').addEventListener('submit', function() {
+
+    document.getElementById('katForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;

@@ -1,7 +1,13 @@
 <x-app-layout>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-    :root{--brand:#1f63db;--brand-h:#3582f0;--brand-50:#eef6ff;--brand-100:#d9ebff;--brand-700:#1750c0;--surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;--border:#e2e8f0;--border2:#cbd5e1;--text:#0f172a;--text2:#475569;--text3:#94a3b8;--red:#dc2626;--radius:10px;--radius-sm:7px}
+    :root{
+        --brand:#1f63db;--brand-h:#3582f0;--brand-50:#eef6ff;--brand-100:#d9ebff;--brand-700:#1750c0;
+        --surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;
+        --border:#e2e8f0;--border2:#cbd5e1;
+        --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+        --red:#dc2626;--radius:10px;--radius-sm:7px;
+    }
     .page{padding:28px 28px 60px;max-width:2000px;margin:0 auto}
     .breadcrumb{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);margin-bottom:20px}
     .breadcrumb a{color:var(--text3);text-decoration:none}.breadcrumb a:hover{color:var(--brand)}.breadcrumb .sep{color:var(--border2)}.breadcrumb .current{color:var(--text2)}
@@ -28,7 +34,7 @@
     .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px}
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border)}
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:680px){.page{padding:16px 16px 40px}.form-grid{grid-template-columns:1fr}.col-span-2{grid-column:span 1}}
+    @media(max-width:640px){.page{padding:16px 16px 40px}.form-grid{grid-template-columns:1fr}.col-span-2{grid-column:span 1}}
 </style>
 
 <div class="page">
@@ -59,12 +65,17 @@
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-grid">
+
+                    {{-- Tanggal --}}
                     <div class="field col-span-2">
                         <label>Tanggal Sesi <span class="req">*</span></label>
-                        <input type="date" name="tanggal" value="{{ old('tanggal', today()->format('Y-m-d')) }}"
+                        <input type="date" name="tanggal"
+                            value="{{ old('tanggal', today()->format('Y-m-d')) }}"
                             class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
                         @error('tanggal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Berlaku Mulai (datetime-local) --}}
                     <div class="field">
                         <label>Berlaku Mulai <span class="req">*</span></label>
                         <input type="datetime-local" name="berlaku_mulai"
@@ -72,6 +83,8 @@
                             class="{{ $errors->has('berlaku_mulai') ? 'is-invalid' : '' }}">
                         @error('berlaku_mulai')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Kadaluarsa --}}
                     <div class="field">
                         <label>Kadaluarsa Pada <span class="req">*</span></label>
                         <input type="datetime-local" name="kadaluarsa_pada"
@@ -80,14 +93,19 @@
                         <span class="field-hint">Harus setelah waktu berlaku mulai</span>
                         @error('kadaluarsa_pada')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Radius --}}
                     <div class="field col-span-2">
                         <label>Radius Lokasi (meter)</label>
-                        <input type="number" name="radius_meter" value="{{ old('radius_meter') }}"
-                            min="10" max="1000" placeholder="Kosongkan jika tidak membatasi lokasi"
+                        <input type="number" name="radius_meter"
+                            value="{{ old('radius_meter') }}"
+                            min="10" max="1000"
+                            placeholder="Kosongkan jika tidak membatasi lokasi"
                             class="{{ $errors->has('radius_meter') ? 'is-invalid' : '' }}">
-                        <span class="field-hint">Opsional — guru hanya bisa scan jika berada dalam radius ini dari sekolah (10–1000m)</span>
+                        <span class="field-hint">Opsional — guru hanya bisa scan jika dalam radius ini dari sekolah (10–1000m)</span>
                         @error('radius_meter')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                 </div>
             </div>
             <div class="form-footer">
@@ -103,15 +121,35 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    @if(session('error'))Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});@endif
-    @if($errors->any())
-    Swal.fire({icon:'error',title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db'});
+    @if(session('error'))
+    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
     @endif
-    document.getElementById('sesiForm').addEventListener('submit',function(){
-        const btn=document.getElementById('btnSubmit');btn.disabled=true;
-        btn.innerHTML=`<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Membuat…`;
+    @if($errors->any())
+    Swal.fire({
+        icon:'error',
+        title:'Terdapat {{ $errors->count() }} Kesalahan',
+        html:`<ul style="text-align:left;padding-left:16px;margin:0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor:'#1f63db'
+    });
+    @endif
+
+    // Sinkronisasi tanggal → berlaku_mulai & kadaluarsa_pada otomatis
+    document.querySelector('[name="tanggal"]').addEventListener('change', function () {
+        const tgl   = this.value;
+        const mulai = document.querySelector('[name="berlaku_mulai"]');
+        const kadaluarsa = document.querySelector('[name="kadaluarsa_pada"]');
+        if (tgl) {
+            const jam = mulai.value.split('T')[1] || '07:00';
+            mulai.value = tgl + 'T' + jam;
+            const jamExp = kadaluarsa.value.split('T')[1] || '09:00';
+            kadaluarsa.value = tgl + 'T' + jamExp;
+        }
+    });
+
+    document.getElementById('sesiForm').addEventListener('submit', function () {
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Membuat…`;
     });
 </script>
 </x-app-layout>

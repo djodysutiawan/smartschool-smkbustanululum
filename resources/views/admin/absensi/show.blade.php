@@ -50,14 +50,17 @@
 </style>
 
 @php
-    // Label metode sesuai enum DB ENUM('manual','qr_scan','wajah','rfid','import')
+    // FIX: Tambah 'qr' agar absensi dari AbsensiSiswaController (METODE_QR = 'qr') tampil benar
     $metodeLabel = [
         'manual'  => 'Manual',
+        'qr'      => 'Scan QR',
         'qr_scan' => 'QR Code',
         'wajah'   => 'Face Recognition',
         'rfid'    => 'RFID',
         'import'  => 'Import',
     ];
+    // Metode yang dicatat otomatis sistem
+    $metodeOtomatis = ['qr', 'qr_scan', 'wajah', 'rfid', 'import'];
 @endphp
 
 <div class="page">
@@ -80,7 +83,8 @@
                 Edit
             </a>
             <form action="{{ route('admin.absensi.destroy', $absensi->id) }}" method="POST" id="delForm">
-                @csrf @method('DELETE')
+                @csrf
+                @method('DELETE')
                 <button type="button" class="btn btn-del" onclick="confirmDelete()">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                     Hapus
@@ -121,15 +125,14 @@
                         <div class="dl-item">
                             <p class="dl-label">Status Kehadiran</p>
                             <p class="dl-val">
-                                @php $st = $absensi->status; @endphp
-                                <span class="badge badge-{{ $st }}">
-                                    <span class="badge-dot"></span>{{ ucfirst($st) }}
+                                <span class="badge badge-{{ $absensi->status }}">
+                                    <span class="badge-dot"></span>
+                                    {{ ucfirst($absensi->status) }}
                                 </span>
                             </p>
                         </div>
                         <div class="dl-item">
                             <p class="dl-label">Metode</p>
-                            {{-- FIX: gunakan $metodeLabel map, bukan cek '=== qr' (enum DB adalah 'qr_scan') --}}
                             <p class="dl-val">
                                 <span class="badge badge-metode">
                                     {{ $metodeLabel[$absensi->metode] ?? ucfirst($absensi->metode ?? '—') }}
@@ -196,10 +199,13 @@
                             <p class="dl-label">Diperbarui</p>
                             <p class="dl-val" style="margin-top:4px">{{ $absensi->updated_at->format('d M Y, H:i') }}</p>
                         </div>
-                        @if($absensi->metode && in_array($absensi->metode, ['wajah','rfid','qr_scan']))
+                        {{-- FIX: Cek menggunakan $metodeOtomatis array, bukan hardcode string --}}
+                        @if($absensi->metode && in_array($absensi->metode, $metodeOtomatis))
                         <div style="padding:10px 12px;background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius-sm)">
                             <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--brand-700);margin-bottom:2px">Dicatat Otomatis</p>
-                            <p style="font-size:12px;color:var(--brand-700);opacity:.8">Absensi ini dicatat otomatis oleh sistem via {{ $metodeLabel[$absensi->metode] ?? $absensi->metode }}.</p>
+                            <p style="font-size:12px;color:var(--brand-700);opacity:.8">
+                                Absensi ini dicatat otomatis oleh sistem via {{ $metodeLabel[$absensi->metode] ?? $absensi->metode }}.
+                            </p>
                         </div>
                         @endif
                     </div>
@@ -217,6 +223,7 @@
     @if(session('error'))
     Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
     @endif
+
     function confirmDelete() {
         Swal.fire({
             title:'Hapus Absensi?',

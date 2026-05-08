@@ -21,14 +21,16 @@
         .stat-box { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 12px; text-align: center; }
         .stat-box .val { font-size: 18px; font-weight: 700; color: #0f172a; }
         .stat-box .lbl { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
-        .stat-box.blue { border-color: #bfdbfe; background: #eff6ff; }
-        .stat-box.green { border-color: #bbf7d0; background: #f0fdf4; }
+        .stat-box.blue   { border-color: #bfdbfe; background: #eff6ff; }
+        .stat-box.green  { border-color: #bbf7d0; background: #f0fdf4; }
         .stat-box.yellow { border-color: #fde68a; background: #fefce8; }
-        .stat-box.red { border-color: #fecaca; background: #fff0f0; }
-        .stat-box.blue .val { color: #1d4ed8; }
-        .stat-box.green .val { color: #15803d; }
+        .stat-box.red    { border-color: #fecaca; background: #fff0f0; }
+        .stat-box.gray   { border-color: #e2e8f0; background: #f8fafc; }
+        .stat-box.blue   .val { color: #1d4ed8; }
+        .stat-box.green  .val { color: #15803d; }
         .stat-box.yellow .val { color: #a16207; }
-        .stat-box.red .val { color: #dc2626; }
+        .stat-box.red    .val { color: #dc2626; }
+        .stat-box.gray   .val { color: #64748b; }
 
         table { width: 100%; border-collapse: collapse; }
         thead tr { background: #1f63db; }
@@ -41,15 +43,15 @@
         td.bold { font-weight: 700; color: #0f172a; }
 
         .status-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 9.5px; font-weight: 700; }
-        .s-sudah_dinilai { background: #dcfce7; color: #15803d; }
-        .s-dikumpulkan { background: #dbeafe; color: #1d4ed8; }
-        .s-terlambat { background: #fee2e2; color: #dc2626; }
-        .s-belum_dikumpulkan { background: #f1f5f9; color: #64748b; }
+        .s-sudah_dinilai      { background: #dcfce7; color: #15803d; }
+        .s-dikumpulkan        { background: #dbeafe; color: #1d4ed8; }
+        .s-terlambat          { background: #fee2e2; color: #dc2626; }
+        .s-belum_dikumpulkan  { background: #f1f5f9; color: #64748b; }
 
         .nilai-pill { display: inline-block; padding: 2px 8px; border-radius: 5px; font-size: 10px; font-weight: 700; }
         .n-high { background: #dcfce7; color: #15803d; }
-        .n-mid { background: #dbeafe; color: #1d4ed8; }
-        .n-low { background: #fee2e2; color: #dc2626; }
+        .n-mid  { background: #dbeafe; color: #1d4ed8; }
+        .n-low  { background: #fee2e2; color: #dc2626; }
 
         .footer { margin-top: 24px; padding-top: 10px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
         .footer p { font-size: 9.5px; color: #94a3b8; }
@@ -96,6 +98,10 @@
         <p class="val">{{ $terlambat }}</p>
         <p class="lbl">Terlambat</p>
     </div>
+    <div class="stat-box gray">
+        <p class="val">{{ $belum }}</p>
+        <p class="lbl">Belum Dikumpulkan</p>
+    </div>
 </div>
 
 <table>
@@ -120,9 +126,13 @@
             <td>{{ \Illuminate\Support\Str::limit($p->tugas->judul ?? '-', 35) }}</td>
             <td>{{ $p->tugas->mataPelajaran->nama_mapel ?? '-' }}</td>
             <td>
-                {{ $p->dikumpulkan_pada
-                    ? $p->dikumpulkan_pada->format('d M Y, H:i')
-                    : ($p->created_at ? $p->created_at->format('d M Y') : '-') }}
+                @if($p->dikumpulkan_pada)
+                    {{ \Carbon\Carbon::parse($p->dikumpulkan_pada)->format('d M Y, H:i') }}
+                @elseif($p->created_at)
+                    {{ \Carbon\Carbon::parse($p->created_at)->format('d M Y') }}
+                @else
+                    -
+                @endif
             </td>
             <td class="center">
                 <span class="status-pill s-{{ $p->status }}">

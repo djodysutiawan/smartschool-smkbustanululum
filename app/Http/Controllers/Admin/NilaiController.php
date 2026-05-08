@@ -18,22 +18,18 @@ use App\Imports\NilaiImport;
 
 class NilaiController extends Controller
 {
+    // ─────────────────────────────────────────────────────────────────────────
+    // INDEX
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function index(Request $request)
     {
         $query = Nilai::with(['siswa', 'mataPelajaran', 'guru', 'kelas', 'tahunAjaran']);
 
-        if ($request->filled('tahun_ajaran_id')) {
-            $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
-        }
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-        if ($request->filled('mata_pelajaran_id')) {
-            $query->where('mata_pelajaran_id', $request->mata_pelajaran_id);
-        }
-        if ($request->filled('predikat')) {
-            $query->where('predikat', $request->predikat);
-        }
+        if ($request->filled('tahun_ajaran_id'))   $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
+        if ($request->filled('kelas_id'))          $query->where('kelas_id', $request->kelas_id);
+        if ($request->filled('mata_pelajaran_id')) $query->where('mata_pelajaran_id', $request->mata_pelajaran_id);
+        if ($request->filled('predikat'))          $query->where('predikat', $request->predikat);
         if ($request->filled('search')) {
             $query->whereHas('siswa', fn($q) =>
                 $q->where('nama_lengkap', 'like', "%{$request->search}%")
@@ -50,6 +46,10 @@ class NilaiController extends Controller
             compact('nilai', 'tahunAjaran', 'kelasList', 'mapelList', 'predikatList'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // CREATE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function create()
     {
         $siswaList   = Siswa::aktif()->orderBy('nama_lengkap')->get();
@@ -57,26 +57,21 @@ class NilaiController extends Controller
         $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList   = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
+        $tahunAktif  = TahunAjaran::aktif()->latest('tahun')->first();
 
         return view('admin.nilai.create',
-            compact('siswaList', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran'));
+            compact('siswaList', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'tahunAktif'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STORE
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'siswa_id'          => ['required', 'exists:siswa,id'],
-            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
-            'guru_id'           => ['required', 'exists:guru,id'],
-            'kelas_id'          => ['required', 'exists:kelas,id'],
-            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
-            'nilai_tugas'       => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'nilai_harian'      => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'nilai_uts'         => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'nilai_uas'         => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'catatan'           => ['nullable', 'string', 'max:500'],
-        ], $this->messages());
+        $validated = $request->validate($this->rules(), $this->messages());
 
+        // Cegah duplikat: siswa + mapel + tahun_ajaran harus unik
         $exists = Nilai::where('siswa_id', $validated['siswa_id'])
             ->where('mata_pelajaran_id', $validated['mata_pelajaran_id'])
             ->where('tahun_ajaran_id', $validated['tahun_ajaran_id'])
@@ -87,11 +82,16 @@ class NilaiController extends Controller
                 ->with('error', 'Nilai untuk siswa dan mata pelajaran ini pada tahun ajaran yang dipilih sudah ada.');
         }
 
+        // nilai_akhir & predikat dihitung otomatis via model booted()
         Nilai::create($validated);
 
         return redirect()->route('admin.nilai.index')
             ->with('success', 'Nilai berhasil ditambahkan.');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHOW
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function show(Nilai $nilai)
     {
@@ -99,6 +99,10 @@ class NilaiController extends Controller
 
         return view('admin.nilai.show', compact('nilai'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // EDIT
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function edit(Nilai $nilai)
     {
@@ -112,8 +116,14 @@ class NilaiController extends Controller
             compact('nilai', 'siswaList', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // UPDATE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function update(Request $request, Nilai $nilai)
     {
+        // Saat update, hanya komponen nilai & catatan yang bisa diubah
+        // (siswa, mapel, kelas, guru, tahun_ajaran tidak berubah)
         $validated = $request->validate([
             'nilai_tugas'  => ['nullable', 'numeric', 'min:0', 'max:100'],
             'nilai_harian' => ['nullable', 'numeric', 'min:0', 'max:100'],
@@ -122,11 +132,16 @@ class NilaiController extends Controller
             'catatan'      => ['nullable', 'string', 'max:500'],
         ], $this->messages());
 
+        // nilai_akhir & predikat dihitung otomatis via model booted()
         $nilai->update($validated);
 
         return redirect()->route('admin.nilai.show', $nilai)
             ->with('success', 'Nilai berhasil diperbarui.');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DESTROY
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function destroy(Nilai $nilai)
     {
@@ -135,6 +150,10 @@ class NilaiController extends Controller
         return redirect()->route('admin.nilai.index')
             ->with('success', 'Nilai berhasil dihapus.');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // RAPOR
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function raporKelas(Request $request)
     {
@@ -160,16 +179,16 @@ class NilaiController extends Controller
         return view('admin.nilai.rapor', compact('nilai', 'kelas', 'tahunAjaran'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // EXPORT / IMPORT
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function exportPdf(Request $request)
     {
         $query = Nilai::with(['siswa', 'mataPelajaran', 'guru', 'kelas', 'tahunAjaran']);
 
-        if ($request->filled('tahun_ajaran_id')) {
-            $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
-        }
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
+        if ($request->filled('tahun_ajaran_id')) $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
+        if ($request->filled('kelas_id'))        $query->where('kelas_id', $request->kelas_id);
 
         $nilai = $query->get();
 
@@ -219,7 +238,10 @@ class NilaiController extends Controller
 
     public function importTemplate()
     {
-        return Excel::download(new \App\Exports\NilaiTemplateExport(), 'template-nilai.xlsx');
+        return Excel::download(
+            new \App\Exports\NilaiTemplateExport(),
+            'template-nilai.xlsx'
+        );
     }
 
     public function import(Request $request)
@@ -238,6 +260,26 @@ class NilaiController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal mengimpor data: ' . $e->getMessage());
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function rules(): array
+    {
+        return [
+            'siswa_id'          => ['required', 'exists:siswa,id'],
+            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
+            'guru_id'           => ['required', 'exists:guru,id'],
+            'kelas_id'          => ['required', 'exists:kelas,id'],
+            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
+            'nilai_tugas'       => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'nilai_harian'      => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'nilai_uts'         => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'nilai_uas'         => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'catatan'           => ['nullable', 'string', 'max:500'],
+        ];
     }
 
     private function messages(): array

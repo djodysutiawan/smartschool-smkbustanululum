@@ -24,59 +24,142 @@ class JawabanSiswa extends Model
     protected function casts(): array
     {
         return [
-            'adalah_benar'  => 'boolean',
-            'poin_didapat'  => 'decimal:2',
+            'adalah_benar' => 'boolean',
+            'poin_didapat' => 'decimal:2',
         ];
     }
 
-    // ── Auto Correct ──────────────────────────────────────────────
-
-    /**
-     * Koreksi otomatis untuk soal PG dan benar/salah.
-     * Dipanggil saat jawaban disimpan.
-     */
+    /*
+    |--------------------------------------------------------------------------
+    | Boot — Auto Correct untuk PG & benar_salah
+    |--------------------------------------------------------------------------
+    |
+    | Hanya dijalankan jika:
+    | 1. Ada pilihan_jawaban_id (bukan essay)
+    | 2. Relasi soal berhasil di-load (safety check)
+    | 3. Jenis soal mendukung auto correct
+    |
+    */
     public static function boot(): void
     {
         parent::boot();
 
         static::saving(function (self $model) {
-            if ($model->pilihan_jawaban_id && $model->soal) {
-                $model->autoCorrect();
+            // Hanya auto correct jika pilihan diisi
+            if (! $model->pilihan_jawaban_id) {
+                return;
             }
+
+            // Load relasi soal jika belum ada (hindari lazy loading error)
+            $soal = $model->relationLoaded('soal')
+                ? $model->soal
+                : SoalUjian::find($model->soal_ujian_id);
+
+            if (! $soal || ! $soal->bisaAutoCorrect()) {
+                return;
+            }
+
+            $pilihan = PilihanJawaban::find($model->pilihan_jawaban_id);
+            if (! $pilihan) {
+                return;
+            }
+
+            $benar = $pilihan->adalah_benar;
+            $model->adalah_benar  = $benar;
+            $model->poin_didapat  = $benar ? $soal->bobot : 0;
         });
     }
 
+    /*
+    |--------------------------------------------------------------------------
+    | Auto Correct (dapat dipanggil manual jika perlu)
+    |--------------------------------------------------------------------------
+    */
     public function autoCorrect(): void
     {
-        if (!$this->soal->bisaAutoCorrect()) return;
+        if (! $this->pilihan_jawaban_id) return;
+
+        $soal = $this->soal ?? SoalUjian::find($this->soal_ujian_id);
+        if (! $soal || ! $soal->bisaAutoCorrect()) return;
 
         $pilihan = PilihanJawaban::find($this->pilihan_jawaban_id);
-        if (!$pilihan) return;
+        if (! $pilihan) return;
 
         $benar = $pilihan->adalah_benar;
-        $this->adalah_benar = $benar;
-        $this->poin_didapat = $benar ? $this->soal->bobot : 0;
+        $this->update([
+            'adalah_benar' => $benar,
+            'poin_didapat' => $benar ? $soal->bobot : 0,
+        ]);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Koreksi Manual Essay oleh Guru / Admin
+    |--------------------------------------------------------------------------
+    |
+    | $poin       : nilai yang diberikan guru (0 s/d bobot soal)
+    | $catatan    : feedback / komentar guru (opsional)
+    |
+    | Setelah koreksi, sesi dihitung ulang nilainya secara otomatis.
+    |
+    */
+    public function koreksiEssay(float $poin, ?string $catatan = null): void
+    {
+        // Load soal jika belum
+        $soal = $this->relationLoaded('soal')
+            ? $this->soal
+            : SoalUjian::find($this->soal_ujian_id);
+
+        abort_if(! $soal, 404, 'Soal tidak ditemukan.');
+        abort_if($soal->jenis_soal !== 'essay', 422, 'Koreksi manual hanya untuk soal essay.');
+
+        // Clamp poin ke rentang valid
+        $maxPoin = (float) $soal->bobot;
+        $poin    = max(0, min($poin, $maxPoin));
+
+        $this->update([
+            'adalah_benar'    => $maxPoin > 0 && ($poin / $maxPoin) >= 0.6, // >= 60% bobot = benar
+            'poin_didapat'    => $poin,
+            'catatan_koreksi' => $catatan,
+        ]);
+
+        // Recalculate nilai sesi setelah koreksi
+        $sesi = $this->relationLoaded('sesi')
+            ? $this->sesi
+            : SesiUjian::find($this->sesi_ujian_id);
+
+        $sesi?->hitungNilai();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
+
+    /**
+     * Apakah jawaban ini sudah dikoreksi (baik auto maupun manual)?
+     */
+    public function sudahDikoreksi(): bool
+    {
+        return ! is_null($this->poin_didapat);
     }
 
     /**
-     * Koreksi manual essay oleh guru.
+     * Apakah jawaban ini adalah essay yang belum dikoreksi?
      */
-    public function koreksiEssay(float $poin, ?string $catatan = null): void
+    public function essayBelumDikoreksi(): bool
     {
-        $maxPoin = $this->soal->bobot;
-        $poin    = min($poin, $maxPoin);
+        $soal = $this->relationLoaded('soal') ? $this->soal : null;
 
-        $this->update([
-            'adalah_benar'   => $poin >= ($maxPoin * 0.6), // >= 60% bobot = benar
-            'poin_didapat'   => $poin,
-            'catatan_koreksi'=> $catatan,
-        ]);
-
-        // Trigger recalculate sesi setelah koreksi
-        $this->sesi->hitungNilai();
+        return $soal?->jenis_soal === 'essay' && is_null($this->poin_didapat);
     }
 
-    // ── Relationships ─────────────────────────────────────────────
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
 
     public function sesi()
     {

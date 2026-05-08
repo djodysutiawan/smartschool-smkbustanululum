@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\CascadeDropdownTrait;
 use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
@@ -17,38 +18,39 @@ use App\Imports\UjianImport;
 
 class UjianController extends Controller
 {
+    use CascadeDropdownTrait;
+
+    /** @var array Enum jenis ujian yang valid */
+    private const JENIS_LIST = ['ulangan_harian', 'uts', 'uas', 'remedial', 'quiz'];
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INDEX
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function index(Request $request)
     {
         $query = Ujian::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran']);
 
-        if ($request->filled('tahun_ajaran_id')) {
-            $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
-        }
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-        if ($request->filled('guru_id')) {
-            $query->where('guru_id', $request->guru_id);
-        }
-        if ($request->filled('jenis')) {
-            $query->where('jenis', $request->jenis);
-        }
-        if ($request->filled('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
-        }
-        if ($request->filled('search')) {
-            $query->where('judul', 'like', "%{$request->search}%");
-        }
+        if ($request->filled('tahun_ajaran_id')) $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
+        if ($request->filled('kelas_id'))        $query->where('kelas_id', $request->kelas_id);
+        if ($request->filled('guru_id'))         $query->where('guru_id', $request->guru_id);
+        if ($request->filled('jenis'))           $query->where('jenis', $request->jenis);
+        if ($request->filled('is_active'))       $query->where('is_active', $request->boolean('is_active'));
+        if ($request->filled('search'))          $query->where('judul', 'like', "%{$request->search}%");
 
         $ujian       = $query->orderByDesc('tanggal')->paginate(20)->withQueryString();
         $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
         $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
         $guruList    = Guru::aktif()->orderBy('nama_lengkap')->get();
-        $jenisList   = ['ulangan_harian', 'uts', 'uas', 'remedial', 'quiz'];
+        $jenisList   = self::JENIS_LIST;
 
         return view('admin.ujian.index',
             compact('ujian', 'tahunAjaran', 'kelasList', 'guruList', 'jenisList'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // CREATE
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function create()
     {
@@ -56,32 +58,20 @@ class UjianController extends Controller
         $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList   = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
-        $jenisList   = ['ulangan_harian', 'uts', 'uas', 'remedial', 'quiz'];
+        $tahunAktif  = TahunAjaran::aktif()->latest('tahun')->first();
+        $jenisList   = self::JENIS_LIST;
 
         return view('admin.ujian.create',
-            compact('guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisList'));
+            compact('guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'tahunAktif', 'jenisList'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // STORE
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'guru_id'           => ['required', 'exists:guru,id'],
-            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
-            'kelas_id'          => ['required', 'exists:kelas,id'],
-            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
-            'judul'             => ['required', 'string', 'max:255'],
-            'jenis'             => ['required', Rule::in(['ulangan_harian', 'uts', 'uas', 'remedial', 'quiz'])],
-            'tanggal'           => ['required', 'date'],
-            'jam_mulai'         => ['nullable', 'date_format:H:i'],
-            'durasi_menit'      => ['required', 'integer', 'min:1', 'max:480'],
-            'nilai_kkm'         => ['nullable', 'integer', 'min:0', 'max:100'],
-            'acak_soal'         => ['boolean'],
-            'acak_pilihan'      => ['boolean'],
-            'tampilkan_nilai'   => ['boolean'],
-            'maks_percobaan'    => ['nullable', 'integer', 'min:1', 'max:10'],
-            'keterangan'        => ['nullable', 'string', 'max:1000'],
-            'is_active'         => ['boolean'],
-        ], $this->messages());
+        $validated = $request->validate($this->rules(), $this->messages());
 
         Ujian::create($validated);
 
@@ -89,20 +79,31 @@ class UjianController extends Controller
             ->with('success', 'Ujian berhasil ditambahkan.');
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHOW
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function show(Ujian $ujian)
     {
         $ujian->load(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran', 'soal']);
 
         $stats = [
-            'total_soal'     => $ujian->total_soal,
-            'total_bobot'    => $ujian->total_bobot,
-            'siswa_selesai'  => $ujian->siswaSelesai()->count(),
-            'siswa_lulus'    => $ujian->sesi()->where('lulus', true)->count(),
-            'rata_nilai'     => round($ujian->sesi()->whereNotNull('nilai_akhir')->avg('nilai_akhir') ?? 0, 2),
+            'total_soal'    => $ujian->total_soal,
+            'total_bobot'   => $ujian->total_bobot,
+            'siswa_selesai' => $ujian->siswaSelesai()->count(),
+            'siswa_lulus'   => $ujian->sesi()->where('lulus', true)->count(),
+            'rata_nilai'    => round(
+                $ujian->sesi()->whereNotNull('nilai_akhir')->avg('nilai_akhir') ?? 0,
+                2
+            ),
         ];
 
         return view('admin.ujian.show', compact('ujian', 'stats'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // EDIT
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function edit(Ujian $ujian)
     {
@@ -110,38 +111,34 @@ class UjianController extends Controller
         $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList   = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
-        $jenisList   = ['ulangan_harian', 'uts', 'uas', 'remedial', 'quiz'];
+        $jenisList   = self::JENIS_LIST;
+
+        // Pre-populate cascade dropdown untuk guru yang sudah dipilih
+        $mapelGuru = $this->getMapelByGuru($ujian->guru_id);
+        $kelasGuru = $this->getKelasByGuru($ujian->guru_id);
 
         return view('admin.ujian.edit',
-            compact('ujian', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisList'));
+            compact('ujian', 'guruList', 'kelasList', 'mapelList',
+                    'tahunAjaran', 'jenisList', 'mapelGuru', 'kelasGuru'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // UPDATE
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function update(Request $request, Ujian $ujian)
     {
-        $validated = $request->validate([
-            'guru_id'           => ['required', 'exists:guru,id'],
-            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
-            'kelas_id'          => ['required', 'exists:kelas,id'],
-            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
-            'judul'             => ['required', 'string', 'max:255'],
-            'jenis'             => ['required', Rule::in(['ulangan_harian', 'uts', 'uas', 'remedial', 'quiz'])],
-            'tanggal'           => ['required', 'date'],
-            'jam_mulai'         => ['nullable', 'date_format:H:i'],
-            'durasi_menit'      => ['required', 'integer', 'min:1', 'max:480'],
-            'nilai_kkm'         => ['nullable', 'integer', 'min:0', 'max:100'],
-            'acak_soal'         => ['boolean'],
-            'acak_pilihan'      => ['boolean'],
-            'tampilkan_nilai'   => ['boolean'],
-            'maks_percobaan'    => ['nullable', 'integer', 'min:1', 'max:10'],
-            'keterangan'        => ['nullable', 'string', 'max:1000'],
-            'is_active'         => ['boolean'],
-        ], $this->messages());
+        $validated = $request->validate($this->rules(), $this->messages());
 
         $ujian->update($validated);
 
         return redirect()->route('admin.ujian.show', $ujian)
             ->with('success', 'Ujian berhasil diperbarui.');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DESTROY / TOGGLE
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function destroy(Ujian $ujian)
     {
@@ -153,22 +150,22 @@ class UjianController extends Controller
 
     public function toggleStatus(Ujian $ujian)
     {
-        $ujian->update(['is_active' => !$ujian->is_active]);
+        $ujian->update(['is_active' => ! $ujian->is_active]);
         $status = $ujian->is_active ? 'diaktifkan' : 'dinonaktifkan';
 
         return back()->with('success', "Ujian berhasil {$status}.");
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // EXPORT / IMPORT
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function exportPdf(Request $request)
     {
         $query = Ujian::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran']);
 
-        if ($request->filled('tahun_ajaran_id')) {
-            $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
-        }
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
+        if ($request->filled('tahun_ajaran_id')) $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
+        if ($request->filled('kelas_id'))        $query->where('kelas_id', $request->kelas_id);
 
         $ujian = $query->orderByDesc('tanggal')->get();
 
@@ -188,7 +185,10 @@ class UjianController extends Controller
 
     public function importTemplate()
     {
-        return Excel::download(new \App\Exports\UjianTemplateExport(), 'template-ujian.xlsx');
+        return Excel::download(
+            new \App\Exports\UjianTemplateExport(),
+            'template-ujian.xlsx'
+        );
     }
 
     public function import(Request $request)
@@ -207,6 +207,46 @@ class UjianController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Gagal mengimpor data: ' . $e->getMessage());
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // AJAX — Cascade Dropdown (konsisten dengan Materi & Tugas)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    public function ajaxMapelByGuru(Guru $guru)
+    {
+        return response()->json($this->getMapelByGuru($guru->id));
+    }
+
+    public function ajaxKelasByGuru(Guru $guru)
+    {
+        return response()->json($this->getKelasByGuru($guru->id));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private function rules(): array
+    {
+        return [
+            'guru_id'           => ['required', 'exists:guru,id'],
+            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
+            'kelas_id'          => ['required', 'exists:kelas,id'],
+            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
+            'judul'             => ['required', 'string', 'max:255'],
+            'jenis'             => ['required', Rule::in(self::JENIS_LIST)],
+            'tanggal'           => ['required', 'date'],
+            'jam_mulai'         => ['nullable', 'date_format:H:i'],
+            'durasi_menit'      => ['required', 'integer', 'min:1', 'max:480'],
+            'nilai_kkm'         => ['nullable', 'integer', 'min:0', 'max:100'],
+            'acak_soal'         => ['boolean'],
+            'acak_pilihan'      => ['boolean'],
+            'tampilkan_nilai'   => ['boolean'],
+            'maks_percobaan'    => ['nullable', 'integer', 'min:1', 'max:10'],
+            'keterangan'        => ['nullable', 'string', 'max:1000'],
+            'is_active'         => ['boolean'],
+        ];
     }
 
     private function messages(): array

@@ -32,6 +32,7 @@
     .field input:focus,.field textarea:focus{border-color:var(--brand-h);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.1);}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;}
     .nilai-preview{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:20px;margin-top:16px;flex-wrap:wrap;}
+    .preview-block{display:flex;flex-direction:column;gap:2px;}
     .preview-block .lbl{font-size:11px;color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
     .preview-block .num{font-family:'Plus Jakarta Sans',sans-serif;font-size:30px;font-weight:800;color:var(--brand);line-height:1;}
     .preview-sep{width:1px;height:44px;background:var(--border);}
@@ -42,6 +43,7 @@
 </style>
 
 <div class="page">
+    {{-- BUG FIX: route names sesuai routes file --}}
     <nav class="breadcrumb">
         <a href="{{ route('dashboard') }}">Dashboard</a>
         <span class="sep">›</span>
@@ -68,16 +70,18 @@
         <p>Mengedit nilai untuk <strong>{{ $nilai->siswa->nama_lengkap ?? '-' }}</strong>
             · Mapel: <strong>{{ $nilai->mataPelajaran->nama_mapel ?? '-' }}</strong>
             · Kelas: <strong>{{ $nilai->kelas->nama_kelas ?? '-' }}</strong>
-            · TA: <strong>{{ $nilai->tahunAjaran->tahun ?? '-' }}</strong></p>
+            · TA: <strong>{{ optional($nilai->tahunAjaran)->tahun ?? '-' }}{{ optional($nilai->tahunAjaran)->semester ? ' - '.ucfirst($nilai->tahunAjaran->semester) : '' }}</strong>
+        </p>
     </div>
 
     @if($errors->any())
-        <div style="background:var(--red-bg,#fee2e2);border:1px solid #fecaca;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:13.5px;color:var(--red)">
+        <div style="background:#fee2e2;border:1px solid #fecaca;border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;font-size:13.5px;color:var(--red)">
             <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">Terdapat {{ $errors->count() }} kesalahan:</strong>
             <ul style="margin:6px 0 0 16px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
         </div>
     @endif
 
+    {{-- BUG FIX: route name → admin.nilai.update --}}
     <form action="{{ route('admin.nilai.update', $nilai->id) }}" method="POST" id="nilaiForm">
         @csrf @method('PUT')
         <div class="form-card">
@@ -90,22 +94,30 @@
                 <div class="form-grid-3">
                     <div class="field">
                         <label>Nilai Tugas</label>
-                        <input type="number" name="nilai_tugas" id="nilaiTugas" value="{{ old('nilai_tugas', $nilai->nilai_tugas) }}" placeholder="0–100" min="0" max="100" step="0.01" oninput="calcPreview()">
+                        <input type="number" name="nilai_tugas" id="nilaiTugas"
+                            value="{{ old('nilai_tugas', $nilai->nilai_tugas) }}"
+                            placeholder="0–100" min="0" max="100" step="0.01" oninput="calcPreview()">
                         @error('nilai_tugas')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Nilai Harian</label>
-                        <input type="number" name="nilai_harian" id="nilaiHarian" value="{{ old('nilai_harian', $nilai->nilai_harian) }}" placeholder="0–100" min="0" max="100" step="0.01" oninput="calcPreview()">
+                        <input type="number" name="nilai_harian" id="nilaiHarian"
+                            value="{{ old('nilai_harian', $nilai->nilai_harian) }}"
+                            placeholder="0–100" min="0" max="100" step="0.01" oninput="calcPreview()">
                         @error('nilai_harian')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Nilai UTS</label>
-                        <input type="number" name="nilai_uts" id="nilaiUts" value="{{ old('nilai_uts', $nilai->nilai_uts) }}" placeholder="0–100" min="0" max="100" step="0.01" oninput="calcPreview()">
+                        <input type="number" name="nilai_uts" id="nilaiUts"
+                            value="{{ old('nilai_uts', $nilai->nilai_uts) }}"
+                            placeholder="0–100" min="0" max="100" step="0.01" oninput="calcPreview()">
                         @error('nilai_uts')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Nilai UAS</label>
-                        <input type="number" name="nilai_uas" id="nilaiUas" value="{{ old('nilai_uas', $nilai->nilai_uas) }}" placeholder="0–100" min="0" max="100" step="0.01" oninput="calcPreview()">
+                        <input type="number" name="nilai_uas" id="nilaiUas"
+                            value="{{ old('nilai_uas', $nilai->nilai_uas) }}"
+                            placeholder="0–100" min="0" max="100" step="0.01" oninput="calcPreview()">
                         @error('nilai_uas')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field col-span-2">
@@ -118,6 +130,7 @@
                 <div class="nilai-preview">
                     <div class="preview-block">
                         <p class="lbl">Nilai Akhir (Estimasi)</p>
+                        {{-- BUG FIX: tampilkan nilai akhir saat ini dengan warna predikat yang tepat --}}
                         <p class="num" id="previewNum">{{ $nilai->nilai_akhir !== null ? number_format($nilai->nilai_akhir, 1) : '—' }}</p>
                     </div>
                     <div class="preview-sep"></div>
@@ -143,7 +156,12 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if($errors->any())
-    Swal.fire({icon:'error',title:'Terdapat Kesalahan',html:`<ul style="text-align:left;padding-left:16px;margin:0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,confirmButtonColor:'#1f63db'});
+    Swal.fire({
+        icon:'error',
+        title:'Terdapat Kesalahan',
+        html:`<ul style="text-align:left;padding-left:16px;margin:0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor:'#1f63db'
+    });
     @endif
     @if(session('error'))
     Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
@@ -154,18 +172,23 @@
         const h = parseFloat(document.getElementById('nilaiHarian').value) || 0;
         const u = parseFloat(document.getElementById('nilaiUts').value) || 0;
         const a = parseFloat(document.getElementById('nilaiUas').value) || 0;
+
         const avg = (t * 0.2) + (h * 0.3) + (u * 0.2) + (a * 0.3);
         document.getElementById('previewNum').textContent = avg.toFixed(1);
+
         let pred = '', col = '';
-        if (avg >= 90) { pred = 'A'; col = '#15803d'; }
+        if (avg >= 90)      { pred = 'A'; col = '#15803d'; }
         else if (avg >= 80) { pred = 'B'; col = '#2563eb'; }
         else if (avg >= 70) { pred = 'C'; col = '#d97706'; }
         else if (avg >= 60) { pred = 'D'; col = '#dc2626'; }
-        else { pred = 'E'; col = '#9f1239'; }
+        else                { pred = 'E'; col = '#9f1239'; }
+
         document.getElementById('previewPred').textContent = pred;
         document.getElementById('previewPred').style.color = col;
         document.getElementById('previewNum').style.color = col;
     }
+
+    // Jalankan saat halaman load agar preview & warna langsung sinkron dengan nilai yang ada
     calcPreview();
 
     document.getElementById('nilaiForm').addEventListener('submit', function () {

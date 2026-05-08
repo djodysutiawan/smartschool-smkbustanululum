@@ -20,6 +20,7 @@
     .btn-sm{padding:6px 12px;font-size:12px;border-radius:6px;}
     .btn-detail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}.btn-detail:hover{background:#dcfce7;filter:none;}
     .btn-del{background:#fff0f0;color:#dc2626;border:1px solid #fecaca;}.btn-del:hover{background:#fee2e2;filter:none;}
+
     .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -29,6 +30,7 @@
     .stat-icon.purple{background:#fdf4ff;}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.03em;text-transform:uppercase;}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px;}
+
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
@@ -45,17 +47,21 @@
     td.center{text-align:center;}
     td.muted{color:var(--text3);}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3);}
+
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap;}
     .badge-dot{width:5px;height:5px;border-radius:50%;}
     .badge-selesai{background:#dcfce7;color:#15803d;}.badge-selesai .badge-dot{background:#15803d;}
     .badge-diproses{background:#fefce8;color:#a16207;}.badge-diproses .badge-dot{background:#ca8a04;}
     .badge-draft{background:#f1f5f9;color:#64748b;}.badge-draft .badge-dot{background:#94a3b8;}
     .badge-dibatalkan{background:#fff0f0;color:#dc2626;}.badge-dibatalkan .badge-dot{background:#dc2626;}
+
     .action-group{display:flex;align-items:center;gap:5px;flex-wrap:wrap;}
+
     .empty-state{padding:60px 20px;text-align:center;}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;}
     .empty-sub{font-size:13px;color:var(--text3);}
+
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;}
     .pag-info{font-size:12.5px;color:var(--text3);}
     .pag-btns{display:flex;gap:4px;align-items:center;}
@@ -63,10 +69,12 @@
     .pag-btn:hover{background:var(--surface2);}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff;}
     .pag-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none;}
+
     .stat-mini{display:flex;align-items:center;gap:10px;}
     .stat-mini-item{display:flex;flex-direction:column;align-items:center;}
     .stat-mini-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;}
     .stat-mini-lbl{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.04em;}
+
     @media(max-width:640px){.stats-strip{grid-template-columns:1fr 1fr;}.page{padding:16px;}}
 </style>
 
@@ -85,11 +93,21 @@
     </div>
 
     @php
-        $allBatch   = $batch->getCollection();
-        $totalNaik  = $allBatch->sum('naik_kelas');
-        $totalTdkNaik = $allBatch->sum('tidak_naik');
-        $totalLulus = $allBatch->sum('lulus');
-        $totalSiswa = $allBatch->sum('total_siswa');
+        /*
+         * BUG FIX: $batch->getCollection() hanya mengambil data HALAMAN SAAT INI,
+         * bukan semua data. Untuk stats ringkasan yang akurat dari semua data,
+         * kita tampilkan total dari paginator (yang merupakan COUNT dari DB),
+         * dan untuk sum naik/tidak_naik/lulus kita gunakan query terpisah.
+         * Solusi: tetap gunakan getCollection() untuk display, tapi tambahkan
+         * keterangan "halaman ini" agar tidak menyesatkan, atau query sum global.
+         *
+         * Untuk tidak merusak controller (hanya perbaiki view), kita gunakan
+         * getCollection() yang sudah ada dan tambahkan keterangan.
+         */
+        $currentPageBatch = $batch->getCollection();
+        $totalNaik        = $currentPageBatch->sum('naik_kelas');
+        $totalTdkNaik     = $currentPageBatch->sum('tidak_naik');
+        $totalLulus       = $currentPageBatch->sum('lulus');
     @endphp
 
     <div class="stats-strip">
@@ -97,25 +115,37 @@
             <div class="stat-icon blue">
                 <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>
             </div>
-            <div><p class="stat-label">Total Proses</p><p class="stat-val">{{ $batch->total() }}</p></div>
+            <div>
+                <p class="stat-label">Total Proses</p>
+                <p class="stat-val">{{ $batch->total() }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon green">
                 <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg>
             </div>
-            <div><p class="stat-label">Total Naik</p><p class="stat-val">{{ $totalNaik }}</p></div>
+            <div>
+                <p class="stat-label">Naik (hal. ini)</p>
+                <p class="stat-val">{{ $totalNaik }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon orange">
                 <svg width="18" height="18" fill="none" stroke="#ea580c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
             </div>
-            <div><p class="stat-label">Tidak Naik</p><p class="stat-val">{{ $totalTdkNaik }}</p></div>
+            <div>
+                <p class="stat-label">Tidak Naik (hal. ini)</p>
+                <p class="stat-val">{{ $totalTdkNaik }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon purple">
                 <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <div><p class="stat-label">Total Lulus</p><p class="stat-val">{{ $totalLulus }}</p></div>
+            <div>
+                <p class="stat-label">Lulus (hal. ini)</p>
+                <p class="stat-val">{{ $totalLulus }}</p>
+            </div>
         </div>
     </div>
 
@@ -166,25 +196,36 @@
                                 {{ $item->label_tingkat }}
                             </span>
                         </td>
-                        <td class="muted" style="font-size:12.5px;">{{ optional($item->tahunAjaranAsal)->nama ?? '—' }}</td>
-                        <td class="muted" style="font-size:12.5px;">{{ optional($item->tahunAjaranTujuan)->nama ?? '—' }}</td>
+                        {{--
+                            BUG FIX: Gunakan optional() dengan null-coalesce
+                            untuk semua relasi agar tidak error jika relasi null.
+                            Tambah fallback ke nama/tahun sesuai struktur model TA.
+                        --}}
+                        <td class="muted" style="font-size:12.5px;">
+                            {{ optional($item->tahunAjaranAsal)->nama ?? optional($item->tahunAjaranAsal)->tahun ?? '—' }}
+                        </td>
+                        <td class="muted" style="font-size:12.5px;">
+                            {{ optional($item->tahunAjaranTujuan)->nama ?? optional($item->tahunAjaranTujuan)->tahun ?? '—' }}
+                        </td>
                         <td class="center">
-                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;">{{ $item->total_siswa }}</span>
+                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;">
+                                {{ $item->total_siswa ?? 0 }}
+                            </span>
                         </td>
                         <td class="center">
                             <div class="stat-mini">
                                 <div class="stat-mini-item">
-                                    <span class="stat-mini-val" style="color:#15803d;">{{ $item->naik_kelas }}</span>
+                                    <span class="stat-mini-val" style="color:#15803d;">{{ $item->naik_kelas ?? 0 }}</span>
                                     <span class="stat-mini-lbl">Naik</span>
                                 </div>
                                 <div style="width:1px;height:24px;background:var(--border);"></div>
                                 <div class="stat-mini-item">
-                                    <span class="stat-mini-val" style="color:#ea580c;">{{ $item->tidak_naik }}</span>
+                                    <span class="stat-mini-val" style="color:#ea580c;">{{ $item->tidak_naik ?? 0 }}</span>
                                     <span class="stat-mini-lbl">Tdk Naik</span>
                                 </div>
                                 <div style="width:1px;height:24px;background:var(--border);"></div>
                                 <div class="stat-mini-item">
-                                    <span class="stat-mini-val" style="color:#7c3aed;">{{ $item->lulus }}</span>
+                                    <span class="stat-mini-val" style="color:#7c3aed;">{{ $item->lulus ?? 0 }}</span>
                                     <span class="stat-mini-lbl">Lulus</span>
                                 </div>
                             </div>
@@ -208,17 +249,34 @@
                                 <span class="badge-dot"></span>{{ $badgeLbl }}
                             </span>
                         </td>
-                        <td style="font-size:12.5px;">{{ optional($item->diprosesOleh)->name ?? '—' }}</td>
-                        <td style="font-size:12px;color:var(--text3);">{{ $item->diproses_pada?->format('d M Y') }}</td>
+                        <td style="font-size:12.5px;">
+                            {{ optional($item->diprosesOleh)->name ?? '—' }}
+                        </td>
+                        <td style="font-size:12px;color:var(--text3);">
+                            {{ $item->diproses_pada?->format('d M Y') ?? '—' }}
+                        </td>
                         <td class="center">
                             <div class="action-group">
-                                <a href="{{ route('admin.kenaikan-kelas.show', $item) }}" class="btn btn-sm btn-detail">Detail</a>
-                                @if(! $item->isSelesai() && ! $item->isDibatalkan())
-                                    <form method="POST" action="{{ route('admin.kenaikan-kelas.batalkan', $item) }}"
+                                <a href="{{ route('admin.kenaikan-kelas.show', $item) }}"
+                                   class="btn btn-sm btn-detail">Detail</a>
+
+                                {{--
+                                    BUG FIX: Hanya tampilkan tombol Batalkan jika
+                                    bisaDibatalkan() → true (status draft atau diproses).
+                                    Model bisaDibatalkan() sudah diperbaiki di doc 2.
+                                    Sebelumnya cek `!isSelesai() && !isDibatalkan()` —
+                                    sekarang delegasikan ke method model yang proper.
+                                --}}
+                                @if($item->bisaDibatalkan())
+                                    <form method="POST"
+                                          action="{{ route('admin.kenaikan-kelas.batalkan', $item) }}"
                                           id="batalForm-{{ $item->id }}">
                                         @csrf
                                         <button type="button" class="btn btn-sm btn-del"
-                                            onclick="confirmBatal(document.getElementById('batalForm-{{ $item->id }}'), '{{ $item->label_tingkat }}')">
+                                            onclick="confirmBatal(
+                                                document.getElementById('batalForm-{{ $item->id }}'),
+                                                '{{ addslashes($item->label_tingkat) }}'
+                                            )">
                                             Batalkan
                                         </button>
                                     </form>
@@ -247,7 +305,8 @@
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $batch->firstItem() }} – {{ $batch->lastItem() }} dari {{ $batch->total() }} proses</p>
             <div class="pag-btns">
-                <a href="{{ $batch->previousPageUrl() ?? '#' }}" class="pag-btn {{ $batch->onFirstPage() ? 'disabled' : '' }}">
+                <a href="{{ $batch->previousPageUrl() ?? '#' }}"
+                   class="pag-btn {{ $batch->onFirstPage() ? 'disabled' : '' }}">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 </a>
                 @foreach($batch->getUrlRange(1, $batch->lastPage()) as $page => $url)
@@ -259,7 +318,8 @@
                         <span style="color:var(--text3);font-size:13px;padding:0 4px;">…</span>
                     @endif
                 @endforeach
-                <a href="{{ $batch->nextPageUrl() ?? '#' }}" class="pag-btn {{ !$batch->hasMorePages() ? 'disabled' : '' }}">
+                <a href="{{ $batch->nextPageUrl() ?? '#' }}"
+                   class="pag-btn {{ !$batch->hasMorePages() ? 'disabled' : '' }}">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 </a>
             </div>
@@ -271,19 +331,30 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({
+        icon:'success', title:'Berhasil!',
+        text: @json(session('success')),
+        timer:2500, showConfirmButton:false, toast:true, position:'top-end'
+    });
     @endif
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon:'error', title:'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor:'#1f63db'
+    });
     @endif
 
     function confirmBatal(form, label) {
         Swal.fire({
             title: 'Batalkan Proses?',
             text: `Proses "${label}" akan dibatalkan. Tindakan ini tidak dapat diurungkan.`,
-            icon: 'warning', showCancelButton: true,
-            confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Batalkan!', cancelButtonText: 'Batal',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Batalkan!',
+            cancelButtonText: 'Batal',
         }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 </script>

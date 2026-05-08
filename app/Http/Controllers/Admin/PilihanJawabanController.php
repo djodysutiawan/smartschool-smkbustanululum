@@ -28,8 +28,10 @@ class PilihanJawabanController extends Controller
                 ->store('soal-ujian/pilihan', 'public');
         }
 
-        // Jika ditandai benar, pastikan pilihan lain jadi salah dulu (untuk PG)
-        if ($validated['adalah_benar'] ?? false) {
+        // Untuk PG: hanya boleh 1 jawaban benar, jadi reset dulu jika ditandai benar
+        // Untuk benar_salah: tetap izinkan reset (karena sistemnya juga 1 benar)
+        // Untuk essay: tidak ada pilihan, tapi guard sudah mencegahnya
+        if (!empty($validated['adalah_benar'])) {
             $this->resetBenar($soal);
         }
 
@@ -58,7 +60,6 @@ class PilihanJawabanController extends Controller
         $validated = $request->validate($this->rules(), $this->messages());
 
         if ($request->hasFile('gambar_pilihan')) {
-            // Hapus gambar lama
             if ($pilihan->gambar_pilihan) {
                 Storage::disk('public')->delete($pilihan->gambar_pilihan);
             }
@@ -71,7 +72,8 @@ class PilihanJawabanController extends Controller
             $validated['gambar_pilihan'] = null;
         }
 
-        if ($validated['adalah_benar'] ?? false) {
+        // Reset jawaban benar lain jika pilihan ini ditandai benar
+        if (!empty($validated['adalah_benar'])) {
             $this->resetBenar($soal);
         }
 
@@ -114,23 +116,28 @@ class PilihanJawabanController extends Controller
     |--------------------------------------------------------------------------
     | TANDAI BENAR  —  Set satu pilihan sebagai jawaban benar (AJAX)
     |--------------------------------------------------------------------------
-    | PATCH /admin/ujian/{ujian}/soal/{soal}/pilihan/{pilihan}/benar
+    | PATCH admin/ujian/{ujian}/soal/{soal}/pilihan/{pilihan}/tandai-benar
     */
     public function tandaiBenar(Request $request, Ujian $ujian, SoalUjian $soal, PilihanJawaban $pilihan)
     {
         $this->guardSoal($ujian, $soal);
         $this->guardPilihan($soal, $pilihan);
 
+        // Hanya PG dan benar_salah yang bisa ditandai benar via endpoint ini
+        abort_if(
+            $soal->jenis_soal === 'essay',
+            422,
+            'Soal essay tidak memiliki pilihan jawaban benar.'
+        );
+
         DB::transaction(function () use ($soal, $pilihan) {
-            // Reset semua pilihan soal ini jadi salah
             $soal->pilihan()->update(['adalah_benar' => false]);
-            // Tandai yang dipilih
             $pilihan->update(['adalah_benar' => true]);
         });
 
         if ($request->expectsJson()) {
             return response()->json([
-                'message' => "Pilihan {$pilihan->kode_pilihan} ditandai sebagai jawaban benar.",
+                'message'    => "Pilihan {$pilihan->kode_pilihan} ditandai sebagai jawaban benar.",
                 'pilihan_id' => $pilihan->id,
             ]);
         }
@@ -176,11 +183,11 @@ class PilihanJawabanController extends Controller
     private function messages(): array
     {
         return [
-            'kode_pilihan.required'   => 'Kode pilihan wajib diisi (cth. A, B, C).',
-            'kode_pilihan.max'        => 'Kode pilihan maksimal 5 karakter.',
-            'teks_pilihan.required'   => 'Teks pilihan jawaban wajib diisi.',
-            'gambar_pilihan.image'    => 'File harus berupa gambar.',
-            'gambar_pilihan.max'      => 'Ukuran gambar pilihan maksimal 1MB.',
+            'kode_pilihan.required'  => 'Kode pilihan wajib diisi (cth. A, B, C).',
+            'kode_pilihan.max'       => 'Kode pilihan maksimal 5 karakter.',
+            'teks_pilihan.required'  => 'Teks pilihan jawaban wajib diisi.',
+            'gambar_pilihan.image'   => 'File harus berupa gambar.',
+            'gambar_pilihan.max'     => 'Ukuran gambar pilihan maksimal 1MB.',
         ];
     }
 }

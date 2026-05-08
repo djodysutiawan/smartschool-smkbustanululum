@@ -52,19 +52,21 @@
             font-size: 9px;
             vertical-align: middle;
         }
-        .badge {
-            display: inline-block;
-            padding: 2px 7px;
-            border-radius: 10px;
-            font-size: 8px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-        }
-        .badge-berhasil        { background: #d1fae5; color: #065f46; }
-        .badge-gagal_kadaluarsa { background: #fef3c7; color: #92400e; }
-        .badge-gagal_lokasi    { background: #fee2e2; color: #991b1b; }
-        .badge-gagal_duplikat  { background: #ede9fe; color: #5b21b6; }
+
+        /* Badge — kolom HASIL (berhasil|gagal_*) */
+        .badge-berhasil          { background: #d1fae5; color: #065f46; }
+        .badge-gagal-kadaluarsa  { background: #fef9c3; color: #92400e; }
+        .badge-gagal-lokasi      { background: #fee2e2; color: #991b1b; }
+        .badge-gagal-duplikat    { background: #ede9fe; color: #5b21b6; }
+        /* Badge — kolom STATUS (valid|ditolak_*) */
+        .badge-valid                 { background: #d1fae5; color: #065f46; }
+        .badge-ditolak-radius        { background: #fef9c3; color: #92400e; }
+        .badge-ditolak-kadaluarsa    { background: #fee2e2; color: #991b1b; }
+        .badge-ditolak-nonaktif      { background: #fff7ed; color: #c2410c; }
+        .badge-ditolak-duplikat      { background: #ede9fe; color: #5b21b6; }
+        .badge-ditolak-bukan-anggota { background: #e0f2fe; color: #075985; }
+        .badge-default               { background: #f1f5f9; color: #475569; }
+
         .footer {
             margin-top: 14px;
             font-size: 8px;
@@ -97,10 +99,10 @@
                 <th style="width:10%">NIS</th>
                 <th style="width:13%">Kelas</th>
                 <th style="width:14%">Mata Pelajaran</th>
-                <th style="width:14%">Sesi / Tanggal</th>
-                <th style="width:10%">Hasil</th>
+                <th style="width:10%">Tgl Sesi</th>
+                <th style="width:12%">Status</th>
                 <th style="width:14%">Dipindai Pada</th>
-                <th style="width:10%">IP Address</th>
+                <th style="width:12%">IP Address</th>
             </tr>
         </thead>
         <tbody>
@@ -112,27 +114,16 @@
                     <td>{{ $r->sesiQr->kelas->nama_kelas ?? '-' }}</td>
                     <td>{{ $r->sesiQr->mataPelajaran->nama_mapel ?? '-' }}</td>
                     <td>
-                        @if ($r->sesiQr)
-                            {{ optional($r->sesiQr->tanggal)->format('d/m/Y') ?? '-' }}
-                        @else
-                            -
-                        @endif
+                        {{-- tanggal sesi QR; sesuaikan nama kolom dengan schema SesiQr --}}
+                        {{ optional($r->sesiQr?->tanggal_mulai ?? $r->sesiQr?->created_at)->format('d/m/Y') ?? '-' }}
                     </td>
                     <td>
-                        @php
-                            $badgeClass = 'badge-' . $r->hasil;
-                            $labelMap = [
-                                'berhasil'         => 'Berhasil',
-                                'gagal_kadaluarsa' => 'Kadaluarsa',
-                                'gagal_lokasi'     => 'Lokasi',
-                                'gagal_duplikat'   => 'Duplikat',
-                            ];
-                        @endphp
-                        <span class="badge {{ $badgeClass }}">
-                            {{ $labelMap[$r->hasil] ?? $r->hasil }}
+                        {{-- Kolom HASIL: gunakan accessor badge_class_hasil & label_hasil_singkat --}}
+                        <span class="badge {{ $r->badge_class_hasil }}">
+                            {{ $r->label_hasil_singkat }}
                         </span>
                     </td>
-                    <td>{{ $r->dipindai_pada ? $r->dipindai_pada->format('d/m/Y H:i:s') : '-' }}</td>
+                    <td>{{ $r->di_scan_pada?->format('d/m/Y H:i:s') ?? '-' }}</td>
                     <td>{{ $r->ip_address ?? '-' }}</td>
                 </tr>
             @empty

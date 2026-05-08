@@ -42,9 +42,13 @@
     <div class="page-header">
         <div>
             <h1 class="page-title">Detail Absensi Guru</h1>
+            {{--
+                FIX: $absensiGuru->tanggal di-cast 'date' (Carbon),
+                tidak perlu Carbon::parse() lagi.
+            --}}
             <p class="page-sub">
                 {{ $absensiGuru->guru->nama_lengkap ?? '—' }} —
-                {{ \Carbon\Carbon::parse($absensiGuru->tanggal)->translatedFormat('d F Y') }}
+                {{ $absensiGuru->tanggal->translatedFormat('d F Y') }}
             </p>
         </div>
         <div class="header-actions">
@@ -52,14 +56,16 @@
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit
             </a>
+
+            {{-- Hapus: gunakan form terpisah agar tidak konflik dengan id --}}
             <form action="{{ route('admin.absensi-guru.destroy', $absensiGuru->id) }}" method="POST" id="deleteForm">
                 @csrf @method('DELETE')
-                <button type="button" class="btn btn-del"
-                    onclick="Swal.fire({title:'Hapus Data?',text:'Data absensi ini akan dihapus permanen.',icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)document.getElementById('deleteForm').submit()})">
+                <button type="button" class="btn btn-del" id="btnHapus">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
                     Hapus
                 </button>
             </form>
+
             <a href="{{ route('admin.absensi-guru.index') }}" class="btn btn-back">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
@@ -73,75 +79,151 @@
             <span class="info-card-title">Data Absensi</span>
         </div>
         <div class="info-card-body">
+
+            {{-- Guru --}}
             <div class="info-row">
                 <span class="info-label">Guru</span>
                 <span class="info-val" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">
                     {{ $absensiGuru->guru->nama_lengkap ?? '—' }}
-                    @if($absensiGuru->guru?->nip)
-                        <span style="font-weight:400;color:var(--text3);font-size:12px;margin-left:6px">NIP: {{ $absensiGuru->guru->nip }}</span>
+                    @if($absensiGuru->guru && $absensiGuru->guru->nip)
+                        {{--
+                            FIX: ganti nullsafe operator ?-> dengan pengecekan eksplisit
+                            agar kompatibel dengan semua setup (walau PHP 8+ sudah support).
+                        --}}
+                        <span style="font-weight:400;color:var(--text3);font-size:12px;margin-left:6px">
+                            NIP: {{ $absensiGuru->guru->nip }}
+                        </span>
                     @endif
                 </span>
             </div>
+
+            {{-- Tanggal --}}
             <div class="info-row">
                 <span class="info-label">Tanggal</span>
-                <span class="info-val">{{ \Carbon\Carbon::parse($absensiGuru->tanggal)->translatedFormat('l, d F Y') }}</span>
+                <span class="info-val">
+                    {{-- FIX: cast 'date' → langsung pakai translatedFormat() --}}
+                    {{ $absensiGuru->tanggal->translatedFormat('l, d F Y') }}
+                </span>
             </div>
+
+            {{-- Status --}}
             <div class="info-row">
                 <span class="info-label">Status</span>
                 <span class="info-val">
-                    @php $bc=['hadir'=>'b-hadir','telat'=>'b-telat','izin'=>'b-izin','sakit'=>'b-sakit','alfa'=>'b-alfa'][$absensiGuru->status]??'b-alfa'; @endphp
-                    <span class="badge {{ $bc }}"><span class="badge-dot"></span>{{ ucfirst($absensiGuru->status) }}</span>
+                    @php
+                        $bc = ['hadir' => 'b-hadir', 'telat' => 'b-telat', 'izin' => 'b-izin',
+                               'sakit' => 'b-sakit', 'alfa'  => 'b-alfa'][$absensiGuru->status] ?? 'b-alfa';
+                    @endphp
+                    <span class="badge {{ $bc }}">
+                        <span class="badge-dot"></span>{{ ucfirst($absensiGuru->status) }}
+                    </span>
                 </span>
             </div>
+
+            {{-- Metode --}}
             <div class="info-row">
                 <span class="info-label">Metode</span>
-                <span class="info-val"><span class="metode-pill m-{{ $absensiGuru->metode }}">{{ ucfirst($absensiGuru->metode) }}</span></span>
+                <span class="info-val">
+                    <span class="metode-pill m-{{ $absensiGuru->metode }}">{{ ucfirst($absensiGuru->metode) }}</span>
+                </span>
             </div>
+
+            {{-- Jam Masuk --}}
             <div class="info-row">
                 <span class="info-label">Jam Masuk</span>
-                <span class="info-val">{{ $absensiGuru->jam_masuk ? \Carbon\Carbon::parse($absensiGuru->jam_masuk)->format('H:i') : '—' }}</span>
+                <span class="info-val">
+                    {{--
+                        FIX: $absensiGuru->jam_masuk di-cast 'datetime:H:i' → Carbon atau null.
+                        Gunakan ->format('H:i') langsung, tidak perlu Carbon::parse() lagi.
+                    --}}
+                    {{ $absensiGuru->jam_masuk ? $absensiGuru->jam_masuk->format('H:i') : '—' }}
+                </span>
             </div>
+
+            {{-- Jam Keluar --}}
             <div class="info-row">
                 <span class="info-label">Jam Keluar</span>
-                <span class="info-val">{{ $absensiGuru->jam_keluar ? \Carbon\Carbon::parse($absensiGuru->jam_keluar)->format('H:i') : '—' }}</span>
+                <span class="info-val">
+                    {{-- FIX: sama seperti jam_masuk --}}
+                    {{ $absensiGuru->jam_keluar ? $absensiGuru->jam_keluar->format('H:i') : '—' }}
+                </span>
             </div>
+
+            {{-- Jadwal Piket (opsional) --}}
             @if($absensiGuru->jadwalPiket)
             <div class="info-row">
                 <span class="info-label">Jadwal Piket</span>
                 <span class="info-val">{{ ucfirst($absensiGuru->jadwalPiket->hari ?? '—') }}</span>
             </div>
             @endif
+
+            {{-- Dicatat Oleh --}}
             <div class="info-row">
                 <span class="info-label">Dicatat Oleh</span>
                 <span class="info-val">{{ $absensiGuru->pencatat->name ?? '—' }}</span>
             </div>
+
+            {{-- Keterangan (opsional) --}}
             @if($absensiGuru->keterangan)
             <div class="info-row">
                 <span class="info-label">Keterangan</span>
                 <span class="info-val">{{ $absensiGuru->keterangan }}</span>
             </div>
             @endif
+
+            {{-- Surat Izin (opsional) --}}
             @if($absensiGuru->path_surat_izin)
             <div class="info-row">
                 <span class="info-label">Surat Izin</span>
                 <span class="info-val">
-                    <a href="{{ asset('storage/'.$absensiGuru->path_surat_izin) }}" target="_blank" style="color:var(--brand);font-weight:600;font-family:'Plus Jakarta Sans',sans-serif">
+                    <a href="{{ asset('storage/' . $absensiGuru->path_surat_izin) }}" target="_blank"
+                       style="color:var(--brand);font-weight:600;font-family:'Plus Jakarta Sans',sans-serif">
                         Lihat Dokumen →
                     </a>
                 </span>
             </div>
             @endif
+
+            {{-- Ditambahkan --}}
             <div class="info-row">
                 <span class="info-label">Ditambahkan</span>
-                <span class="info-val" style="color:var(--text3)">{{ $absensiGuru->created_at->format('d M Y, H:i') }}</span>
+                <span class="info-val" style="color:var(--text3)">
+                    {{ $absensiGuru->created_at->format('d M Y, H:i') }}
+                </span>
             </div>
+
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    @if(session('success'))Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});@endif
-    @if(session('error'))Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});@endif
+    @if(session('success'))
+        Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+    @endif
+    @if(session('error'))
+        Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    @endif
+
+    {{--
+        FIX: pindahkan onclick konfirmasi hapus ke addEventListener di sini,
+        agar tidak ada inline JS yang bergantung pada Swal sebelum library dimuat.
+    --}}
+    document.getElementById('btnHapus').addEventListener('click', function () {
+        Swal.fire({
+            title: 'Hapus Data?',
+            text: 'Data absensi ini akan dihapus permanen.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then(function (result) {
+            if (result.isConfirmed) {
+                document.getElementById('deleteForm').submit();
+            }
+        });
+    });
 </script>
 </x-app-layout>

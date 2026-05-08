@@ -14,7 +14,6 @@
     .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{filter:brightness(.93)}.btn-primary:disabled{opacity:.6;cursor:not-allowed;filter:none}
     .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .form-section{padding:20px 24px 24px}
-    .section-divider{border:none;border-top:1px solid var(--border);margin:0}
     .section-label{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px}
     .section-label-line{flex:1;height:1px;background:var(--border)}
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -63,53 +62,70 @@
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-grid">
+
                     <div class="field">
                         <label>Guru <span class="req">*</span></label>
                         <select name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Guru —</option>
                             @foreach($guruList as $g)
-                                <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
+                                <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>
+                                    {{ $g->nama_lengkap }}
+                                </option>
                             @endforeach
                         </select>
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Tanggal <span class="req">*</span></label>
-                        <input type="date" name="tanggal" value="{{ old('tanggal', today()->format('Y-m-d')) }}"
+                        <input type="date" name="tanggal"
+                            value="{{ old('tanggal', today()->format('Y-m-d')) }}"
                             class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
                         @error('tanggal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Status Kehadiran <span class="req">*</span></label>
                         <select name="status" class="{{ $errors->has('status') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Status —</option>
                             @foreach($statusList as $s)
-                                <option value="{{ $s }}" {{ old('status') == $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
+                                <option value="{{ $s }}" {{ old('status') == $s ? 'selected' : '' }}>
+                                    {{ ucfirst($s) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('status')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Metode</label>
                         <select name="metode" class="{{ $errors->has('metode') ? 'is-invalid' : '' }}">
                             @foreach($metodeList as $m)
-                                <option value="{{ $m }}" {{ old('metode','manual') == $m ? 'selected' : '' }}>{{ ucfirst($m) }}</option>
+                                <option value="{{ $m }}" {{ old('metode', 'manual') == $m ? 'selected' : '' }}>
+                                    {{ ucfirst($m) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('metode')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Jam Masuk</label>
-                        <input type="time" name="jam_masuk" value="{{ old('jam_masuk') }}"
+                        {{-- FIX BUG 5: old() aman untuk create, tapi pastikan value string H:i --}}
+                        <input type="time" name="jam_masuk"
+                            value="{{ old('jam_masuk') }}"
                             class="{{ $errors->has('jam_masuk') ? 'is-invalid' : '' }}">
                         @error('jam_masuk')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Jam Keluar</label>
-                        <input type="time" name="jam_keluar" value="{{ old('jam_keluar') }}"
+                        <input type="time" name="jam_keluar"
+                            value="{{ old('jam_keluar') }}"
                             class="{{ $errors->has('jam_keluar') ? 'is-invalid' : '' }}">
                         @error('jam_keluar')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Jadwal Piket</label>
                         <select name="jadwal_piket_id" class="{{ $errors->has('jadwal_piket_id') ? 'is-invalid' : '' }}">
@@ -122,19 +138,24 @@
                         </select>
                         @error('jadwal_piket_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Surat Izin / Dokumen</label>
-                        <input type="file" name="path_surat_izin" accept=".pdf,.jpg,.jpeg,.png"
+                        <input type="file" name="path_surat_izin"
+                            accept=".pdf,.jpg,.jpeg,.png"
                             class="{{ $errors->has('path_surat_izin') ? 'is-invalid' : '' }}">
                         <span class="field-hint">PDF/JPG/PNG maks. 2MB (opsional)</span>
                         @error('path_surat_izin')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field col-span-2">
                         <label>Keterangan</label>
-                        <textarea name="keterangan" rows="3" placeholder="Catatan tambahan (opsional)..."
+                        <textarea name="keterangan" rows="3"
+                            placeholder="Catatan tambahan (opsional)..."
                             class="{{ $errors->has('keterangan') ? 'is-invalid' : '' }}">{{ old('keterangan') }}</textarea>
                         @error('keterangan')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                 </div>
             </div>
             <div class="form-footer">
@@ -150,15 +171,24 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    @if(session('error'))Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});@endif
-    @if($errors->any())
-    Swal.fire({icon:'error',title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db'});
+    @if(session('error'))
+    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
     @endif
-    document.getElementById('absenForm').addEventListener('submit',function(){
-        const btn=document.getElementById('btnSubmit');btn.disabled=true;
-        btn.innerHTML=`<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
+
+    @if($errors->any())
+    Swal.fire({
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        {{-- FIX: Gunakan @json() untuk escape aman, bukan string interpolasi langsung --}}
+        html: {!! json_encode('<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">' . $errors->all()->map(fn($e) => '<li>'.e($e).'</li>')->implode('') . '</ul>') !!},
+        confirmButtonColor: '#1f63db'
+    });
+    @endif
+
+    document.getElementById('absenForm').addEventListener('submit', function () {
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
     });
 </script>
 </x-app-layout>

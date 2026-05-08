@@ -2,201 +2,185 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Cetak QR Guru – {{ \Carbon\Carbon::parse($sesiQrGuru->tanggal)->format('d M Y') }}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak QR Guru — {{ \Carbon\Carbon::parse($sesiQrGuru->tanggal)->format('d M Y') }}</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            background: #fff;
-            color: #1a1a2e;
-            width: 148mm;
-            min-height: 210mm;
-            padding: 10mm 9mm;
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{
+            font-family:'Plus Jakarta Sans',sans-serif;
+            background:#f1f5f9;
+            color:#0f172a;
+            min-height:100vh;
+            display:flex;
+            flex-direction:column;
+            align-items:center;
+            justify-content:center;
+            padding:32px 16px;
         }
-        .card {
-            border: 2px solid #1a1a2e;
-            border-radius: 6px;
-            overflow: hidden;
+        .card{
+            background:#fff;
+            border:1.5px solid #e2e8f0;
+            border-radius:20px;
+            padding:36px 40px;
+            text-align:center;
+            max-width:440px;
+            width:100%;
+            box-shadow:0 8px 40px rgba(0,0,0,.10);
         }
-        .card-header {
-            background: #1a1a2e;
-            color: #fff;
-            text-align: center;
-            padding: 10px 12px;
+
+        /* Header */
+        .school-name{
+            font-size:11.5px;font-weight:700;color:#94a3b8;
+            letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px;
         }
-        .card-header .school {
-            font-size: 8.5px;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            opacity: 0.7;
-            margin-bottom: 3px;
+        .title{font-size:22px;font-weight:800;color:#0f172a;margin-bottom:4px}
+        .subtitle{font-size:13px;color:#64748b;margin-bottom:24px}
+
+        /* Badge */
+        .badge{
+            display:inline-flex;align-items:center;gap:6px;
+            padding:5px 14px;border-radius:99px;
+            font-size:12px;font-weight:700;
+            margin-bottom:20px;
         }
-        .card-header h1 {
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
+        .badge-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+        .badge-aktif    {background:#dcfce7;color:#15803d;border:1.5px solid #86efac}
+        .badge-aktif    .badge-dot{background:#15803d}
+        .badge-kadaluarsa{background:#fef3c7;color:#92400e;border:1.5px solid #fde68a}
+        .badge-kadaluarsa .badge-dot{background:#d97706}
+        .badge-nonaktif {background:#fee2e2;color:#991b1b;border:1.5px solid #fca5a5}
+        .badge-nonaktif .badge-dot{background:#dc2626}
+
+        /* QR */
+        .qr-wrap{
+            display:inline-block;
+            padding:16px;
+            border:1.5px solid #e2e8f0;
+            border-radius:14px;
+            margin-bottom:24px;
+            background:#fff;
         }
-        .card-header .sub {
-            font-size: 9px;
-            opacity: 0.65;
-            margin-top: 3px;
+        .qr-wrap svg{display:block;width:220px;height:220px}
+
+        /* Meta */
+        .meta-row{
+            display:flex;
+            gap:12px;
+            margin-bottom:10px;
         }
-        .card-body { padding: 12px 15px; }
-        .guru-badge-wrap { text-align: center; margin-bottom: 10px; }
-        .guru-badge {
-            display: inline-block;
-            background: #ede9fe;
-            color: #5b21b6;
-            border: 1px solid #c4b5fd;
-            border-radius: 4px;
-            padding: 2px 8px;
-            font-size: 7.5px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+        .meta-item{
+            flex:1;
+            text-align:left;
+            background:#f8fafc;
+            border-radius:10px;
+            padding:11px 14px;
         }
-        .info-table { display: table; width: 100%; margin-bottom: 12px; }
-        .info-row { display: table-row; }
-        .info-label, .info-value {
-            display: table-cell;
-            padding: 4px 0;
-            font-size: 9px;
-            border-bottom: 1px solid #eee;
-            vertical-align: middle;
+        .meta-item.full{flex:unset;width:100%}
+        .meta-label{
+            font-size:10px;font-weight:700;color:#94a3b8;
+            letter-spacing:.06em;text-transform:uppercase;
+            margin-bottom:3px;
         }
-        .info-label {
-            color: #6b7280;
-            width: 36%;
-            font-weight: 700;
-            text-transform: uppercase;
-            font-size: 8px;
-            letter-spacing: 0.3px;
+        .meta-val{font-size:13px;font-weight:700;color:#0f172a}
+
+        /* Divider */
+        .divider{border:none;border-top:1px dashed #e2e8f0;margin:16px 0}
+
+        .valid-range{font-size:12.5px;color:#64748b;margin-bottom:5px}
+        .valid-range strong{color:#0f172a}
+        .kode{font-size:8.5px;color:#cbd5e1;word-break:break-all;margin-top:5px;font-family:monospace}
+        .url-hint{font-size:11px;color:#94a3b8;margin-top:10px;line-height:1.5}
+
+        /* Buttons */
+        .btn-row{margin-top:24px;display:flex;gap:10px;justify-content:center}
+        .btn-print{
+            padding:11px 28px;background:#1f63db;color:#fff;
+            border:none;border-radius:9px;font-family:inherit;
+            font-size:14px;font-weight:700;cursor:pointer;
+            display:inline-flex;align-items:center;gap:7px;
         }
-        .info-value { font-weight: 700; }
-        .qr-wrapper { text-align: center; padding: 12px 0 8px; }
-        .qr-wrapper img {
-            width: 140px;
-            height: 140px;
-            border: 3px solid #1a1a2e;
-            border-radius: 6px;
-            display: block;
-            margin: 0 auto 8px;
+        .btn-print:hover{background:#1750c0}
+        .btn-close{
+            padding:11px 24px;background:#f1f5f9;color:#475569;
+            border:1.5px solid #e2e8f0;border-radius:9px;font-family:inherit;
+            font-size:14px;font-weight:600;cursor:pointer;
         }
-        .qr-code-text {
-            font-family: 'DejaVu Sans Mono', monospace;
-            font-size: 7px;
-            color: #777;
-            word-break: break-all;
-            padding: 0 8px;
+        .btn-close:hover{background:#e2e8f0}
+
+        @media print{
+            body{background:#fff;padding:0}
+            .no-print{display:none!important}
+            .card{border:none;box-shadow:none;padding:20px}
         }
-        .status-row { text-align: center; margin-top: 10px; }
-        .badge {
-            display: inline-block;
-            padding: 3px 12px;
-            border-radius: 20px;
-            font-size: 9px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.4px;
-        }
-        .badge-aktif     { background: #d1fae5; color: #065f46; border: 1px solid #6ee7b7; }
-        .badge-nonaktif  { background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
-        .badge-kadaluarsa{ background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
-        .card-footer {
-            background: #f5f6fa;
-            border-top: 1px solid #e8e8e8;
-            text-align: center;
-            padding: 7px 12px;
-            font-size: 7.5px;
-            color: #888;
-        }
-        .instructions {
-            margin-top: 8mm;
-            font-size: 8px;
-            color: #555;
-            line-height: 1.6;
-        }
-        .instructions ol { padding-left: 13px; }
-        .instructions li { margin-bottom: 2px; }
-        .instructions strong { color: #1a1a2e; }
     </style>
 </head>
 <body>
-
     <div class="card">
-        <div class="card-header">
-            <div class="school">{{ config('app.name', 'Sistem Absensi') }}</div>
-            <h1>Scan QR Absensi Guru</h1>
-            <div class="sub">{{ \Carbon\Carbon::parse($sesiQrGuru->tanggal)->translatedFormat('l, d F Y') }}</div>
+
+        <p class="school-name">{{ config('app.name', 'Sistem Absensi') }}</p>
+        <h1 class="title">QR Code Absensi Guru</h1>
+        <p class="subtitle">Scan untuk mencatat kehadiran guru</p>
+
+        {{-- Badge status --}}
+        @if($sesiQrGuru->is_active && now()->lt($sesiQrGuru->kadaluarsa_pada))
+            <div><span class="badge badge-aktif"><span class="badge-dot"></span>Sesi Aktif</span></div>
+        @elseif(now()->gte($sesiQrGuru->kadaluarsa_pada))
+            <div><span class="badge badge-kadaluarsa"><span class="badge-dot"></span>Kadaluarsa</span></div>
+        @else
+            <div><span class="badge badge-nonaktif"><span class="badge-dot"></span>Nonaktif</span></div>
+        @endif
+
+        {{-- QR Code --}}
+        <div class="qr-wrap">
+            {!! QrCode::format('svg')->size(220)->errorCorrection('H')->margin(1)->generate($sesiQrGuru->kode_qr) !!}
         </div>
 
-        <div class="card-body">
-            <div class="guru-badge-wrap">
-                <span class="guru-badge">&#128100; Khusus Guru</span>
+        {{-- Meta: Tanggal & Dibuat Oleh --}}
+        <div class="meta-row">
+            <div class="meta-item">
+                <p class="meta-label">Tanggal</p>
+                <p class="meta-val">{{ \Carbon\Carbon::parse($sesiQrGuru->tanggal)->translatedFormat('l, d F Y') }}</p>
             </div>
-
-            <div class="info-table">
-                <div class="info-row">
-                    <div class="info-label">Tanggal</div>
-                    <div class="info-value">{{ \Carbon\Carbon::parse($sesiQrGuru->tanggal)->format('d F Y') }}</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Berlaku Mulai</div>
-                    <div class="info-value">{{ \Carbon\Carbon::parse($sesiQrGuru->berlaku_mulai)->format('H:i') }} WIB</div>
-                </div>
-                <div class="info-row">
-                    <div class="info-label">Kadaluarsa</div>
-                    <div class="info-value">{{ \Carbon\Carbon::parse($sesiQrGuru->kadaluarsa_pada)->format('H:i') }} WIB</div>
-                </div>
-                @if($sesiQrGuru->radius_meter)
-                <div class="info-row">
-                    <div class="info-label">Radius Lokasi</div>
-                    <div class="info-value">{{ $sesiQrGuru->radius_meter }} meter</div>
-                </div>
-                @endif
-                <div class="info-row">
-                    <div class="info-label">Dibuat Oleh</div>
-                    <div class="info-value">{{ $sesiQrGuru->pembuat->name ?? '—' }}</div>
-                </div>
+            @if($sesiQrGuru->pembuat)
+            <div class="meta-item">
+                <p class="meta-label">Dibuat Oleh</p>
+                <p class="meta-val">{{ $sesiQrGuru->pembuat->name }}</p>
             </div>
-
-            <div class="qr-wrapper">
-                <img src="data:{{ $qrMime }};base64,{{ $qrBase64 }}"
-                     alt="QR Code Absensi Guru"
-                     width="140"
-                     height="140">
-                <div class="qr-code-text">{{ $sesiQrGuru->kode_qr }}</div>
-            </div>
-
-            <div class="status-row">
-                @if($sesiQrGuru->is_active && now()->lt($sesiQrGuru->kadaluarsa_pada))
-                    <span class="badge badge-aktif">&#10003; Sesi Aktif</span>
-                @elseif(now()->gte($sesiQrGuru->kadaluarsa_pada))
-                    <span class="badge badge-kadaluarsa">Kadaluarsa</span>
-                @else
-                    <span class="badge badge-nonaktif">&#10007; Nonaktif</span>
-                @endif
-            </div>
-        </div>
-
-        <div class="card-footer">
-            ID Sesi: {{ $sesiQrGuru->id }} &mdash; {{ config('app.name', 'Sistem Absensi Guru') }}
-        </div>
-    </div>
-
-    <div class="instructions">
-        <strong>Cara Absen:</strong>
-        <ol>
-            <li>Buka aplikasi absensi di HP.</li>
-            <li>Pilih menu <strong>Scan QR Guru</strong>.</li>
-            <li>Arahkan kamera ke kode QR di atas.</li>
-            @if($sesiQrGuru->radius_meter)
-            <li>Pastikan berada dalam radius <strong>{{ $sesiQrGuru->radius_meter }} meter</strong> dari lokasi sekolah.</li>
             @endif
-            <li>Absen hanya dapat dilakukan <strong>satu kali</strong> per sesi.</li>
-            <li>Sesi berlaku hingga <strong>pukul {{ \Carbon\Carbon::parse($sesiQrGuru->kadaluarsa_pada)->format('H:i') }} WIB</strong>.</li>
-        </ol>
+        </div>
+
+        {{-- Meta: Radius (jika ada) --}}
+        @if($sesiQrGuru->radius_meter)
+        <div class="meta-row">
+            <div class="meta-item" style="width:100%">
+                <p class="meta-label">Radius Lokasi</p>
+                <p class="meta-val">{{ $sesiQrGuru->radius_meter }} meter</p>
+            </div>
+        </div>
+        @endif
+
+        <hr class="divider">
+
+        <p class="valid-range">
+            ⏱ Berlaku:
+            <strong>{{ \Carbon\Carbon::parse($sesiQrGuru->berlaku_mulai)->format('H:i') }}</strong>
+            —
+            <strong>{{ \Carbon\Carbon::parse($sesiQrGuru->kadaluarsa_pada)->format('H:i') }}</strong>
+            WIB
+        </p>
+        <p class="kode">{{ $sesiQrGuru->kode_qr }}</p>
+        <p class="url-hint">Scan QR di atas menggunakan kamera HP atau aplikasi absensi</p>
+
     </div>
 
+    <div class="btn-row no-print">
+        <button class="btn-print" onclick="window.print()">
+            🖨 Cetak
+        </button>
+        <button class="btn-close" onclick="window.close()">
+            Tutup
+        </button>
+    </div>
 </body>
 </html>

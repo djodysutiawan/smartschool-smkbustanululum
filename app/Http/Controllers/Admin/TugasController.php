@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\CascadeDropdownTrait;
 use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\MataPelajaran;
@@ -18,12 +19,16 @@ use App\Imports\TugasImport;
 
 class TugasController extends Controller
 {
-    // ─────────────────────────────────────────────
-    //  INDEX
-    // ─────────────────────────────────────────────
+    use CascadeDropdownTrait;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INDEX
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function index(Request $request)
     {
-        $query = Tugas::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran'])->withTrashed();
+        $query = Tugas::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran'])
+                      ->withTrashed();
 
         if ($request->filled('guru_id'))           $query->where('guru_id', $request->guru_id);
         if ($request->filled('kelas_id'))          $query->where('kelas_id', $request->kelas_id);
@@ -39,9 +44,10 @@ class TugasController extends Controller
         return view('admin.tugas.index', compact('tugas', 'guruList', 'kelasList', 'mapelList'));
     }
 
-    // ─────────────────────────────────────────────
-    //  CREATE
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // CREATE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function create()
     {
         $guruList         = Guru::aktif()->orderBy('nama_lengkap')->get();
@@ -53,27 +59,20 @@ class TugasController extends Controller
             compact('guruList', 'tahunAjaranAktif', 'tahunAjaranList', 'jenisPengumpulan'));
     }
 
-    // ─────────────────────────────────────────────
-    //  STORE
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // STORE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'guru_id'           => ['required', 'exists:guru,id'],
-            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
-            'kelas_id'          => ['required', 'exists:kelas,id'],
-            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
-            'judul'             => ['required', 'string', 'max:255'],
-            'deskripsi'         => ['nullable', 'string', 'max:5000'],
-            'path_file_soal'    => ['nullable', 'file', 'max:10240'],
-            'jenis_pengumpulan' => ['required', Rule::in(['file', 'teks', 'link', 'foto'])],
-            'batas_waktu'       => ['required', 'date', 'after:now'],
-            'nilai_maksimal'    => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'izinkan_terlambat' => ['boolean'],
-            'dipublikasikan'    => ['boolean'],
-        ], $this->messages());
+        $validated = $request->validate($this->rules(), $this->messages());
 
-        $this->validateGuruRelasi($validated['guru_id'], $validated['mata_pelajaran_id'], $validated['kelas_id']);
+        // Validasi silang guru ↔ mapel ↔ kelas (dengan fallback aman)
+        $this->validateGuruRelasi(
+            $validated['guru_id'],
+            $validated['mata_pelajaran_id'],
+            $validated['kelas_id']
+        );
 
         if ($request->hasFile('path_file_soal')) {
             $validated['path_file_soal'] = $request->file('path_file_soal')
@@ -86,25 +85,30 @@ class TugasController extends Controller
             ->with('success', 'Tugas berhasil ditambahkan.');
     }
 
-    // ─────────────────────────────────────────────
-    //  SHOW
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHOW
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function show(Tugas $tugas)
     {
         $tugas->load(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran', 'pengumpulan.siswa']);
 
+        $totalSiswa = $tugas->kelas?->siswa()->count() ?? 0;
+
         $stats = [
-            'total_siswa'   => $tugas->kelas->siswa()->count(),
+            'total_siswa'   => $totalSiswa,
             'terkumpul'     => $tugas->jumlah_terkumpul,
-            'sudah_dinilai' => $tugas->pengumpulan()->where('status', 'dinilai')->count(),
+            'sudah_dinilai' => $tugas->jumlah_dinilai,
+            'belum'         => $totalSiswa - $tugas->jumlah_terkumpul,
         ];
 
         return view('admin.tugas.show', compact('tugas', 'stats'));
     }
 
-    // ─────────────────────────────────────────────
-    //  EDIT
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // EDIT
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function edit(Tugas $tugas)
     {
         $tugas->load('guru');
@@ -114,6 +118,7 @@ class TugasController extends Controller
         $tahunAjaranList  = TahunAjaran::orderByDesc('tahun')->get();
         $jenisPengumpulan = ['file', 'teks', 'link', 'foto'];
 
+        // Pre-populate cascade dropdown untuk guru yang sudah dipilih
         $kelasList = $this->getKelasByGuru($tugas->guru_id);
         $mapelList = $this->getMapelByGuru($tugas->guru_id);
 
@@ -122,27 +127,23 @@ class TugasController extends Controller
                     'tahunAjaranAktif', 'tahunAjaranList', 'jenisPengumpulan'));
     }
 
-    // ─────────────────────────────────────────────
-    //  UPDATE
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // UPDATE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function update(Request $request, Tugas $tugas)
     {
-        $validated = $request->validate([
-            'guru_id'           => ['required', 'exists:guru,id'],
-            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
-            'kelas_id'          => ['required', 'exists:kelas,id'],
-            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
-            'judul'             => ['required', 'string', 'max:255'],
-            'deskripsi'         => ['nullable', 'string', 'max:5000'],
-            'path_file_soal'    => ['nullable', 'file', 'max:10240'],
-            'jenis_pengumpulan' => ['required', Rule::in(['file', 'teks', 'link', 'foto'])],
-            'batas_waktu'       => ['required', 'date'],
-            'nilai_maksimal'    => ['nullable', 'numeric', 'min:0', 'max:100'],
-            'izinkan_terlambat' => ['boolean'],
-            'dipublikasikan'    => ['boolean'],
-        ], $this->messages());
+        $rules = $this->rules();
+        // Saat update, batas_waktu boleh di masa lalu (sudah berjalan)
+        $rules['batas_waktu'] = ['required', 'date'];
 
-        $this->validateGuruRelasi($validated['guru_id'], $validated['mata_pelajaran_id'], $validated['kelas_id']);
+        $validated = $request->validate($rules, $this->messages());
+
+        $this->validateGuruRelasi(
+            $validated['guru_id'],
+            $validated['mata_pelajaran_id'],
+            $validated['kelas_id']
+        );
 
         if ($request->hasFile('path_file_soal')) {
             if ($tugas->path_file_soal) {
@@ -158,13 +159,15 @@ class TugasController extends Controller
             ->with('success', 'Tugas berhasil diperbarui.');
     }
 
-    // ─────────────────────────────────────────────
-    //  DESTROY / RESTORE / TOGGLE
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // DESTROY / RESTORE / TOGGLE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function destroy(Tugas $tugas)
     {
         $tugas->delete();
-        return redirect()->route('admin.tugas.index')->with('success', 'Tugas berhasil dihapus.');
+        return redirect()->route('admin.tugas.index')
+            ->with('success', 'Tugas berhasil dihapus.');
     }
 
     public function restore(int $id)
@@ -175,14 +178,15 @@ class TugasController extends Controller
 
     public function toggleStatus(Tugas $tugas)
     {
-        $tugas->update(['dipublikasikan' => !$tugas->dipublikasikan]);
+        $tugas->update(['dipublikasikan' => ! $tugas->dipublikasikan]);
         $status = $tugas->dipublikasikan ? 'dipublikasikan' : 'disembunyikan';
         return back()->with('success', "Tugas berhasil {$status}.");
     }
 
-    // ─────────────────────────────────────────────
-    //  EXPORT / IMPORT
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // EXPORT / IMPORT
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function exportPdf(Request $request)
     {
         $query = Tugas::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran']);
@@ -204,7 +208,10 @@ class TugasController extends Controller
 
     public function importTemplate()
     {
-        return Excel::download(new \App\Exports\TugasTemplateExport(), 'template-tugas.xlsx');
+        return Excel::download(
+            new \App\Exports\TugasTemplateExport(),
+            'template-tugas.xlsx'
+        );
     }
 
     public function import(Request $request)
@@ -225,25 +232,22 @@ class TugasController extends Controller
         }
     }
 
-    // ─────────────────────────────────────────────
-    //  AJAX ENDPOINTS — Dependent Dropdown
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // AJAX — Cascade Dropdown
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function ajaxMapelByGuru(Guru $guru)
     {
-        $mapel = $this->getMapelByGuru($guru->id);
-        return response()->json($mapel);
+        return response()->json($this->getMapelByGuru($guru->id));
     }
 
     public function ajaxKelasByGuru(Guru $guru)
     {
-        $kelas = $this->getKelasByGuru($guru->id);
-        return response()->json($kelas);
+        return response()->json($this->getKelasByGuru($guru->id));
     }
 
     public function ajaxTahunAjaranAktif()
     {
-        // ✅ FIX: pakai scopeAktif() — kolom `status` bukan `is_aktif`
         $tahun = TahunAjaran::aktif()
             ->orderByDesc('tahun')
             ->get(['id', 'tahun']);
@@ -251,73 +255,26 @@ class TugasController extends Controller
         return response()->json($tahun);
     }
 
-    // ─────────────────────────────────────────────
-    //  PRIVATE HELPERS
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Ambil mapel yang diampu guru ini via pivot guru_mata_pelajaran.
-     * Filter: pivot is_active = true & mata_pelajaran.is_active = true
-     */
-    private function getMapelByGuru(int $guruId)
+    private function rules(): array
     {
-        $guru = Guru::findOrFail($guruId);
-
-        return $guru->mataPelajaran()
-            ->where('guru_mata_pelajaran.is_active', true)
-            ->where('mata_pelajaran.is_active', true)
-            ->orderBy('nama_mapel')
-            ->get(['mata_pelajaran.id', 'nama_mapel']);
-    }
-
-    /**
-     * Ambil kelas yang diajar guru ini via jadwal_pelajaran.
-     * Guru tidak punya relasi BelongsToMany ke kelas secara langsung,
-     * melainkan lewat jadwal_pelajaran.
-     */
-    private function getKelasByGuru(int $guruId)
-    {
-        return Kelas::aktif()
-            ->whereHas('jadwalPelajaran', function ($q) use ($guruId) {
-                $q->where('guru_id', $guruId)
-                  ->where('is_active', true);
-            })
-            ->orderBy('nama_kelas')
-            ->get(['id', 'nama_kelas']);
-    }
-
-    /**
-     * Validasi silang: mapel & kelas wajib sesuai guru yang dipilih.
-     */
-    private function validateGuruRelasi(int $guruId, int $mapelId, int $kelasId): void
-    {
-        $guru = Guru::findOrFail($guruId);
-
-        // ✅ Cek mapel via pivot guru_mata_pelajaran
-        $mapelValid = $guru->mataPelajaran()
-            ->where('mata_pelajaran.id', $mapelId)
-            ->where('guru_mata_pelajaran.is_active', true)
-            ->exists();
-
-        if (!$mapelValid) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'mata_pelajaran_id' => 'Mata pelajaran yang dipilih tidak sesuai dengan guru ini.',
-            ]);
-        }
-
-        // ✅ Cek kelas via jadwal_pelajaran (bukan relasi langsung guru→kelas)
-        $kelasValid = Kelas::where('id', $kelasId)
-            ->whereHas('jadwalPelajaran', function ($q) use ($guruId) {
-                $q->where('guru_id', $guruId)
-                  ->where('is_active', true);
-            })
-            ->exists();
-
-        if (!$kelasValid) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'kelas_id' => 'Kelas yang dipilih tidak sesuai dengan guru ini.',
-            ]);
-        }
+        return [
+            'guru_id'           => ['required', 'exists:guru,id'],
+            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
+            'kelas_id'          => ['required', 'exists:kelas,id'],
+            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
+            'judul'             => ['required', 'string', 'max:255'],
+            'deskripsi'         => ['nullable', 'string', 'max:5000'],
+            'path_file_soal'    => ['nullable', 'file', 'max:10240'],
+            'jenis_pengumpulan' => ['required', Rule::in(['file', 'teks', 'link', 'foto'])],
+            'batas_waktu'       => ['required', 'date', 'after:now'],
+            'nilai_maksimal'    => ['nullable', 'numeric', 'min:0', 'max:100'],
+            'izinkan_terlambat' => ['boolean'],
+            'dipublikasikan'    => ['boolean'],
+        ];
     }
 
     private function messages(): array

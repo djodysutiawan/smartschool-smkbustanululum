@@ -54,6 +54,7 @@
             <p>Dicetak: {{ now()->format('d M Y, H:i') }}</p>
         </div>
     </div>
+    {{-- BUG FIX: $nilai di view ini adalah Collection biasa (bukan groupBy), jadi count() = total baris --}}
     <p class="doc-meta">Total data: {{ $nilai->count() }} nilai</p>
 </div>
 
@@ -91,16 +92,29 @@
     <tbody>
         @forelse($nilai as $i => $n)
         <tr>
-            <td class="center">{{ $i + 1 }}</td>
+            {{--
+                BUG FIX: $i adalah key dari Collection (bisa mulai dari 0).
+                Gunakan $loop->iteration untuk nomor urut yang selalu benar (1-based).
+            --}}
+            <td class="center">{{ $loop->iteration }}</td>
             <td class="bold">{{ $n->siswa->nama_lengkap ?? '-' }}</td>
             <td>{{ $n->mataPelajaran->nama_mapel ?? '-' }}</td>
             <td>{{ $n->kelas->nama_kelas ?? '-' }}</td>
-            <td>{{ $n->tahunAjaran->tahun ?? '-' }}</td>
-            <td class="center">{{ $n->nilai_tugas ?? '—' }}</td>
-            <td class="center">{{ $n->nilai_harian ?? '—' }}</td>
-            <td class="center">{{ $n->nilai_uts ?? '—' }}</td>
-            <td class="center">{{ $n->nilai_uas ?? '—' }}</td>
-            <td class="center" style="font-weight:700">{{ $n->nilai_akhir !== null ? number_format($n->nilai_akhir, 1) : '—' }}</td>
+            {{-- BUG FIX: tampilkan tahun + semester agar informasi lengkap --}}
+            <td>
+                {{ optional($n->tahunAjaran)->tahun ?? '-' }}
+                @if(optional($n->tahunAjaran)->semester)
+                    - {{ ucfirst($n->tahunAjaran->semester) }}
+                @endif
+            </td>
+            {{-- BUG FIX: null-check + number_format agar nilai 0 tidak jadi '—' --}}
+            <td class="center">{{ $n->nilai_tugas !== null ? number_format($n->nilai_tugas, 1) : '—' }}</td>
+            <td class="center">{{ $n->nilai_harian !== null ? number_format($n->nilai_harian, 1) : '—' }}</td>
+            <td class="center">{{ $n->nilai_uts !== null ? number_format($n->nilai_uts, 1) : '—' }}</td>
+            <td class="center">{{ $n->nilai_uas !== null ? number_format($n->nilai_uas, 1) : '—' }}</td>
+            <td class="center" style="font-weight:700">
+                {{ $n->nilai_akhir !== null ? number_format($n->nilai_akhir, 1) : '—' }}
+            </td>
             <td class="center">
                 @if($n->predikat)
                     <span class="badge badge-{{ strtolower($n->predikat) }}">{{ $n->predikat }}</span>
@@ -111,7 +125,9 @@
         </tr>
         @empty
         <tr>
-            <td colspan="11" style="text-align:center;padding:20px;color:#94a3b8;font-style:italic">Tidak ada data nilai.</td>
+            <td colspan="11" style="text-align:center;padding:20px;color:#94a3b8;font-style:italic">
+                Tidak ada data nilai.
+            </td>
         </tr>
         @endforelse
     </tbody>

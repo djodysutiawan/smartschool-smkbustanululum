@@ -25,6 +25,8 @@
     .btn-del:hover{background:#fee2e2;filter:none;}
     .btn-detail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
     .btn-detail:hover{background:#dcfce7;filter:none;}
+    .btn-sesi{background:#fdf4ff;color:#7c3aed;border:1px solid #e9d5ff;}
+    .btn-sesi:hover{background:#ede9fe;filter:none;}
     .btn-toggle-on{background:#fef9c3;color:#a16207;border:1px solid #fde68a;}
     .btn-toggle-on:hover{background:#fef3c7;filter:none;}
     .btn-toggle-off{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}
@@ -128,6 +130,7 @@
         </div>
     </div>
 
+    {{-- Stats Strip --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -155,6 +158,7 @@
         </div>
     </div>
 
+    {{-- Filter --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.ujian.index') }}">
             <div class="filter-row">
@@ -162,7 +166,9 @@
                 <select name="tahun_ajaran_id">
                     <option value="">Semua Tahun Ajaran</option>
                     @foreach($tahunAjaran as $ta)
-                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id')==$ta->id?'selected':'' }}>{{ $ta->tahun }} - {{ ucfirst($ta->semester) }}</option>
+                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id')==$ta->id?'selected':'' }}>
+                            {{ $ta->tahun }} - {{ ucfirst($ta->semester) }}
+                        </option>
                     @endforeach
                 </select>
                 <select name="kelas_id">
@@ -195,24 +201,29 @@
         </form>
     </div>
 
+    {{-- Table --}}
     <div class="table-card">
         <div class="table-topbar">
             <p class="table-info">Daftar Ujian <span>— {{ $ujian->total() }} data</span></p>
             <div class="table-actions">
-                <a href="{{ route('admin.ujian.export.pdf', request()->query()) }}" class="btn btn-sm btn-pdf" target="_blank">
+                <a href="{{ route('admin.ujian.export.pdf', request()->query()) }}"
+                   class="btn btn-sm btn-pdf" target="_blank">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     PDF
                 </a>
-                <a href="{{ route('admin.ujian.export.excel', request()->query()) }}" class="btn btn-sm btn-excel">
+                <a href="{{ route('admin.ujian.export.excel', request()->query()) }}"
+                   class="btn btn-sm btn-excel">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     Excel
                 </a>
-                <button type="button" class="btn btn-sm btn-import" onclick="document.getElementById('importModal').classList.add('open')">
+                <button type="button" class="btn btn-sm btn-import"
+                        onclick="document.getElementById('importModal').classList.add('open')">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
                     Import
                 </button>
             </div>
         </div>
+
         <div class="table-wrap">
             <table>
                 <thead>
@@ -226,25 +237,29 @@
                         <th class="center">Durasi</th>
                         <th class="center">KKM</th>
                         <th class="center">Status</th>
-                        <th class="center" style="width:210px">Aksi</th>
+                        <th class="center" style="width:240px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($ujian as $i => $u)
                     <tr>
-                        <td><span class="no-col">{{ $ujian->firstItem()+$i }}</span></td>
+                        <td><span class="no-col">{{ $ujian->firstItem() + $i }}</span></td>
                         <td>
                             <p class="ujian-title">{{ $u->judul }}</p>
                             <p class="ujian-sub">{{ $u->mataPelajaran->nama_mapel ?? '-' }}</p>
                         </td>
                         <td>
-                            <span class="jenis-pill jenis-{{ $u->jenis }}">{{ strtoupper(str_replace('_',' ',$u->jenis)) }}</span>
+                            <span class="jenis-pill jenis-{{ $u->jenis }}">
+                                {{ strtoupper(str_replace('_',' ',$u->jenis)) }}
+                            </span>
                         </td>
                         <td class="muted" style="font-size:12.5px">{{ $u->kelas->nama_kelas ?? '-' }}</td>
                         <td class="muted" style="font-size:12.5px">{{ $u->guru->nama_lengkap ?? '-' }}</td>
                         <td class="muted" style="font-size:12.5px">
-                            {{ \Carbon\Carbon::parse($u->tanggal)->format('d M Y') }}<br>
-                            <span style="font-size:11.5px">{{ $u->jam_mulai }}</span>
+                            {{ \Carbon\Carbon::parse($u->tanggal)->format('d M Y') }}
+                            @if($u->jam_mulai)
+                                <br><span style="font-size:11.5px">{{ $u->jam_mulai }}</span>
+                            @endif
                         </td>
                         <td class="center muted" style="font-size:12.5px">{{ $u->durasi_menit }} mnt</td>
                         <td class="center muted" style="font-size:12.5px">{{ $u->nilai_kkm ?? '-' }}</td>
@@ -257,19 +272,40 @@
                         </td>
                         <td class="center">
                             <div class="action-group">
-                                <a href="{{ route('admin.ujian.show',$u->id) }}" class="btn btn-sm btn-detail">Detail</a>
-                                <a href="{{ route('admin.ujian.edit',$u->id) }}" class="btn btn-sm btn-edit">Edit</a>
-                                <form action="{{ route('admin.ujian.toggle-status',$u->id) }}" method="POST" id="toggleForm-{{ $u->id }}">
-                                    @csrf @method('PATCH')
-                                    <button type="button" class="btn btn-sm {{ $u->is_active ? 'btn-toggle-on' : 'btn-toggle-off' }}"
-                                        onclick="confirmToggle(document.getElementById('toggleForm-{{ $u->id }}'),'{{ addslashes($u->judul) }}',{{ $u->is_active ? 'true' : 'false' }})">
+                                <a href="{{ route('admin.ujian.show', $u->id) }}" class="btn btn-sm btn-detail">Detail</a>
+
+                                {{-- ++ TAMBAHAN: Monitor Sesi siswa langsung dari index --}}
+                                <a href="{{ route('admin.ujian.sesi.index-admin', $u->id) }}" class="btn btn-sm btn-sesi" title="Monitor sesi siswa">
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                    Sesi
+                                </a>
+
+                                <a href="{{ route('admin.ujian.edit', $u->id) }}" class="btn btn-sm btn-edit">Edit</a>
+
+                                <form action="{{ route('admin.ujian.toggle-status', $u->id) }}"
+                                      method="POST" id="toggleForm-{{ $u->id }}">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="button"
+                                            class="btn btn-sm {{ $u->is_active ? 'btn-toggle-on' : 'btn-toggle-off' }}"
+                                            onclick="confirmToggle(
+                                                document.getElementById('toggleForm-{{ $u->id }}'),
+                                                {{ Js::from($u->judul) }},
+                                                {{ $u->is_active ? 'true' : 'false' }}
+                                            )">
                                         {{ $u->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                                     </button>
                                 </form>
-                                <form action="{{ route('admin.ujian.destroy',$u->id) }}" method="POST" id="deleteForm-{{ $u->id }}">
-                                    @csrf @method('DELETE')
+
+                                <form action="{{ route('admin.ujian.destroy', $u->id) }}"
+                                      method="POST" id="deleteForm-{{ $u->id }}">
+                                    @csrf
+                                    @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('deleteForm-{{ $u->id }}'),'{{ addslashes($u->judul) }}')">
+                                            onclick="confirmDelete(
+                                                document.getElementById('deleteForm-{{ $u->id }}'),
+                                                {{ Js::from($u->judul) }}
+                                            )">
                                         Hapus
                                     </button>
                                 </form>
@@ -277,39 +313,58 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="10">
-                        <div class="empty-state">
-                            <div class="empty-icon"><svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
-                            <p class="empty-title">Tidak ada data ujian</p>
-                            <p class="empty-sub">Coba ubah filter atau tambah ujian baru</p>
-                        </div>
-                    </td></tr>
+                    <tr>
+                        <td colspan="10">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24">
+                                        <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                                    </svg>
+                                </div>
+                                <p class="empty-title">Tidak ada data ujian</p>
+                                <p class="empty-sub">Coba ubah filter atau tambah ujian baru</p>
+                            </div>
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+
         @if($ujian->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">Menampilkan {{ $ujian->firstItem() }} – {{ $ujian->lastItem() }} dari {{ $ujian->total() }} ujian</p>
+            <p class="pag-info">
+                Menampilkan {{ $ujian->firstItem() }} – {{ $ujian->lastItem() }} dari {{ $ujian->total() }} ujian
+            </p>
             <div class="pag-btns">
                 @if($ujian->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $ujian->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $ujian->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
-                @foreach($ujian->getUrlRange(1,$ujian->lastPage()) as $page => $url)
-                    @if($page==$ujian->currentPage())
+
+                @foreach($ujian->getUrlRange(1, $ujian->lastPage()) as $page => $url)
+                    @if($page == $ujian->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page==1||$page==$ujian->lastPage()||abs($page-$ujian->currentPage())<=1)
+                    @elseif($page == 1 || $page == $ujian->lastPage() || abs($page - $ujian->currentPage()) <= 1)
                         <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page-$ujian->currentPage())==2)
+                    @elseif(abs($page - $ujian->currentPage()) == 2)
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
+
                 @if($ujian->hasMorePages())
-                    <a href="{{ $ujian->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $ujian->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -317,10 +372,16 @@
     </div>
 </div>
 
+{{-- Import Modal --}}
 <div class="import-modal" id="importModal">
     <div class="import-box">
         <p class="import-title">Import Data Ujian</p>
-        <p class="import-sub">Upload file Excel (.xlsx / .xls). <a href="{{ route('admin.ujian.import.template') }}" style="color:var(--brand-600);font-weight:600">Download template</a></p>
+        <p class="import-sub">
+            Upload file Excel (.xlsx / .xls).
+            <a href="{{ route('admin.ujian.import.template') }}" style="color:var(--brand-600);font-weight:600">
+                Download template
+            </a>
+        </p>
         <form action="{{ route('admin.ujian.import') }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="import-field">
@@ -328,7 +389,10 @@
                 <input type="file" name="file" accept=".xlsx,.xls" required>
             </div>
             <div class="import-actions">
-                <button type="button" class="btn-modal-cancel" onclick="document.getElementById('importModal').classList.remove('open')">Batal</button>
+                <button type="button" class="btn-modal-cancel"
+                        onclick="document.getElementById('importModal').classList.remove('open')">
+                    Batal
+                </button>
                 <button type="submit" class="btn-modal-submit">Upload & Import</button>
             </div>
         </form>
@@ -338,18 +402,47 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+    Swal.fire({
+        icon: 'success', title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500, showConfirmButton: false,
+        toast: true, position: 'top-end'
+    });
     @endif
+
     @if(session('error'))
-    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    Swal.fire({
+        icon: 'error', title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
     @endif
 
     function confirmDelete(form, nama) {
-        Swal.fire({title:'Hapus Ujian?',text:`Ujian "${nama}" akan dihapus.`,icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)form.submit();});
+        Swal.fire({
+            title: 'Hapus Ujian?',
+            text: `Ujian "${nama}" akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
+
     function confirmToggle(form, nama, isActive) {
         const action = isActive ? 'Nonaktifkan' : 'Aktifkan';
-        Swal.fire({title:`${action} Ujian?`,text:`Ujian "${nama}" akan di${action.toLowerCase()}.`,icon:'question',showCancelButton:true,confirmButtonColor:'#1f63db',cancelButtonColor:'#64748b',confirmButtonText:`Ya, ${action}!`,cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)form.submit();});
+        Swal.fire({
+            title: `${action} Ujian?`,
+            text: `Ujian "${nama}" akan di${action.toLowerCase()}.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1f63db',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `Ya, ${action}!`,
+            cancelButtonText: 'Batal'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 
     document.getElementById('importModal').addEventListener('click', function(e) {

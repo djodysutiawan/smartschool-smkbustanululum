@@ -187,6 +187,11 @@
             </div>
         </div>
 
+        {{--
+            ACTION menuju route preview.
+            Field 'catatan' dikirim ke sini agar bisa dioper
+            sebagai hidden input di halaman preview → lalu ke store().
+        --}}
         <form action="{{ route('admin.kenaikan-kelas.preview') }}" method="POST">
             @csrf
             <div class="card-body">
@@ -202,20 +207,20 @@
                 {{-- Tahun Ajaran Asal & Tujuan --}}
                 <div class="field-row cols-2">
                     <div class="field">
-                        <label class="field-label">Tahun Ajaran Asal <span class="req">*</span></label>
+                        <label class="field-label" for="taAsal">Tahun Ajaran Asal <span class="req">*</span></label>
                         <div class="field-control">
                             <select name="tahun_ajaran_asal_id" id="taAsal" required onchange="onTaChange()">
                                 <option value="">— Pilih Tahun Ajaran Asal —</option>
                                 @forelse($tahunAjarans as $ta)
                                     @php
-                                        // Defensif: coba beberapa kemungkinan nama kolom
                                         $labelTa = $ta->nama
                                             ?? $ta->tahun
-                                            ?? (isset($ta->tahun_mulai) ? "{$ta->tahun_mulai}/{$ta->tahun_selesai}" : null)
+                                            ?? (isset($ta->tahun_mulai, $ta->tahun_selesai) ? "{$ta->tahun_mulai}/{$ta->tahun_selesai}" : null)
                                             ?? "Tahun Ajaran #{$ta->id}";
                                         $isAktif = isset($ta->status) && $ta->status === 'aktif';
                                     @endphp
-                                    <option value="{{ $ta->id }}" {{ old('tahun_ajaran_asal_id') == $ta->id ? 'selected' : '' }}>
+                                    <option value="{{ $ta->id }}"
+                                        {{ old('tahun_ajaran_asal_id') == $ta->id ? 'selected' : '' }}>
                                         {{ $labelTa }}{{ $isAktif ? ' (Aktif)' : '' }}
                                     </option>
                                 @empty
@@ -230,7 +235,7 @@
                     </div>
 
                     <div class="field">
-                        <label class="field-label">Tahun Ajaran Tujuan <span class="req">*</span></label>
+                        <label class="field-label" for="taTujuan">Tahun Ajaran Tujuan <span class="req">*</span></label>
                         <div class="field-control">
                             <select name="tahun_ajaran_tujuan_id" id="taTujuan" required onchange="onTaChange()">
                                 <option value="">— Pilih Tahun Ajaran Tujuan —</option>
@@ -238,11 +243,12 @@
                                     @php
                                         $labelTa = $ta->nama
                                             ?? $ta->tahun
-                                            ?? (isset($ta->tahun_mulai) ? "{$ta->tahun_mulai}/{$ta->tahun_selesai}" : null)
+                                            ?? (isset($ta->tahun_mulai, $ta->tahun_selesai) ? "{$ta->tahun_mulai}/{$ta->tahun_selesai}" : null)
                                             ?? "Tahun Ajaran #{$ta->id}";
                                         $isAktif = isset($ta->status) && $ta->status === 'aktif';
                                     @endphp
-                                    <option value="{{ $ta->id }}" {{ old('tahun_ajaran_tujuan_id') == $ta->id ? 'selected' : '' }}>
+                                    <option value="{{ $ta->id }}"
+                                        {{ old('tahun_ajaran_tujuan_id') == $ta->id ? 'selected' : '' }}>
                                         {{ $labelTa }}{{ $isAktif ? ' (Aktif)' : '' }}
                                     </option>
                                 @empty
@@ -266,7 +272,7 @@
                 {{-- Tingkat + Catatan --}}
                 <div class="field-row cols-2">
                     <div class="field">
-                        <label class="field-label">Tingkat Kelas Asal <span class="req">*</span></label>
+                        <label class="field-label" for="tingkatSel">Tingkat Kelas Asal <span class="req">*</span></label>
                         <div class="field-control">
                             <select name="dari_tingkat" id="tingkatSel" required onchange="onTingkatChange()">
                                 <option value="">— Pilih Tingkat —</option>
@@ -285,9 +291,10 @@
                     </div>
 
                     <div class="field">
-                        <label class="field-label">Catatan Proses <span class="opt">(opsional)</span></label>
+                        <label class="field-label" for="catatanInput">Catatan Proses <span class="opt">(opsional)</span></label>
                         <div class="field-control">
-                            <input type="text" name="catatan" value="{{ old('catatan') }}"
+                            <input type="text" id="catatanInput" name="catatan"
+                                   value="{{ old('catatan') }}"
                                    placeholder="Contoh: Kenaikan kelas genap 2024/2025">
                         </div>
                         <span class="field-hint">Catatan ini akan tersimpan di riwayat proses</span>
@@ -365,8 +372,8 @@ function onTingkatChange() {
 }
 
 function onTaChange() {
-    const asal   = document.getElementById('taAsal').value;
-    const tujuan = document.getElementById('taTujuan').value;
+    const asal    = document.getElementById('taAsal').value;
+    const tujuan  = document.getElementById('taTujuan').value;
     const alertEl = document.getElementById('alertSamaTa');
     const btn     = document.getElementById('btnPreview');
     const same    = asal && tujuan && asal === tujuan;

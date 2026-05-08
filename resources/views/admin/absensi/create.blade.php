@@ -40,6 +40,7 @@
     .field input.is-invalid,.field select.is-invalid,.field textarea.is-invalid{border-color:var(--red);background:#fff8f8}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;margin-top:-2px}
     .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px}
+    .field select:disabled{opacity:.6;cursor:not-allowed}
     .upload-wrap{border:1.5px dashed var(--border2);border-radius:var(--radius-sm);padding:16px;background:var(--surface2);position:relative}
     .upload-inner{display:flex;align-items:center;gap:12px}
     .upload-icon{width:40px;height:40px;background:var(--surface3);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -53,10 +54,10 @@
 </style>
 
 @php
-    // FIX: label metode sesuai enum DB ENUM('manual','qr_scan','wajah','rfid','import')
     $metodeLabel = [
         'manual'  => 'Manual',
-        'qr_scan' => 'QR Code',
+        'qr'      => 'QR Code',
+        'qr_scan' => 'QR Scan',
         'wajah'   => 'Face Recognition',
         'rfid'    => 'RFID',
         'import'  => 'Import',
@@ -83,67 +84,61 @@
         </a>
     </div>
 
-    @if($errors->any())
-    <div class="alert">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <div>
-            <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">Terdapat {{ $errors->count() }} kesalahan:</strong>
-            <ul style="margin:6px 0 0 16px;display:flex;flex-direction:column;gap:2px">
-                @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
-            </ul>
-        </div>
-    </div>
-    @endif
-
     <form action="{{ route('admin.absensi.store') }}" method="POST" enctype="multipart/form-data" id="absensiForm">
         @csrf
         <div class="form-card">
+
             {{-- DATA SISWA --}}
             <div class="form-section">
                 <p class="section-label">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                    Data Siswa & Kelas
+                    Data Siswa &amp; Kelas
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-grid">
-                    <div class="field">
-                        <label>Siswa <span class="req">*</span></label>
-                        <select name="siswa_id" class="{{ $errors->has('siswa_id') ? 'is-invalid' : '' }}">
-                            <option value="">— Pilih Siswa —</option>
-                            @foreach($siswaList as $s)
-                                <option value="{{ $s->id }}" {{ old('siswa_id') == $s->id ? 'selected' : '' }}>
-                                    {{ $s->nama_lengkap }} ({{ $s->nis }})
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('siswa_id')<span class="field-error">{{ $message }}</span>@enderror
-                    </div>
+
                     <div class="field">
                         <label>Kelas <span class="req">*</span></label>
-                        <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
+                        <select name="kelas_id" id="kelasSelect" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}"
+                                onchange="onKelasChange(this.value)">
                             <option value="">— Pilih Kelas —</option>
                             @foreach($kelasList as $k)
-                                <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
+                                <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
+                                    {{ $k->nama_kelas }}
+                                </option>
                             @endforeach
                         </select>
                         @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
-                    <div class="field">
-                        <label>Jadwal Pelajaran</label>
-                        <select name="jadwal_pelajaran_id">
-                            <option value="">— Pilih Jadwal (opsional) —</option>
-                            @foreach($jadwalList as $jd)
-                                <option value="{{ $jd->id }}" {{ old('jadwal_pelajaran_id') == $jd->id ? 'selected' : '' }}>
-                                    {{ $jd->kelas->nama_kelas ?? '' }} — {{ $jd->mataPelajaran->nama_mapel ?? '' }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
+
                     <div class="field">
                         <label>Tanggal <span class="req">*</span></label>
-                        <input type="date" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}" class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
+                        <input type="date" name="tanggal" id="tanggalInput"
+                               value="{{ old('tanggal', date('Y-m-d')) }}"
+                               class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}"
+                               onchange="onTanggalChange(this.value)">
                         @error('tanggal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    <div class="field">
+                        <label>Siswa <span class="req">*</span></label>
+                        <select name="siswa_id" id="siswaSelect"
+                                class="{{ $errors->has('siswa_id') ? 'is-invalid' : '' }}"
+                                disabled>
+                            <option value="">— Pilih Kelas Dulu —</option>
+                        </select>
+                        @error('siswa_id')<span class="field-error">{{ $message }}</span>@enderror
+                        <span class="field-hint" id="siswaHint" style="display:none">Memuat data siswa…</span>
+                    </div>
+
+                    <div class="field">
+                        <label>Jadwal Pelajaran</label>
+                        <select name="jadwal_pelajaran_id" id="jadwalSelect" disabled>
+                            <option value="">— Pilih Kelas &amp; Tanggal Dulu —</option>
+                        </select>
+                        <span class="field-hint" id="jadwalHint" style="display:none">Memuat jadwal…</span>
+                    </div>
+
                 </div>
             </div>
 
@@ -153,23 +148,26 @@
             <div class="form-section">
                 <p class="section-label">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                    Status & Waktu
+                    Status &amp; Waktu
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-grid-3">
                     <div class="field">
                         <label>Status Kehadiran <span class="req">*</span></label>
-                        <select name="status" id="statusSelect" class="{{ $errors->has('status') ? 'is-invalid' : '' }}" onchange="handleStatus(this.value)">
+                        <select name="status" id="statusSelect" class="{{ $errors->has('status') ? 'is-invalid' : '' }}"
+                                onchange="handleStatus(this.value)">
                             <option value="">— Pilih Status —</option>
                             @foreach($statusList as $st)
-                                <option value="{{ $st }}" {{ old('status') == $st ? 'selected' : '' }}>{{ ucfirst($st) }}</option>
+                                <option value="{{ $st }}" {{ old('status') == $st ? 'selected' : '' }}>
+                                    {{ ucfirst($st) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('status')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Metode</label>
-                        {{-- FIX: loop $metodeList = ['manual','qr_scan'], label dari $metodeLabel --}}
                         <select name="metode">
                             @foreach($metodeList as $m)
                                 <option value="{{ $m }}" {{ old('metode', 'manual') == $m ? 'selected' : '' }}>
@@ -178,22 +176,24 @@
                             @endforeach
                         </select>
                     </div>
-                    <div class="field">
-                        <label>Dicatat Oleh (User ID)</label>
-                        <input type="number" name="dicatat_oleh" value="{{ old('dicatat_oleh', auth()->id()) }}" placeholder="ID user">
-                        <span class="field-hint">Kosongkan untuk otomatis menggunakan akun Anda</span>
-                    </div>
+
                     <div class="field">
                         <label>Jam Masuk</label>
-                        <input type="time" name="jam_masuk" value="{{ old('jam_masuk') }}" class="{{ $errors->has('jam_masuk') ? 'is-invalid' : '' }}">
+                        <input type="time" name="jam_masuk" value="{{ old('jam_masuk') }}"
+                               class="{{ $errors->has('jam_masuk') ? 'is-invalid' : '' }}">
                         @error('jam_masuk')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Jam Keluar</label>
-                        <input type="time" name="jam_keluar" value="{{ old('jam_keluar') }}" class="{{ $errors->has('jam_keluar') ? 'is-invalid' : '' }}">
+                        <input type="time" name="jam_keluar" value="{{ old('jam_keluar') }}"
+                               class="{{ $errors->has('jam_keluar') ? 'is-invalid' : '' }}">
                         @error('jam_keluar')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field"></div>
+                    <div class="field"></div>
+
                     <div class="field col-span-3">
                         <label>Keterangan</label>
                         <textarea name="keterangan" rows="2" placeholder="Catatan tambahan (opsional)">{{ old('keterangan') }}</textarea>
@@ -203,7 +203,7 @@
 
             <hr class="section-divider">
 
-            {{-- SURAT IZIN — hanya tampil jika status izin/sakit --}}
+            {{-- SURAT IZIN --}}
             <div class="form-section" id="suratIzinSection" style="display:none">
                 <p class="section-label">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -224,7 +224,7 @@
                         </div>
                         <input type="file" name="path_surat_izin" class="upload-input" id="suratInput"
                                accept=".pdf,.jpg,.jpeg,.png"
-                               onchange="document.getElementById('suratFilename').textContent=this.files[0]?.name||'';document.getElementById('suratFilename').style.display=this.files[0]?'block':'none'">
+                               onchange="onSuratFileChange(this)">
                         <p id="suratFilename" class="upload-filename"></p>
                     </div>
                     @error('path_surat_izin')<span class="field-error">{{ $message }}</span>@enderror
@@ -244,23 +244,164 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // ── Flash messages ──────────────────────────────────────────────────────
     @if(session('error'))
     Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
     @endif
     @if($errors->any())
     Swal.fire({
-        icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        icon:'error',
+        title:'Terdapat {{ $errors->count() }} Kesalahan',
+        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">
+            @foreach($errors->all() as $e)<li>{{ addslashes($e) }}</li>@endforeach
+        </ul>`,
         confirmButtonColor:'#1f63db',
     });
     @endif
 
+    // ── FIX #1: Gunakan url() bukan route() agar tidak ada RouteModelBinding
+    // saat halaman di-render. ID kelas digabung di JS saat request dikirim.
+    // Pastikan nama segmen URL sesuai dengan definisi route di web.php Anda.
+    // Contoh route: GET /admin/absensi/kelas/{kelas}/data
+    const AJAX_BASE = "{{ url('admin/absensi/kelas') }}";
+
+    // Nilai lama setelah validation error
+    const OLD_SISWA_ID  = "{{ old('siswa_id') }}";
+    const OLD_JADWAL_ID = "{{ old('jadwal_pelajaran_id') }}";
+
+    // ── Handlers ────────────────────────────────────────────────────────────
     function handleStatus(val) {
         const sec = document.getElementById('suratIzinSection');
         sec.style.display = (val === 'izin' || val === 'sakit') ? 'block' : 'none';
     }
     handleStatus('{{ old("status","") }}');
 
+    function onSuratFileChange(input) {
+        const el = document.getElementById('suratFilename');
+        el.textContent   = input.files[0]?.name || '';
+        el.style.display = input.files[0] ? 'block' : 'none';
+    }
+
+    // ── AJAX ─────────────────────────────────────────────────────────────────
+    function onKelasChange(kelasId) {
+        const tanggal = document.getElementById('tanggalInput').value;
+        loadSiswaJadwal(kelasId, tanggal);
+    }
+
+    function onTanggalChange(tanggal) {
+        const kelasId = document.getElementById('kelasSelect').value;
+        if (kelasId) loadSiswaJadwal(kelasId, tanggal);
+    }
+
+    function loadSiswaJadwal(kelasId, tanggal) {
+        if (!kelasId) {
+            resetSiswa();
+            resetJadwal();
+            return;
+        }
+
+        // FIX #1: Bangun URL secara manual, tanpa route() di Blade
+        const url = AJAX_BASE + '/' + kelasId + '/data'
+                  + (tanggal ? '?tanggal=' + encodeURIComponent(tanggal) : '');
+
+        const siswaEl    = document.getElementById('siswaSelect');
+        const jadwalEl   = document.getElementById('jadwalSelect');
+        const siswaHint  = document.getElementById('siswaHint');
+        const jadwalHint = document.getElementById('jadwalHint');
+
+        siswaEl.disabled   = true;
+        jadwalEl.disabled  = true;
+        siswaEl.innerHTML  = '<option value="">Memuat…</option>';
+        jadwalEl.innerHTML = '<option value="">Memuat…</option>';
+        siswaHint.style.display  = 'block';
+        jadwalHint.style.display = 'block';
+
+        // FIX #4: Sertakan CSRF token dan credentials agar session cookie dikirim
+        fetch(url, {
+            method: 'GET',
+            credentials: 'same-origin',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-XSRF-TOKEN': decodeURIComponent(
+                    (document.cookie.match(/XSRF-TOKEN=([^;]+)/) || [])[1] || ''
+                ),
+            },
+        })
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(data => {
+            // Isi dropdown siswa
+            siswaEl.innerHTML = '<option value="">— Pilih Siswa —</option>';
+            if (data.siswa && data.siswa.length > 0) {
+                data.siswa.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value       = s.id;
+                    opt.textContent = s.nama_lengkap + ' (' + s.nis + ')';
+                    if (String(s.id) === OLD_SISWA_ID) opt.selected = true;
+                    siswaEl.appendChild(opt);
+                });
+                siswaEl.disabled = false;
+            } else {
+                siswaEl.innerHTML = '<option value="">Tidak ada siswa aktif</option>';
+                siswaEl.disabled  = false;
+            }
+
+            // Isi dropdown jadwal
+            // FIX #3: Laravel serialisasi relasi dengan nama snake_case otomatis
+            // with('mataPelajaran') → key JSON adalah "mata_pelajaran"
+            jadwalEl.innerHTML = '<option value="">— Pilih Jadwal (opsional) —</option>';
+            if (data.jadwal && data.jadwal.length > 0) {
+                data.jadwal.forEach(j => {
+                    const opt   = document.createElement('option');
+                    opt.value   = j.id;
+                    // Akses via j.mata_pelajaran (snake_case hasil serialisasi Laravel)
+                    const mapel = j.mata_pelajaran ? j.mata_pelajaran.nama_mapel : '—';
+                    opt.textContent = mapel + ' ' + j.jam_mulai + '–' + j.jam_selesai;
+                    if (String(j.id) === OLD_JADWAL_ID) opt.selected = true;
+                    jadwalEl.appendChild(opt);
+                });
+                jadwalEl.disabled = false;
+            } else {
+                jadwalEl.innerHTML = '<option value="">Tidak ada jadwal hari ini</option>';
+                jadwalEl.disabled  = false;
+            }
+
+            siswaHint.style.display  = 'none';
+            jadwalHint.style.display = 'none';
+        })
+        .catch(err => {
+            console.error('AJAX error:', err);
+            siswaEl.innerHTML  = '<option value="">Gagal memuat siswa</option>';
+            jadwalEl.innerHTML = '<option value="">Gagal memuat jadwal</option>';
+            siswaEl.disabled   = false;
+            jadwalEl.disabled  = false;
+            siswaHint.style.display  = 'none';
+            jadwalHint.style.display = 'none';
+        });
+    }
+
+    function resetSiswa() {
+        const el = document.getElementById('siswaSelect');
+        el.innerHTML = '<option value="">— Pilih Kelas Dulu —</option>';
+        el.disabled  = true;
+    }
+    function resetJadwal() {
+        const el = document.getElementById('jadwalSelect');
+        el.innerHTML = '<option value="">— Pilih Kelas &amp; Tanggal Dulu —</option>';
+        el.disabled  = true;
+    }
+
+    // Init: jika ada old('kelas_id') setelah validation error, reload via AJAX
+    const OLD_KELAS_ID = "{{ old('kelas_id') }}";
+    const OLD_TANGGAL  = "{{ old('tanggal', date('Y-m-d')) }}";
+    if (OLD_KELAS_ID) {
+        loadSiswaJadwal(OLD_KELAS_ID, OLD_TANGGAL);
+    }
+
+    // Submit handler
     document.getElementById('absensiForm').addEventListener('submit', function() {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;

@@ -21,16 +21,13 @@
     .btn-primary{background:var(--brand);color:#fff}
     .btn-primary:hover{filter:brightness(.93)}
     .btn-primary:disabled{opacity:.6;cursor:not-allowed;filter:none}
-    .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13.5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
     .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
     .form-section{padding:20px 24px 24px}
     .section-divider{border:none;border-top:1px solid var(--border);margin:0}
     .section-label{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px}
     .section-label-line{flex:1;height:1px;background:var(--border)}
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .form-grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
     .col-span-2{grid-column:span 2}
-    .col-span-4{grid-column:span 4}
     .field{display:flex;flex-direction:column;gap:6px}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2)}
     .field label .req{color:var(--brand);margin-left:2px}
@@ -39,6 +36,7 @@
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand-h);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.1)}
     .field input.is-invalid,.field select.is-invalid{border-color:var(--red);background:#fff8f8}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;margin-top:-2px}
+    .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px}
     .field input[readonly]{background:var(--surface3);color:var(--text3);cursor:default}
     .info-banner{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text2)}
     .info-banner strong{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:var(--text)}
@@ -52,24 +50,22 @@
     .existing-file{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px}
     .existing-file a{font-size:12.5px;color:var(--brand);font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;text-decoration:none}
     .existing-file a:hover{text-decoration:underline}
-    .surat-hidden{display:none}
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border)}
-    .notice-auto{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fefce8;border:1px solid #fef08a;border-radius:var(--radius-sm);font-size:12px;color:#a16207;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600}
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:680px){.page{padding:16px 16px 40px}.form-grid-3{grid-template-columns:1fr}.col-span-3,.col-span-2{grid-column:span 1}}
+    @media(max-width:680px){.page{padding:16px 16px 40px}.form-grid{grid-template-columns:1fr}.col-span-2{grid-column:span 1}}
 </style>
 
 @php
-    // Label metode sesuai enum DB ENUM('manual','qr_scan','wajah','rfid','import')
     $metodeLabel = [
         'manual'  => 'Manual',
+        'qr'      => 'Scan QR',
         'qr_scan' => 'QR Code',
         'wajah'   => 'Face Recognition',
         'rfid'    => 'RFID',
         'import'  => 'Import',
     ];
-    // Metode otomatis (dicatat sistem, bukan pilihan admin)
-    $metodeOtomatis = ['wajah', 'rfid', 'import'];
+    // Metode otomatis oleh sistem — tidak bisa diubah admin
+    $metodeOtomatis = ['wajah', 'rfid', 'import', 'qr', 'qr_scan'];
     $isMetodeOtomatis = in_array($absensi->metode, $metodeOtomatis);
 @endphp
 
@@ -87,7 +83,11 @@
     <div class="page-header">
         <div>
             <h1 class="page-title">Edit Data Absensi</h1>
-            <p class="page-sub">Perbarui status kehadiran — {{ $absensi->siswa->nama_lengkap ?? '—' }}, {{ \Carbon\Carbon::parse($absensi->tanggal)->format('d M Y') }}</p>
+            <p class="page-sub">
+                Perbarui status kehadiran —
+                {{ $absensi->siswa->nama_lengkap ?? '—' }},
+                {{ \Carbon\Carbon::parse($absensi->tanggal)->format('d M Y') }}
+            </p>
         </div>
         <a href="{{ route('admin.absensi.show', $absensi->id) }}" class="btn btn-back">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -97,27 +97,33 @@
 
     <div class="info-banner">
         <svg width="16" height="16" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Siswa: <strong>{{ $absensi->siswa->nama_lengkap ?? '—' }}</strong> &nbsp;|&nbsp;
-        Kelas: <strong>{{ $absensi->kelas->nama_kelas ?? '—' }}</strong> &nbsp;|&nbsp;
+        Siswa: <strong>{{ $absensi->siswa->nama_lengkap ?? '—' }}</strong>
+        &nbsp;|&nbsp;
+        Kelas: <strong>{{ $absensi->kelas->nama_kelas ?? '—' }}</strong>
+        &nbsp;|&nbsp;
         Tanggal: <strong>{{ \Carbon\Carbon::parse($absensi->tanggal)->format('d F Y') }}</strong>
     </div>
 
-    <form action="{{ route('admin.absensi.update', $absensi->id) }}" method="POST" enctype="multipart/form-data" id="absensiForm">
-        @csrf @method('PUT')
+    <form action="{{ route('admin.absensi.update', $absensi->id) }}" method="POST"
+          enctype="multipart/form-data" id="absensiForm">
+        @csrf
+        @method('PUT')
         <div class="form-card">
 
-            {{-- ── STATUS & WAKTU ──────────────────────────────────────────── --}}
+            {{-- STATUS & WAKTU --}}
             <div class="form-section">
                 <p class="section-label">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                     Status &amp; Waktu Kehadiran
                     <span class="section-label-line"></span>
                 </p>
-                {{-- Baris 1: Status + Metode --}}
+
                 <div class="form-grid" style="margin-bottom:16px">
                     <div class="field">
                         <label>Status Kehadiran <span class="req">*</span></label>
-                        <select name="status" id="statusSelect" class="{{ $errors->has('status') ? 'is-invalid' : '' }}" onchange="handleStatus(this.value)">
+                        <select name="status" id="statusSelect"
+                                class="{{ $errors->has('status') ? 'is-invalid' : '' }}"
+                                onchange="handleStatus(this.value)">
                             @foreach($statusList as $st)
                                 <option value="{{ $st }}" {{ old('status', $absensi->status) == $st ? 'selected' : '' }}>
                                     {{ ucfirst($st) }}
@@ -130,10 +136,10 @@
                     <div class="field">
                         <label>Metode</label>
                         @if($isMetodeOtomatis)
-                            {{-- Dicatat otomatis sistem: readonly + hidden agar value tetap terkirim --}}
+                            {{-- Readonly + hidden agar value tetap terkirim --}}
                             <input type="text" value="{{ $metodeLabel[$absensi->metode] ?? ucfirst($absensi->metode) }}" readonly>
                             <input type="hidden" name="metode" value="{{ $absensi->metode }}">
-                            <span style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px">Dicatat otomatis oleh sistem</span>
+                            <span class="field-hint">Dicatat otomatis oleh sistem</span>
                         @else
                             <select name="metode" class="{{ $errors->has('metode') ? 'is-invalid' : '' }}">
                                 @foreach($metodeList as $m)
@@ -141,6 +147,10 @@
                                         {{ $metodeLabel[$m] ?? ucfirst($m) }}
                                     </option>
                                 @endforeach
+                                {{--
+                                    Jika nilai metode di DB bukan bagian dari $metodeList (form admin),
+                                    tetap tampilkan agar tidak hilang saat disimpan.
+                                --}}
                                 @if($absensi->metode && !in_array($absensi->metode, $metodeList))
                                     <option value="{{ $absensi->metode }}" selected>
                                         {{ $metodeLabel[$absensi->metode] ?? ucfirst($absensi->metode) }}
@@ -152,7 +162,6 @@
                     </div>
                 </div>
 
-                {{-- Baris 2: Jam Masuk + Jam Keluar --}}
                 <div class="form-grid" style="margin-bottom:16px">
                     <div class="field">
                         <label>Jam Masuk</label>
@@ -170,25 +179,28 @@
                     </div>
                 </div>
 
-                {{-- Baris 3: Keterangan full width --}}
                 <div class="field">
                     <label>Keterangan</label>
-                    <textarea name="keterangan" rows="2" placeholder="Keterangan tambahan (opsional)...">{{ old('keterangan', $absensi->keterangan) }}</textarea>
+                    <textarea name="keterangan" rows="2" placeholder="Keterangan tambahan (opsional)…">{{ old('keterangan', $absensi->keterangan) }}</textarea>
                     @error('keterangan')<span class="field-error">{{ $message }}</span>@enderror
                 </div>
             </div>
 
             <hr class="section-divider">
 
-            {{-- ── SURAT IZIN — tampil/sembunyikan berdasarkan status ──────── --}}
-            <div class="form-section {{ !in_array(old('status', $absensi->status), ['izin','sakit']) ? 'surat-hidden' : '' }}" id="suratIzinSection">
+            {{-- SURAT IZIN --}}
+            <div class="form-section" id="suratIzinSection"
+                 style="{{ !in_array(old('status', $absensi->status), ['izin','sakit']) ? 'display:none' : '' }}">
                 <p class="section-label">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
                     Surat Keterangan
                     <span class="section-label-line"></span>
                 </p>
                 <div class="field" style="max-width:500px">
-                    <label>Upload Surat Baru <span style="font-weight:400;color:var(--text3)">(opsional)</span></label>
+                    <label>
+                        Upload Surat Baru
+                        <span style="font-weight:400;color:var(--text3)">(opsional)</span>
+                    </label>
 
                     @if($absensi->path_surat_izin)
                     <div class="existing-file">
@@ -208,7 +220,8 @@
                                 <p class="upload-hint">PDF, JPG, PNG — maks. 2 MB</p>
                             </div>
                         </div>
-                        <input type="file" name="path_surat_izin" class="upload-input" accept=".pdf,.jpg,.jpeg,.png"
+                        <input type="file" name="path_surat_izin" class="upload-input"
+                               accept=".pdf,.jpg,.jpeg,.png"
                                onchange="onFileChange(this)">
                         <p id="suratFilename" class="upload-filename"></p>
                     </div>
@@ -237,7 +250,7 @@
         icon:'error',
         title:'Terdapat {{ $errors->count() }} Kesalahan',
         html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">
-            @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+            @foreach($errors->all() as $e)<li>{{ addslashes($e) }}</li>@endforeach
         </ul>`,
         confirmButtonColor:'#1f63db',
     });
@@ -253,7 +266,7 @@
     function onFileChange(input) {
         const el = document.getElementById('suratFilename');
         if (input.files && input.files[0]) {
-            el.textContent = input.files[0].name;
+            el.textContent   = input.files[0].name;
             el.style.display = 'block';
         } else {
             el.style.display = 'none';

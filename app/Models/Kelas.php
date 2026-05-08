@@ -170,4 +170,6 @@ class Kelas extends Model
     {
         return $this->hasMany(KenaikanKelasDetail::class, 'kelas_tujuan_id');
     }
+
+    
 }

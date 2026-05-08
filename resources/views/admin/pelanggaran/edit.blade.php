@@ -1,7 +1,7 @@
 <x-app-layout>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-    :root{--brand:#1f63db;--brand-h:#3582f0;--surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;--border:#e2e8f0;--border2:#cbd5e1;--text:#0f172a;--text2:#475569;--text3:#94a3b8;--red:#dc2626;--red-bg:#fee2e2;--red-border:#fecaca;--radius:10px;--radius-sm:7px;}
+    :root{--brand:#1f63db;--brand-h:#3582f0;--surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;--border:#e2e8f0;--border2:#cbd5e1;--text:#0f172a;--text2:#475569;--text3:#94a3b8;--red:#dc2626;--radius:10px;--radius-sm:7px;}
     .page{padding:28px 28px 60px;max-width:2000px;}
     .breadcrumb{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);margin-bottom:20px;}
     .breadcrumb a{color:var(--text3);text-decoration:none;}.breadcrumb a:hover{color:var(--brand);}
@@ -29,7 +29,9 @@
     .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--brand-h);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.1);}
     .field input.is-invalid,.field select.is-invalid,.field textarea.is-invalid{border-color:var(--red);background:#fff8f8;}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;margin-top:-2px;}
+    .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px;}
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border);}
+    .alert-warning{background:#fffbeb;border:1px solid #fde68a;border-radius:var(--radius-sm);padding:10px 14px;font-size:12.5px;color:#92400e;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:8px;margin-bottom:16px;}
     @media(max-width:680px){.page{padding:16px;}.form-grid{grid-template-columns:1fr;}.col-span-2{grid-column:span 1;}}
     @keyframes spin{to{transform:rotate(360deg);}}
 </style>
@@ -56,6 +58,14 @@
         </a>
     </div>
 
+    {{-- Peringatan jika status sudah dibatalkan --}}
+    @if($pelanggaran->status === 'dibatalkan')
+    <div class="alert-warning">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Pelanggaran ini sudah dibatalkan. Perubahan tetap bisa disimpan namun tidak akan mempengaruhi total poin aktif siswa.
+    </div>
+    @endif
+
     <form action="{{ route('admin.pelanggaran.update', $pelanggaran->id) }}" method="POST" id="pelForm">
         @csrf @method('PUT')
         <div class="form-card">
@@ -69,6 +79,7 @@
                     <div class="field">
                         <label>Siswa <span class="req">*</span></label>
                         <select name="siswa_id" class="{{ $errors->has('siswa_id') ? 'is-invalid' : '' }}">
+                            <option value="">— Pilih Siswa —</option>
                             @foreach($siswaList as $s)
                             <option value="{{ $s->id }}" {{ old('siswa_id', $pelanggaran->siswa_id) == $s->id ? 'selected' : '' }}>
                                 {{ $s->nama_lengkap }} ({{ $s->nis }}) — {{ $s->kelas->nama_kelas ?? '' }}
@@ -77,9 +88,11 @@
                         </select>
                         @error('siswa_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Kategori Pelanggaran <span class="req">*</span></label>
                         <select name="kategori_pelanggaran_id" class="{{ $errors->has('kategori_pelanggaran_id') ? 'is-invalid' : '' }}">
+                            <option value="">— Pilih Kategori —</option>
                             @foreach($kategoriList as $k)
                             <option value="{{ $k->id }}" {{ old('kategori_pelanggaran_id', $pelanggaran->kategori_pelanggaran_id) == $k->id ? 'selected' : '' }}>
                                 {{ $k->nama }} ({{ $k->poin_default }} poin)
@@ -88,33 +101,51 @@
                         </select>
                         @error('kategori_pelanggaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Tanggal Kejadian <span class="req">*</span></label>
+                        {{-- FIX: tanggal sudah di-cast date di model, langsung format tanpa Carbon::parse --}}
+                        {{-- FIX: tambah max agar tidak bisa input tanggal masa depan --}}
                         <input type="date" name="tanggal"
-                            value="{{ old('tanggal', \Carbon\Carbon::parse($pelanggaran->tanggal)->format('Y-m-d')) }}"
+                            value="{{ old('tanggal', $pelanggaran->tanggal->format('Y-m-d')) }}"
+                            max="{{ date('Y-m-d') }}"
                             class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
                         @error('tanggal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Poin Pelanggaran <span class="req">*</span></label>
                         <input type="number" name="poin"
                             value="{{ old('poin', $pelanggaran->poin) }}"
-                            min="1" max="100"
+                            min="1" max="100" required
                             class="{{ $errors->has('poin') ? 'is-invalid' : '' }}">
+                        <span class="field-hint">Rentang 1–100.</span>
                         @error('poin')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
+                        {{-- FIX: include dibatalkan agar status existing tidak hilang dari dropdown --}}
                         <label>Status <span class="req">*</span></label>
                         <select name="status" class="{{ $errors->has('status') ? 'is-invalid' : '' }}">
-                            @foreach(['pending'=>'Pending','diproses'=>'Sedang Diproses','selesai'=>'Selesai','banding'=>'Banding'] as $val => $label)
-                            <option value="{{ $val }}" {{ old('status', $pelanggaran->status) == $val ? 'selected' : '' }}>{{ $label }}</option>
+                            @foreach([
+                                'pending'    => 'Pending',
+                                'diproses'   => 'Sedang Diproses',
+                                'selesai'    => 'Selesai',
+                                'banding'    => 'Banding',
+                                'dibatalkan' => 'Dibatalkan',
+                            ] as $val => $label)
+                            <option value="{{ $val }}" {{ old('status', $pelanggaran->status) == $val ? 'selected' : '' }}>
+                                {{ $label }}
+                            </option>
                             @endforeach
                         </select>
                         @error('status')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field col-span-2">
                         <label>Deskripsi Pelanggaran <span class="req">*</span></label>
                         <textarea name="deskripsi" rows="4"
+                            placeholder="Jelaskan kronologi dan detail pelanggaran..."
                             class="{{ $errors->has('deskripsi') ? 'is-invalid' : '' }}">{{ old('deskripsi', $pelanggaran->deskripsi) }}</textarea>
                         @error('deskripsi')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
@@ -125,14 +156,16 @@
 
             <div class="form-section">
                 <p class="section-label">
-                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg>
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
                     Tindakan Lanjut
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-grid">
                     <div class="field col-span-2">
                         <label>Tindakan yang Diambil</label>
-                        <textarea name="tindakan" rows="3">{{ old('tindakan', $pelanggaran->tindakan) }}</textarea>
+                        <textarea name="tindakan" rows="3"
+                            placeholder="Tindakan yang sudah atau akan diambil oleh pihak sekolah...">{{ old('tindakan', $pelanggaran->tindakan) }}</textarea>
+                        @error('tindakan')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
             </div>
@@ -151,14 +184,18 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if($errors->any())
-    Swal.fire({ icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor: '#1f63db'
+    });
     @endif
     @if(session('success'))
     Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
     @endif
-    document.getElementById('pelForm').addEventListener('submit', function() {
+
+    document.getElementById('pelForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;

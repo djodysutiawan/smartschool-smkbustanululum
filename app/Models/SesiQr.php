@@ -40,6 +40,8 @@ class SesiQr extends Model
             'kadaluarsa_pada' => 'datetime',
             'latitude'        => 'decimal:8',
             'longitude'       => 'decimal:8',
+            'jumlah_scan'     => 'integer',
+            'maks_scan'       => 'integer',
             'is_active'       => 'boolean',
         ];
     }
@@ -49,24 +51,19 @@ class SesiQr extends Model
     protected static function booted(): void
     {
         static::creating(function (self $model) {
-            // Auto-generate UUID sebagai kode QR
+            // Auto-generate UUID sebagai kode QR jika belum ada
             $model->kode_qr ??= Str::uuid()->toString();
 
-            // Isi tanggal otomatis dari berlaku_mulai jika kosong
+            // Isi tanggal dari berlaku_mulai jika tanggal kosong
             if (empty($model->tanggal) && $model->berlaku_mulai) {
                 $model->tanggal = $model->berlaku_mulai->toDateString();
             }
 
-            // Isi field dari jadwal hanya jika field tersebut BELUM diisi oleh controller.
-            // Perbaikan bug: logika sebelumnya memakai ??= untuk kelas_id & mata_pelajaran_id
-            // sehingga nilai dari controller (yang sudah terisi) tidak akan pernah di-override
-            // oleh jadwal. Ini sudah benar. Yang diperbaiki: guru_id sekarang SELALU
-            // diambil dari jadwal jika ada jadwal_pelajaran_id, supaya tidak pernah null
-            // ketika sesi dibuat via jadwal.
+            // Isi field dari jadwal jika jadwal_pelajaran_id ada,
+            // ??= hanya mengisi jika field masih null (tidak override nilai dari controller)
             if ($model->jadwal_pelajaran_id) {
                 $jadwal = JadwalPelajaran::find($model->jadwal_pelajaran_id);
                 if ($jadwal) {
-                    // ??= : hanya isi jika belum ada (admin bisa override manual)
                     $model->guru_id           ??= $jadwal->guru_id;
                     $model->kelas_id          ??= $jadwal->kelas_id;
                     $model->mata_pelajaran_id ??= $jadwal->mata_pelajaran_id;
@@ -108,7 +105,7 @@ class SesiQr extends Model
     }
 
     /**
-     * Validasi apakah koordinat siswa dalam radius yang diizinkan.
+     * Hitung jarak antara koordinat sesi dan koordinat siswa (Haversine).
      * Mengembalikan jarak dalam meter, atau null jika GPS tidak dikonfigurasi.
      */
     public function hitungJarak(float $latSiswa, float $lngSiswa): ?float
@@ -117,10 +114,9 @@ class SesiQr extends Model
             return null;
         }
 
-        // Haversine formula
         $earthRadius = 6371000; // meter
-        $dLat = deg2rad($latSiswa - $this->latitude);
-        $dLng = deg2rad($lngSiswa - $this->longitude);
+        $dLat = deg2rad($latSiswa - (float) $this->latitude);
+        $dLng = deg2rad($lngSiswa - (float) $this->longitude);
 
         $a = sin($dLat / 2) ** 2
            + cos(deg2rad((float) $this->latitude))
@@ -132,8 +128,9 @@ class SesiQr extends Model
 
     public function dalamRadius(float $latSiswa, float $lngSiswa): bool
     {
+        // Tanpa koordinat sesi = tidak ada validasi GPS → selalu valid
         if (! $this->latitude || ! $this->longitude) {
-            return true; // Tanpa GPS = selalu valid
+            return true;
         }
 
         $jarak = $this->hitungJarak($latSiswa, $lngSiswa);
@@ -141,7 +138,8 @@ class SesiQr extends Model
     }
 
     /**
-     * Generate URL QR code untuk di-embed di halaman / cetak.
+     * URL untuk di-embed di halaman QR / cetak.
+     * Route: siswa.absensi.scan dengan parameter {kode}
      */
     public function getQrUrlAttribute(): string
     {
@@ -154,7 +152,7 @@ class SesiQr extends Model
     public function siswaYangBelumScan()
     {
         $sudahScanIds = $this->riwayatScan()
-            ->where('status', 'valid')
+            ->where('status', RiwayatScanQr::STATUS_VALID)
             ->pluck('siswa_id');
 
         return Siswa::where('kelas_id', $this->kelas_id)
@@ -168,6 +166,15 @@ class SesiQr extends Model
     public function incrementScan(): void
     {
         $this->increment('jumlah_scan');
+    }
+
+    /**
+     * Kembalikan timestamp millisecond untuk JavaScript countdown.
+     * Menggantikan ->valueOf() yang tidak ada di Carbon.
+     */
+    public function getKadaluarsaTimestampMsAttribute(): int
+    {
+        return $this->kadaluarsa_pada->getTimestampMs();
     }
 
     // ── Relations ─────────────────────────────────────────────────────────────

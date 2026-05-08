@@ -77,6 +77,13 @@
     </div>
     @endif
 
+    @if(session('error'))
+    <div class="alert alert-error">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {{ session('error') }}
+    </div>
+    @endif
+
     <form method="POST" action="{{ route('admin.sesi-qr.store') }}" id="formSesiQr">
         @csrf
 
@@ -85,7 +92,7 @@
         <div class="form-card">
             <div class="form-card-header">
                 <p class="form-card-title">📅 Jadwal Hari Ini — {{ ucfirst($hariIni) }}, {{ now()->translatedFormat('d F Y') }}</p>
-                <p class="form-card-sub">Pilih jadwal untuk mengisi otomatis kelas & mata pelajaran, atau isi manual di bawah</p>
+                <p class="form-card-sub">Pilih jadwal untuk mengisi otomatis kelas &amp; mata pelajaran, atau isi manual di bawah</p>
             </div>
             <div class="form-body">
                 <div class="jadwal-list" id="jadwalList">
@@ -104,10 +111,12 @@
                             @if($jadwal->ruang) &bull; {{ $jadwal->ruang->nama_ruang }} @endif
                         </p>
                         <span class="jadwal-badge">{{ $jadwal->mataPelajaran->kelompok ?? 'Umum' }}</span>
-                        {{-- Perbaikan bug: method hasSesiQrAktifHariIni() dipanggil di view
-                             tapi tidak pernah didefinisikan di model JadwalPelajaran.
-                             Sekarang diganti dengan query langsung yang aman. --}}
-                        @if($jadwal->sesiQr()->whereDate('tanggal', today())->where('is_active', true)->exists())
+                        {{--
+                            FIX: Sebelumnya memanggil hasSesiQrAktifHariIni() yang tidak ada di model.
+                            Sekarang menggunakan query langsung via relasi sesiQr() yang didefinisikan
+                            di model JadwalPelajaran (jika ada), atau query SesiQr langsung.
+                        --}}
+                        @if(\App\Models\SesiQr::where('jadwal_pelajaran_id', $jadwal->id)->whereDate('tanggal', today())->where('is_active', true)->exists())
                         <span class="jadwal-badge" style="background:#dcfce7;color:#15803d;margin-left:4px;">✓ QR Aktif</span>
                         @endif
                     </label>
@@ -119,7 +128,7 @@
         @else
         <div class="alert alert-info">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            Tidak ada jadwal aktif hari ini. Isi data sesi QR secara manual di bawah.
+            Tidak ada jadwal aktif hari ini ({{ ucfirst($hariIni) }}). Isi data sesi QR secara manual di bawah.
         </div>
         @endif
 
@@ -129,7 +138,7 @@
                 <p class="form-card-title">Data Sesi QR</p>
             </div>
             <div class="form-body">
-                <div class="section-title">Kelas & Mata Pelajaran</div>
+                <div class="section-title">Kelas &amp; Mata Pelajaran</div>
                 <div class="form-grid" style="margin-bottom:16px;">
                     <div class="form-group">
                         <label for="kelas_id">Kelas <span class="req">*</span></label>
@@ -137,7 +146,7 @@
                             <option value="">— Pilih Kelas —</option>
                             @foreach($kelasList as $k)
                             <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
-                                {{ $k->nama_kelas }} ({{ $k->tingkat }}{{ $k->jurusan ? ' · '.$k->jurusan->singkatan : '' }})
+                                {{ $k->nama_kelas }}{{ isset($k->tingkat) ? ' ('.$k->tingkat.')' : '' }}
                             </option>
                             @endforeach
                         </select>
@@ -188,7 +197,7 @@
                         <label for="radius_meter">Radius Lokasi (meter)</label>
                         <input type="number" name="radius_meter" id="radius_meter" class="form-control"
                             value="{{ old('radius_meter', 100) }}" min="10" max="1000">
-                        <p class="hint">Jarak maksimal siswa dari titik QR. Kosongkan untuk tanpa validasi GPS.</p>
+                        <p class="hint">Jarak maksimal siswa dari titik QR. Diabaikan jika GPS tidak diaktifkan.</p>
                     </div>
                     <div class="form-group">
                         <label for="maks_scan">Maksimal Scan</label>
@@ -198,7 +207,7 @@
                     </div>
                 </div>
 
-                {{-- GPS --}}
+                {{-- GPS Toggle --}}
                 <label class="toggle-gps" for="enableGps">
                     <input type="checkbox" id="enableGps" onchange="toggleGps(this)">
                     <div>
@@ -206,6 +215,7 @@
                         <p class="toggle-gps-sub">Siswa wajib berada dalam radius dari koordinat yang ditentukan</p>
                     </div>
                 </label>
+
                 <div class="gps-fields" id="gpsFields" style="margin-top:12px;">
                     <div class="form-grid">
                         <div class="form-group">
@@ -236,15 +246,15 @@
 </div>
 
 <script>
-    // Pilih jadwal → isi otomatis field
+    // Sinkronisasi pilih jadwal → isi otomatis field
     document.querySelectorAll('input[name="_jadwal_pilih"]').forEach(radio => {
-        // Restore selected state on load
+        // Restore state saat old() ada (setelah validation error)
         if (radio.checked) {
             fillFromJadwal(radio);
             document.getElementById('jadwal-card-' + radio.value)?.classList.add('selected');
         }
 
-        radio.addEventListener('change', function() {
+        radio.addEventListener('change', function () {
             document.querySelectorAll('.jadwal-item').forEach(c => c.classList.remove('selected'));
             document.getElementById('jadwal-card-' + this.value)?.classList.add('selected');
             fillFromJadwal(this);
@@ -252,16 +262,17 @@
     });
 
     function fillFromJadwal(radio) {
-        document.getElementById('jadwal_pelajaran_id').value  = radio.value;
-        document.getElementById('kelas_id').value             = radio.dataset.kelas;
-        document.getElementById('mata_pelajaran_id').value    = radio.dataset.mapel;
-        document.getElementById('berlaku_mulai').value        = radio.dataset.jamMulai;
+        document.getElementById('jadwal_pelajaran_id').value = radio.value;
+        document.getElementById('kelas_id').value            = radio.dataset.kelas;
+        document.getElementById('mata_pelajaran_id').value   = radio.dataset.mapel;
+        document.getElementById('berlaku_mulai').value       = radio.dataset.jamMulai;
 
         // Hitung durasi dari jam mulai–selesai
         if (radio.dataset.jamMulai && radio.dataset.jamSelesai) {
             const [h1, m1] = radio.dataset.jamMulai.split(':').map(Number);
             const [h2, m2] = radio.dataset.jamSelesai.split(':').map(Number);
-            document.getElementById('durasi_menit').value = ((h2 * 60 + m2) - (h1 * 60 + m1));
+            const durasi = (h2 * 60 + m2) - (h1 * 60 + m1);
+            if (durasi > 0) document.getElementById('durasi_menit').value = durasi;
         }
     }
 
@@ -274,19 +285,25 @@
     }
 
     function gunakanLokasiSekarang() {
-        if (!navigator.geolocation) { alert('Browser tidak mendukung GPS.'); return; }
-        navigator.geolocation.getCurrentPosition(pos => {
-            document.getElementById('latitude').value  = pos.coords.latitude.toFixed(8);
-            document.getElementById('longitude').value = pos.coords.longitude.toFixed(8);
-        }, () => alert('Gagal mendapatkan lokasi. Pastikan izin GPS diaktifkan.'));
+        if (!navigator.geolocation) {
+            alert('Browser tidak mendukung GPS.');
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            pos => {
+                document.getElementById('latitude').value  = pos.coords.latitude.toFixed(8);
+                document.getElementById('longitude').value = pos.coords.longitude.toFixed(8);
+            },
+            () => alert('Gagal mendapatkan lokasi. Pastikan izin GPS diaktifkan.')
+        );
     }
 
-    // Perbaikan bug: sebelumnya hanya gpsFields yang di-show, tapi checkbox enableGps
-    // tidak dicentang sehingga terlihat inkonsisten (field muncul tapi checkbox unchecked).
-    // Sekarang keduanya disinkronkan bersamaan.
+    // FIX: Sinkronisasi checkbox enableGps dengan visibilitas field GPS saat
+    // halaman di-reload karena validation error dan old('latitude') ada nilainya.
+    // Sebelumnya: field muncul tapi checkbox tidak tercentang → inkonsisten.
     @if(old('latitude') || old('longitude'))
-    (function() {
-        var cb = document.getElementById('enableGps');
+    (function () {
+        const cb = document.getElementById('enableGps');
         cb.checked = true;
         document.getElementById('gpsFields').classList.add('show');
     })();

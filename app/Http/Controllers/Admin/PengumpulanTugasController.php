@@ -12,12 +12,9 @@ use App\Exports\PengumpulanTugasExport;
 
 class PengumpulanTugasController extends Controller
 {
-    protected array $statusList = [
-        'belum_dikumpulkan' => 'Belum Dikumpulkan',
-        'dikumpulkan'       => 'Dikumpulkan',
-        'terlambat'         => 'Terlambat',
-        'sudah_dinilai'     => 'Sudah Dinilai',
-    ];
+    // ─────────────────────────────────────────────────────────────────────────
+    // INDEX
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
     {
@@ -26,26 +23,33 @@ class PengumpulanTugasController extends Controller
         if ($request->filled('tugas_id')) {
             $query->where('tugas_id', $request->tugas_id);
         }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-
         if ($request->filled('search')) {
-            $query->whereHas('siswa', fn ($q) =>
+            $query->whereHas('siswa', fn($q) =>
                 $q->where('nama_lengkap', 'like', "%{$request->search}%")
             );
         }
 
         $pengumpulan = $query->latest()->paginate(20)->withQueryString();
-        $tugasList   = Tugas::orderByDesc('batas_waktu')->get();
+
+        // Ambil daftar tugas untuk filter dropdown (hanya yang ada pengumpulan)
+        $tugasList = Tugas::withCount('pengumpulan')
+            ->having('pengumpulan_count', '>', 0)
+            ->orderByDesc('batas_waktu')
+            ->get(['id', 'judul', 'batas_waktu']);
 
         return view('admin.pengumpulan_tugas.index', [
             'pengumpulan' => $pengumpulan,
             'tugasList'   => $tugasList,
-            'statusList'  => $this->statusList,
+            'statusList'  => $this->statusList(),
         ]);
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHOW
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function show(PengumpulanTugas $pengumpulanTugas)
     {
@@ -54,8 +58,14 @@ class PengumpulanTugasController extends Controller
         return view('admin.pengumpulan_tugas.show', compact('pengumpulanTugas'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // BERI NILAI
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function beriNilai(Request $request, PengumpulanTugas $pengumpulanTugas)
     {
+        // Pastikan tugas di-load agar nilai_maksimal tersedia
+        $pengumpulanTugas->loadMissing('tugas');
         $nilaiMaks = (float) ($pengumpulanTugas->tugas->nilai_maksimal ?? 100);
 
         $validated = $request->validate([
@@ -69,26 +79,40 @@ class PengumpulanTugasController extends Controller
             'umpan_balik.max' => 'Umpan balik maksimal 1000 karakter.',
         ]);
 
-        $pengumpulanTugas->beriNilai($validated['nilai'], $validated['umpan_balik'] ?? null);
+        $pengumpulanTugas->beriNilai(
+            (float) $validated['nilai'],
+            $validated['umpan_balik'] ?? null
+        );
 
         return back()->with('success', 'Nilai berhasil diberikan.');
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // KEMBALIKAN PENILAIAN
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function kembalikan(PengumpulanTugas $pengumpulanTugas)
     {
-        if (!in_array($pengumpulanTugas->status, ['dikumpulkan', 'terlambat', 'sudah_dinilai'])) {
+        $statusYangBisaDikembalikan = [
+            PengumpulanTugas::STATUS_DIKUMPULKAN,
+            PengumpulanTugas::STATUS_TERLAMBAT,
+            PengumpulanTugas::STATUS_DINILAI,
+        ];
+
+        if (! in_array($pengumpulanTugas->status, $statusYangBisaDikembalikan)) {
             return back()->with('error', 'Status pengumpulan tidak dapat dikembalikan.');
         }
 
-        $pengumpulanTugas->update([
-            'nilai'        => null,
-            'umpan_balik'  => null,
-            'status'       => $pengumpulanTugas->isTerlambat() ? 'terlambat' : 'dikumpulkan',
-            'dinilai_pada' => null,
-        ]);
+        // Gunakan method model agar logika terpusat
+        $pengumpulanTugas->loadMissing('tugas');
+        $pengumpulanTugas->kembalikanPenilaian();
 
         return back()->with('success', 'Penilaian berhasil dikembalikan.');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DESTROY
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function destroy(PengumpulanTugas $pengumpulanTugas)
     {
@@ -98,6 +122,10 @@ class PengumpulanTugasController extends Controller
             ->with('success', 'Data pengumpulan tugas berhasil dihapus.');
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // EXPORT
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function exportPdf(Request $request)
     {
         $query = PengumpulanTugas::with(['tugas.mataPelajaran', 'siswa.kelas']);
@@ -105,13 +133,11 @@ class PengumpulanTugasController extends Controller
         if ($request->filled('tugas_id')) {
             $query->where('tugas_id', $request->tugas_id);
         }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-
         if ($request->filled('search')) {
-            $query->whereHas('siswa', fn ($q) =>
+            $query->whereHas('siswa', fn($q) =>
                 $q->where('nama_lengkap', 'like', "%{$request->search}%")
             );
         }
@@ -130,5 +156,23 @@ class PengumpulanTugasController extends Controller
             new PengumpulanTugasExport($request->all()),
             'pengumpulan-tugas-' . now()->format('YmdHis') . '.xlsx'
         );
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // PRIVATE HELPERS
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Daftar label status untuk filter & tampilan.
+     * Menggunakan konstanta dari model agar konsisten.
+     */
+    private function statusList(): array
+    {
+        return [
+            PengumpulanTugas::STATUS_BELUM       => 'Belum Dikumpulkan',
+            PengumpulanTugas::STATUS_DIKUMPULKAN => 'Dikumpulkan',
+            PengumpulanTugas::STATUS_TERLAMBAT   => 'Terlambat',
+            PengumpulanTugas::STATUS_DINILAI     => 'Sudah Dinilai',
+        ];
     }
 }

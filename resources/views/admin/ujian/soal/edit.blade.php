@@ -58,7 +58,7 @@
 .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
 
-/* Jenis badge (locked on edit) */
+/* Jenis badge */
 .jenis-badge{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;}
 .jb-pg{background:var(--brand-50);color:var(--brand);border:1.5px solid #bfdbfe;}
 .jb-essay{background:var(--purple-bg);color:var(--purple);border:1.5px solid #c4b5fd;}
@@ -83,11 +83,13 @@
 .add-pilihan-btn:hover{border-color:var(--brand-h);color:var(--brand);background:var(--brand-50);}
 
 /* Gambar preview */
-.img-preview-wrap{display:flex;align-items:flex-start;gap:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px;}
+.img-preview-wrap{display:flex;align-items:flex-start;gap:12px;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px;transition:opacity .2s;}
+.img-preview-wrap.akan-dihapus{opacity:.4;}
 .img-preview{max-width:200px;max-height:150px;border-radius:6px;border:1px solid var(--border);}
 .img-actions{display:flex;flex-direction:column;gap:6px;}
-.btn-hapus-img{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);padding:6px 12px;font-size:12.5px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;transition:filter .15s;}
+.btn-hapus-img{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);padding:6px 12px;font-size:12.5px;border-radius:6px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;transition:filter .15s;user-select:none;}
 .btn-hapus-img:hover{filter:brightness(.93);}
+.btn-hapus-img.aktif{background:var(--red);color:#fff;text-decoration:line-through;}
 
 /* File input */
 .file-input-wrap{border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:14px 16px;background:var(--surface2);display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s,background .15s;}
@@ -142,6 +144,12 @@
     </div>
     @endif
 
+    {{--
+        Route: PUT admin/ujian/{ujian}/soal/{soal}
+        Controller: SoalUjianController@update
+        Fields: nomor_soal, jenis_soal (hidden), pertanyaan, gambar_soal,
+                hapus_gambar, bobot, pilihan[*][kode_pilihan|teks_pilihan|gambar_pilihan|adalah_benar]
+    --}}
     <form action="{{ route('admin.ujian.soal.update', [$ujian, $soal]) }}" method="POST"
           enctype="multipart/form-data" id="soalForm">
         @csrf
@@ -156,6 +164,7 @@
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-row">
+                    {{-- Jenis soal: tidak bisa diubah, dikirim via hidden input --}}
                     <div class="field" style="margin-bottom:0">
                         <label>Jenis Soal</label>
                         <div style="margin-top:2px">
@@ -175,18 +184,22 @@
                                     Benar / Salah
                                 </span>
                             @endif
+                            {{-- Wajib dikirim: controller SoalUjianController@update mewajibkan jenis_soal --}}
                             <input type="hidden" name="jenis_soal" value="{{ $soal->jenis_soal }}">
                         </div>
                         <span class="field-hint">Jenis soal tidak dapat diubah.</span>
                     </div>
+
                     <div class="form-row" style="gap:12px;align-items:end;">
                         <div class="field" style="margin-bottom:0">
                             <label>Nomor Soal</label>
+                            {{-- nullable|integer|min:1 — jika kosong controller auto-assign --}}
                             <input type="number" name="nomor_soal"
                                    value="{{ old('nomor_soal', $soal->nomor_soal) }}" min="1">
                         </div>
                         <div class="field" style="margin-bottom:0">
                             <label>Bobot / Poin <span class="req">*</span></label>
+                            {{-- required|integer|min:1|max:100 --}}
                             <input type="number" name="bobot"
                                    value="{{ old('bobot', $soal->bobot) }}" min="1" max="100"
                                    class="{{ $errors->has('bobot') ? 'is-invalid' : '' }}">
@@ -205,55 +218,76 @@
                     Pertanyaan
                     <span class="section-label-line"></span>
                 </p>
+
                 <div class="field">
                     <label>Teks Pertanyaan <span class="req">*</span></label>
+                    {{-- required|string --}}
                     <textarea name="pertanyaan" rows="4"
                               class="{{ $errors->has('pertanyaan') ? 'is-invalid' : '' }}">{{ old('pertanyaan', $soal->pertanyaan) }}</textarea>
                     @error('pertanyaan')<span class="field-error">{{ $message }}</span>@enderror
                 </div>
 
+                {{-- ── Gambar Soal ── --}}
                 <div class="field" style="margin-bottom:0">
                     <label>Gambar Soal</label>
+
                     @if($soal->gambar_soal)
-                    <div class="img-preview-wrap">
-                        <img src="{{ asset('storage/'.$soal->gambar_soal) }}"
-                             class="img-preview" id="prevGambarSoal"
-                             alt="Gambar soal saat ini">
-                        <div class="img-actions">
-                            <span style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif">Gambar saat ini</span>
-                            <label style="font-size:12.5px;color:var(--brand);cursor:pointer;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;">
-                                <input type="file" name="gambar_soal" accept="image/*"
-                                       style="display:none"
-                                       onchange="previewGambar(this,'prevGambarSoal')">
-                                ↑ Ganti gambar
-                            </label>
-                            <label class="btn-hapus-img" id="btnHapusGambar">
+                        {{--
+                            Ada gambar existing:
+                            - "Ganti gambar" → upload file baru via name="gambar_soal"
+                            - "Hapus gambar" → checkbox name="hapus_gambar" value="1"
+                            Controller: jika hapus_gambar=true → Storage::delete + set null
+                                        jika ada file baru  → Storage::delete lama + store baru
+                        --}}
+                        <div class="img-preview-wrap" id="gambarSoalWrap">
+                            <img src="{{ asset('storage/'.$soal->gambar_soal) }}"
+                                 class="img-preview" id="prevGambarSoal"
+                                 alt="Gambar soal saat ini">
+                            <div class="img-actions">
+                                <span style="font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif">Gambar saat ini</span>
+
+                                {{-- Ganti: file input tersembunyi, dipicu label --}}
+                                <label style="font-size:12.5px;color:var(--brand);cursor:pointer;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;">
+                                    <input type="file" name="gambar_soal" id="gantiGambarInput"
+                                           accept="image/jpeg,image/png,image/webp"
+                                           style="display:none"
+                                           onchange="gantiGambarSoal(this)">
+                                    ↑ Ganti gambar
+                                </label>
+
+                                {{-- Hapus: checkbox tersembunyi, toggle via tombol --}}
                                 <input type="checkbox" name="hapus_gambar" value="1"
-                                       style="display:none"
-                                       onchange="toggleHapusGambar(this)">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-                                Hapus gambar
-                            </label>
+                                       id="hapusGambarCb" style="display:none">
+                                <button type="button" class="btn-hapus-img"
+                                        id="btnHapusGambar"
+                                        onclick="toggleHapusGambar()">
+                                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+                                    Hapus gambar
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                        {{-- Preview jika pengguna memilih gambar pengganti --}}
+                        <img id="prevGambarSoalBaru" class="img-preview-inline" src="#" alt="">
                     @else
-                    <div class="file-input-wrap" onclick="document.getElementById('gambarSoalInput').click()">
-                        <svg width="18" height="18" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                        <div>
-                            <p class="file-input-label">Klik untuk upload gambar</p>
-                            <p class="field-hint" style="margin-top:0">JPG, PNG, WEBP — Maks 2MB</p>
+                        {{-- Belum ada gambar: tampilkan file picker --}}
+                        <div class="file-input-wrap" onclick="document.getElementById('gambarSoalInput').click()">
+                            <svg width="18" height="18" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                            <div>
+                                <p class="file-input-label">Klik untuk upload gambar</p>
+                                <p class="field-hint" style="margin-top:0">JPG, PNG, WEBP — Maks 2MB</p>
+                            </div>
+                            <input type="file" id="gambarSoalInput" name="gambar_soal"
+                                   accept="image/jpeg,image/png,image/webp"
+                                   onchange="previewGambarBaru(this,'prevGambarNew')">
                         </div>
-                        <input type="file" id="gambarSoalInput" name="gambar_soal"
-                               accept="image/jpeg,image/png,image/webp"
-                               onchange="previewGambar(this,'prevGambarNew')">
-                    </div>
-                    <img id="prevGambarNew" class="img-preview-inline" src="#" alt="">
+                        <img id="prevGambarNew" class="img-preview-inline" src="#" alt="">
                     @endif
+
                     @error('gambar_soal')<span class="field-error">{{ $message }}</span>@enderror
                 </div>
             </div>
 
-            {{-- ── Pilihan Jawaban (bukan Essay) ── --}}
+            {{-- ── Pilihan Jawaban (hanya PG & benar_salah) ── --}}
             @if($soal->jenis_soal !== 'essay')
             <hr class="section-divider">
             <div class="form-section">
@@ -263,30 +297,59 @@
                     <span class="section-label-line"></span>
                 </p>
                 <p style="font-size:12.5px;color:var(--text3);margin-bottom:14px;font-family:'DM Sans',sans-serif;">
-                    Centang radio button untuk menandai jawaban yang benar.
+                    @if($soal->jenis_soal === 'pilihan_ganda')
+                        Pilihan ganda: minimal 2 pilihan, tepat 1 jawaban benar. Centang radio untuk menandai benar.
+                    @else
+                        Benar/Salah: tepat 2 pilihan. Centang radio untuk menandai jawaban yang benar.
+                    @endif
                 </p>
 
+                {{--
+                    simpanPilihan() di controller membaca:
+                        pilihan[idx][kode_pilihan]
+                        pilihan[idx][teks_pilihan]
+                        pilihan[idx][gambar_pilihan]   ← file
+                        pilihan[idx][adalah_benar]     ← '1' / '0'
+
+                    Saat update: semua pilihan lama dihapus lalu dibuat ulang dari request.
+                --}}
                 <div class="pilihan-list" id="pilihanList">
                     @foreach($soal->pilihan as $idx => $p)
                     <div class="pilihan-item {{ $p->adalah_benar ? 'is-benar' : '' }}"
-                         id="pilihanItem_{{ $idx }}">
+                         id="pilihanItem_{{ $idx }}" data-idx="{{ $idx }}">
+
                         <div class="pilihan-kode">{{ $p->kode_pilihan }}</div>
-                        <input type="hidden" name="pilihan[{{ $idx }}][kode_pilihan]" value="{{ $p->kode_pilihan }}">
+
+                        <input type="hidden" name="pilihan[{{ $idx }}][kode_pilihan]"
+                               value="{{ $p->kode_pilihan }}">
+
+                        {{-- Nilai adalah_benar dikontrol JS lewat hidden ini --}}
                         <input type="hidden" name="pilihan[{{ $idx }}][adalah_benar]"
-                               id="benar_{{ $idx }}" value="{{ $p->adalah_benar ? '1' : '0' }}">
+                               id="hidBenar_{{ $idx }}" value="{{ $p->adalah_benar ? '1' : '0' }}">
+
                         <input class="pilihan-input" type="text"
                                name="pilihan[{{ $idx }}][teks_pilihan]"
                                value="{{ old("pilihan.{$idx}.teks_pilihan", $p->teks_pilihan) }}"
                                placeholder="Teks pilihan {{ $p->kode_pilihan }}…"
                                {{ $soal->jenis_soal === 'benar_salah' ? 'readonly' : '' }}>
-                        <input type="radio" name="pilihan_benar_idx" value="{{ $idx }}"
+
+                        {{--
+                            name="pilihan_benar_idx" adalah radio group murni UI.
+                            Nilai sebenarnya dikirim via hidden hidBenar_{idx}.
+                            Bug lama: perbandingan string vs int — sekarang pakai data-idx integer.
+                        --}}
+                        <input type="radio" name="pilihan_benar_idx"
+                               value="{{ $idx }}"
                                class="pilihan-benar-cb"
                                {{ $p->adalah_benar ? 'checked' : '' }}
                                onchange="markBenar({{ $idx }})"
                                style="accent-color:var(--green);">
                         <span class="pilihan-benar-lbl">Benar</span>
+
                         @if($soal->jenis_soal === 'pilihan_ganda')
-                        <button type="button" class="pilihan-del" onclick="hapusPilihan({{ $idx }})">
+                        <button type="button" class="pilihan-del"
+                                onclick="hapusPilihan({{ $idx }})"
+                                title="Hapus pilihan ini">
                             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                         </button>
                         @endif
@@ -300,6 +363,10 @@
                     Tambah Pilihan
                 </button>
                 @endif
+
+                @error('pilihan')
+                <span class="field-error" style="display:block;margin-top:10px">{{ $message }}</span>
+                @enderror
             </div>
             @endif
 
@@ -315,68 +382,157 @@
 </div>
 
 <script>
-let pilihanCount = {{ $soal->pilihan->count() }};
+// ─────────────────────────────────────────────────────────────────────────────
+// State
+// ─────────────────────────────────────────────────────────────────────────────
+let pilihanCount = {{ $soal->pilihan->count() }};   // integer: jumlah pilihan saat ini
 const jenisSoal  = '{{ $soal->jenis_soal }}';
-const KODE_LIST  = ['A','B','C','D','E','F'];
+const KODE_LIST  = ['A','B','C','D','E','F','G','H'];
 
-function markBenar(idx) {
-    document.querySelectorAll('.pilihan-item').forEach(el => {
-        const id = parseInt(el.id.replace('pilihanItem_',''));
-        el.classList.toggle('is-benar', id === idx);
-        const h = document.getElementById('benar_' + id);
-        if (h) h.value = (id === idx) ? '1' : '0';
+// ─────────────────────────────────────────────────────────────────────────────
+// markBenar(idx)
+// FIX BUG LAMA: perbandingan harus integer vs integer.
+// Dulu: parseInt(el.id.replace(...)) → string, perbandingan === selalu false.
+// Sekarang: gunakan data-idx attribute yang di-set di template sebagai integer.
+// ─────────────────────────────────────────────────────────────────────────────
+function markBenar(selectedIdx) {
+    // selectedIdx sudah integer dari inline onchange="markBenar({{ $idx }})"
+    document.querySelectorAll('#pilihanList .pilihan-item').forEach(function(el) {
+        var itemIdx = parseInt(el.getAttribute('data-idx'), 10);
+        var isBenar = (itemIdx === selectedIdx);
+
+        el.classList.toggle('is-benar', isBenar);
+
+        var hidden = document.getElementById('hidBenar_' + itemIdx);
+        if (hidden) hidden.value = isBenar ? '1' : '0';
     });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// addPilihan() — tambah baris pilihan baru (hanya PG)
+// Setiap pilihan baru juga mendapat data-idx yang benar agar markBenar bekerja.
+// ─────────────────────────────────────────────────────────────────────────────
 function addPilihan() {
-    const idx  = pilihanCount++;
-    const kode = KODE_LIST[idx] || String.fromCharCode(65 + idx);
-    const div  = document.createElement('div');
+    var idx  = pilihanCount++;
+    var kode = KODE_LIST[idx] !== undefined ? KODE_LIST[idx] : String.fromCharCode(65 + idx);
+    var div  = document.createElement('div');
     div.className = 'pilihan-item';
-    div.id = 'pilihanItem_' + idx;
-    div.innerHTML = `
-        <div class="pilihan-kode">${kode}</div>
-        <input type="hidden" name="pilihan[${idx}][kode_pilihan]" value="${kode}">
-        <input type="hidden" name="pilihan[${idx}][adalah_benar]" id="benar_${idx}" value="0">
-        <input class="pilihan-input" type="text"
-               name="pilihan[${idx}][teks_pilihan]"
-               placeholder="Teks pilihan ${kode}…" required>
-        <input type="radio" name="pilihan_benar_idx" value="${idx}"
-               class="pilihan-benar-cb"
-               onchange="markBenar(${idx})"
-               style="accent-color:var(--green);">
-        <span class="pilihan-benar-lbl">Benar</span>
-        <button type="button" class="pilihan-del" onclick="hapusPilihan(${idx})">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>`;
+    div.id        = 'pilihanItem_' + idx;
+    div.setAttribute('data-idx', idx);   // penting untuk markBenar()
+    div.innerHTML =
+        '<div class="pilihan-kode">' + kode + '</div>' +
+        '<input type="hidden" name="pilihan[' + idx + '][kode_pilihan]" value="' + kode + '">' +
+        '<input type="hidden" name="pilihan[' + idx + '][adalah_benar]" id="hidBenar_' + idx + '" value="0">' +
+        '<input class="pilihan-input" type="text"' +
+            ' name="pilihan[' + idx + '][teks_pilihan]"' +
+            ' placeholder="Teks pilihan ' + kode + '…" required>' +
+        '<input type="radio" name="pilihan_benar_idx" value="' + idx + '"' +
+            ' class="pilihan-benar-cb"' +
+            ' onchange="markBenar(' + idx + ')"' +
+            ' style="accent-color:var(--green);">' +
+        '<span class="pilihan-benar-lbl">Benar</span>' +
+        '<button type="button" class="pilihan-del" onclick="hapusPilihan(' + idx + ')" title="Hapus pilihan ini">' +
+            '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">' +
+            '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+        '</button>';
     document.getElementById('pilihanList').appendChild(div);
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// hapusPilihan(idx) — hapus baris pilihan dari DOM
+// ─────────────────────────────────────────────────────────────────────────────
 function hapusPilihan(idx) {
-    const el = document.getElementById('pilihanItem_' + idx);
+    var el = document.getElementById('pilihanItem_' + idx);
     if (el) el.remove();
 }
 
-function previewGambar(input, previewId) {
-    const prev = document.getElementById(previewId);
-    if (input.files && input.files[0] && prev) {
-        const reader = new FileReader();
-        reader.onload = e => { prev.src = e.target.result; prev.style.display = 'block'; };
-        reader.readAsDataURL(input.files[0]);
+// ─────────────────────────────────────────────────────────────────────────────
+// previewGambarBaru(input, previewId) — preview gambar baru (belum ada gambar)
+// ─────────────────────────────────────────────────────────────────────────────
+function previewGambarBaru(input, previewId) {
+    var prev = document.getElementById(previewId);
+    if (!input.files || !input.files[0] || !prev) return;
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        prev.src = e.target.result;
+        prev.style.display = 'block';
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// gantiGambarSoal(input) — pengguna memilih gambar pengganti
+// Tampilkan preview baru, sembunyikan gambar lama, batalkan hapus_gambar.
+// FIX BUG LAMA: previewGambar() hanya menampilkan preview tanpa
+//               me-hide/show elemen yang tepat.
+// ─────────────────────────────────────────────────────────────────────────────
+function gantiGambarSoal(input) {
+    if (!input.files || !input.files[0]) return;
+
+    // Batalkan hapus_gambar jika sempat dicentang
+    var cb = document.getElementById('hapusGambarCb');
+    if (cb && cb.checked) {
+        cb.checked = false;
+        syncHapusGambar(false);
+    }
+
+    var reader = new FileReader();
+    reader.onload = function(e) {
+        // Tampilkan preview baru
+        var prevBaru = document.getElementById('prevGambarSoalBaru');
+        if (prevBaru) {
+            prevBaru.src = e.target.result;
+            prevBaru.style.display = 'block';
+        }
+        // Sembunyikan gambar lama (visual feedback)
+        var prevLama = document.getElementById('prevGambarSoal');
+        if (prevLama) prevLama.style.opacity = '0.3';
+    };
+    reader.readAsDataURL(input.files[0]);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// toggleHapusGambar() — toggle checkbox hapus_gambar
+// FIX BUG LAMA: dulu memanipulasi elemen via ID yang salah (btnHapusGambar
+//               adalah <label>, bukan elemen yang memiliki style langsung).
+//               Sekarang: checkbox punya ID sendiri (hapusGambarCb),
+//               tombol punya ID sendiri (btnHapusGambar), dan
+//               syncHapusGambar() mengurus keduanya.
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleHapusGambar() {
+    var cb = document.getElementById('hapusGambarCb');
+    if (!cb) return;
+    cb.checked = !cb.checked;
+    syncHapusGambar(cb.checked);
+}
+
+function syncHapusGambar(aktif) {
+    var wrap = document.getElementById('gambarSoalWrap');
+    var btn  = document.getElementById('btnHapusGambar');
+    if (wrap) wrap.classList.toggle('akan-dihapus', aktif);
+    if (btn)  btn.classList.toggle('aktif', aktif);
+
+    // Jika hapus diaktifkan, batalkan pilihan file pengganti
+    if (aktif) {
+        var gantiInput = document.getElementById('gantiGambarInput');
+        if (gantiInput) gantiInput.value = '';
+        var prevBaru = document.getElementById('prevGambarSoalBaru');
+        if (prevBaru) { prevBaru.src = '#'; prevBaru.style.display = 'none'; }
+        var prevLama = document.getElementById('prevGambarSoal');
+        if (prevLama) prevLama.style.opacity = '1';
     }
 }
 
-function toggleHapusGambar(cb) {
-    const wrap = cb.closest('.img-preview-wrap');
-    if (wrap) wrap.style.opacity = cb.checked ? '.4' : '1';
-    const lbl = document.getElementById('btnHapusGambar');
-    if (lbl) lbl.style.textDecoration = cb.checked ? 'line-through' : '';
-}
-
+// ─────────────────────────────────────────────────────────────────────────────
+// Submit guard — disable tombol agar tidak double submit
+// ─────────────────────────────────────────────────────────────────────────────
 document.getElementById('soalForm').addEventListener('submit', function() {
-    const btn = document.getElementById('btnSubmit');
+    var btn = document.getElementById('btnSubmit');
     btn.disabled = true;
-    btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
+    btn.innerHTML =
+        '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"' +
+        ' viewBox="0 0 24 24" style="animation:spin .7s linear infinite">' +
+        '<path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…';
 });
 </script>
 </x-app-layout>

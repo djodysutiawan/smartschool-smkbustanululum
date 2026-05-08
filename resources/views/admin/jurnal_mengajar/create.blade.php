@@ -29,8 +29,7 @@
     .section-label{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px}
     .section-label-line{flex:1;height:1px;background:var(--border)}
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-    .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
-    .col-span-2{grid-column:span 2}.col-span-3{grid-column:span 3}
+    .col-span-2{grid-column:span 2}
     .field{display:flex;flex-direction:column;gap:6px}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2)}
     .field label .req{color:var(--brand);margin-left:2px}
@@ -42,8 +41,9 @@
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;margin-top:-2px}
     .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px}
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border)}
+    .select-loading{opacity:.6;pointer-events:none}
     @keyframes spin{to{transform:rotate(360deg)}}
-    @media(max-width:680px){.page{padding:16px 16px 40px}.form-grid,.form-grid-3{grid-template-columns:1fr}.col-span-2,.col-span-3{grid-column:span 1}}
+    @media(max-width:680px){.page{padding:16px 16px 40px}.form-grid{grid-template-columns:1fr}.col-span-2{grid-column:span 1}}
 </style>
 
 <div class="page">
@@ -66,18 +66,6 @@
         </a>
     </div>
 
-    @if($errors->any())
-    <div class="alert">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <div>
-            <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">Terdapat {{ $errors->count() }} kesalahan:</strong>
-            <ul style="margin:6px 0 0 16px;display:flex;flex-direction:column;gap:2px">
-                @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
-            </ul>
-        </div>
-    </div>
-    @endif
-
     <form action="{{ route('admin.jurnal-mengajar.store') }}" method="POST" id="jurnalForm">
         @csrf
         <div class="form-card">
@@ -89,9 +77,10 @@
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-grid">
+                    {{-- Guru — trigger cascade --}}
                     <div class="field">
                         <label>Guru <span class="req">*</span></label>
-                        <select name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
+                        <select name="guru_id" id="guruSelect" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Guru —</option>
                             @foreach($guruList as $g)
                                 <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
@@ -99,19 +88,24 @@
                         </select>
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Mata Pelajaran — di-cascade oleh guru --}}
                     <div class="field">
                         <label>Mata Pelajaran <span class="req">*</span></label>
-                        <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
+                        <select name="mata_pelajaran_id" id="mapelSelect" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Mapel —</option>
+                            {{-- Opsi awal: semua mapel, cascade JS akan filter setelah guru dipilih --}}
                             @foreach($mapelList as $m)
                                 <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
                             @endforeach
                         </select>
                         @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Kelas — di-cascade oleh guru --}}
                     <div class="field">
                         <label>Kelas <span class="req">*</span></label>
-                        <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
+                        <select name="kelas_id" id="kelasSelect" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Kelas —</option>
                             @foreach($kelasList as $k)
                                 <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
@@ -119,28 +113,37 @@
                         </select>
                         @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Jadwal Pelajaran — di-cascade oleh guru --}}
                     <div class="field">
                         <label>Jadwal Pelajaran</label>
-                        <select name="jadwal_pelajaran_id" class="{{ $errors->has('jadwal_pelajaran_id') ? 'is-invalid' : '' }}">
+                        <select name="jadwal_pelajaran_id" id="jadwalSelect" class="{{ $errors->has('jadwal_pelajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Jadwal (opsional) —</option>
                             @foreach($jadwalList as $jd)
-                                <option value="{{ $jd->id }}" {{ old('jadwal_pelajaran_id') == $jd->id ? 'selected' : '' }}>
+                                <option value="{{ $jd->id }}"
+                                    data-kelas="{{ $jd->kelas_id ?? '' }}"
+                                    data-mapel="{{ $jd->mata_pelajaran_id ?? '' }}"
+                                    {{ old('jadwal_pelajaran_id') == $jd->id ? 'selected' : '' }}>
                                     {{ $jd->kelas->nama_kelas ?? '' }} — {{ $jd->mataPelajaran->nama_mapel ?? '' }} ({{ ucfirst($jd->hari) }})
                                 </option>
                             @endforeach
                         </select>
                         @error('jadwal_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
+                        <span class="field-hint">Pilih jadwal untuk mengisi otomatis mapel & kelas</span>
                     </div>
+
                     <div class="field">
                         <label>Tanggal <span class="req">*</span></label>
-                        <input type="date" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}" class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
+                        <input type="date" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}" class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}" max="{{ date('Y-m-d') }}">
                         @error('tanggal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Pertemuan Ke-</label>
-                        <input type="number" name="pertemuan_ke" value="{{ old('pertemuan_ke') }}" placeholder="cth. 5" min="1" class="{{ $errors->has('pertemuan_ke') ? 'is-invalid' : '' }}">
+                        <input type="number" name="pertemuan_ke" value="{{ old('pertemuan_ke') }}" placeholder="cth. 5" min="1" max="52" class="{{ $errors->has('pertemuan_ke') ? 'is-invalid' : '' }}">
                         @error('pertemuan_ke')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Metode Pembelajaran</label>
                         <select name="metode_pembelajaran" class="{{ $errors->has('metode_pembelajaran') ? 'is-invalid' : '' }}">
@@ -151,10 +154,13 @@
                         </select>
                         @error('metode_pembelajaran')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
-                    <div class="field"></div>
+
+                    {{-- FIX: hapus field kosong, ganti dengan field placeholder yang di-hide agar grid tetap rapi --}}
+                    <div class="field" style="visibility:hidden" aria-hidden="true"></div>
+
                     <div class="field col-span-2">
                         <label>Materi Ajar <span class="req">*</span></label>
-                        <textarea name="materi_ajar" rows="3" placeholder="Tuliskan materi yang diajarkan hari ini..." class="{{ $errors->has('materi_ajar') ? 'is-invalid' : '' }}">{{ old('materi_ajar') }}</textarea>
+                        <textarea name="materi_ajar" rows="3" placeholder="Tuliskan materi yang diajarkan hari ini..." class="{{ $errors->has('materi_ajar') ? 'is-invalid' : '' }}" maxlength="2000">{{ old('materi_ajar') }}</textarea>
                         @error('materi_ajar')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -182,7 +188,7 @@
                     </div>
                     <div class="field col-span-2">
                         <label>Catatan Kelas</label>
-                        <textarea name="catatan_kelas" rows="3" placeholder="Catatan situasi kelas, kendala, atau hal penting lainnya...">{{ old('catatan_kelas') }}</textarea>
+                        <textarea name="catatan_kelas" rows="3" placeholder="Catatan situasi kelas, kendala, atau hal penting lainnya..." maxlength="2000">{{ old('catatan_kelas') }}</textarea>
                         @error('catatan_kelas')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -202,16 +208,121 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({ icon: 'error', title: 'Gagal!', text: @json(session('error')), confirmButtonColor: '#1f63db' });
     @endif
     @if($errors->any())
     Swal.fire({
-        icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db',
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor: '#1f63db',
     });
     @endif
-    document.getElementById('jurnalForm').addEventListener('submit', function() {
+
+    // ── Cascade Dropdown ──────────────────────────────────────────────────────
+    const guruSelect   = document.getElementById('guruSelect');
+    const mapelSelect  = document.getElementById('mapelSelect');
+    const kelasSelect  = document.getElementById('kelasSelect');
+    const jadwalSelect = document.getElementById('jadwalSelect');
+
+    // Simpan opsi awal (semua data) untuk fallback
+    const allMapelOptions  = Array.from(mapelSelect.options).slice(1); // skip placeholder
+    const allKelasOptions  = Array.from(kelasSelect.options).slice(1);
+
+    /**
+     * Populate select dengan array opsi { id, label } dan pertahankan nilai yg dipilih.
+     */
+    function populateSelect(selectEl, items, idKey, labelKey, currentVal) {
+        const placeholder = selectEl.options[0];
+        selectEl.innerHTML = '';
+        selectEl.appendChild(placeholder);
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item[idKey];
+            opt.textContent = item[labelKey];
+            if (String(item[idKey]) === String(currentVal)) opt.selected = true;
+            selectEl.appendChild(opt);
+        });
+    }
+
+    /**
+     * Muat mapel, kelas, jadwal berdasarkan guru yang dipilih via AJAX.
+     */
+    async function loadCascade(guruId, selectedMapel, selectedKelas, selectedJadwal) {
+        if (!guruId) {
+            // Reset ke semua opsi jika guru dikosongkan
+            populateSelect(mapelSelect, allMapelOptions.map(o => ({ id: o.value, nama_mapel: o.textContent })), 'id', 'nama_mapel', selectedMapel);
+            populateSelect(kelasSelect, allKelasOptions.map(o => ({ id: o.value, nama_kelas: o.textContent })), 'id', 'nama_kelas', selectedKelas);
+            resetJadwal();
+            return;
+        }
+
+        try {
+            // Paralel fetch mapel, kelas, jadwal
+            const [mapelRes, kelasRes, jadwalRes] = await Promise.all([
+                fetch(`/admin/jurnal-mengajar/ajax/mapel-by-guru/${guruId}`),
+                fetch(`/admin/jurnal-mengajar/ajax/kelas-by-guru/${guruId}`),
+                fetch(`/admin/jurnal-mengajar/ajax/jadwal-by-guru/${guruId}`),
+            ]);
+
+            const [mapelData, kelasData, jadwalData] = await Promise.all([
+                mapelRes.json(), kelasRes.json(), jadwalRes.json()
+            ]);
+
+            populateSelect(mapelSelect, mapelData, 'id', 'nama_mapel', selectedMapel);
+            populateSelect(kelasSelect, kelasData, 'id', 'nama_kelas', selectedKelas);
+
+            // Rebuild jadwal select
+            const jadwalPlaceholder = jadwalSelect.options[0];
+            jadwalSelect.innerHTML = '';
+            jadwalSelect.appendChild(jadwalPlaceholder);
+            jadwalData.forEach(j => {
+                const opt = document.createElement('option');
+                opt.value       = j.id;
+                opt.textContent = `${j.kelas_nama ?? ''} — ${j.mapel_nama ?? ''} (${j.label ?? ''})`;
+                opt.dataset.kelas = j.kelas_id;
+                opt.dataset.mapel = j.mapel_id;
+                if (String(j.id) === String(selectedJadwal)) opt.selected = true;
+                jadwalSelect.appendChild(opt);
+            });
+
+        } catch (e) {
+            console.warn('Cascade dropdown error:', e);
+        }
+    }
+
+    function resetJadwal() {
+        const placeholder = jadwalSelect.options[0];
+        jadwalSelect.innerHTML = '';
+        jadwalSelect.appendChild(placeholder);
+    }
+
+    // Event: guru berubah
+    guruSelect.addEventListener('change', function () {
+        loadCascade(this.value, '', '', '');
+    });
+
+    // Event: jadwal dipilih → auto-fill mapel & kelas
+    jadwalSelect.addEventListener('change', function () {
+        const opt = this.options[this.selectedIndex];
+        if (opt && opt.dataset.kelas) {
+            kelasSelect.value = opt.dataset.kelas;
+            mapelSelect.value = opt.dataset.mapel;
+        }
+    });
+
+    // Inisialisasi: jika ada old('guru_id') (setelah validasi gagal), jalankan cascade
+    const initGuruId   = '{{ old('guru_id') }}';
+    const initMapelId  = '{{ old('mata_pelajaran_id') }}';
+    const initKelasId  = '{{ old('kelas_id') }}';
+    const initJadwalId = '{{ old('jadwal_pelajaran_id') }}';
+
+    if (initGuruId) {
+        loadCascade(initGuruId, initMapelId, initKelasId, initJadwalId);
+    }
+
+    // ── Submit handling ───────────────────────────────────────────────────────
+    document.getElementById('jurnalForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;

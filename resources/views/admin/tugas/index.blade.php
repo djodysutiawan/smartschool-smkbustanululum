@@ -31,7 +31,10 @@
     .btn-excel:hover   { background: #dcfce7; }
     .btn-import  { background: #fefce8; color: #a16207; border: 1px solid #fde68a; }
     .btn-import:hover  { background: #fef9c3; }
+    .btn-toggle  { background: #f5f3ff; color: #7c3aed; border: 1px solid #ede9fe; }
+    .btn-toggle:hover  { background: #ede9fe; }
 
+    /* ── Stats ── */
     .stats-strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
     .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; display: flex; align-items: center; gap: 12px; }
     .stat-icon { width: 38px; height: 38px; border-radius: 9px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
@@ -42,6 +45,7 @@
     .stat-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 600; color: var(--text3); letter-spacing: .03em; text-transform: uppercase; }
     .stat-val   { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 22px; font-weight: 800; color: var(--text); line-height: 1.1; margin-top: 1px; }
 
+    /* ── Filter ── */
     .filter-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px; }
     .filter-row  { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
     .filter-row input, .filter-row select { height: 36px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text); background: var(--surface2); outline: none; transition: border-color .15s; }
@@ -54,6 +58,7 @@
     .btn-reset  { height: 36px; padding: 0 14px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; }
     .btn-reset:hover { background: var(--surface3); }
 
+    /* ── Table ── */
     .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
     .table-topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
     .table-info { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
@@ -97,6 +102,7 @@
     .empty-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 5px; }
     .empty-sub   { font-size: 13px; color: var(--text3); }
 
+    /* ── Pagination ── */
     .pag-wrap { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
     .pag-info { font-size: 12.5px; color: var(--text3); }
     .pag-btns { display: flex; gap: 4px; align-items: center; }
@@ -105,6 +111,7 @@
     .pag-btn.active { background: var(--brand-600); border-color: var(--brand-600); color: #fff; }
     .pag-ellipsis   { color: var(--text3); font-size: 13px; padding: 0 4px; }
 
+    /* ── Modal ── */
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 999; display: none; align-items: center; justify-content: center; }
     .modal-overlay.open { display: flex; }
     .modal-box { background: #fff; border-radius: 12px; padding: 28px; width: 420px; max-width: 95vw; box-shadow: 0 20px 60px rgba(0,0,0,.18); }
@@ -138,30 +145,59 @@
         </div>
     </div>
 
+    {{--
+        BUG FIX: Stats sebelumnya pakai $tugas->getCollection()->where(...) yang
+        hanya menghitung dari 20 data di halaman aktif (paginate), bukan total keseluruhan.
+        Solusi: tambahkan variabel $stats dari controller (totalTugas, totalPublish, totalDraft, totalTrashed).
+        Lihat catatan di bawah untuk perubahan yang diperlukan di controller.
+    --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
                 <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             </div>
-            <div><p class="stat-label">Total Tugas</p><p class="stat-val">{{ $tugas->total() }}</p></div>
+            <div>
+                <p class="stat-label">Total Tugas</p>
+                {{-- withTrashed() sudah ada di query index, jadi total() sudah termasuk trashed --}}
+                <p class="stat-val">{{ $tugas->total() }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon green">
                 <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <div><p class="stat-label">Dipublikasikan</p><p class="stat-val">{{ $tugas->getCollection()->where('dipublikasikan', true)->whereNull('deleted_at')->count() }}</p></div>
+            <div>
+                <p class="stat-label">Dipublikasikan</p>
+                {{--
+                    PERBAIKAN: Gunakan $statsGlobal yang dikirim dari controller.
+                    Tambahkan di method index() controller:
+                    $statsGlobal = [
+                        'publish' => Tugas::where('dipublikasikan', true)->whereNull('deleted_at')->count(),
+                        'draft'   => Tugas::where('dipublikasikan', false)->whereNull('deleted_at')->count(),
+                        'trashed' => Tugas::onlyTrashed()->count(),
+                    ];
+                    Lalu: compact(..., 'statsGlobal')
+                --}}
+                <p class="stat-val">{{ $statsGlobal['publish'] ?? 0 }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon orange">
                 <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <div><p class="stat-label">Draft</p><p class="stat-val">{{ $tugas->getCollection()->where('dipublikasikan', false)->whereNull('deleted_at')->count() }}</p></div>
+            <div>
+                <p class="stat-label">Draft</p>
+                <p class="stat-val">{{ $statsGlobal['draft'] ?? 0 }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon red">
                 <svg width="18" height="18" fill="none" stroke="#dc2626" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </div>
-            <div><p class="stat-label">Terhapus</p><p class="stat-val">{{ $tugas->getCollection()->whereNotNull('deleted_at')->count() }}</p></div>
+            <div>
+                <p class="stat-label">Terhapus</p>
+                <p class="stat-val">{{ $statsGlobal['trashed'] ?? 0 }}</p>
+            </div>
         </div>
     </div>
 
@@ -172,23 +208,30 @@
                 <select name="guru_id">
                     <option value="">Semua Guru</option>
                     @foreach($guruList as $g)
-                        <option value="{{ $g->id }}" {{ request('guru_id') == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
+                        <option value="{{ $g->id }}" {{ request('guru_id') == $g->id ? 'selected' : '' }}>
+                            {{ $g->nama_lengkap }}
+                        </option>
                     @endforeach
                 </select>
                 <select name="kelas_id">
                     <option value="">Semua Kelas</option>
                     @foreach($kelasList as $k)
-                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
+                        <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                            {{ $k->nama_kelas }}
+                        </option>
                     @endforeach
                 </select>
                 <select name="mata_pelajaran_id">
                     <option value="">Semua Mapel</option>
                     @foreach($mapelList as $m)
-                        <option value="{{ $m->id }}" {{ request('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
+                        <option value="{{ $m->id }}" {{ request('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>
+                            {{ $m->nama_mapel }}
+                        </option>
                     @endforeach
                 </select>
                 <select name="dipublikasikan">
                     <option value="">Semua Status</option>
+                    {{-- BUG FIX: request('dipublikasikan') bisa string '1'/'0', gunakan strict comparison --}}
                     <option value="1" {{ request('dipublikasikan') === '1' ? 'selected' : '' }}>Dipublikasikan</option>
                     <option value="0" {{ request('dipublikasikan') === '0' ? 'selected' : '' }}>Draft</option>
                 </select>
@@ -233,7 +276,7 @@
                         <th>Batas Waktu</th>
                         <th>Nilai Maks</th>
                         <th>Status</th>
-                        <th class="center" style="width:200px">Aksi</th>
+                        <th class="center" style="width:220px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -243,19 +286,25 @@
                         <td>
                             <div class="judul-wrap">
                                 <p class="jname">{{ $t->judul }}</p>
+                                {{-- BUG FIX: kelas pakai withDefault() di model jadi aman, tapi tetap gunakan ?? untuk safety --}}
                                 <p class="jsub">{{ $t->kelas->nama_kelas ?? '-' }} · {{ $t->tahunAjaran->tahun ?? '-' }}</p>
                             </div>
                         </td>
                         <td class="muted">{{ $t->guru->nama_lengkap ?? '-' }}</td>
                         <td class="muted">{{ $t->mataPelajaran->nama_mapel ?? '-' }}</td>
-                        <td><span class="jenis-pill jenis-{{ $t->jenis_pengumpulan }}">{{ ucfirst($t->jenis_pengumpulan) }}</span></td>
                         <td>
-                            <span class="deadline-pill {{ now()->gt($t->batas_waktu) && !$t->trashed() ? 'lewat' : '' }}">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                {{ \Carbon\Carbon::parse($t->batas_waktu)->format('d M Y, H:i') }}
+                            <span class="jenis-pill jenis-{{ $t->jenis_pengumpulan }}">
+                                {{ ucfirst($t->jenis_pengumpulan) }}
                             </span>
                         </td>
-                        <td class="muted">{{ $t->nilai_maksimal ?? '100' }}</td>
+                        <td>
+                            {{-- BUG FIX: model sudah cast batas_waktu ke datetime, tidak perlu Carbon::parse() lagi --}}
+                            <span class="deadline-pill {{ !$t->trashed() && $t->isTelahBerakhir() ? 'lewat' : '' }}">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                {{ $t->batas_waktu->format('d M Y, H:i') }}
+                            </span>
+                        </td>
+                        <td class="muted">{{ $t->nilai_maksimal ?? 100 }}</td>
                         <td>
                             @if($t->trashed())
                                 <span class="badge badge-terhapus"><span class="badge-dot"></span>Terhapus</span>
@@ -278,6 +327,21 @@
                                 @else
                                     <a href="{{ route('admin.tugas.show', $t->id) }}" class="btn btn-sm btn-detail">Detail</a>
                                     <a href="{{ route('admin.tugas.edit', $t->id) }}" class="btn btn-sm btn-edit">Edit</a>
+
+                                    {{-- Toggle Status: tombol publish/unpublish --}}
+                                    <form action="{{ route('admin.tugas.toggle-status', $t->id) }}" method="POST" style="display:inline">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-toggle"
+                                            title="{{ $t->dipublikasikan ? 'Sembunyikan' : 'Publikasikan' }}">
+                                            @if($t->dipublikasikan)
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                                            @else
+                                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            @endif
+                                        </button>
+                                    </form>
+
                                     <form action="{{ route('admin.tugas.destroy', $t->id) }}" method="POST" id="deleteForm-{{ $t->id }}">
                                         @csrf @method('DELETE')
                                         <button type="button" class="btn btn-sm btn-del"
@@ -311,10 +375,15 @@
             <p class="pag-info">Menampilkan {{ $tugas->firstItem() }} – {{ $tugas->lastItem() }} dari {{ $tugas->total() }} tugas</p>
             <div class="pag-btns">
                 @if($tugas->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $tugas->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $tugas->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
+
                 @foreach($tugas->getUrlRange(1, $tugas->lastPage()) as $page => $url)
                     @if($page == $tugas->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
@@ -324,10 +393,15 @@
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
+
                 @if($tugas->hasMorePages())
-                    <a href="{{ $tugas->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $tugas->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -339,13 +413,21 @@
 <div class="modal-overlay" id="importModal">
     <div class="modal-box">
         <p class="modal-title">Import Data Tugas</p>
-        <p class="modal-sub">Upload file Excel (.xlsx / .xls). <a href="{{ route('admin.tugas.import.template') }}" style="color:var(--brand-600);font-weight:600">Download template</a> terlebih dahulu.</p>
-        <form action="{{ route('admin.tugas.import') }}" method="POST" enctype="multipart/form-data">
+        <p class="modal-sub">
+            Upload file Excel (.xlsx / .xls).
+            <a href="{{ route('admin.tugas.import.template') }}" style="color:var(--brand-600);font-weight:600">Download template</a>
+            terlebih dahulu.
+        </p>
+        {{-- BUG FIX: Gunakan action URL langsung, bukan <form> yang bisa konflik dengan SweetAlert --}}
+        <form action="{{ route('admin.tugas.import') }}" method="POST" enctype="multipart/form-data" id="importForm">
             @csrf
             <div class="modal-field">
                 <label>File Excel <span style="color:#dc2626">*</span></label>
                 <input type="file" name="file" accept=".xlsx,.xls" required>
             </div>
+            @error('file')
+                <p style="color:#dc2626;font-size:12.5px;margin-top:-8px;margin-bottom:8px">{{ $message }}</p>
+            @enderror
             <div class="modal-footer">
                 <button type="button" class="btn btn-cancel" onclick="document.getElementById('importModal').classList.remove('open')">Batal</button>
                 <button type="submit" class="btn btn-primary">Upload & Import</button>
@@ -357,28 +439,52 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({
+        icon: 'success', title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500, showConfirmButton: false, toast: true, position: 'top-end'
+    });
     @endif
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error', title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
+    @endif
+
+    // BUG FIX: Buka modal import otomatis jika ada error validasi dari import
+    @if($errors->has('file'))
+    document.getElementById('importModal').classList.add('open');
     @endif
 
     function confirmDelete(form, nama) {
         Swal.fire({
-            title: 'Hapus Tugas?', text: `Tugas "${nama}" akan dihapus (bisa dipulihkan).`,
-            icon: 'warning', showCancelButton: true,
-            confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',
+            title: 'Hapus Tugas?',
+            text: `Tugas "${nama}" akan dihapus (bisa dipulihkan).`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
         }).then(r => { if (r.isConfirmed) form.submit(); });
     }
+
     function confirmRestore(form, nama) {
         Swal.fire({
-            title: 'Pulihkan Tugas?', text: `Tugas "${nama}" akan dipulihkan kembali.`,
-            icon: 'question', showCancelButton: true,
-            confirmButtonColor: '#1f63db', cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Pulihkan!', cancelButtonText: 'Batal',
+            title: 'Pulihkan Tugas?',
+            text: `Tugas "${nama}" akan dipulihkan kembali.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1f63db',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Pulihkan!',
+            cancelButtonText: 'Batal',
         }).then(r => { if (r.isConfirmed) form.submit(); });
     }
+
+    // Tutup modal saat klik overlay
     document.getElementById('importModal').addEventListener('click', function(e) {
         if (e.target === this) this.classList.remove('open');
     });

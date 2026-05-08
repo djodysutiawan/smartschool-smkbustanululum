@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Traits\CascadeDropdownTrait;
 use App\Models\Guru;
 use App\Models\Kelas;
 use App\Models\Materi;
@@ -10,7 +11,6 @@ use App\Models\MataPelajaran;
 use App\Models\TahunAjaran;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
@@ -19,9 +19,16 @@ use App\Imports\MateriImport;
 
 class MateriController extends Controller
 {
+    use CascadeDropdownTrait;
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // INDEX
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function index(Request $request)
     {
-        $query = Materi::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran'])->withTrashed();
+        $query = Materi::with(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran'])
+                       ->withTrashed();
 
         if ($request->filled('guru_id')) {
             $query->where('guru_id', $request->guru_id);
@@ -47,6 +54,10 @@ class MateriController extends Controller
         return view('admin.materi.index', compact('materi', 'guruList', 'kelasList', 'mapelList'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // CREATE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function create()
     {
         $guruList    = Guru::aktif()->orderBy('nama_lengkap')->get();
@@ -60,30 +71,17 @@ class MateriController extends Controller
             compact('guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'tahunAktif', 'jenisMateri'));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // STORE
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'guru_id'           => ['required', 'exists:guru,id'],
-            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
-            'kelas_id'          => ['required', 'exists:kelas,id'],
-            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
-            'judul'             => ['required', 'string', 'max:255'],
-            'deskripsi'         => ['nullable', 'string', 'max:2000'],
-            'jenis'             => ['required', Rule::in(['file', 'video', 'link', 'teks'])],
-            'path_file'         => ['nullable', 'file', 'max:51200'],
-            'url_eksternal'     => ['nullable', 'url', 'max:500'],
-            'thumbnail'         => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
-            'urutan'            => ['nullable', 'integer', 'min:0'],
-            'dipublikasikan'    => ['boolean'],
-        ], $this->messages());
+        $validated = $request->validate($this->rules(), $this->messages());
 
-        if ($request->hasFile('path_file')) {
-            $validated['path_file'] = $request->file('path_file')->store('materi', 'public');
-        }
-        if ($request->hasFile('thumbnail')) {
-            $validated['thumbnail'] = $request->file('thumbnail')->store('materi/thumbnails', 'public');
-        }
-        if (!empty($validated['dipublikasikan'])) {
+        $this->handleFileUpload($request, $validated);
+
+        if (! empty($validated['dipublikasikan'])) {
             $validated['dipublikasikan_pada'] = now();
         }
 
@@ -93,12 +91,20 @@ class MateriController extends Controller
             ->with('success', 'Materi berhasil ditambahkan.');
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHOW
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function show(Materi $materi)
     {
         $materi->load(['guru', 'mataPelajaran', 'kelas', 'tahunAjaran']);
 
         return view('admin.materi.show', compact('materi'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // EDIT
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function edit(Materi $materi)
     {
@@ -108,45 +114,26 @@ class MateriController extends Controller
         $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
         $jenisMateri = ['file', 'video', 'link', 'teks'];
 
-        // Mapel & kelas milik guru ini (untuk pre-populate saat edit)
-        $mapelGuru = $this->_getMapelByGuru($materi->guru_id);
-        $kelasGuru = $this->_getKelasByGuru($materi->guru_id);
+        // Pre-populate cascade dropdown untuk guru yang sudah dipilih
+        $mapelGuru = $this->getMapelByGuru($materi->guru_id);
+        $kelasGuru = $this->getKelasByGuru($materi->guru_id);
 
         return view('admin.materi.edit',
-            compact('materi', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisMateri', 'mapelGuru', 'kelasGuru'));
+            compact('materi', 'guruList', 'kelasList', 'mapelList',
+                    'tahunAjaran', 'jenisMateri', 'mapelGuru', 'kelasGuru'));
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // UPDATE
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function update(Request $request, Materi $materi)
     {
-        $validated = $request->validate([
-            'guru_id'           => ['required', 'exists:guru,id'],
-            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
-            'kelas_id'          => ['required', 'exists:kelas,id'],
-            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
-            'judul'             => ['required', 'string', 'max:255'],
-            'deskripsi'         => ['nullable', 'string', 'max:2000'],
-            'jenis'             => ['required', Rule::in(['file', 'video', 'link', 'teks'])],
-            'path_file'         => ['nullable', 'file', 'max:51200'],
-            'url_eksternal'     => ['nullable', 'url', 'max:500'],
-            'thumbnail'         => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
-            'urutan'            => ['nullable', 'integer', 'min:0'],
-            'dipublikasikan'    => ['boolean'],
-        ], $this->messages());
+        $validated = $request->validate($this->rules(), $this->messages());
 
-        if ($request->hasFile('path_file')) {
-            if ($materi->path_file) {
-                Storage::disk('public')->delete($materi->path_file);
-            }
-            $validated['path_file'] = $request->file('path_file')->store('materi', 'public');
-        }
-        if ($request->hasFile('thumbnail')) {
-            if ($materi->thumbnail) {
-                Storage::disk('public')->delete($materi->thumbnail);
-            }
-            $validated['thumbnail'] = $request->file('thumbnail')->store('materi/thumbnails', 'public');
-        }
+        $this->handleFileUpload($request, $validated, $materi);
 
-        if (!empty($validated['dipublikasikan']) && !$materi->dipublikasikan) {
+        if (! empty($validated['dipublikasikan']) && ! $materi->dipublikasikan) {
             $validated['dipublikasikan_pada'] = now();
         } elseif (empty($validated['dipublikasikan'])) {
             $validated['dipublikasikan_pada'] = null;
@@ -157,6 +144,10 @@ class MateriController extends Controller
         return redirect()->route('admin.materi.show', $materi)
             ->with('success', 'Materi berhasil diperbarui.');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // DESTROY / RESTORE
+    // ─────────────────────────────────────────────────────────────────────────
 
     public function destroy(Materi $materi)
     {
@@ -174,19 +165,17 @@ class MateriController extends Controller
         return back()->with('success', 'Materi berhasil dipulihkan.');
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // TOGGLE PUBLISH
+    // ─────────────────────────────────────────────────────────────────────────
+
     public function togglePublish(Materi $materi)
     {
         if ($materi->dipublikasikan) {
-            $materi->update([
-                'dipublikasikan'      => false,
-                'dipublikasikan_pada' => null,
-            ]);
+            $materi->unpublish();
             $status = 'disembunyikan';
         } else {
-            $materi->update([
-                'dipublikasikan'      => true,
-                'dipublikasikan_pada' => now(),
-            ]);
+            $materi->publish();
             $status = 'dipublikasikan';
         }
 
@@ -197,30 +186,18 @@ class MateriController extends Controller
     // AJAX — Cascade Dropdown
     // ─────────────────────────────────────────────────────────────────────────
 
-    /**
-     * GET /admin/materi/ajax/mapel-by-guru/{guru}
-     * Kembalikan daftar mata pelajaran yang diampu guru (via pivot guru_mata_pelajaran).
-     * Fallback: semua mapel aktif jika guru tidak punya data pivot.
-     */
     public function ajaxMapelByGuru(Guru $guru)
     {
-        $mapel = $this->_getMapelByGuru($guru->id);
-        return response()->json($mapel);
+        return response()->json($this->getMapelByGuru($guru->id));
     }
 
-    /**
-     * GET /admin/materi/ajax/kelas-by-guru/{guru}
-     * Kembalikan daftar kelas yang diajar guru (via jadwal_pelajaran aktif).
-     * Fallback: semua kelas aktif jika guru tidak punya jadwal.
-     */
     public function ajaxKelasByGuru(Guru $guru)
     {
-        $kelas = $this->_getKelasByGuru($guru->id);
-        return response()->json($kelas);
+        return response()->json($this->getKelasByGuru($guru->id));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Export / Import
+    // EXPORT / IMPORT
     // ─────────────────────────────────────────────────────────────────────────
 
     public function exportPdf(Request $request)
@@ -274,64 +251,48 @@ class MateriController extends Controller
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Private Helpers
+    // PRIVATE HELPERS
     // ─────────────────────────────────────────────────────────────────────────
 
     /**
-     * Ambil mapel yang diampu guru via pivot guru_mata_pelajaran.
-     * Fallback: semua mapel aktif jika pivot kosong.
+     * Handle upload file materi dan thumbnail.
+     * Hapus file lama jika ada (saat update).
      */
-    private function _getMapelByGuru(int $guruId): \Illuminate\Support\Collection
+    private function handleFileUpload(Request $request, array &$validated, ?Materi $existing = null): void
     {
-        $guru = Guru::find($guruId);
-
-        if (!$guru) {
-            return MataPelajaran::aktif()->orderBy('nama_mapel')->get(['id', 'nama_mapel', 'kode_mapel']);
+        if ($request->hasFile('path_file')) {
+            if ($existing?->path_file) {
+                Storage::disk('public')->delete($existing->path_file);
+            }
+            $validated['path_file'] = $request->file('path_file')
+                ->store('materi', 'public');
         }
 
-        try {
-            $mapel = $guru->mataPelajaran()
-                ->where('guru_mata_pelajaran.is_active', true)
-                ->where('mata_pelajaran.is_active', true)
-                ->orderBy('nama_mapel')
-                ->get(['mata_pelajaran.id', 'mata_pelajaran.nama_mapel', 'mata_pelajaran.kode_mapel']);
-        } catch (\Exception $e) {
-            $mapel = collect();
+        if ($request->hasFile('thumbnail')) {
+            if ($existing?->thumbnail) {
+                Storage::disk('public')->delete($existing->thumbnail);
+            }
+            $validated['thumbnail'] = $request->file('thumbnail')
+                ->store('materi/thumbnails', 'public');
         }
-
-        if ($mapel->isEmpty()) {
-            $mapel = MataPelajaran::aktif()->orderBy('nama_mapel')->get(['id', 'nama_mapel', 'kode_mapel']);
-        }
-
-        return $mapel;
     }
 
-    /**
-     * Ambil kelas yang diajar guru via jadwal_pelajaran aktif.
-     * Fallback: semua kelas aktif jika jadwal kosong.
-     */
-    private function _getKelasByGuru(int $guruId): \Illuminate\Support\Collection
+    private function rules(): array
     {
-        $kelasIds = DB::table('jadwal_pelajaran')
-            ->where('guru_id', $guruId)
-            ->where('is_active', true)
-            ->pluck('kelas_id')
-            ->unique();
-
-        if ($kelasIds->isNotEmpty()) {
-            $kelas = Kelas::whereIn('id', $kelasIds)
-                ->where('status', 'aktif')
-                ->orderBy('nama_kelas')
-                ->get(['id', 'nama_kelas', 'tingkat', 'kode_kelas']);
-        } else {
-            $kelas = collect();
-        }
-
-        if ($kelas->isEmpty()) {
-            $kelas = Kelas::aktif()->orderBy('nama_kelas')->get(['id', 'nama_kelas', 'tingkat', 'kode_kelas']);
-        }
-
-        return $kelas;
+        return [
+            'guru_id'           => ['required', 'exists:guru,id'],
+            'mata_pelajaran_id' => ['required', 'exists:mata_pelajaran,id'],
+            'kelas_id'          => ['required', 'exists:kelas,id'],
+            'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
+            'judul'             => ['required', 'string', 'max:255'],
+            'deskripsi'         => ['nullable', 'string', 'max:2000'],
+            'jenis'             => ['required', Rule::in(['file', 'video', 'link', 'teks'])],
+            'path_file'         => ['nullable', 'file', 'max:51200'],
+            'url_eksternal'     => ['nullable', 'url', 'max:500'],
+            'thumbnail'         => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+            'urutan'            => ['nullable', 'integer', 'min:0'],
+            'dipublikasikan'    => ['boolean'],
+        ];
     }
 
     private function messages(): array

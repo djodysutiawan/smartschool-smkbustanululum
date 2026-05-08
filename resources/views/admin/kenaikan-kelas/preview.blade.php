@@ -47,7 +47,7 @@
     .info-strip{display:flex;align-items:center;gap:12px;padding:11px 16px;background:var(--warn-bg);border:1px solid var(--warn-border);border-radius:var(--radius-sm);margin-bottom:20px;font-size:12.5px;color:var(--warn);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;}
 
     /* Table */
-    .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+    .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:80px;}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
     .table-info span{font-weight:400;color:var(--text3);margin-left:6px;}
@@ -64,6 +64,8 @@
     tbody tr:hover{background:#fafbff;}
     tbody tr.row-tidak-naik{background:#fff9f9;}
     tbody tr.row-tidak-naik:hover{background:#fff5f5;}
+    tbody tr.row-lulus{background:#fdf4ff;}
+    tbody tr.row-lulus:hover{background:#fae8ff;}
     td{padding:9px 12px;color:var(--text);vertical-align:middle;}
     td.center{text-align:center;}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);}
@@ -85,18 +87,13 @@
     .syarat-check.pass{color:#15803d;}
     .syarat-check.fail{color:#dc2626;}
 
-    /* Rekomendasi */
-    .rek-badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;}
-    .rek-naik{background:#dcfce7;color:#15803d;}
-    .rek-tidak{background:#fff0f0;color:#dc2626;}
-    .rek-lulus{background:#f3e8ff;color:#7c3aed;}
-
     /* Form select inline */
     .select-sm{padding:5px 8px;border:1px solid var(--border2);border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;color:var(--text);background:var(--surface);outline:none;width:100%;min-width:130px;}
     .select-sm:focus{border-color:var(--brand-500);box-shadow:0 0 0 2px var(--brand-100);}
+    .select-sm.border-error{border-color:var(--danger) !important;}
 
     /* Sticky action bar */
-    .action-bar{position:sticky;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.06);}
+    .action-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;z-index:100;box-shadow:0 -4px 20px rgba(0,0,0,.06);}
     .action-bar-left{display:flex;align-items:center;gap:10px;}
     .action-bar-right{display:flex;align-items:center;gap:8px;}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s;white-space:nowrap;}
@@ -110,7 +107,7 @@
     .nilai-val{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;}
     .nilai-pass{color:#15803d;}
     .nilai-fail{color:#dc2626;}
-    @media(max-width:768px){.summary-banner{grid-template-columns:1fr 1fr;}.page{padding:16px;}}
+    @media(max-width:768px){.summary-banner{grid-template-columns:1fr 1fr;}.page{padding:16px 16px 60px;}}
 </style>
 
 <div class="page">
@@ -124,8 +121,14 @@
 
     <div class="page-header">
         <div>
-            <h1 class="page-title">Preview Kenaikan Kelas — Tingkat {{ $validated['dari_tingkat'] }} → {{ $keTingkat === 'lulus' ? 'Lulus' : $keTingkat }}</h1>
-            <p class="page-sub">{{ $taAsal->nama }} → {{ $taTujuan->nama }} · Review dan sesuaikan keputusan sebelum dikonfirmasi</p>
+            <h1 class="page-title">
+                Preview Kenaikan Kelas — Tingkat {{ $validated['dari_tingkat'] }}
+                → {{ $keTingkat === 'lulus' ? 'Lulus' : $keTingkat }}
+            </h1>
+            <p class="page-sub">
+                {{ $taAsal->nama ?? 'TA Asal' }} → {{ $taTujuan->nama ?? 'TA Tujuan' }}
+                · Review dan sesuaikan keputusan sebelum dikonfirmasi
+            </p>
         </div>
     </div>
 
@@ -149,10 +152,11 @@
 
     {{-- Summary --}}
     @php
-        $totalSiswa     = count($evaluasi);
-        $totalRekNaik   = collect($evaluasi)->where('rekomendasi', 'naik_kelas')->count();
-        $totalRekTidak  = collect($evaluasi)->where('rekomendasi', 'tidak_naik')->count();
+        $totalSiswa      = count($evaluasi);
+        $totalRekNaik    = collect($evaluasi)->where('rekomendasi', 'naik_kelas')->count();
+        $totalRekTidak   = collect($evaluasi)->where('rekomendasi', 'tidak_naik')->count();
         $memenuhi2Syarat = collect($evaluasi)->filter(fn($e) => $e['memenuhi_syarat_nilai'] && $e['memenuhi_syarat_kehadiran'])->count();
+        $isXII           = $validated['dari_tingkat'] === 'XII';
     @endphp
     <div class="summary-banner">
         <div class="s-card">
@@ -161,7 +165,7 @@
         </div>
         <div class="s-card">
             <div class="s-icon green"><svg width="16" height="16" fill="none" stroke="#15803d" stroke-width="2" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"/></svg></div>
-            <div><p class="s-label">Rek. Naik</p><p class="s-val">{{ $totalRekNaik }}</p></div>
+            <div><p class="s-label">{{ $isXII ? 'Rek. Lulus' : 'Rek. Naik' }}</p><p class="s-val">{{ $totalRekNaik }}</p></div>
         </div>
         <div class="s-card">
             <div class="s-icon red"><svg width="16" height="16" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg></div>
@@ -180,25 +184,43 @@
     <div class="info-strip">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         Sistem telah memberikan rekomendasi otomatis. Anda dapat mengubah keputusan dan kelas tujuan sebelum konfirmasi.
-        Siswa kelas XII akan otomatis direkomendasikan <strong style="color:#7c3aed;">Lulus</strong> jika memenuhi syarat.
+        @if($isXII)
+            Siswa kelas XII akan otomatis direkomendasikan <strong style="color:#7c3aed;">Lulus</strong> jika memenuhi syarat.
+        @endif
     </div>
 
     <form action="{{ route('admin.kenaikan-kelas.store') }}" method="POST" id="formKenaikan">
         @csrf
+        {{-- Pass semua parameter yang dibutuhkan store() --}}
         <input type="hidden" name="tahun_ajaran_asal_id"   value="{{ $validated['tahun_ajaran_asal_id'] }}">
         <input type="hidden" name="tahun_ajaran_tujuan_id" value="{{ $validated['tahun_ajaran_tujuan_id'] }}">
         <input type="hidden" name="dari_tingkat"           value="{{ $validated['dari_tingkat'] }}">
-        <input type="hidden" name="catatan"                value="{{ $validated['catatan'] ?? '' }}">
+        {{--
+            BUG FIX: $validated hanya berisi 3 key yg di-validate di preview().
+            'catatan' tidak di-validate, jadi harus ambil dari request langsung
+            via $request->input('catatan') — sudah di-pass controller sebagai
+            bagian dari $validated array yang di-compact. Karena controller tidak
+            melakukan compact('request'), kita ambil dari session flashed atau
+            gunakan request()->old(). Paling aman: controller kita tambah key
+            'catatan' ke $validated di preview(). Untuk sementara, pakai
+            request()->input() lewat old() karena form GET/POST sudah disubmit.
+            Catatan ini non-kritis (hanya metadata), jadi fallback ke '' aman.
+        --}}
+        <input type="hidden" name="catatan" value="{{ old('catatan', $validated['catatan'] ?? '') }}">
 
         <div class="table-card">
             <div class="table-topbar">
                 <p class="table-info">Daftar Siswa <span>— {{ $totalSiswa }} siswa ditemukan</span></p>
                 <div class="topbar-filters">
                     <button type="button" class="filter-btn active" onclick="filterRows('all', this)">Semua</button>
-                    <button type="button" class="filter-btn" onclick="filterRows('naik_kelas', this)">Naik</button>
+                    @if(!$isXII)
+                        <button type="button" class="filter-btn" onclick="filterRows('naik_kelas', this)">Naik</button>
+                    @else
+                        <button type="button" class="filter-btn" onclick="filterRows('lulus', this)">Lulus</button>
+                    @endif
                     <button type="button" class="filter-btn" onclick="filterRows('tidak_naik', this)">Tidak Naik</button>
-                    @if($keTingkat === 'lulus')
-                    <button type="button" class="filter-btn" onclick="filterRows('lulus', this)">Lulus</button>
+                    @if($isXII)
+                        <button type="button" class="filter-btn" onclick="filterRows('naik_kelas', this)">Naik (Override)</button>
                     @endif
                 </div>
             </div>
@@ -220,13 +242,29 @@
                     <tbody id="tabelSiswa">
                         @foreach($evaluasi as $i => $ev)
                         @php
-                            $isXII = $validated['dari_tingkat'] === 'XII';
-                            $defaultKeputusan = $isXII && $ev['rekomendasi'] === 'naik_kelas' ? 'lulus' : $ev['rekomendasi'];
-                            $persen = $ev['persentase_kehadiran'];
+                            /**
+                             * BUG FIX: Untuk kelas XII, jika rekomendasi naik_kelas
+                             * maka default keputusan adalah 'lulus' (bukan naik_kelas).
+                             * Jika rekomendasi tidak_naik, tetap tidak_naik.
+                             */
+                            $defaultKeputusan = $isXII
+                                ? ($ev['rekomendasi'] === 'naik_kelas' ? 'lulus' : 'tidak_naik')
+                                : $ev['rekomendasi'];
+
+                            $persen       = $ev['persentase_kehadiran'];
                             $progressClass = $persen >= 75 ? 'good' : ($persen >= 50 ? 'warn' : 'bad');
+
+                            // Tentukan row color class berdasarkan default keputusan
+                            $rowClass = match($defaultKeputusan) {
+                                'tidak_naik' => 'row-tidak-naik',
+                                'lulus'      => 'row-lulus',
+                                default      => '',
+                            };
                         @endphp
-                        <tr class="siswa-row {{ $defaultKeputusan === 'tidak_naik' ? 'row-tidak-naik' : '' }}"
-                            data-keputusan="{{ $defaultKeputusan }}">
+                        <tr class="siswa-row {{ $rowClass }}"
+                            data-keputusan="{{ $defaultKeputusan }}"
+                            data-memenuhi-nilai="{{ $ev['memenuhi_syarat_nilai'] ? '1' : '0' }}"
+                            data-memenuhi-hadir="{{ $ev['memenuhi_syarat_kehadiran'] ? '1' : '0' }}">
                             <td><span class="no-col">{{ $i + 1 }}</span></td>
                             <td>
                                 <input type="hidden" name="siswa[{{ $i }}][siswa_id]" value="{{ $ev['siswa']->id }}">
@@ -245,7 +283,9 @@
                                         {{ number_format($persen, 1) }}%
                                     </span>
                                 </div>
-                                <p style="font-size:10.5px;color:var(--text3);margin-top:2px;">{{ $ev['total_hadir'] }}/{{ $ev['total_pertemuan'] }} pertemuan</p>
+                                <p style="font-size:10.5px;color:var(--text3);margin-top:2px;">
+                                    {{ $ev['total_hadir'] }}/{{ $ev['total_pertemuan'] }} pertemuan
+                                </p>
                             </td>
                             <td class="center">
                                 <span class="nilai-val {{ $ev['rata_rata_nilai'] >= 65 ? 'nilai-pass' : 'nilai-fail' }}">
@@ -256,17 +296,19 @@
                                 <div style="display:flex;flex-direction:column;gap:3px;align-items:center;">
                                     <span class="syarat-check {{ $ev['memenuhi_syarat_kehadiran'] ? 'pass' : 'fail' }}">
                                         @if($ev['memenuhi_syarat_kehadiran'])
-                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Hadir
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         @else
-                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Hadir
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                                         @endif
+                                        Hadir
                                     </span>
                                     <span class="syarat-check {{ $ev['memenuhi_syarat_nilai'] ? 'pass' : 'fail' }}">
                                         @if($ev['memenuhi_syarat_nilai'])
-                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Nilai
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                         @else
-                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Nilai
+                                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                                         @endif
+                                        Nilai
                                     </span>
                                 </div>
                             </td>
@@ -275,14 +317,25 @@
                                         class="select-sm keputusan-select"
                                         data-index="{{ $i }}"
                                         onchange="handleKeputusanChange(this)">
-                                    <option value="naik_kelas"  {{ $defaultKeputusan === 'naik_kelas'  ? 'selected' : '' }}>Naik Kelas</option>
-                                    <option value="tidak_naik"  {{ $defaultKeputusan === 'tidak_naik'  ? 'selected' : '' }}>Tidak Naik</option>
-                                    @if($isXII)
-                                    <option value="lulus"       {{ $defaultKeputusan === 'lulus'       ? 'selected' : '' }}>Lulus</option>
+                                    @if(!$isXII)
+                                        {{-- Kelas X / XI: opsi naik atau tidak naik --}}
+                                        <option value="naik_kelas" {{ $defaultKeputusan === 'naik_kelas' ? 'selected' : '' }}>Naik Kelas</option>
+                                        <option value="tidak_naik" {{ $defaultKeputusan === 'tidak_naik' ? 'selected' : '' }}>Tidak Naik</option>
+                                    @else
+                                        {{-- Kelas XII: lulus, tidak naik, atau naik override (edge case) --}}
+                                        <option value="lulus"      {{ $defaultKeputusan === 'lulus'      ? 'selected' : '' }}>Lulus</option>
+                                        <option value="tidak_naik" {{ $defaultKeputusan === 'tidak_naik' ? 'selected' : '' }}>Tidak Naik</option>
+                                        <option value="naik_kelas" {{ $defaultKeputusan === 'naik_kelas' ? 'selected' : '' }}>Naik Kelas (Override)</option>
                                     @endif
                                 </select>
                             </td>
                             <td>
+                                {{--
+                                    BUG FIX: select kelas tujuan harus disabled jika
+                                    keputusan adalah 'tidak_naik' ATAU 'lulus'.
+                                    Sebelumnya hanya disabled untuk tidak_naik & lulus
+                                    tapi tidak handle defaultKeputusan='lulus' dengan benar.
+                                --}}
                                 <select name="siswa[{{ $i }}][kelas_tujuan_id]"
                                         class="select-sm kelas-tujuan-select"
                                         id="kelas_tujuan_{{ $i }}"
@@ -314,8 +367,8 @@
         <div class="action-bar">
             <div class="action-bar-left">
                 <label class="select-all-label">
-                    <input type="checkbox" id="cbNaikSemua" onchange="setSemuaNaik(this)">
-                    Naik semua yang memenuhi syarat
+                    <input type="checkbox" id="cbNaikSemua" onchange="setSemuaNaikMemenuhi(this)">
+                    {{ $isXII ? 'Lulus semua yang memenuhi syarat' : 'Naik semua yang memenuhi syarat' }}
                 </label>
                 <span style="font-size:12px;color:var(--text3);" id="counterLabel">{{ $totalSiswa }} siswa</span>
             </div>
@@ -335,35 +388,44 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function handleKeputusanChange(sel) {
-        const idx = sel.dataset.index;
-        const val = sel.value;
-        const kelasTujuan = document.getElementById('kelas_tujuan_' + idx);
-        const row = sel.closest('tr');
+    // Tentukan apakah ini kelas XII
+    const isXII = {{ $isXII ? 'true' : 'false' }};
 
+    function handleKeputusanChange(sel) {
+        const idx        = sel.dataset.index;
+        const val        = sel.value;
+        const kelasSel   = document.getElementById('kelas_tujuan_' + idx);
+        const row        = sel.closest('tr');
+
+        // Update disabled state kelas tujuan
         if (val === 'tidak_naik' || val === 'lulus') {
-            kelasTujuan.disabled = true;
-            kelasTujuan.value = '';
-            row.classList.toggle('row-tidak-naik', val === 'tidak_naik');
+            kelasSel.disabled = true;
+            kelasSel.value    = '';
+            kelasSel.classList.remove('border-error');
         } else {
-            kelasTujuan.disabled = false;
-            row.classList.remove('row-tidak-naik');
+            // val === 'naik_kelas'
+            kelasSel.disabled = false;
         }
+
+        // Update row background
+        row.classList.remove('row-tidak-naik', 'row-lulus');
+        if (val === 'tidak_naik') row.classList.add('row-tidak-naik');
+        if (val === 'lulus')      row.classList.add('row-lulus');
 
         row.dataset.keputusan = val;
         updateCounter();
     }
 
     function updateCounter() {
-        const rows = document.querySelectorAll('.siswa-row');
-        const naik = [...rows].filter(r => r.dataset.keputusan === 'naik_kelas').length;
+        const rows  = document.querySelectorAll('.siswa-row');
+        const naik  = [...rows].filter(r => r.dataset.keputusan === 'naik_kelas').length;
         const tidak = [...rows].filter(r => r.dataset.keputusan === 'tidak_naik').length;
         const lulus = [...rows].filter(r => r.dataset.keputusan === 'lulus').length;
-        let parts = [];
+        let parts   = [];
         if (naik)  parts.push(`${naik} naik`);
         if (tidak) parts.push(`${tidak} tidak naik`);
         if (lulus) parts.push(`${lulus} lulus`);
-        document.getElementById('counterLabel').textContent = parts.join(', ');
+        document.getElementById('counterLabel').textContent = parts.join(', ') || '0 siswa';
     }
 
     function filterRows(keputusan, btn) {
@@ -374,34 +436,52 @@
         });
     }
 
-    function setSemuaNaik(cb) {
-        // Hanya ubah yang memenuhi syarat (bisa diketahui dari atribut data)
-        // Untuk sederhana, toggle semua ke naik_kelas
-        document.querySelectorAll('.keputusan-select').forEach(sel => {
-            if (cb.checked) {
-                const row = sel.closest('tr');
-                // Hanya set naik jika opsi naik_kelas tersedia
-                const hasNaik = [...sel.options].some(o => o.value === 'naik_kelas');
-                if (hasNaik) {
-                    sel.value = 'naik_kelas';
-                    handleKeputusanChange(sel);
-                }
+    /**
+     * BUG FIX: setSemuaNaik() sebelumnya men-set SEMUA baris ke naik_kelas
+     * tanpa mengecek syarat kehadiran dan nilai.
+     *
+     * Sekarang hanya set siswa yang MEMENUHI KEDUA SYARAT.
+     * Untuk kelas XII → set ke 'lulus', bukan 'naik_kelas'.
+     * Untuk kelas X/XI → set ke 'naik_kelas'.
+     * Siswa yang tidak memenuhi syarat TIDAK diubah.
+     */
+    function setSemuaNaikMemenuhi(cb) {
+        document.querySelectorAll('.siswa-row').forEach(row => {
+            const memenuhiNilai  = row.dataset.memenuhiNilai  === '1';
+            const memenuhiHadir  = row.dataset.memenuhiHadir  === '1';
+            const sel            = row.querySelector('.keputusan-select');
+
+            if (!sel) return;
+
+            if (cb.checked && memenuhiNilai && memenuhiHadir) {
+                // Set ke keputusan positif sesuai tingkat
+                sel.value = isXII ? 'lulus' : 'naik_kelas';
+                handleKeputusanChange(sel);
+            } else if (cb.checked && (!memenuhiNilai || !memenuhiHadir)) {
+                // Paksa tidak_naik untuk yang tidak memenuhi syarat
+                sel.value = 'tidak_naik';
+                handleKeputusanChange(sel);
             }
+            // Jika unchecked, biarkan apa adanya (jangan reset)
         });
-        if (!cb.checked) updateCounter();
+        updateCounter();
     }
 
     function konfirmasi() {
-        // Validasi: yang naik kelas harus punya kelas tujuan
+        // Validasi: yang naik_kelas harus punya kelas tujuan
         let invalid = 0;
         document.querySelectorAll('.siswa-row').forEach(row => {
-            const sel = row.querySelector('.keputusan-select');
+            const sel      = row.querySelector('.keputusan-select');
             const kelasSel = row.querySelector('.kelas-tujuan-select');
+            if (!sel || !kelasSel) return;
+
             if (sel.value === 'naik_kelas' && !kelasSel.value) {
                 invalid++;
-                kelasSel.style.borderColor = '#dc2626';
-            } else if (kelasSel) {
-                kelasSel.style.borderColor = '';
+                kelasSel.classList.add('border-error');
+                // Scroll ke baris pertama yang bermasalah
+                if (invalid === 1) kelasSel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                kelasSel.classList.remove('border-error');
             }
         });
 
@@ -409,13 +489,13 @@
             Swal.fire({
                 icon: 'warning',
                 title: 'Kelas Tujuan Belum Dipilih',
-                text: `${invalid} siswa yang akan naik kelas belum ditentukan kelas tujuannya.`,
+                text: `${invalid} siswa yang akan naik kelas belum ditentukan kelas tujuannya. Silakan pilih kelas tujuan terlebih dahulu (baris disorot merah).`,
                 confirmButtonColor: '#1f63db',
             });
             return;
         }
 
-        const rows = document.querySelectorAll('.siswa-row');
+        const rows  = document.querySelectorAll('.siswa-row');
         const naik  = [...rows].filter(r => r.dataset.keputusan === 'naik_kelas').length;
         const tidak = [...rows].filter(r => r.dataset.keputusan === 'tidak_naik').length;
         const lulus = [...rows].filter(r => r.dataset.keputusan === 'lulus').length;
@@ -426,9 +506,9 @@
                 <div style="text-align:left;font-size:14px;line-height:1.8;">
                     <p style="margin-bottom:8px;color:#475569;">Ringkasan keputusan:</p>
                     <div style="display:flex;gap:16px;justify-content:center;padding:12px;background:#f8fafc;border-radius:8px;margin-bottom:12px;">
-                        <div style="text-align:center;"><strong style="font-size:22px;color:#15803d;">${naik}</strong><br><span style="font-size:11px;color:#64748b;">NAIK KELAS</span></div>
-                        <div style="text-align:center;"><strong style="font-size:22px;color:#dc2626;">${tidak}</strong><br><span style="font-size:11px;color:#64748b;">TIDAK NAIK</span></div>
-                        <div style="text-align:center;"><strong style="font-size:22px;color:#7c3aed;">${lulus}</strong><br><span style="font-size:11px;color:#64748b;">LULUS</span></div>
+                        ${naik  ? `<div style="text-align:center;"><strong style="font-size:22px;color:#15803d;">${naik}</strong><br><span style="font-size:11px;color:#64748b;">NAIK KELAS</span></div>` : ''}
+                        ${tidak ? `<div style="text-align:center;"><strong style="font-size:22px;color:#dc2626;">${tidak}</strong><br><span style="font-size:11px;color:#64748b;">TIDAK NAIK</span></div>` : ''}
+                        ${lulus ? `<div style="text-align:center;"><strong style="font-size:22px;color:#7c3aed;">${lulus}</strong><br><span style="font-size:11px;color:#64748b;">LULUS</span></div>` : ''}
                     </div>
                     <p style="color:#dc2626;font-size:12px;">⚠ Proses ini akan mengubah data kelas siswa dan tidak dapat diurungkan secara otomatis.</p>
                 </div>
@@ -446,6 +526,7 @@
         });
     }
 
-    updateCounter();
+    // Init counter on load
+    document.addEventListener('DOMContentLoaded', updateCounter);
 </script>
 </x-app-layout>

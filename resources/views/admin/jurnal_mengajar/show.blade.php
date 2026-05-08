@@ -14,7 +14,7 @@
     .page-header{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
-    .header-actions{display:flex;gap:8px}
+    .header-actions{display:flex;gap:8px;flex-wrap:wrap}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s;white-space:nowrap}
     .btn:hover{filter:brightness(.93)}
     .btn-back{padding:8px 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
@@ -23,6 +23,8 @@
     .btn-edit:hover{background:var(--brand-100);filter:none}
     .btn-del{background:#fff0f0;color:var(--red);border:1px solid var(--red-border)}
     .btn-del:hover{background:var(--red-bg);filter:none}
+    .btn-verif{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+    .btn-verif:hover{background:#dcfce7;filter:none}
 
     .detail-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;align-items:start}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
@@ -32,6 +34,7 @@
     .dl-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
     .dl-item{padding:12px 0;border-bottom:1px solid var(--border)}
     .dl-item:nth-last-child(-n+2){border-bottom:none}
+    .dl-item.dl-full:last-child{border-bottom:none}
     .dl-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
     .dl-val{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);font-weight:500}
     .dl-full{grid-column:span 2}
@@ -43,6 +46,10 @@
     .badge-demonstrasi{background:#fff7ed;color:#c2410c}.badge-demonstrasi .badge-dot{background:#c2410c}
     .badge-proyek{background:#fefce8;color:#a16207}.badge-proyek .badge-dot{background:#a16207}
     .badge-lainnya{background:var(--surface3);color:var(--text2)}.badge-lainnya .badge-dot{background:var(--text3)}
+    .badge-verif{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+    .badge-verif .badge-dot{background:#15803d}
+    .badge-unverif{background:#fef9c3;color:#a16207;border:1px solid #fde68a}
+    .badge-unverif .badge-dot{background:#a16207}
     .stat-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
     .stat-mini{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;text-align:center}
     .stat-mini-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:28px;font-weight:800;color:var(--text);line-height:1}
@@ -70,14 +77,26 @@
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit
             </a>
-            <form action="{{ route('admin.jurnal-mengajar.destroy', $jurnalMengajar->id) }}" method="POST" id="delForm">
+
+            {{-- FIX: tampilkan tombol verifikasi jika belum terverifikasi --}}
+            @if(!$jurnalMengajar->sudah_diverifikasi)
+            <form action="{{ route('admin.jurnal-mengajar.verifikasi', $jurnalMengajar->id) }}" method="POST" style="display:inline">
+                @csrf @method('PATCH')
+                <button type="submit" class="btn btn-verif">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    Verifikasi
+                </button>
+            </form>
+            @endif
+
+            <form action="{{ route('admin.jurnal-mengajar.destroy', $jurnalMengajar->id) }}" method="POST" id="delForm" style="display:inline">
                 @csrf @method('DELETE')
-                <button type="button" class="btn btn-del"
-                    onclick="confirmDelete()">
+                <button type="button" class="btn btn-del" onclick="confirmDelete()">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
                     Hapus
                 </button>
             </form>
+
             <a href="{{ route('admin.jurnal-mengajar.index') }}" class="btn btn-back">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
@@ -86,6 +105,7 @@
     </div>
 
     <div class="detail-grid">
+        {{-- Kolom Kiri --}}
         <div>
             <div class="card">
                 <div class="card-header">
@@ -108,6 +128,7 @@
                         </div>
                         <div class="dl-item">
                             <p class="dl-label">Tanggal</p>
+                            {{-- FIX: gunakan Carbon::parse karena cast 'date' bisa mengembalikan Carbon atau string --}}
                             <p class="dl-val">{{ \Carbon\Carbon::parse($jurnalMengajar->tanggal)->format('d M Y') }}</p>
                         </div>
                         <div class="dl-item">
@@ -117,22 +138,36 @@
                         <div class="dl-item">
                             <p class="dl-label">Metode</p>
                             <p class="dl-val">
-                                @php $metode = $jurnalMengajar->metode_pembelajaran ?? 'lainnya'; @endphp
-                                <span class="badge badge-{{ $metode }}">
+                                {{-- FIX: fallback ke 'lainnya' jika null, hindari badge class kosong --}}
+                                @php
+                                    $metode = $jurnalMengajar->metode_pembelajaran ?? 'lainnya';
+                                    $validMetode = ['ceramah', 'diskusi', 'praktikum', 'demonstrasi', 'proyek', 'lainnya'];
+                                    $badgeClass = in_array($metode, $validMetode) ? $metode : 'lainnya';
+                                @endphp
+                                <span class="badge badge-{{ $badgeClass }}">
                                     <span class="badge-dot"></span>{{ ucfirst($metode) }}
                                 </span>
                             </p>
                         </div>
+
                         @if($jurnalMengajar->jadwalPelajaran)
                         <div class="dl-item dl-full">
                             <p class="dl-label">Jadwal Pelajaran</p>
-                            <p class="dl-val">{{ $jurnalMengajar->jadwalPelajaran->kelas->nama_kelas ?? '' }} — {{ ucfirst($jurnalMengajar->jadwalPelajaran->hari) }}, {{ $jurnalMengajar->jadwalPelajaran->jam_mulai }} – {{ $jurnalMengajar->jadwalPelajaran->jam_selesai }}</p>
+                            <p class="dl-val">
+                                {{ $jurnalMengajar->jadwalPelajaran->kelas->nama_kelas ?? '' }}
+                                — {{ ucfirst($jurnalMengajar->jadwalPelajaran->hari ?? '') }}
+                                @if($jurnalMengajar->jadwalPelajaran->jam_mulai)
+                                    , {{ $jurnalMengajar->jadwalPelajaran->jam_mulai }} – {{ $jurnalMengajar->jadwalPelajaran->jam_selesai }}
+                                @endif
+                            </p>
                         </div>
                         @endif
+
                         <div class="dl-item dl-full">
                             <p class="dl-label">Materi Ajar</p>
                             <div class="prose-box" style="margin-top:6px">{{ $jurnalMengajar->materi_ajar }}</div>
                         </div>
+
                         @if($jurnalMengajar->catatan_kelas)
                         <div class="dl-item dl-full">
                             <p class="dl-label">Catatan Kelas</p>
@@ -144,6 +179,7 @@
             </div>
         </div>
 
+        {{-- Kolom Kanan --}}
         <div>
             <div class="card">
                 <div class="card-header">
@@ -161,8 +197,10 @@
                             <p class="stat-mini-label">Tidak Hadir</p>
                         </div>
                     </div>
-                    @if($jurnalMengajar->jumlah_hadir !== null && $jurnalMengajar->jumlah_tidak_hadir !== null)
-                    @php $total = $jurnalMengajar->jumlah_hadir + $jurnalMengajar->jumlah_tidak_hadir; $pct = $total > 0 ? round(($jurnalMengajar->jumlah_hadir / $total) * 100) : 0; @endphp
+
+                    {{-- Progress bar kehadiran menggunakan accessor dari model --}}
+                    @if($jurnalMengajar->persentase_kehadiran !== null)
+                    @php $pct = $jurnalMengajar->persentase_kehadiran; @endphp
                     <div>
                         <div style="display:flex;justify-content:space-between;margin-bottom:4px">
                             <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text3)">Tingkat Kehadiran</span>
@@ -171,7 +209,40 @@
                         <div style="height:6px;background:var(--surface3);border-radius:99px;overflow:hidden">
                             <div style="height:100%;width:{{ $pct }}%;background:{{ $pct >= 80 ? '#15803d' : ($pct >= 60 ? '#a16207' : '#dc2626') }};border-radius:99px;transition:width .4s"></div>
                         </div>
+                        <p style="font-size:11.5px;color:var(--text3);margin-top:6px;font-family:'Plus Jakarta Sans',sans-serif">
+                            Total {{ $jurnalMengajar->total_siswa }} siswa
+                        </p>
                     </div>
+                    @endif
+                </div>
+            </div>
+
+            {{-- FIX: tampilkan info verifikasi dari kolom diverifikasi_oleh & diverifikasi_pada --}}
+            <div class="card">
+                <div class="card-header">
+                    <svg width="14" height="14" fill="none" stroke="#94a3b8" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                    <span class="card-title">Status Verifikasi</span>
+                </div>
+                <div class="card-body">
+                    @if($jurnalMengajar->sudah_diverifikasi)
+                        <span class="badge badge-verif" style="margin-bottom:12px">
+                            <span class="badge-dot"></span>Sudah Diverifikasi
+                        </span>
+                        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+                            <div>
+                                <p class="dl-label">Diverifikasi Oleh</p>
+                                <p class="dl-val">{{ $jurnalMengajar->diverifikasiOleh->name ?? '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="dl-label">Waktu Verifikasi</p>
+                                <p class="dl-val">{{ $jurnalMengajar->diverifikasi_pada?->format('d M Y, H:i') ?? '—' }}</p>
+                            </div>
+                        </div>
+                    @else
+                        <span class="badge badge-unverif" style="margin-bottom:12px">
+                            <span class="badge-dot"></span>Belum Diverifikasi
+                        </span>
+                        <p style="font-size:12.5px;color:var(--text3);margin-top:8px">Jurnal ini belum mendapatkan verifikasi dari admin.</p>
                     @endif
                 </div>
             </div>
@@ -201,19 +272,23 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({ icon: 'success', title: 'Berhasil!', text: @json(session('success')), timer: 2500, showConfirmButton: false, toast: true, position: 'top-end' });
     @endif
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({ icon: 'error', title: 'Gagal!', text: @json(session('error')), confirmButtonColor: '#1f63db' });
     @endif
+
     function confirmDelete() {
         Swal.fire({
-            title:'Hapus Jurnal?',
-            text:'Data jurnal mengajar ini akan dihapus permanen.',
-            icon:'warning', showCancelButton:true,
-            confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!', cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) document.getElementById('delForm').submit(); });
+            title: 'Hapus Jurnal?',
+            text: 'Data jurnal mengajar ini akan dihapus permanen.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) document.getElementById('delForm').submit(); });
     }
 </script>
 </x-app-layout>

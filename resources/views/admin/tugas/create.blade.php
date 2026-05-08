@@ -44,8 +44,8 @@
     .field-error { font-size: 12px; color: var(--red); font-family: 'DM Sans', sans-serif; }
     .field-hint  { font-size: 12px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
     .toggle-row { display: flex; align-items: center; gap: 12px; }
-    .toggle-switch { position: relative; display: inline-block; width: 42px; height: 24px; }
-    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
     .toggle-slider { position: absolute; inset: 0; border-radius: 99px; background: var(--border2); cursor: pointer; transition: background .2s; }
     .toggle-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: #fff; border-radius: 50%; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
     .toggle-switch input:checked + .toggle-slider { background: var(--brand); }
@@ -90,7 +90,8 @@
                 <div class="form-grid">
                     <div class="field col-span-2">
                         <label>Judul Tugas <span class="req">*</span></label>
-                        <input type="text" name="judul" value="{{ old('judul') }}" placeholder="cth. Latihan Soal Bab 3 — Persamaan Linear"
+                        <input type="text" name="judul" value="{{ old('judul') }}"
+                            placeholder="cth. Latihan Soal Bab 3 — Persamaan Linear"
                             class="{{ $errors->has('judul') ? 'is-invalid' : '' }}">
                         @error('judul')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
@@ -98,7 +99,8 @@
                     {{-- Guru — dipilih pertama, memicu AJAX --}}
                     <div class="field">
                         <label>Guru <span class="req">*</span></label>
-                        <select name="guru_id" id="guruSelect" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
+                        <select name="guru_id" id="guruSelect"
+                            class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Guru —</option>
                             @foreach($guruList as $g)
                                 <option value="{{ $g->id }}" {{ old('guru_id') == $g->id ? 'selected' : '' }}>
@@ -109,10 +111,11 @@
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
-                    {{-- Tahun Ajaran — pakai $tahunAjaranList sesuai controller --}}
+                    {{-- Tahun Ajaran --}}
                     <div class="field">
                         <label>Tahun Ajaran <span class="req">*</span></label>
-                        <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
+                        <select name="tahun_ajaran_id"
+                            class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Tahun Ajaran —</option>
                             @foreach($tahunAjaranList as $ta)
                                 <option value="{{ $ta->id }}"
@@ -129,8 +132,8 @@
                         <label>Mata Pelajaran <span class="req">*</span></label>
                         <select name="mata_pelajaran_id" id="mapelSelect"
                             class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}"
-                            disabled>
-                            <option value="">— Pilih Guru dulu —</option>
+                            {{ old('guru_id') ? '' : 'disabled' }}>
+                            <option value="">{{ old('guru_id') ? '— Memuat… —' : '— Pilih Guru dulu —' }}</option>
                         </select>
                         @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
@@ -140,15 +143,16 @@
                         <label>Kelas <span class="req">*</span></label>
                         <select name="kelas_id" id="kelasSelect"
                             class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}"
-                            disabled>
-                            <option value="">— Pilih Guru dulu —</option>
+                            {{ old('guru_id') ? '' : 'disabled' }}>
+                            <option value="">{{ old('guru_id') ? '— Memuat… —' : '— Pilih Guru dulu —' }}</option>
                         </select>
                         @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
                     <div class="field col-span-2">
                         <label>Deskripsi / Instruksi</label>
-                        <textarea name="deskripsi" rows="4" placeholder="Tuliskan instruksi tugas, petunjuk pengerjaan, atau informasi tambahan..."
+                        <textarea name="deskripsi" rows="4"
+                            placeholder="Tuliskan instruksi tugas, petunjuk pengerjaan, atau informasi tambahan..."
                             class="{{ $errors->has('deskripsi') ? 'is-invalid' : '' }}">{{ old('deskripsi') }}</textarea>
                         @error('deskripsi')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
@@ -166,10 +170,13 @@
                 <div class="form-grid">
                     <div class="field">
                         <label>Jenis Pengumpulan <span class="req">*</span></label>
-                        <select name="jenis_pengumpulan" class="{{ $errors->has('jenis_pengumpulan') ? 'is-invalid' : '' }}">
+                        <select name="jenis_pengumpulan"
+                            class="{{ $errors->has('jenis_pengumpulan') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Jenis —</option>
                             @foreach($jenisPengumpulan as $jp)
-                                <option value="{{ $jp }}" {{ old('jenis_pengumpulan') == $jp ? 'selected' : '' }}>{{ ucfirst($jp) }}</option>
+                                <option value="{{ $jp }}" {{ old('jenis_pengumpulan') == $jp ? 'selected' : '' }}>
+                                    {{ ucfirst($jp) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('jenis_pengumpulan')<span class="field-error">{{ $message }}</span>@enderror
@@ -177,49 +184,65 @@
 
                     <div class="field">
                         <label>Batas Waktu <span class="req">*</span></label>
-                        <input type="datetime-local" name="batas_waktu" value="{{ old('batas_waktu') }}"
+                        {{-- min diisi JS agar tidak hardcode timezone --}}
+                        <input type="datetime-local" name="batas_waktu"
+                            value="{{ old('batas_waktu') }}" id="batasWaktuInput"
                             class="{{ $errors->has('batas_waktu') ? 'is-invalid' : '' }}">
                         @error('batas_waktu')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
                     <div class="field">
                         <label>Nilai Maksimal</label>
-                        <input type="number" name="nilai_maksimal" value="{{ old('nilai_maksimal', 100) }}" min="0" max="100" placeholder="100"
+                        <input type="number" name="nilai_maksimal"
+                            value="{{ old('nilai_maksimal', 100) }}" min="0" max="100" placeholder="100"
                             class="{{ $errors->has('nilai_maksimal') ? 'is-invalid' : '' }}">
                         @error('nilai_maksimal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
                     <div class="field">
                         <label>File Soal</label>
-                        <input type="file" name="path_file_soal" style="height:auto;padding:8px 12px"
+                        <input type="file" name="path_file_soal" accept=".pdf,.doc,.docx"
+                            style="height:auto;padding:8px 12px"
                             class="{{ $errors->has('path_file_soal') ? 'is-invalid' : '' }}">
                         <span class="field-hint">Format PDF / DOC / DOCX, maks. 10 MB</span>
                         @error('path_file_soal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
+                    {{--
+                        FIX: Hanya satu field per toggle. Gunakan hidden input TERPISAH yang
+                        dikelola JS, bukan hidden + checkbox dengan nama sama.
+                        Ini mencegah Laravel menerima nilai ganda / urutan salah.
+                    --}}
                     <div class="field">
                         <label>Izinkan Terlambat</label>
                         <div class="toggle-row" style="margin-top:8px">
-                            <label class="toggle-switch">
-                                <input type="hidden" name="izinkan_terlambat" value="0">
-                                <input type="checkbox" name="izinkan_terlambat" value="1" id="izinkanTerlambat"
-                                    {{ old('izinkan_terlambat') == '1' ? 'checked' : '' }}>
+                            {{-- Hidden input yang dikirim ke server --}}
+                            <input type="hidden" name="izinkan_terlambat" id="izinkanTerlambatHidden"
+                                value="{{ old('izinkan_terlambat', '0') }}">
+                            <label class="toggle-switch" for="izinkanTerlambatToggle">
+                                <input type="checkbox" id="izinkanTerlambatToggle"
+                                    {{ old('izinkan_terlambat', '0') == '1' ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="terlambatLabel">Tidak</span>
+                            <span class="toggle-label" id="terlambatLabel">
+                                {{ old('izinkan_terlambat', '0') == '1' ? 'Ya' : 'Tidak' }}
+                            </span>
                         </div>
                     </div>
 
                     <div class="field">
                         <label>Status Publikasi</label>
                         <div class="toggle-row" style="margin-top:8px">
-                            <label class="toggle-switch">
-                                <input type="hidden" name="dipublikasikan" value="0">
-                                <input type="checkbox" name="dipublikasikan" value="1" id="dipublikasikanToggle"
-                                    {{ old('dipublikasikan') == '1' ? 'checked' : '' }}>
+                            <input type="hidden" name="dipublikasikan" id="dipublikasikanHidden"
+                                value="{{ old('dipublikasikan', '0') }}">
+                            <label class="toggle-switch" for="dipublikasikanToggle">
+                                <input type="checkbox" id="dipublikasikanToggle"
+                                    {{ old('dipublikasikan', '0') == '1' ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="pubLabel">Draft</span>
+                            <span class="toggle-label" id="pubLabel">
+                                {{ old('dipublikasikan', '0') == '1' ? 'Dipublikasikan' : 'Draft' }}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -238,40 +261,77 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // ── SweetAlert notifications ──────────────────────────────
     @if(session('error'))
     Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
     @endif
     @if($errors->any())
     Swal.fire({
-        icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db',
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">
+            @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+        </ul>`,
+        confirmButtonColor: '#1f63db',
     });
     @endif
 
-    // ── Toggle labels ──────────────────────────────────────
-    document.getElementById('izinkanTerlambat').addEventListener('change', function () {
+    // ── Set min datetime untuk batas waktu (now di timezone lokal) ──
+    (function () {
+        const el = document.getElementById('batasWaktuInput');
+        if (el && !el.value) {
+            const now = new Date();
+            // Format: YYYY-MM-DDTHH:mm
+            const pad = n => String(n).padStart(2, '0');
+            el.min = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`;
+        }
+    })();
+
+    // ── Toggle: izinkan terlambat ─────────────────────────────
+    const izinkanCb    = document.getElementById('izinkanTerlambatToggle');
+    const izinkanHidden = document.getElementById('izinkanTerlambatHidden');
+    izinkanCb.addEventListener('change', function () {
+        izinkanHidden.value = this.checked ? '1' : '0';
         document.getElementById('terlambatLabel').textContent = this.checked ? 'Ya' : 'Tidak';
     });
-    document.getElementById('dipublikasikanToggle').addEventListener('change', function () {
+
+    // ── Toggle: status publikasi ──────────────────────────────
+    const pubCb     = document.getElementById('dipublikasikanToggle');
+    const pubHidden = document.getElementById('dipublikasikanHidden');
+    pubCb.addEventListener('change', function () {
+        pubHidden.value = this.checked ? '1' : '0';
         document.getElementById('pubLabel').textContent = this.checked ? 'Dipublikasikan' : 'Draft';
     });
 
-    // ── Submit guard ───────────────────────────────────────
+    // ── Submit guard ──────────────────────────────────────────
     document.getElementById('tugasForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
     });
 
-    // ── AJAX Dependent Dropdowns ───────────────────────────
+    // ── AJAX Dependent Dropdowns ──────────────────────────────
     const guruSelect  = document.getElementById('guruSelect');
     const mapelSelect = document.getElementById('mapelSelect');
     const kelasSelect = document.getElementById('kelasSelect');
 
-    // Nilai old() yang tersimpan setelah validasi gagal
+    // Nilai old() setelah validasi gagal
     const oldMapel = '{{ old('mata_pelajaran_id') }}';
     const oldKelas = '{{ old('kelas_id') }}';
+
+    function setLoading() {
+        mapelSelect.innerHTML = '<option value="">Memuat…</option>';
+        mapelSelect.disabled = true;
+        kelasSelect.innerHTML = '<option value="">Memuat…</option>';
+        kelasSelect.disabled = true;
+    }
+
+    function setReset() {
+        mapelSelect.innerHTML = '<option value="">— Pilih Guru dulu —</option>';
+        mapelSelect.disabled = true;
+        kelasSelect.innerHTML = '<option value="">— Pilih Guru dulu —</option>';
+        kelasSelect.disabled = true;
+    }
 
     function populateSelect(selectEl, items, valueKey, labelKey, oldValue, emptyLabel) {
         selectEl.innerHTML = '';
@@ -291,47 +351,38 @@
         selectEl.disabled = false;
     }
 
-    async function loadDependents(guruId) {
-        mapelSelect.innerHTML = '<option value="">Memuat…</option>';
-        mapelSelect.disabled = true;
-        kelasSelect.innerHTML = '<option value="">Memuat…</option>';
-        kelasSelect.disabled = true;
-
+    async function loadDependents(guruId, selectedMapel = '', selectedKelas = '') {
+        setLoading();
         try {
             const [mapelRes, kelasRes] = await Promise.all([
                 fetch(`/admin/tugas/ajax/guru/${guruId}/mapel`),
                 fetch(`/admin/tugas/ajax/guru/${guruId}/kelas`),
             ]);
-
             if (!mapelRes.ok || !kelasRes.ok) throw new Error('Server error');
 
-            const mapelData = await mapelRes.json();
-            const kelasData = await kelasRes.json();
+            const [mapelData, kelasData] = await Promise.all([
+                mapelRes.json(),
+                kelasRes.json(),
+            ]);
 
-            populateSelect(mapelSelect, mapelData, 'id', 'nama_mapel', oldMapel, '— Tidak ada mata pelajaran —');
-            populateSelect(kelasSelect, kelasData, 'id', 'nama_kelas', oldKelas, '— Tidak ada kelas —');
+            populateSelect(mapelSelect, mapelData, 'id', 'nama_mapel', selectedMapel, '— Tidak ada mata pelajaran —');
+            populateSelect(kelasSelect, kelasData, 'id', 'nama_kelas', selectedKelas, '— Tidak ada kelas —');
         } catch (e) {
-            mapelSelect.innerHTML = '<option value="">Gagal memuat</option>';
-            kelasSelect.innerHTML = '<option value="">Gagal memuat</option>';
+            mapelSelect.innerHTML = '<option value="">Gagal memuat — coba lagi</option>';
+            kelasSelect.innerHTML = '<option value="">Gagal memuat — coba lagi</option>';
             mapelSelect.disabled = true;
             kelasSelect.disabled = true;
         }
     }
 
     guruSelect.addEventListener('change', function () {
-        if (!this.value) {
-            mapelSelect.innerHTML = '<option value="">— Pilih Guru dulu —</option>';
-            mapelSelect.disabled = true;
-            kelasSelect.innerHTML = '<option value="">— Pilih Guru dulu —</option>';
-            kelasSelect.disabled = true;
-            return;
-        }
+        if (!this.value) { setReset(); return; }
         loadDependents(this.value);
     });
 
-    // Saat halaman load dengan old('guru_id') (setelah validasi gagal), langsung load
+    // Saat page load dengan old('guru_id') (setelah validasi gagal), restore nilai lama
     if (guruSelect.value) {
-        loadDependents(guruSelect.value);
+        loadDependents(guruSelect.value, oldMapel, oldKelas);
     }
 </script>
 </x-app-layout>

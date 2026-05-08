@@ -81,7 +81,13 @@
                     <select name="guru_id">
                         <option value="">Semua Guru</option>
                         @foreach($guruList as $g)
-                            <option value="{{ $g->id }}" {{ $request->guru_id == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
+                            {{--
+                                FIX: cast guru_id dari request ke int agar perbandingan ==
+                                tidak gagal akibat type mismatch string vs int.
+                            --}}
+                            <option value="{{ $g->id }}" {{ (int)$request->guru_id === $g->id ? 'selected' : '' }}>
+                                {{ $g->nama_lengkap }}
+                            </option>
                         @endforeach
                     </select>
                 </div>
@@ -115,10 +121,12 @@
         <div class="result-topbar">
             <p class="result-title">
                 Rekap Absensi
-                <span>— {{ $request->tanggal_dari }} s/d {{ $request->tanggal_sampai }}{{ $guru ? ' · '.$guru->nama_lengkap : '' }}</span>
+                <span>— {{ $request->tanggal_dari }} s/d {{ $request->tanggal_sampai }}{{ $guru ? ' · ' . $guru->nama_lengkap : '' }}</span>
             </p>
             <div class="result-actions">
-                <a href="{{ route('admin.absensi-guru.export.rekap-pdf', $request->query()) }}" class="btn btn-sm btn-del" target="_blank">
+                {{-- FIX: route name sesuai routes file → 'admin.absensi-guru.export.rekap-pdf' --}}
+                <a href="{{ route('admin.absensi-guru.export.rekap-pdf', $request->query()) }}"
+                   class="btn btn-sm btn-del" target="_blank">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     Export PDF
                 </a>
@@ -127,15 +135,18 @@
 
         @forelse($absensi as $guruId => $records)
         @php
-            $namaGuru = $records->first()->guru->nama_lengkap ?? '—';
-            $totalHadir = $records->whereIn('status', ['hadir','telat'])->count();
-            $totalIzin  = $records->where('status','izin')->count();
-            $totalSakit = $records->where('status','sakit')->count();
-            $totalAlfa  = $records->where('status','alfa')->count();
+            $namaGuru   = $records->first()->guru->nama_lengkap ?? '—';
+            $totalHadir = $records->whereIn('status', ['hadir', 'telat'])->count();
+            $totalIzin  = $records->where('status', 'izin')->count();
+            $totalSakit = $records->where('status', 'sakit')->count();
+            $totalAlfa  = $records->where('status', 'alfa')->count();
         @endphp
+
         <div style="border-bottom:2px solid var(--border);padding:14px 20px;background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
             <div>
-                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;color:var(--text)">{{ $namaGuru }}</span>
+                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;color:var(--text)">
+                    {{ $namaGuru }}
+                </span>
                 <span style="font-size:12px;color:var(--text3);margin-left:10px">{{ $records->count() }} data</span>
             </div>
             <div style="display:flex;gap:12px;font-size:12.5px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">
@@ -145,22 +156,49 @@
                 <span style="color:#dc2626">Alfa: {{ $totalAlfa }}</span>
             </div>
         </div>
+
         <table>
             <thead>
                 <tr>
-                    <th>#</th><th>Tanggal</th><th class="center">Jam Masuk</th><th class="center">Jam Keluar</th><th class="center">Status</th><th class="center">Metode</th><th>Keterangan</th>
+                    <th>#</th>
+                    <th>Tanggal</th>
+                    <th class="center">Jam Masuk</th>
+                    <th class="center">Jam Keluar</th>
+                    <th class="center">Status</th>
+                    <th class="center">Metode</th>
+                    <th>Keterangan</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($records as $i => $r)
                 <tr>
                     <td class="muted">{{ $i + 1 }}</td>
-                    <td style="font-weight:600;font-family:'Plus Jakarta Sans',sans-serif">{{ \Carbon\Carbon::parse($r->tanggal)->translatedFormat('d M Y') }}</td>
-                    <td class="center muted">{{ $r->jam_masuk ?? '—' }}</td>
-                    <td class="center muted">{{ $r->jam_keluar ?? '—' }}</td>
+                    <td style="font-weight:600;font-family:'Plus Jakarta Sans',sans-serif">
+                        {{--
+                            FIX: $r->tanggal sudah di-cast 'date' (Carbon),
+                            tidak perlu Carbon::parse() lagi.
+                        --}}
+                        {{ $r->tanggal->translatedFormat('d M Y') }}
+                    </td>
+                    <td class="center muted">
+                        {{--
+                            FIX: $r->jam_masuk di-cast 'datetime:H:i' (Carbon object atau null).
+                            Gunakan ->format('H:i') agar tidak mencetak representasi objek.
+                        --}}
+                        {{ $r->jam_masuk ? $r->jam_masuk->format('H:i') : '—' }}
+                    </td>
+                    <td class="center muted">
+                        {{-- FIX: sama seperti jam_masuk --}}
+                        {{ $r->jam_keluar ? $r->jam_keluar->format('H:i') : '—' }}
+                    </td>
                     <td class="center">
-                        @php $bc=['hadir'=>'b-hadir','telat'=>'b-telat','izin'=>'b-izin','sakit'=>'b-sakit','alfa'=>'b-alfa'][$r->status]??'b-alfa'; @endphp
-                        <span class="badge {{ $bc }}"><span class="badge-dot"></span>{{ ucfirst($r->status) }}</span>
+                        @php
+                            $bc = ['hadir' => 'b-hadir', 'telat' => 'b-telat', 'izin' => 'b-izin',
+                                   'sakit' => 'b-sakit', 'alfa'  => 'b-alfa'][$r->status] ?? 'b-alfa';
+                        @endphp
+                        <span class="badge {{ $bc }}">
+                            <span class="badge-dot"></span>{{ ucfirst($r->status) }}
+                        </span>
                     </td>
                     <td class="center muted">{{ ucfirst($r->metode) }}</td>
                     <td class="muted">{{ $r->keterangan ?? '—' }}</td>
@@ -168,6 +206,7 @@
                 @endforeach
             </tbody>
         </table>
+
         @empty
         <div class="empty-state">
             <p class="empty-title">Tidak ada data absensi</p>
@@ -180,7 +219,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    @if(session('success'))Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});@endif
-    @if(session('error'))Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});@endif
+    @if(session('success'))
+        Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+    @endif
+    @if(session('error'))
+        Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    @endif
 </script>
 </x-app-layout>

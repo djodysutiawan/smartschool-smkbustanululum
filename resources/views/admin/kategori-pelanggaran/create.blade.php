@@ -85,16 +85,18 @@
                             class="{{ $errors->has('nama') ? 'is-invalid' : '' }}">
                         @error('nama')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Tingkat Pelanggaran <span class="req">*</span></label>
                         <select name="tingkat" class="{{ $errors->has('tingkat') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Tingkat —</option>
-                            @foreach(['ringan'=>'Ringan','sedang'=>'Sedang','berat'=>'Berat'] as $val => $label)
-                            <option value="{{ $val }}" {{ old('tingkat') == $val ? 'selected' : '' }}>{{ $label }}</option>
+                            @foreach(['ringan' => 'Ringan', 'sedang' => 'Sedang', 'berat' => 'Berat'] as $val => $label)
+                                <option value="{{ $val }}" {{ old('tingkat') == $val ? 'selected' : '' }}>{{ $label }}</option>
                             @endforeach
                         </select>
                         @error('tingkat')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Poin Default <span class="req">*</span></label>
                         <input type="number" name="poin_default" id="poinDefault"
@@ -104,6 +106,7 @@
                         <span class="field-hint">Poin yang otomatis terisi saat mencatat pelanggaran.</span>
                         @error('poin_default')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Preview Poin</label>
                         <div class="poin-preview">
@@ -111,6 +114,7 @@
                             <span class="poin-label-txt">POIN PELANGGARAN</span>
                         </div>
                     </div>
+
                     <div class="field">
                         <label>Batas Poin Maksimum</label>
                         <input type="number" name="batas_poin" value="{{ old('batas_poin') }}"
@@ -119,6 +123,7 @@
                         <span class="field-hint">Batas akumulasi poin sebelum ada tindakan khusus. (opsional)</span>
                         @error('batas_poin')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Warna Indikator</label>
                         <div class="color-row">
@@ -126,23 +131,29 @@
                                 value="{{ old('warna', '#3b82f6') }}"
                                 style="height:38px;width:60px;padding:2px 4px;cursor:pointer;"
                                 oninput="updateSwatch(this.value)">
-                            <div class="color-swatch" id="colorSwatch" style="background:{{ old('warna','#3b82f6') }}"></div>
+                            <div class="color-swatch" id="colorSwatch" style="background:{{ old('warna', '#3b82f6') }}"></div>
                             <span style="font-size:12.5px;color:var(--text3);">Pilih warna untuk tampilan UI</span>
                         </div>
                         @error('warna')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field" style="justify-content:flex-end;padding-bottom:4px">
                         <label>Status Aktif</label>
+                        {{-- hidden input HARUS sebelum checkbox agar saat checkbox tidak dicentang, value "0" yang terkirim --}}
+                        <input type="hidden" name="is_active" value="0">
                         <div class="toggle-row" style="margin-top:8px">
                             <label class="toggle-switch">
-                                <input type="hidden" name="is_active" value="0">
                                 <input type="checkbox" name="is_active" value="1" id="isActiveToggle"
-                                    {{ old('is_active','1') == '1' ? 'checked' : '' }}>
+                                    {{ old('is_active', '1') == '1' ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="toggleLabel">Aktif</span>
+                            {{-- label sinkron dengan state checkbox saat pertama kali load --}}
+                            <span class="toggle-label" id="toggleLabel">
+                                {{ old('is_active', '1') == '1' ? 'Aktif' : 'Nonaktif' }}
+                            </span>
                         </div>
                     </div>
+
                     <div class="field col-span-2">
                         <label>Deskripsi / Contoh Pelanggaran</label>
                         <textarea name="deskripsi" rows="3"
@@ -167,16 +178,29 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if($errors->any())
-    Swal.fire({ icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">
+            @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
+        </ul>`,
+        confirmButtonColor: '#1f63db'
+    });
     @endif
-    function updatePoin(val) { document.getElementById('poinPreview').textContent = val || 0; }
-    function updateSwatch(val) { document.getElementById('colorSwatch').style.background = val; }
-    document.getElementById('isActiveToggle').addEventListener('change', function() {
+
+    function updatePoin(val) {
+        document.getElementById('poinPreview').textContent = val || 0;
+    }
+
+    function updateSwatch(val) {
+        document.getElementById('colorSwatch').style.background = val;
+    }
+
+    document.getElementById('isActiveToggle').addEventListener('change', function () {
         document.getElementById('toggleLabel').textContent = this.checked ? 'Aktif' : 'Nonaktif';
     });
-    document.getElementById('katForm').addEventListener('submit', function() {
+
+    document.getElementById('katForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;

@@ -19,6 +19,8 @@
     .btn-detail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}.btn-detail:hover{background:#dcfce7;filter:none;}
     .btn-export-pdf{background:#fff0f0;color:#dc2626;border:1px solid #fecaca;}.btn-export-pdf:hover{background:#fee2e2;filter:none;}
     .btn-export-excel{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}.btn-export-excel:hover{background:#dcfce7;filter:none;}
+
+    /* ── Stats ── */
     .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -28,6 +30,8 @@
     .stat-icon.purple{background:#fdf4ff;}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.03em;text-transform:uppercase;}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px;}
+
+    /* ── Filter ── */
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;}
     .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;}
     .filter-row input,.filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;}
@@ -40,6 +44,8 @@
     .btn-filter:hover{background:var(--brand-700);}
     .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;}
     .btn-reset:hover{background:var(--surface3);}
+
+    /* ── Table ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px;}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
@@ -59,17 +65,32 @@
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3);}
     .siswa-wrap .sname{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text);}
     .siswa-wrap .nis{font-size:12px;color:var(--text3);margin-top:1px;}
+
+    /* ── Badge — kolom HASIL (berhasil|gagal_*) ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap;}
     .badge-dot{width:5px;height:5px;border-radius:50%;}
-    .badge-berhasil{background:#dcfce7;color:#15803d;}.badge-berhasil .badge-dot{background:#15803d;}
-    .badge-gagal_kadaluarsa{background:#fef9c3;color:#a16207;}.badge-gagal_kadaluarsa .badge-dot{background:#a16207;}
-    .badge-gagal_lokasi{background:#fee2e2;color:#dc2626;}.badge-gagal_lokasi .badge-dot{background:#dc2626;}
-    .badge-gagal_duplikat{background:#fdf4ff;color:#7c3aed;}.badge-gagal_duplikat .badge-dot{background:#7c3aed;}
+    .badge-berhasil          {background:#dcfce7;color:#15803d;}  .badge-berhasil .badge-dot          {background:#15803d;}
+    .badge-gagal-kadaluarsa  {background:#fef9c3;color:#a16207;}  .badge-gagal-kadaluarsa .badge-dot  {background:#a16207;}
+    .badge-gagal-lokasi      {background:#fee2e2;color:#dc2626;}  .badge-gagal-lokasi .badge-dot      {background:#dc2626;}
+    .badge-gagal-duplikat    {background:#fdf4ff;color:#7c3aed;}  .badge-gagal-duplikat .badge-dot    {background:#7c3aed;}
+    /* ── Badge — kolom STATUS (valid|ditolak_*) ── */
+    .badge-valid                {background:#dcfce7;color:#15803d;}  .badge-valid .badge-dot                {background:#15803d;}
+    .badge-ditolak-radius       {background:#fef9c3;color:#a16207;}  .badge-ditolak-radius .badge-dot       {background:#a16207;}
+    .badge-ditolak-kadaluarsa   {background:#fee2e2;color:#dc2626;}  .badge-ditolak-kadaluarsa .badge-dot   {background:#dc2626;}
+    .badge-ditolak-nonaktif     {background:#fff7ed;color:#c2410c;}  .badge-ditolak-nonaktif .badge-dot     {background:#c2410c;}
+    .badge-ditolak-duplikat     {background:#fdf4ff;color:#7c3aed;}  .badge-ditolak-duplikat .badge-dot     {background:#7c3aed;}
+    .badge-ditolak-bukan-anggota{background:#f0f9ff;color:#0369a1;}  .badge-ditolak-bukan-anggota .badge-dot{background:#0369a1;}
+    .badge-default              {background:#f1f5f9;color:#64748b;}  .badge-default .badge-dot              {background:#64748b;}
+
     .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap;}
+
+    /* ── Empty state ── */
     .empty-state{padding:60px 20px;text-align:center;}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px;}
     .empty-sub{font-size:13px;color:var(--text3);}
+
+    /* ── Pagination ── */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px;}
     .pag-info{font-size:12.5px;color:var(--text3);}
     .pag-btns{display:flex;gap:4px;align-items:center;}
@@ -77,7 +98,12 @@
     .pag-btn:hover{background:var(--surface2);border-color:var(--border2);}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff;}
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px;}
-    @media(max-width:640px){.stats-strip{grid-template-columns:1fr 1fr;}.page{padding:16px;}.filter-row input{width:100%;}}
+
+    @media(max-width:640px){
+        .stats-strip{grid-template-columns:1fr 1fr;}
+        .page{padding:16px;}
+        .filter-row input,.filter-row select{width:100%;}
+    }
 </style>
 
 <div class="page">
@@ -88,69 +114,109 @@
         </div>
     </div>
 
+    {{-- ─── Stats Strip ─────────────────────────────────────────────────────── --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
                 <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM17 17h3v3h-3z"/></svg>
             </div>
-            <div><p class="stat-label">Total Semua</p><p class="stat-val">{{ \App\Models\RiwayatScanQr::count() }}</p></div>
+            <div>
+                <p class="stat-label">Total Semua</p>
+                <p class="stat-val">{{ \App\Models\RiwayatScanQr::count() }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon green">
                 <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <div><p class="stat-label">Berhasil</p><p class="stat-val">{{ \App\Models\RiwayatScanQr::where('hasil','berhasil')->count() }}</p></div>
+            <div>
+                <p class="stat-label">Berhasil</p>
+                {{-- kolom hasil = 'berhasil' --}}
+                <p class="stat-val">{{ \App\Models\RiwayatScanQr::where('hasil', 'berhasil')->count() }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon red">
                 <svg width="18" height="18" fill="none" stroke="#dc2626" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
             </div>
-            <div><p class="stat-label">Gagal</p><p class="stat-val">{{ \App\Models\RiwayatScanQr::where('hasil','!=','berhasil')->count() }}</p></div>
+            <div>
+                <p class="stat-label">Gagal</p>
+                <p class="stat-val">{{ \App\Models\RiwayatScanQr::where('hasil', '!=', 'berhasil')->count() }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon purple">
                 <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
             </div>
-            <div><p class="stat-label">Scan Hari Ini</p><p class="stat-val">{{ \App\Models\RiwayatScanQr::whereDate('dipindai_pada', today())->count() }}</p></div>
+            <div>
+                <p class="stat-label">Scan Hari Ini</p>
+                {{-- kolom di_scan_pada (nama asli di DB) --}}
+                <p class="stat-val">{{ \App\Models\RiwayatScanQr::whereDate('di_scan_pada', today())->count() }}</p>
+            </div>
         </div>
     </div>
 
+    {{-- ─── Filter ───────────────────────────────────────────────────────────── --}}
     <div class="filter-card">
+        {{-- Filter menggunakan key 'status' agar konsisten dengan applyFilters() di controller --}}
         <form method="GET" action="{{ route('admin.riwayat-scan.index') }}">
             <div class="filter-row">
                 <select name="sesi_qr_id">
                     <option value="">Semua Sesi QR</option>
                     @foreach($sesiQrs as $sesi)
-                    <option value="{{ $sesi->id }}" {{ request('sesi_qr_id') == $sesi->id ? 'selected' : '' }}>
-                        {{ $sesi->kelas->nama_kelas ?? '-' }} — #{{ $sesi->id }}
-                    </option>
+                        <option value="{{ $sesi->id }}" {{ request('sesi_qr_id') == $sesi->id ? 'selected' : '' }}>
+                            {{ $sesi->kelas->nama_kelas ?? '-' }} — #{{ $sesi->id }}
+                        </option>
                     @endforeach
                 </select>
+
                 <select name="siswa_id">
                     <option value="">Semua Siswa</option>
                     @foreach($siswas as $siswa)
-                    <option value="{{ $siswa->id }}" {{ request('siswa_id') == $siswa->id ? 'selected' : '' }}>
-                        {{ $siswa->nama_lengkap }}
-                    </option>
+                        <option value="{{ $siswa->id }}" {{ request('siswa_id') == $siswa->id ? 'selected' : '' }}>
+                            {{ $siswa->nama_lengkap }}
+                        </option>
                     @endforeach
                 </select>
+
+                {{-- Filter kolom HASIL (berhasil|gagal_*) --}}
                 <select name="hasil">
                     <option value="">Semua Hasil</option>
                     @foreach($hasilList as $h)
-                    <option value="{{ $h }}" {{ request('hasil') === $h ? 'selected' : '' }}>
-                        @switch($h)
-                            @case('berhasil') Berhasil @break
-                            @case('gagal_kadaluarsa') Gagal – Kadaluarsa @break
-                            @case('gagal_lokasi') Gagal – Lokasi @break
-                            @case('gagal_duplikat') Gagal – Duplikat @break
-                            @default {{ ucfirst($h) }}
-                        @endswitch
-                    </option>
+                        <option value="{{ $h }}" {{ request('hasil') === $h ? 'selected' : '' }}>
+                            @switch($h)
+                                @case('berhasil')         Berhasil @break
+                                @case('gagal_kadaluarsa') Gagal – Kadaluarsa @break
+                                @case('gagal_lokasi')     Gagal – Lokasi @break
+                                @case('gagal_duplikat')   Gagal – Duplikat @break
+                                @default {{ ucfirst(str_replace('_', ' ', $h)) }}
+                            @endswitch
+                        </option>
                     @endforeach
                 </select>
-                <input type="date" name="tanggal" value="{{ request('tanggal') }}" title="Filter Tanggal Tepat">
-                <input type="date" name="tanggal_dari" value="{{ request('tanggal_dari') }}" title="Dari Tanggal">
-                <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}" title="Sampai Tanggal">
+
+                {{-- Filter kolom STATUS (valid|ditolak_*) — opsional --}}
+                <select name="status">
+                    <option value="">Semua Status</option>
+                    @foreach($statusList as $s)
+                        <option value="{{ $s }}" {{ request('status') === $s ? 'selected' : '' }}>
+                            @switch($s)
+                                @case('valid')                 Valid @break
+                                @case('ditolak_radius')        Ditolak – Luar Radius @break
+                                @case('ditolak_kadaluarsa')    Ditolak – Kadaluarsa @break
+                                @case('ditolak_nonaktif')      Ditolak – Tidak Aktif @break
+                                @case('ditolak_duplikat')      Ditolak – Duplikat @break
+                                @case('ditolak_bukan_anggota') Ditolak – Bukan Anggota @break
+                                @default {{ ucfirst(str_replace('_', ' ', $s)) }}
+                            @endswitch
+                        </option>
+                    @endforeach
+                </select>
+
+                <input type="date" name="tanggal"         value="{{ request('tanggal') }}"         title="Filter Tanggal Tepat">
+                <input type="date" name="tanggal_dari"    value="{{ request('tanggal_dari') }}"    title="Dari Tanggal">
+                <input type="date" name="tanggal_sampai"  value="{{ request('tanggal_sampai') }}"  title="Sampai Tanggal">
+
                 <div class="filter-sep"></div>
                 <a href="{{ route('admin.riwayat-scan.index') }}" class="btn-reset">Reset</a>
                 <button type="submit" class="btn-filter">Terapkan Filter</button>
@@ -158,11 +224,12 @@
         </form>
     </div>
 
+    {{-- ─── Tabel ────────────────────────────────────────────────────────────── --}}
     <div class="table-card">
         <div class="table-topbar">
             <p class="table-info">Riwayat Scan
                 @if($riwayats->total())
-                <span>— menampilkan {{ $riwayats->firstItem() }}–{{ $riwayats->lastItem() }} dari {{ $riwayats->total() }} data</span>
+                    <span>— menampilkan {{ $riwayats->firstItem() }}–{{ $riwayats->lastItem() }} dari {{ $riwayats->total() }} data</span>
                 @endif
             </p>
             <div class="topbar-actions">
@@ -184,7 +251,7 @@
                         <th style="width:48px">#</th>
                         <th>Siswa</th>
                         <th>Sesi QR / Kelas</th>
-                        <th>Hasil</th>
+                        <th>Status</th>
                         <th>Dipindai Pada</th>
                         <th>IP Address</th>
                         <th>Lokasi (Lat, Lon)</th>
@@ -195,35 +262,40 @@
                     @forelse($riwayats as $index => $r)
                     <tr>
                         <td><span class="no-col">{{ $riwayats->firstItem() + $index }}</span></td>
+
                         <td>
                             <div class="siswa-wrap">
                                 <p class="sname">{{ $r->siswa->nama_lengkap ?? '—' }}</p>
                                 <p class="nis">{{ $r->siswa->nis ?? '' }}</p>
                             </div>
                         </td>
+
                         <td>
-                            <div style="font-size:13px;font-weight:600;color:var(--text)">{{ $r->sesiQr->kelas->nama_kelas ?? '—' }}</div>
+                            <div style="font-size:13px;font-weight:600;color:var(--text)">
+                                {{ $r->sesiQr->kelas->nama_kelas ?? '—' }}
+                            </div>
                             <div style="font-size:12px;color:var(--text3)">Sesi #{{ $r->sesi_qr_id }}</div>
                         </td>
+
+                        {{-- Badge menggunakan kolom hasil + accessor dari model --}}
                         <td>
-                            <span class="badge badge-{{ $r->hasil }}">
+                            <span class="badge {{ $r->badge_class_hasil }}">
                                 <span class="badge-dot"></span>
-                                @switch($r->hasil)
-                                    @case('berhasil') Berhasil @break
-                                    @case('gagal_kadaluarsa') Gagal – Kadaluarsa @break
-                                    @case('gagal_lokasi') Gagal – Lokasi @break
-                                    @case('gagal_duplikat') Gagal – Duplikat @break
-                                    @default {{ ucfirst($r->hasil ?? '-') }}
-                                @endswitch
+                                {{ $r->label_hasil }}
                             </span>
                         </td>
+
                         <td>
                             <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;">
-                                {{ $r->dipindai_pada?->format('H:i:s') ?? '—' }}
+                                {{ $r->di_scan_pada?->format('H:i:s') ?? '—' }}
                             </span>
-                            <div style="font-size:11.5px;color:var(--text3)">{{ $r->dipindai_pada?->format('d M Y') ?? '' }}</div>
+                            <div style="font-size:11.5px;color:var(--text3)">
+                                {{ $r->di_scan_pada?->format('d M Y') ?? '' }}
+                            </div>
                         </td>
+
                         <td class="muted" style="font-size:12.5px;">{{ $r->ip_address ?? '—' }}</td>
+
                         <td class="muted" style="font-size:12px;">
                             @if($r->latitude && $r->longitude)
                                 {{ number_format($r->latitude, 5) }}, {{ number_format($r->longitude, 5) }}
@@ -231,6 +303,7 @@
                                 —
                             @endif
                         </td>
+
                         <td class="center">
                             <div class="action-group">
                                 <a href="{{ route('admin.riwayat-scan.show', $r->id) }}" class="btn btn-sm btn-detail">Detail</a>
@@ -254,15 +327,21 @@
             </table>
         </div>
 
+        {{-- ─── Pagination ─── --}}
         @if($riwayats->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $riwayats->firstItem() }} – {{ $riwayats->lastItem() }} dari {{ $riwayats->total() }} scan</p>
             <div class="pag-btns">
                 @if($riwayats->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $riwayats->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $riwayats->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
+
                 @foreach($riwayats->getUrlRange(1, $riwayats->lastPage()) as $page => $url)
                     @if($page == $riwayats->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
@@ -272,10 +351,15 @@
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
+
                 @if($riwayats->hasMorePages())
-                    <a href="{{ $riwayats->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $riwayats->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>

@@ -128,7 +128,10 @@
                     <div class="field">
                         <label>Guru <span class="req">*</span></label>
                         <div class="select-wrap" id="wrapGuru">
-                            <select name="guru_id" id="selGuru" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}"
+                            {{-- Bug fix: simpan initial guru_id di data-* untuk deteksi perubahan guru --}}
+                            <select name="guru_id" id="selGuru"
+                                class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}"
+                                data-initial="{{ old('guru_id', $materi->guru_id) }}"
                                 onchange="onGuruChange(this.value)">
                                 <option value="">— Pilih Guru —</option>
                                 @foreach($guruList as $g)
@@ -225,6 +228,8 @@
                         @error('urutan')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
 
+                    {{-- Bug fix: hidden field dipublikasikan=0 harus SEBELUM checkbox agar
+                         nilai checkbox (1) menimpa hidden jika di-check --}}
                     <div class="field">
                         <label>Status Publikasi</label>
                         <div class="toggle-row" style="margin-top:8px">
@@ -234,13 +239,15 @@
                                     {{ old('dipublikasikan', $materi->dipublikasikan ? '1' : '0') == '1' ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="pubLabel">{{ $materi->dipublikasikan ? 'Dipublikasikan' : 'Draft' }}</span>
+                            <span class="toggle-label" id="pubLabel">
+                                {{ old('dipublikasikan', $materi->dipublikasikan ? '1' : '0') == '1' ? 'Dipublikasikan' : 'Draft' }}
+                            </span>
                         </div>
                     </div>
 
                     <div class="field col-span-2">
                         <label>Deskripsi</label>
-                        <textarea name="deskripsi" rows="4">{{ old('deskripsi', $materi->deskripsi) }}</textarea>
+                        <textarea name="deskripsi" rows="4" placeholder="Tulis deskripsi materi...">{{ old('deskripsi', $materi->deskripsi) }}</textarea>
                         @error('deskripsi')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -264,10 +271,14 @@
                                 {{ old('jenis', $materi->jenis) == $j ? 'checked' : '' }}
                                 onchange="onJenisChange('{{ $j }}')">
                             <div class="jenis-icon ji-{{ $j }}">
-                                @if($j=='file') <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                                @elseif($j=='video') <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                                @elseif($j=='link') <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-                                @else <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
+                                @if($j=='file')
+                                    <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                @elseif($j=='video')
+                                    <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                @elseif($j=='link')
+                                    <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                @else
+                                    <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/></svg>
                                 @endif
                             </div>
                             <p class="jenis-lbl">{{ ucfirst($j) }}</p>
@@ -277,6 +288,7 @@
                     @error('jenis')<span class="field-error" style="display:block;margin-top:4px">{{ $message }}</span>@enderror
                 </div>
 
+                {{-- Bug fix: section-file hanya untuk jenis 'file' --}}
                 <div id="section-file" style="{{ old('jenis', $materi->jenis) == 'file' ? '' : 'display:none' }}">
                     @if($materi->path_file)
                     <div class="existing-file">
@@ -285,7 +297,7 @@
                     </div>
                     @endif
                     <div class="field">
-                        <label>Ganti File (Kosongkan jika tidak ingin mengganti)</label>
+                        <label>Ganti File <span class="field-hint">(kosongkan jika tidak ingin mengganti)</span></label>
                         <div class="file-upload-area">
                             <input type="file" name="path_file">
                             <div class="fu-icon"><svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div>
@@ -296,19 +308,26 @@
                     </div>
                 </div>
 
-                <div id="section-link" style="{{ in_array(old('jenis', $materi->jenis), ['video','link']) ? '' : 'display:none' }}">
+                {{-- Bug fix: section-link dipakai oleh jenis 'link' DAN 'video' --}}
+                <div id="section-link" style="{{ in_array(old('jenis', $materi->jenis), ['video', 'link']) ? '' : 'display:none' }}">
                     <div class="field">
                         <label>URL Eksternal</label>
-                        <input type="url" name="url_eksternal" value="{{ old('url_eksternal', $materi->url_eksternal) }}"
-                            placeholder="https://..." class="{{ $errors->has('url_eksternal') ? 'is-invalid' : '' }}">
+                        <input type="url" name="url_eksternal"
+                            value="{{ old('url_eksternal', $materi->url_eksternal) }}"
+                            placeholder="https://..."
+                            class="{{ $errors->has('url_eksternal') ? 'is-invalid' : '' }}">
                         @error('url_eksternal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
 
+                {{-- section-teks: field 'deskripsi' digunakan sebagai konten teks panjang --}}
+                {{-- Bug fix: model tidak punya kolom 'konten', gunakan 'deskripsi' --}}
                 <div id="section-teks" style="{{ old('jenis', $materi->jenis) == 'teks' ? '' : 'display:none' }}">
                     <div class="field">
                         <label>Konten Teks</label>
-                        <textarea name="konten" rows="8">{{ old('konten', $materi->konten) }}</textarea>
+                        <p class="field-hint">Isi konten teks di bawah ini. Nilai ini juga digunakan sebagai deskripsi materi.</p>
+                        <textarea name="konten_teks" id="kontenTeks" rows="8"
+                            placeholder="Tulis konten teks materi di sini...">{{ old('konten_teks', $materi->deskripsi) }}</textarea>
                     </div>
                 </div>
             </div>
@@ -324,9 +343,9 @@
                 <div class="field" style="max-width:400px">
                     @if($materi->thumbnail)
                         <p class="field-hint" style="margin-bottom:8px">Thumbnail saat ini:</p>
-                        <img src="{{ asset('storage/'.$materi->thumbnail) }}" alt="" class="existing-thumb" style="margin-bottom:12px">
+                        <img src="{{ asset('storage/'.$materi->thumbnail) }}" alt="Thumbnail {{ $materi->judul }}" class="existing-thumb" style="margin-bottom:12px">
                     @endif
-                    <label>Ganti Thumbnail (Kosongkan jika tidak ingin mengganti)</label>
+                    <label>Ganti Thumbnail <span class="field-hint">(kosongkan jika tidak ingin mengganti)</span></label>
                     <div class="file-upload-area">
                         <input type="file" name="thumbnail" accept="image/*">
                         <div class="fu-icon"><svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
@@ -357,12 +376,14 @@
     Swal.fire({ icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan', html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`, confirmButtonColor:'#1f63db' });
     @endif
 
-    const AJAX_BASE       = '{{ url("admin/materi/ajax") }}';
-    const CURRENT_MAPEL   = '{{ old("mata_pelajaran_id", $materi->mata_pelajaran_id) }}';
-    const CURRENT_KELAS   = '{{ old("kelas_id", $materi->kelas_id) }}';
+    const AJAX_BASE     = '{{ url("admin/materi/ajax") }}';
+
+    // Bug fix: gunakan data-* attribute yang sudah diset di HTML, bukan di JS setelah load
+    // data-initial diset langsung di elemen select sehingga tersedia sejak halaman render
 
     // ── Cascade saat guru diganti ──────────────────────────────────────────────
     async function onGuruChange(guruId) {
+        const selGuru   = document.getElementById('selGuru');
         const selMapel  = document.getElementById('selMapel');
         const selKelas  = document.getElementById('selKelas');
         const wrapMapel = document.getElementById('wrapMapel');
@@ -389,9 +410,14 @@
                 fetch(`${AJAX_BASE}/kelas-by-guru/${guruId}`).then(r => r.json()),
             ]);
 
-            // Saat ganti guru, jangan preserve selection lama (beda guru beda mapel)
-            const keepMapel = String(document.getElementById('selGuru').dataset.initialGuru) === String(guruId) ? CURRENT_MAPEL : '';
-            const keepKelas = String(document.getElementById('selGuru').dataset.initialGuru) === String(guruId) ? CURRENT_KELAS : '';
+            // Bug fix: bandingkan guruId yang dipilih sekarang dengan initial dari data-*
+            // Bukan dari dataset yang diset JS — itu menyebabkan race condition
+            const initialGuru = selGuru.dataset.initial;
+            const isInitialGuru = String(initialGuru) === String(guruId);
+
+            // Pertahankan nilai lama hanya jika guru tidak berubah dari data asli materi
+            const keepMapel = isInitialGuru ? '{{ old("mata_pelajaran_id", $materi->mata_pelajaran_id) }}' : '';
+            const keepKelas = isInitialGuru ? '{{ old("kelas_id", $materi->kelas_id) }}' : '';
 
             populateSelect(selMapel, resMapel, 'nama_mapel', '— Pilih Mapel —', keepMapel);
             populateSelect(selKelas, resKelas, 'nama_kelas', '— Pilih Kelas —', keepKelas);
@@ -411,7 +437,7 @@
         }
     }
 
-    function populateSelect(sel, items, labelKey, placeholder, selectedVal = '') {
+    function populateSelect(sel, items, labelKey, placeholder, selectedVal) {
         sel.innerHTML = `<option value="">${placeholder}</option>`;
         items.forEach(item => {
             const opt = document.createElement('option');
@@ -422,13 +448,10 @@
         });
     }
 
-    function setSelectEmpty(sel, placeholder, disabled = false) {
+    function setSelectEmpty(sel, placeholder, disabled) {
         sel.innerHTML = `<option value="">${placeholder}</option>`;
-        sel.disabled = disabled;
+        sel.disabled = !!disabled;
     }
-
-    // Simpan guru ID awal supaya bisa detect apakah guru berubah
-    document.getElementById('selGuru').dataset.initialGuru = '{{ $materi->guru_id }}';
 
     // ── Toggle publikasi ───────────────────────────────────────────────────────
     document.getElementById('pubToggle').addEventListener('change', function() {
@@ -436,18 +459,23 @@
     });
 
     // ── Jenis materi ───────────────────────────────────────────────────────────
+    // Bug fix: onJenisChange sekarang menangani semua 4 jenis dengan benar
+    // 'video' dan 'link' sama-sama tampilkan section-link (url_eksternal)
     function onJenisChange(jenis) {
-        ['file','link','teks'].forEach(s => {
-            const el = document.getElementById('section-' + s);
-            if (el) el.style.display = 'none';
-        });
+        document.getElementById('section-file').style.display = 'none';
+        document.getElementById('section-link').style.display = 'none';
+        document.getElementById('section-teks').style.display = 'none';
+
         document.querySelectorAll('.jenis-card').forEach(c => c.classList.remove('selected'));
-        document.getElementById('jcard-' + jenis).classList.add('selected');
-        if (jenis === 'file') document.getElementById('section-file').style.display = '';
+        const card = document.getElementById('jcard-' + jenis);
+        if (card) card.classList.add('selected');
+
+        if (jenis === 'file')                   document.getElementById('section-file').style.display = '';
         if (jenis === 'link' || jenis === 'video') document.getElementById('section-link').style.display = '';
-        if (jenis === 'teks') document.getElementById('section-teks').style.display = '';
+        if (jenis === 'teks')                   document.getElementById('section-teks').style.display = '';
     }
 
+    // ── Submit guard ───────────────────────────────────────────────────────────
     document.getElementById('materiForm').addEventListener('submit', function() {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;

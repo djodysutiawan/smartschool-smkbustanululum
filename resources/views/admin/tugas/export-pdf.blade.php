@@ -2,7 +2,6 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Data Tugas</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -85,7 +84,7 @@
         </div>
         <div class="summary-box">
             <p class="s-label">Sudah Lewat Deadline</p>
-            <p class="s-val">{{ $tugas->filter(fn($t) => now()->gt($t->batas_waktu))->count() }}</p>
+            <p class="s-val">{{ $tugas->filter(fn($t) => now()->gt(\Carbon\Carbon::parse($t->batas_waktu)))->count() }}</p>
         </div>
     </div>
 
@@ -125,7 +124,7 @@
                     <span class="jenis-pill jenis-{{ $t->jenis_pengumpulan }}">{{ ucfirst($t->jenis_pengumpulan) }}</span>
                 </td>
                 <td>
-                    <span class="{{ now()->gt($t->batas_waktu) ? 'deadline-lewat' : '' }}">
+                    <span class="{{ now()->gt(\Carbon\Carbon::parse($t->batas_waktu)) ? 'deadline-lewat' : '' }}">
                         {{ \Carbon\Carbon::parse($t->batas_waktu)->format('d M Y') }}
                     </span>
                     <br><span style="color:#94a3b8;font-size:7px">{{ \Carbon\Carbon::parse($t->batas_waktu)->format('H:i') }}</span>

@@ -10,14 +10,12 @@
         --radius:10px;--radius-sm:7px;
     }
 
-    /* ── Layout ── */
     .page{padding:28px 28px 40px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
     .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-    /* ── Buttons ── */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
     .btn:hover{filter:brightness(.93)}
     .btn-primary{background:var(--brand-600);color:#fff}
@@ -31,7 +29,6 @@
     .btn-detail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
     .btn-detail:hover{background:#dcfce7;filter:none}
 
-    /* ── Dropdown ── */
     .dropdown{position:relative;display:inline-flex}
     .dropdown-menu{display:none;position:absolute;top:calc(100% + 6px);right:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 8px 28px rgba(0,0,0,.1);min-width:200px;z-index:200;overflow:hidden}
     .dropdown.open .dropdown-menu{display:block}
@@ -40,7 +37,6 @@
     .dropdown-divider{border:none;border-top:1px solid var(--border);margin:4px 0}
     .dropdown-section-label{padding:6px 14px 3px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.06em;text-transform:uppercase}
 
-    /* ── Stats ── */
     .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;transition:box-shadow .2s}
     .stat-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
@@ -53,7 +49,6 @@
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
     .stat-sub{font-size:11px;color:var(--text3);margin-top:1px}
 
-    /* ── Rekap panel ── */
     .rekap-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;border-left:3px solid var(--brand-500)}
     .rekap-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
     .rekap-form-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end}
@@ -62,12 +57,10 @@
     .field select,.field input{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
     .field select:focus,.field input:focus{border-color:var(--brand-500);background:#fff}
 
-    /* ── Alert toast ── */
     .alert{display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:var(--radius-sm);margin-bottom:14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600}
     .alert-warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
     .alert-info{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
 
-    /* ── Filter card ── */
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px}
     .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
     .filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
@@ -79,7 +72,6 @@
     .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:background .15s}
     .btn-reset:hover{background:var(--surface3)}
 
-    /* ── Table card ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
@@ -97,7 +89,6 @@
     td.muted{color:var(--text3)}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)}
 
-    /* ── Badges ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
     .badge-hadir {background:#dcfce7;color:#15803d} .badge-hadir  .badge-dot{background:#15803d}
@@ -106,25 +97,22 @@
     .badge-sakit {background:#fdf4ff;color:#7c3aed} .badge-sakit  .badge-dot{background:#7c3aed}
     .badge-alfa  {background:#fee2e2;color:#dc2626} .badge-alfa   .badge-dot{background:#dc2626}
     .badge-manual  {background:var(--surface3);color:var(--text2)}   .badge-manual   .badge-dot{background:var(--text3)}
+    .badge-qr      {background:#ecfdf5;color:#065f46}                .badge-qr       .badge-dot{background:#065f46}
     .badge-qr_scan {background:#ecfdf5;color:#065f46}                .badge-qr_scan  .badge-dot{background:#065f46}
     .badge-wajah   {background:#fdf4ff;color:#7c3aed}                .badge-wajah    .badge-dot{background:#7c3aed}
     .badge-rfid    {background:#fff7ed;color:#c2410c}                .badge-rfid     .badge-dot{background:#c2410c}
     .badge-import  {background:#f0f9ff;color:#0369a1}                .badge-import   .badge-dot{background:#0369a1}
 
-    /* ── Two-line cell ── */
     .two-line .primary{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
     .two-line .secondary{font-size:12px;color:var(--text3);margin-top:1px}
 
-    /* ── Action group ── */
     .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap}
 
-    /* ── Empty state ── */
     .empty-state{padding:60px 20px;text-align:center}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
     .empty-sub{font-size:13px;color:var(--text3)}
 
-    /* ── Pagination ── */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
     .pag-btns{display:flex;gap:4px;align-items:center}
@@ -134,7 +122,6 @@
     .pag-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
 
-    /* ── Import modal ── */
     .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:300;align-items:center;justify-content:center}
     .modal-overlay.active{display:flex}
     .modal{background:var(--surface);border-radius:var(--radius);width:440px;max-width:calc(100vw - 32px);box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden}
@@ -159,19 +146,21 @@
 </style>
 
 @php
-    // Label metode untuk ditampilkan di tabel
     $metodeLabel = [
         'manual'  => 'Manual',
+        'qr'      => 'Scan QR',
         'qr_scan' => 'QR Code',
         'wajah'   => 'Face Recog.',
         'rfid'    => 'RFID',
         'import'  => 'Import',
     ];
+    // Semua metode yang ada di DB untuk keperluan filter
+    $metodeAllForFilter = ['manual', 'qr', 'qr_scan', 'wajah', 'rfid', 'import'];
 @endphp
 
 <div class="page">
 
-    {{-- ── Page Header ── --}}
+    {{-- Page Header --}}
     <div class="page-header">
         <div>
             <h1 class="page-title">Data Absensi Siswa</h1>
@@ -260,7 +249,7 @@
     </div>
     @endif
 
-    {{-- ── Stats Hari Ini ── --}}
+    {{-- Stats Hari Ini --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon green">
@@ -304,7 +293,7 @@
         </div>
     </div>
 
-    {{-- ── Rekap Kelas Form ── --}}
+    {{-- Rekap Kelas Form --}}
     <div class="rekap-panel" id="rekapPanel" style="display:none">
         <p class="rekap-title">
             <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -344,7 +333,7 @@
         @endif
     </div>
 
-    {{-- ── Filter ── --}}
+    {{-- Filter --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.absensi.index') }}">
             <div class="filter-row">
@@ -360,10 +349,14 @@
                         <option value="{{ $s }}" {{ request('status') == $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
                     @endforeach
                 </select>
+                {{--
+                    FIX: Filter metode gunakan $metodeAllForFilter (semua nilai DB),
+                    bukan $metodeList yang hanya berisi ['manual'] dari controller.
+                    Ini penting agar user bisa filter absensi yang dicatat via QR/RFID/dll.
+                --}}
                 <select name="metode">
                     <option value="">Semua Metode</option>
-                    @foreach($metodeList as $m)
-                        {{-- FIX: value 'qr_scan', label dari array $metodeLabel --}}
+                    @foreach($metodeAllForFilter as $m)
                         <option value="{{ $m }}" {{ request('metode') == $m ? 'selected' : '' }}>
                             {{ $metodeLabel[$m] ?? ucfirst($m) }}
                         </option>
@@ -378,7 +371,7 @@
         </form>
     </div>
 
-    {{-- ── Table ── --}}
+    {{-- Table --}}
     <div class="table-card">
         <div class="table-topbar">
             <p class="table-info">
@@ -427,9 +420,6 @@
                             </span>
                         </td>
                         <td class="center">
-                            {{-- FIX: gunakan $a->metode langsung sebagai CSS class key
-                                 Badge class: badge-manual, badge-qr_scan, badge-wajah, badge-rfid, badge-import
-                                 Label: dari array $metodeLabel --}}
                             @if($a->metode)
                                 <span class="badge badge-{{ $a->metode }}">
                                     <span class="badge-dot"></span>
@@ -453,7 +443,8 @@
                                 <a href="{{ route('admin.absensi.edit', $a->id) }}"  class="btn btn-sm btn-edit">Edit</a>
                                 <form action="{{ route('admin.absensi.destroy', $a->id) }}" method="POST"
                                       id="delAbsensi-{{ $a->id }}" style="display:inline">
-                                    @csrf @method('DELETE')
+                                    @csrf
+                                    @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
                                         onclick="confirmDelete(
                                             document.getElementById('delAbsensi-{{ $a->id }}'),
@@ -510,7 +501,7 @@
     </div>
 </div>
 
-{{-- ── Import Modal ── --}}
+{{-- Import Modal --}}
 <div class="modal-overlay" id="importModal">
     <div class="modal">
         <div class="modal-header">
@@ -527,7 +518,8 @@
                     <a href="{{ route('admin.absensi.import.template') }}" style="color:#1750c0;text-decoration:underline;margin-left:4px">Download template</a>
                 </div>
                 <div class="upload-area" onclick="document.getElementById('importFileInput').click()">
-                    <input type="file" name="file" id="importFileInput" accept=".xlsx,.xls" onchange="onFileChange(this)">
+                    <input type="file" name="file" id="importFileInput" accept=".xlsx,.xls"
+                           onchange="onImportFileChange(this)">
                     <svg width="32" height="32" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 8px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     <p class="upload-area-label">Klik untuk pilih file Excel</p>
                     <p class="upload-area-hint">.xlsx atau .xls — maks. 5 MB</p>
@@ -547,68 +539,74 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-@if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
-@endif
-@if(session('error'))
-Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
-@endif
-@if($errors->any())
-Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
-@endif
+    @if(session('success'))
+    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+    @endif
+    @if(session('error'))
+    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    @endif
+    @if($errors->any())
+    Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
+    @endif
 
-function confirmDelete(form, nama, tanggal) {
-    Swal.fire({
-        title:'Hapus Absensi?',
-        html:`Absensi <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
-        icon:'warning', showCancelButton:true,
-        confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b',
-        confirmButtonText:'Ya, Hapus!', cancelButtonText:'Batal',
-    }).then(r => { if(r.isConfirmed) form.submit(); });
-}
+    function confirmDelete(form, nama, tanggal) {
+        Swal.fire({
+            title:'Hapus Absensi?',
+            html:`Absensi <strong>${nama}</strong> tanggal <strong>${tanggal}</strong> akan dihapus permanen.`,
+            icon:'warning', showCancelButton:true,
+            confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b',
+            confirmButtonText:'Ya, Hapus!', cancelButtonText:'Batal',
+        }).then(r => { if(r.isConfirmed) form.submit(); });
+    }
 
-const REKAP_HAS_PARAMS = {{ (request()->filled('kelas_id') && request()->filled('tanggal_dari') && request()->filled('tanggal_sampai')) ? 'true' : 'false' }};
+    const REKAP_HAS_PARAMS = {{ (request()->filled('kelas_id') && request()->filled('tanggal_dari') && request()->filled('tanggal_sampai')) ? 'true' : 'false' }};
 
-function toggleRekap() {
-    const panel = document.getElementById('rekapPanel');
-    const isVisible = panel.style.display !== 'none';
-    panel.style.display = isVisible ? 'none' : 'block';
-    if (!isVisible) panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
-}
-function closeRekap() { document.getElementById('rekapPanel').style.display = 'none'; }
-if (REKAP_HAS_PARAMS) document.getElementById('rekapPanel').style.display = 'block';
+    function toggleRekap() {
+        const panel = document.getElementById('rekapPanel');
+        const isVisible = panel.style.display !== 'none';
+        panel.style.display = isVisible ? 'none' : 'block';
+        if (!isVisible) panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    }
+    function closeRekap() { document.getElementById('rekapPanel').style.display = 'none'; }
+    if (REKAP_HAS_PARAMS) document.getElementById('rekapPanel').style.display = 'block';
 
-function onRekapExportClick() {
-    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-    document.getElementById('rekapPanel').style.display = 'block';
-    document.getElementById('rekapPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
-    Swal.fire({ icon:'info', title:'Isi Filter Rekap Dulu', text:'Pilih kelas dan rentang tanggal, lalu klik "Lihat Rekap & Aktifkan Export".', confirmButtonColor:'#1f63db', confirmButtonText:'Mengerti' });
-}
+    function onRekapExportClick() {
+        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+        document.getElementById('rekapPanel').style.display = 'block';
+        document.getElementById('rekapPanel').scrollIntoView({ behavior:'smooth', block:'nearest' });
+        Swal.fire({ icon:'info', title:'Isi Filter Rekap Dulu', text:'Pilih kelas dan rentang tanggal, lalu klik "Lihat Rekap & Aktifkan Export".', confirmButtonColor:'#1f63db', confirmButtonText:'Mengerti' });
+    }
 
-function toggleDropdown(id) {
-    const el = document.getElementById(id);
-    const isOpen = el.classList.contains('open');
-    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-    if (!isOpen) el.classList.add('open');
-}
-document.addEventListener('click', function(e) {
-    if (!e.target.closest('.dropdown')) document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-});
+    function toggleDropdown(id) {
+        const el = document.getElementById(id);
+        const isOpen = el.classList.contains('open');
+        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+        if (!isOpen) el.classList.add('open');
+    }
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown')) {
+            document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+        }
+    });
 
-function openImportModal() {
-    document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
-    document.getElementById('importModal').classList.add('active');
-}
-function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
-document.getElementById('importModal').addEventListener('click', function(e) { if(e.target === this) closeImportModal(); });
+    function openImportModal() {
+        document.querySelectorAll('.dropdown.open').forEach(d => d.classList.remove('open'));
+        document.getElementById('importModal').classList.add('active');
+    }
+    function closeImportModal() { document.getElementById('importModal').classList.remove('active'); }
+    document.getElementById('importModal').addEventListener('click', function(e) {
+        if (e.target === this) closeImportModal();
+    });
 
-function onFileChange(input) {
-    const name = input.files[0]?.name || '';
-    const label = document.getElementById('importFilename');
-    const btn   = document.getElementById('importSubmitBtn');
-    label.textContent = name;
-    label.style.display = name ? 'block' : 'none';
-    btn.disabled = !name;
-}
+    // FIX: Rename dari onFileChange → onImportFileChange agar tidak konflik
+    // jika halaman ini digabung atau di-extend view lain.
+    function onImportFileChange(input) {
+        const name  = input.files[0]?.name || '';
+        const label = document.getElementById('importFilename');
+        const btn   = document.getElementById('importSubmitBtn');
+        label.textContent   = name;
+        label.style.display = name ? 'block' : 'none';
+        btn.disabled        = !name;
+    }
 </script>
 </x-app-layout>

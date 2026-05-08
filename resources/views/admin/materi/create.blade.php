@@ -123,9 +123,7 @@
 
                     {{-- ① GURU — trigger utama cascade --}}
                     <div class="field">
-                        <label>
-                            Guru <span class="req">*</span>
-                        </label>
+                        <label>Guru <span class="req">*</span></label>
                         <div class="select-wrap" id="wrapGuru">
                             <select name="guru_id" id="selGuru" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}"
                                 onchange="onGuruChange(this.value)">
@@ -148,19 +146,17 @@
                     <div class="field">
                         <label>
                             Mata Pelajaran <span class="req">*</span>
-                            <span class="cascade-badge" id="mapelBadge" style="display:none">Auto</span>
+                            <span class="cascade-badge" id="mapelBadge" style="{{ old('guru_id') ? '' : 'display:none' }}">Auto</span>
                         </label>
                         <div class="select-wrap" id="wrapMapel">
                             <select name="mata_pelajaran_id" id="selMapel"
                                 class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}"
                                 {{ old('guru_id') ? '' : 'disabled' }}>
-                                <option value="">— Pilih Guru dulu —</option>
                                 @if(old('guru_id'))
-                                    @foreach($mapelList as $m)
-                                        <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>
-                                            {{ $m->nama_mapel }}
-                                        </option>
-                                    @endforeach
+                                    {{-- Data mapel sudah di-populate server-side lewat AJAX trigger di bawah --}}
+                                    <option value="">— Pilih Mapel —</option>
+                                @else
+                                    <option value="">— Pilih Guru dulu —</option>
                                 @endif
                             </select>
                             <svg class="spin-icon" width="14" height="14" fill="none" stroke="#1f63db" stroke-width="2.5"
@@ -169,7 +165,7 @@
                             </svg>
                         </div>
                         @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
-                        <span class="cascade-hint" id="mapelHint">
+                        <span class="cascade-hint {{ old('guru_id') ? 'show' : '' }}" id="mapelHint">
                             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             Menampilkan mapel yang diampu guru ini
                         </span>
@@ -179,19 +175,16 @@
                     <div class="field">
                         <label>
                             Kelas <span class="req">*</span>
-                            <span class="cascade-badge" id="kelasBadge" style="display:none">Auto</span>
+                            <span class="cascade-badge" id="kelasBadge" style="{{ old('guru_id') ? '' : 'display:none' }}">Auto</span>
                         </label>
                         <div class="select-wrap" id="wrapKelas">
                             <select name="kelas_id" id="selKelas"
                                 class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}"
                                 {{ old('guru_id') ? '' : 'disabled' }}>
-                                <option value="">— Pilih Guru dulu —</option>
                                 @if(old('guru_id'))
-                                    @foreach($kelasList as $k)
-                                        <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
-                                            {{ $k->nama_kelas }}
-                                        </option>
-                                    @endforeach
+                                    <option value="">— Pilih Kelas —</option>
+                                @else
+                                    <option value="">— Pilih Guru dulu —</option>
                                 @endif
                             </select>
                             <svg class="spin-icon" width="14" height="14" fill="none" stroke="#1f63db" stroke-width="2.5"
@@ -200,7 +193,7 @@
                             </svg>
                         </div>
                         @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
-                        <span class="cascade-hint" id="kelasHint">
+                        <span class="cascade-hint {{ old('guru_id') ? 'show' : '' }}" id="kelasHint">
                             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             Menampilkan kelas yang diajar guru ini
                         </span>
@@ -219,8 +212,7 @@
                             <option value="">— Pilih Tahun —</option>
                             @foreach($tahunAjaran as $t)
                                 <option value="{{ $t->id }}"
-                                    {{ old('tahun_ajaran_id', $tahunAktif?->id) == $t->id ? 'selected' : '' }}
-                                    data-status="{{ $t->status }}">
+                                    {{ old('tahun_ajaran_id', $tahunAktif?->id) == $t->id ? 'selected' : '' }}>
                                     {{ $t->label }}{{ $t->isAktif() ? ' ✓' : '' }}
                                 </option>
                             @endforeach
@@ -246,7 +238,7 @@
                                     {{ old('dipublikasikan') == '1' ? 'checked' : '' }}>
                                 <span class="toggle-slider"></span>
                             </label>
-                            <span class="toggle-label" id="pubLabel">Draft</span>
+                            <span class="toggle-label" id="pubLabel">{{ old('dipublikasikan') == '1' ? 'Dipublikasikan' : 'Draft' }}</span>
                         </div>
                     </div>
 
@@ -310,7 +302,9 @@
                         <input type="url" name="url_eksternal" value="{{ old('url_eksternal') }}" placeholder="https://..."
                             class="{{ $errors->has('url_eksternal') ? 'is-invalid' : '' }}">
                         @error('url_eksternal')<span class="field-error">{{ $message }}</span>@enderror
-                        <span class="field-hint" id="urlHint">Masukkan URL video YouTube / Google Drive / link eksternal</span>
+                        <span class="field-hint" id="urlHint">
+                            {{ old('jenis') == 'video' ? 'Masukkan URL video YouTube / Vimeo' : 'Masukkan URL video YouTube / Google Drive / link eksternal' }}
+                        </span>
                     </div>
                 </div>
 
@@ -357,19 +351,24 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if($errors->any())
-    Swal.fire({ icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan', html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`, confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor: '#1f63db'
+    });
     @endif
 
-    // ── AJAX URL base ──────────────────────────────────────────────────────────
+    // ── Config ─────────────────────────────────────────────────────────────────
     const AJAX_BASE = '{{ url("admin/materi/ajax") }}';
     const OLD_GURU  = '{{ old("guru_id") }}';
     const OLD_MAPEL = '{{ old("mata_pelajaran_id") }}';
     const OLD_KELAS = '{{ old("kelas_id") }}';
 
     // ── Cascade: pilih guru → muat mapel & kelas ───────────────────────────────
-    async function onGuruChange(guruId) {
-        const selMapel = document.getElementById('selMapel');
-        const selKelas = document.getElementById('selKelas');
+    async function onGuruChange(guruId, preserveSelection = false) {
+        const selMapel  = document.getElementById('selMapel');
+        const selKelas  = document.getElementById('selKelas');
         const wrapMapel = document.getElementById('wrapMapel');
         const wrapKelas = document.getElementById('wrapKelas');
         const mapelBadge = document.getElementById('mapelBadge');
@@ -378,7 +377,6 @@
         const kelasHint  = document.getElementById('kelasHint');
 
         if (!guruId) {
-            // Reset semua
             setSelectEmpty(selMapel, '— Pilih Guru dulu —', true);
             setSelectEmpty(selKelas, '— Pilih Guru dulu —', true);
             mapelBadge.style.display = 'none';
@@ -388,7 +386,6 @@
             return;
         }
 
-        // Tampilkan loading
         wrapMapel.classList.add('loading');
         wrapKelas.classList.add('loading');
         selMapel.disabled = true;
@@ -400,19 +397,22 @@
                 fetch(`${AJAX_BASE}/kelas-by-guru/${guruId}`).then(r => r.json()),
             ]);
 
-            populateSelect(selMapel, resMapel, 'nama_mapel', '— Pilih Mapel —', OLD_MAPEL);
-            populateSelect(selKelas, resKelas, 'nama_kelas', '— Pilih Kelas —', OLD_KELAS);
+            // Saat restore old value (setelah validation error), preserve pilihan lama
+            const keepMapel = preserveSelection ? OLD_MAPEL : '';
+            const keepKelas = preserveSelection ? OLD_KELAS : '';
+
+            populateSelect(selMapel, resMapel, 'nama_mapel', '— Pilih Mapel —', keepMapel);
+            populateSelect(selKelas, resKelas, 'nama_kelas', '— Pilih Kelas —', keepKelas);
 
             selMapel.disabled = false;
             selKelas.disabled = false;
 
-            // Badge "Auto" tampil jika data dikasih dari pivot/jadwal (bukan semua)
             mapelBadge.style.display = 'inline-flex';
             kelasBadge.style.display = 'inline-flex';
             mapelHint.classList.add('show');
             kelasHint.classList.add('show');
 
-        } catch(e) {
+        } catch (e) {
             console.error('Cascade error:', e);
             selMapel.disabled = false;
             selKelas.disabled = false;
@@ -439,24 +439,27 @@
     }
 
     // Trigger cascade jika ada old('guru_id') saat validation error
+    // Gunakan preserveSelection=true agar OLD_MAPEL & OLD_KELAS ikut terpilih
     if (OLD_GURU) {
-        onGuruChange(OLD_GURU);
+        onGuruChange(OLD_GURU, true);
     }
 
     // ── Toggle publikasi ───────────────────────────────────────────────────────
     const pubToggle = document.getElementById('pubToggle');
     const pubLabel  = document.getElementById('pubLabel');
-    pubLabel.textContent = pubToggle.checked ? 'Dipublikasikan' : 'Draft';
-    pubToggle.addEventListener('change', () => { pubLabel.textContent = pubToggle.checked ? 'Dipublikasikan' : 'Draft'; });
+    pubToggle.addEventListener('change', () => {
+        pubLabel.textContent = pubToggle.checked ? 'Dipublikasikan' : 'Draft';
+    });
 
     // ── Jenis materi ───────────────────────────────────────────────────────────
     function onJenisChange(jenis) {
-        ['file','link','teks'].forEach(s => {
+        ['file', 'link', 'teks'].forEach(s => {
             const el = document.getElementById('section-' + s);
             if (el) el.style.display = 'none';
         });
         document.querySelectorAll('.jenis-card').forEach(c => c.classList.remove('selected'));
         document.getElementById('jcard-' + jenis).classList.add('selected');
+
         if (jenis === 'file') document.getElementById('section-file').style.display = '';
         if (jenis === 'link' || jenis === 'video') {
             document.getElementById('section-link').style.display = '';
@@ -471,11 +474,11 @@
         const file = input.files[0];
         if (!file) return;
         const info = document.getElementById(infoId);
-        info.textContent = `${file.name} — ${(file.size/1024/1024).toFixed(2)} MB`;
+        info.textContent = `${file.name} — ${(file.size / 1024 / 1024).toFixed(2)} MB`;
         info.style.display = 'block';
     }
 
-    document.getElementById('materiForm').addEventListener('submit', function() {
+    document.getElementById('materiForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;

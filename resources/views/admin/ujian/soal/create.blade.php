@@ -12,17 +12,14 @@
 }
 *{box-sizing:border-box;}
 .page{padding:28px 28px 60px;max-width:2000px;margin:0 auto;}
-
 .breadcrumb{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);margin-bottom:20px;flex-wrap:wrap;}
 .breadcrumb a{color:var(--text3);text-decoration:none;transition:color .15s;}
 .breadcrumb a:hover{color:var(--brand);}
 .breadcrumb .sep{color:var(--border2);}
 .breadcrumb .current{color:var(--text2);}
-
 .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px;flex-wrap:wrap;}
 .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);}
 .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px;}
-
 .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap;}
 .btn:hover{filter:brightness(.93);}
 .btn-primary{background:var(--brand);color:#fff;}
@@ -31,15 +28,12 @@
 .btn-back:hover{background:var(--surface3);filter:none;}
 .btn-cancel{background:var(--surface);color:var(--text2);border:1px solid var(--border);}
 .btn-cancel:hover{background:var(--surface3);filter:none;}
-
 .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13.5px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
-
 .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;}
 .form-section{padding:20px 24px 24px;}
 .section-divider{border:none;border-top:1px solid var(--border);margin:0;}
 .section-label{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;}
 .section-label-line{flex:1;height:1px;background:var(--border);}
-
 .field{display:flex;flex-direction:column;gap:6px;margin-bottom:14px;}
 .field:last-child{margin-bottom:0;}
 .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2);}
@@ -56,8 +50,6 @@
 .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;}
 .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
-
-/* Jenis Soal Switcher */
 .jenis-switch{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
 .jenis-opt{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 10px;border:2px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:all .15s;text-align:center;}
 .jenis-opt:hover{border-color:var(--border2);background:var(--surface2);}
@@ -68,8 +60,6 @@
 .jenis-opt-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2);}
 .jenis-opt.selected .jenis-opt-label{color:var(--brand);}
 .jenis-opt-sub{font-size:11px;color:var(--text3);}
-
-/* Pilihan Jawaban */
 .pilihan-list{display:flex;flex-direction:column;gap:10px;}
 .pilihan-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);transition:border-color .15s,background .15s;}
 .pilihan-item.is-benar{border-color:var(--green-bd);background:var(--green-bg);}
@@ -83,19 +73,14 @@
 .pilihan-item.is-benar .pilihan-benar-lbl{color:var(--green);}
 .pilihan-del{background:none;border:none;cursor:pointer;color:var(--text3);padding:4px;display:flex;align-items:center;border-radius:4px;transition:background .12s,color .12s;}
 .pilihan-del:hover{color:var(--red);background:var(--red-bg);}
-
 .add-pilihan-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1.5px dashed var(--border2);border-radius:var(--radius-sm);background:var(--surface2);color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;margin-top:8px;}
 .add-pilihan-btn:hover{border-color:var(--brand-h);color:var(--brand);background:var(--brand-50);}
-
-/* File input */
 .file-input-wrap{border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:14px 16px;background:var(--surface2);display:flex;align-items:center;gap:10px;cursor:pointer;transition:border-color .15s,background .15s;}
 .file-input-wrap:hover{border-color:var(--brand-h);background:var(--brand-50);}
 .file-input-wrap input[type=file]{display:none;}
 .file-input-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--text2);}
 .file-name{font-size:12.5px;color:var(--green);font-family:'DM Sans',sans-serif;font-weight:600;margin-top:4px;}
 .img-preview-inline{max-width:320px;max-height:200px;border-radius:var(--radius-sm);margin-top:10px;border:1px solid var(--border);display:none;}
-
-/* Toggle switch */
 .toggle-row{display:flex;align-items:center;gap:10px;}
 .toggle-switch{position:relative;display:inline-block;width:38px;height:22px;}
 .toggle-switch input{opacity:0;width:0;height:0;}
@@ -104,11 +89,10 @@
 .toggle-switch input:checked+.toggle-slider{background:var(--brand);}
 .toggle-switch input:checked+.toggle-slider::before{transform:translateX(16px);}
 .toggle-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--text2);}
-
 .form-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border);flex-wrap:wrap;}
 .footer-left{display:flex;align-items:center;gap:10px;}
 .footer-right{display:flex;align-items:center;gap:10px;}
-
+.info-box{background:var(--brand-50);border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:12px 16px;font-size:13px;color:var(--brand);font-family:'DM Sans',sans-serif;margin-bottom:0;}
 @keyframes spin{to{transform:rotate(360deg);}}
 @media(max-width:680px){
     .page{padding:16px;}
@@ -120,7 +104,7 @@
 
 <div class="page">
     <nav class="breadcrumb">
-        <a href="{{ route('dashboard') }}">Dashboard</a>
+        <a href="{{ route('admin.dashboard') }}">Dashboard</a>
         <span class="sep">›</span>
         <a href="{{ route('admin.ujian.index') }}">Data Ujian</a>
         <span class="sep">›</span>
@@ -154,11 +138,12 @@
     </div>
     @endif
 
+    {{-- FIXED: action menggunakan route name yang benar --}}
     <form action="{{ route('admin.ujian.soal.store', $ujian) }}" method="POST"
           enctype="multipart/form-data" id="soalForm">
         @csrf
 
-        {{-- ── Pilih Jenis Soal ── --}}
+        {{-- Jenis Soal --}}
         <div class="form-card">
             <div class="form-section">
                 <p class="section-label">
@@ -202,7 +187,7 @@
             </div>
         </div>
 
-        {{-- ── Pertanyaan ── --}}
+        {{-- Pertanyaan + Pilihan --}}
         <div class="form-card">
             <div class="form-section">
                 <p class="section-label">
@@ -213,11 +198,11 @@
 
                 <div class="form-row" style="margin-bottom:14px;">
                     <div class="field" style="margin-bottom:0">
-                        <label>Nomor Soal <span class="req">*</span></label>
+                        <label>Nomor Soal</label>
                         <input type="number" name="nomor_soal"
                                value="{{ old('nomor_soal', $nomorBerikutnya) }}" min="1"
                                class="{{ $errors->has('nomor_soal') ? 'is-invalid' : '' }}">
-                        <span class="field-hint">Otomatis jika kosong</span>
+                        <span class="field-hint">Otomatis jika dikosongkan</span>
                         @error('nomor_soal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field" style="margin-bottom:0">
@@ -225,7 +210,7 @@
                         <input type="number" name="bobot"
                                value="{{ old('bobot', 1) }}" min="1" max="100"
                                class="{{ $errors->has('bobot') ? 'is-invalid' : '' }}">
-                        <span class="field-hint">Poin jika jawaban benar</span>
+                        <span class="field-hint">Poin jika jawaban benar (1–100)</span>
                         @error('bobot')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -256,7 +241,7 @@
                 </div>
             </div>
 
-            {{-- ── Seksi Pilihan Jawaban (PG & Benar/Salah) ── --}}
+            {{-- Seksi Pilihan Jawaban (PG & Benar/Salah) --}}
             <div id="seksiPilihan" style="display:none">
                 <hr class="section-divider">
                 <div class="form-section">
@@ -265,31 +250,38 @@
                         Pilihan Jawaban
                         <span class="section-label-line"></span>
                     </p>
+                    @error('pilihan')
+                    <div class="alert" style="margin-bottom:14px;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
+                        {{ $message }}
+                    </div>
+                    @enderror
                     <p style="font-size:12.5px;color:var(--text3);margin-bottom:14px;font-family:'DM Sans',sans-serif;">
-                        Centang radio button untuk menandai jawaban yang benar.
+                        Centang <strong>Benar</strong> untuk menandai jawaban yang benar.
                     </p>
                     <div class="pilihan-list" id="pilihanList"></div>
-                    <button type="button" class="add-pilihan-btn" id="btnAddPilihan" onclick="addPilihan()">
+                    {{-- Tombol tambah hanya untuk PG --}}
+                    <button type="button" class="add-pilihan-btn" id="btnAddPilihan"
+                            onclick="addPilihan()" style="display:none">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Tambah Pilihan
                     </button>
                 </div>
             </div>
 
-            {{-- ── Seksi Essay ── --}}
+            {{-- Seksi Essay — hanya info, TIDAK ada kunci_essay (bukan fillable) --}}
             <div id="seksiEssay" style="display:none">
                 <hr class="section-divider">
                 <div class="form-section">
                     <p class="section-label">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 9.5-9.5z"/></svg>
-                        Kunci Jawaban Essay
+                        Informasi Soal Essay
                         <span class="section-label-line"></span>
                     </p>
-                    <div class="field" style="margin-bottom:0">
-                        <label>Kunci / Pedoman Penskoran <span style="color:var(--text3);font-weight:400">(opsional)</span></label>
-                        <textarea name="kunci_essay" rows="4"
-                                  placeholder="Tuliskan kunci jawaban atau pedoman penskoran untuk guru…">{{ old('kunci_essay') }}</textarea>
-                        <span class="field-hint">Hanya terlihat oleh guru/admin. Siswa tidak dapat melihat kunci ini.</span>
+                    <div class="info-box">
+                        <strong>Soal Essay</strong> — Jawaban siswa akan dikoreksi secara manual oleh guru/admin
+                        melalui menu <em>Koreksi Essay</em> setelah ujian selesai.
+                        Pastikan bobot poin sudah sesuai.
                     </div>
                 </div>
             </div>
@@ -297,8 +289,9 @@
             <div class="form-footer">
                 <div class="footer-left">
                     <div class="toggle-row">
+                        {{-- Hidden value 0 agar checkbox unchecked tetap terkirim sebagai false --}}
+                        <input type="hidden" name="tambah_lagi" value="0">
                         <label class="toggle-switch">
-                            <input type="hidden" name="tambah_lagi" value="0">
                             <input type="checkbox" name="tambah_lagi" value="1" id="toggleTambahLagi">
                             <span class="toggle-slider"></span>
                         </label>
@@ -322,12 +315,12 @@ const KODE_DEFAULT = ['A','B','C','D','E'];
 let pilihanCount   = 0;
 let jenisSoal      = '{{ old("jenis_soal", "pilihan_ganda") }}';
 
-// ── Jenis Soal Switcher ─────────────────────────────────────────────────
 function setJenis(e, jenis) {
     jenisSoal = jenis;
     document.querySelectorAll('input[name=jenis_soal]').forEach(r => r.checked = (r.value === jenis));
     document.querySelectorAll('.jenis-opt').forEach(el => el.classList.remove('selected'));
     e.currentTarget.classList.add('selected');
+    // Reset pilihan saat ganti jenis
     document.getElementById('pilihanList').innerHTML = '';
     pilihanCount = 0;
     applyJenis();
@@ -337,21 +330,28 @@ function applyJenis() {
     const isPG = jenisSoal === 'pilihan_ganda';
     const isBS = jenisSoal === 'benar_salah';
     const isEs = jenisSoal === 'essay';
+
     document.getElementById('seksiPilihan').style.display  = (isPG || isBS) ? '' : 'none';
     document.getElementById('seksiEssay').style.display    = isEs ? '' : 'none';
     document.getElementById('btnAddPilihan').style.display = isPG ? 'inline-flex' : 'none';
-    if (isPG && pilihanCount === 0) ['A','B','C','D'].forEach(k => addPilihan(k, '', false));
-    if (isBS && pilihanCount === 0) { addPilihan('B','Benar',true); addPilihan('S','Salah',true); }
+
+    // Auto-isi default pilihan
+    if (isPG && pilihanCount === 0) {
+        ['A','B','C','D'].forEach(k => addPilihan(k, '', false));
+    }
+    if (isBS && pilihanCount === 0) {
+        addPilihan('B', 'Benar', true);
+        addPilihan('S', 'Salah', true);
+    }
 }
 
-// ── Pilihan Ganda ───────────────────────────────────────────────────────
 function addPilihan(kode, teks, locked) {
     if (jenisSoal === 'pilihan_ganda' && pilihanCount >= 5) {
         alert('Maksimal 5 pilihan jawaban.'); return;
     }
-    const idx  = pilihanCount++;
-    const k    = kode || KODE_DEFAULT[idx] || String.fromCharCode(65 + idx);
-    const div  = document.createElement('div');
+    const idx = pilihanCount++;
+    const k   = kode || KODE_DEFAULT[idx] || String.fromCharCode(65 + idx);
+    const div = document.createElement('div');
     div.className = 'pilihan-item';
     div.id = 'pilihanItem_' + idx;
     div.innerHTML = `
@@ -388,7 +388,6 @@ function hapusPilihan(idx) {
     if (el) el.remove();
 }
 
-// ── Gambar ──────────────────────────────────────────────────────────────
 function handleGambar(input) {
     const nameEl    = document.getElementById('gambarFileName');
     const previewEl = document.getElementById('gambarPreview');
@@ -396,7 +395,10 @@ function handleGambar(input) {
         nameEl.textContent   = '✓ ' + input.files[0].name;
         nameEl.style.display = 'block';
         const reader = new FileReader();
-        reader.onload = e => { previewEl.src = e.target.result; previewEl.style.display = 'block'; };
+        reader.onload = e => {
+            previewEl.src = e.target.result;
+            previewEl.style.display = 'block';
+        };
         reader.readAsDataURL(input.files[0]);
     } else {
         nameEl.style.display    = 'none';
@@ -404,14 +406,13 @@ function handleGambar(input) {
     }
 }
 
-// ── Submit ──────────────────────────────────────────────────────────────
 document.getElementById('soalForm').addEventListener('submit', function() {
     const btn = document.getElementById('btnSubmit');
     btn.disabled = true;
     btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
 });
 
-// ── Init ────────────────────────────────────────────────────────────────
+// Init
 (function() {
     document.querySelectorAll('.jenis-opt').forEach(opt => {
         const r = opt.querySelector('input[type=radio]');

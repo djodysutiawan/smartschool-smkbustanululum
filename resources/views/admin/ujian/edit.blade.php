@@ -34,6 +34,7 @@
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
     .form-grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;}
     .col-span-2{grid-column:span 2;}
+    .col-span-3{grid-column:span 3;}
     .field{display:flex;flex-direction:column;gap:6px;}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2);}
     .req{color:var(--brand);margin-left:2px;}
@@ -53,16 +54,17 @@
     .toggle-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--text2);}
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border);}
     @keyframes spin{to{transform:rotate(360deg);}}
-    @media(max-width:680px){.page{padding:16px 16px 40px;}.form-grid,.form-grid-3{grid-template-columns:1fr;}.col-span-2{grid-column:span 1;}}
+    @media(max-width:680px){.page{padding:16px 16px 40px;}.form-grid,.form-grid-3{grid-template-columns:1fr;}.col-span-2,.col-span-3{grid-column:span 1;}}
 </style>
 
 <div class="page">
     <nav class="breadcrumb">
+        {{-- FIX: route names disesuaikan dengan web.php --}}
         <a href="{{ route('dashboard') }}">Dashboard</a>
         <span class="sep">›</span>
         <a href="{{ route('admin.ujian.index') }}">Data Ujian</a>
         <span class="sep">›</span>
-        <a href="{{ route('admin.ujian.show',$ujian->id) }}">{{ Str::limit($ujian->judul,30) }}</a>
+        <a href="{{ route('admin.ujian.show', $ujian->id) }}">{{ Str::limit($ujian->judul, 30) }}</a>
         <span class="sep">›</span>
         <span class="current">Edit</span>
     </nav>
@@ -72,7 +74,7 @@
             <h1 class="page-title">Edit Ujian</h1>
             <p class="page-sub">Perbarui data ujian lalu klik Simpan Perubahan</p>
         </div>
-        <a href="{{ route('admin.ujian.show',$ujian->id) }}" class="btn btn-back">
+        <a href="{{ route('admin.ujian.show', $ujian->id) }}" class="btn btn-back">
             <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             Kembali
         </a>
@@ -90,7 +92,8 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.ujian.update',$ujian->id) }}" method="POST" id="ujianForm">
+    {{-- FIX: route name disesuaikan --}}
+    <form action="{{ route('admin.ujian.update', $ujian->id) }}" method="POST" id="ujianForm">
         @csrf @method('PUT')
         <div class="form-card">
             <div class="form-section">
@@ -102,55 +105,67 @@
                 <div class="form-grid">
                     <div class="field col-span-2">
                         <label>Judul Ujian <span class="req">*</span></label>
-                        <input type="text" name="judul" value="{{ old('judul',$ujian->judul) }}" placeholder="cth. Ulangan Harian Bab 3 — Aljabar" class="{{ $errors->has('judul')?'is-invalid':'' }}">
+                        <input type="text" name="judul" value="{{ old('judul', $ujian->judul) }}"
+                               placeholder="cth. Ulangan Harian Bab 3 — Aljabar"
+                               class="{{ $errors->has('judul') ? 'is-invalid' : '' }}">
                         @error('judul')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Mata Pelajaran <span class="req">*</span></label>
-                        <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id')?'is-invalid':'' }}">
+                        <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Mapel —</option>
                             @foreach($mapelList as $m)
-                                <option value="{{ $m->id }}" {{ old('mata_pelajaran_id',$ujian->mata_pelajaran_id)==$m->id?'selected':'' }}>{{ $m->nama_mapel }}</option>
+                                <option value="{{ $m->id }}" {{ old('mata_pelajaran_id', $ujian->mata_pelajaran_id) == $m->id ? 'selected' : '' }}>
+                                    {{ $m->nama_mapel }}
+                                </option>
                             @endforeach
                         </select>
                         @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Jenis Ujian <span class="req">*</span></label>
-                        <select name="jenis" class="{{ $errors->has('jenis')?'is-invalid':'' }}">
+                        <select name="jenis" class="{{ $errors->has('jenis') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Jenis —</option>
                             @foreach($jenisList as $j)
-                                <option value="{{ $j }}" {{ old('jenis',$ujian->jenis)==$j?'selected':'' }}>{{ strtoupper(str_replace('_',' ',$j)) }}</option>
+                                <option value="{{ $j }}" {{ old('jenis', $ujian->jenis) == $j ? 'selected' : '' }}>
+                                    {{ strtoupper(str_replace('_', ' ', $j)) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('jenis')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Kelas <span class="req">*</span></label>
-                        <select name="kelas_id" class="{{ $errors->has('kelas_id')?'is-invalid':'' }}">
+                        <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Kelas —</option>
                             @foreach($kelasList as $k)
-                                <option value="{{ $k->id }}" {{ old('kelas_id',$ujian->kelas_id)==$k->id?'selected':'' }}>{{ $k->nama_kelas }}</option>
+                                <option value="{{ $k->id }}" {{ old('kelas_id', $ujian->kelas_id) == $k->id ? 'selected' : '' }}>
+                                    {{ $k->nama_kelas }}
+                                </option>
                             @endforeach
                         </select>
                         @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Guru Pengawas <span class="req">*</span></label>
-                        <select name="guru_id" class="{{ $errors->has('guru_id')?'is-invalid':'' }}">
+                        <select name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Guru —</option>
                             @foreach($guruList as $g)
-                                <option value="{{ $g->id }}" {{ old('guru_id',$ujian->guru_id)==$g->id?'selected':'' }}>{{ $g->nama_lengkap }}</option>
+                                <option value="{{ $g->id }}" {{ old('guru_id', $ujian->guru_id) == $g->id ? 'selected' : '' }}>
+                                    {{ $g->nama_lengkap }}
+                                </option>
                             @endforeach
                         </select>
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Tahun Ajaran <span class="req">*</span></label>
-                        <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id')?'is-invalid':'' }}">
+                        <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Tahun Ajaran —</option>
                             @foreach($tahunAjaran as $ta)
-                                <option value="{{ $ta->id }}" {{ old('tahun_ajaran_id',$ujian->tahun_ajaran_id)==$ta->id?'selected':'' }}>{{ $ta->tahun }} - {{ ucfirst($ta->semester) }}</option>
+                                <option value="{{ $ta->id }}" {{ old('tahun_ajaran_id', $ujian->tahun_ajaran_id) == $ta->id ? 'selected' : '' }}>
+                                    {{ $ta->tahun }} - {{ ucfirst($ta->semester) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('tahun_ajaran_id')<span class="field-error">{{ $message }}</span>@enderror
@@ -169,32 +184,48 @@
                 <div class="form-grid-3">
                     <div class="field">
                         <label>Tanggal Ujian <span class="req">*</span></label>
-                        <input type="date" name="tanggal" value="{{ old('tanggal', $ujian->tanggal ? $ujian->tanggal->format('Y-m-d') : '') }}" class="{{ $errors->has('tanggal')?'is-invalid':'' }}">
+                        {{-- FIX: tanggal sudah di-cast ke date di model, gunakan format() langsung --}}
+                        <input type="date" name="tanggal"
+                               value="{{ old('tanggal', $ujian->tanggal?->format('Y-m-d')) }}"
+                               class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
                         @error('tanggal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Jam Mulai</label>
-                        <input type="time" name="jam_mulai" value="{{ old('jam_mulai',$ujian->jam_mulai) }}" class="{{ $errors->has('jam_mulai')?'is-invalid':'' }}">
+                        <input type="time" name="jam_mulai"
+                               value="{{ old('jam_mulai', $ujian->jam_mulai) }}"
+                               class="{{ $errors->has('jam_mulai') ? 'is-invalid' : '' }}">
                         @error('jam_mulai')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Durasi (menit) <span class="req">*</span></label>
-                        <input type="number" name="durasi_menit" value="{{ old('durasi_menit',$ujian->durasi_menit) }}" min="1" max="480" class="{{ $errors->has('durasi_menit')?'is-invalid':'' }}">
+                        <input type="number" name="durasi_menit"
+                               value="{{ old('durasi_menit', $ujian->durasi_menit) }}"
+                               min="1" max="480"
+                               class="{{ $errors->has('durasi_menit') ? 'is-invalid' : '' }}">
                         @error('durasi_menit')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Nilai KKM</label>
-                        <input type="number" name="nilai_kkm" value="{{ old('nilai_kkm',$ujian->nilai_kkm) }}" min="0" max="100">
+                        <input type="number" name="nilai_kkm"
+                               value="{{ old('nilai_kkm', $ujian->nilai_kkm) }}"
+                               min="0" max="100"
+                               class="{{ $errors->has('nilai_kkm') ? 'is-invalid' : '' }}">
                         @error('nilai_kkm')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Maks. Percobaan</label>
-                        <input type="number" name="maks_percobaan" value="{{ old('maks_percobaan',$ujian->maks_percobaan ?? 1) }}" min="1" max="10">
+                        <input type="number" name="maks_percobaan"
+                               value="{{ old('maks_percobaan', $ujian->maks_percobaan ?? 1) }}"
+                               min="1" max="10"
+                               class="{{ $errors->has('maks_percobaan') ? 'is-invalid' : '' }}">
                         @error('maks_percobaan')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
-                    <div class="field" style="grid-column:span 3">
+                    {{-- FIX: ganti inline style 'grid-column:span 3' ke class col-span-3 --}}
+                    <div class="field col-span-3">
                         <label>Keterangan</label>
-                        <textarea name="keterangan" rows="2">{{ old('keterangan',$ujian->keterangan) }}</textarea>
+                        <textarea name="keterangan" rows="2">{{ old('keterangan', $ujian->keterangan) }}</textarea>
+                        @error('keterangan')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
             </div>
@@ -208,10 +239,18 @@
                     <span class="section-label-line"></span>
                 </p>
                 <div style="display:flex;flex-direction:column;gap:14px">
+                    {{--
+                        FIX: Pola hidden + checkbox yang benar untuk edit.
+                        old() dengan fallback ke nilai dari $ujian (cast boolean).
+                        Karena boolean di-cast, perbandingan cukup truthy:
+                        old('acak_soal', $ujian->acak_soal) akan menghasilkan true/false/1/0.
+                        Gunakan == '1' untuk nilai dari old() (string), dan cast bool untuk $ujian.
+                    --}}
                     <div class="toggle-row">
                         <label class="toggle-switch">
                             <input type="hidden" name="acak_soal" value="0">
-                            <input type="checkbox" name="acak_soal" value="1" {{ old('acak_soal', $ujian->acak_soal) ? 'checked' : '' }}>
+                            <input type="checkbox" name="acak_soal" value="1"
+                                   {{ old('acak_soal', $ujian->acak_soal) ? 'checked' : '' }}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="toggle-label">Acak urutan soal</span>
@@ -219,7 +258,8 @@
                     <div class="toggle-row">
                         <label class="toggle-switch">
                             <input type="hidden" name="acak_pilihan" value="0">
-                            <input type="checkbox" name="acak_pilihan" value="1" {{ old('acak_pilihan', $ujian->acak_pilihan) ? 'checked' : '' }}>
+                            <input type="checkbox" name="acak_pilihan" value="1"
+                                   {{ old('acak_pilihan', $ujian->acak_pilihan) ? 'checked' : '' }}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="toggle-label">Acak urutan pilihan jawaban</span>
@@ -227,7 +267,8 @@
                     <div class="toggle-row">
                         <label class="toggle-switch">
                             <input type="hidden" name="tampilkan_nilai" value="0">
-                            <input type="checkbox" name="tampilkan_nilai" value="1" {{ old('tampilkan_nilai', $ujian->tampilkan_nilai) ? 'checked' : '' }}>
+                            <input type="checkbox" name="tampilkan_nilai" value="1"
+                                   {{ old('tampilkan_nilai', $ujian->tampilkan_nilai) ? 'checked' : '' }}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="toggle-label">Tampilkan nilai setelah ujian selesai</span>
@@ -235,7 +276,8 @@
                     <div class="toggle-row">
                         <label class="toggle-switch">
                             <input type="hidden" name="is_active" value="0">
-                            <input type="checkbox" name="is_active" value="1" {{ old('is_active', $ujian->is_active) ? 'checked' : '' }}>
+                            <input type="checkbox" name="is_active" value="1"
+                                   {{ old('is_active', $ujian->is_active) ? 'checked' : '' }}>
                             <span class="toggle-slider"></span>
                         </label>
                         <span class="toggle-label">Ujian aktif dan dapat diakses</span>
@@ -244,7 +286,7 @@
             </div>
 
             <div class="form-footer">
-                <a href="{{ route('admin.ujian.show',$ujian->id) }}" class="btn btn-cancel">Batal</a>
+                <a href="{{ route('admin.ujian.show', $ujian->id) }}" class="btn btn-cancel">Batal</a>
                 <button type="submit" class="btn btn-primary" id="btnSubmit">
                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
                     Simpan Perubahan
@@ -256,17 +298,43 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    {{--
+        FIX: SweetAlert error diubah dari pola @foreach langsung di JS string
+        (yang rentan XSS dan bisa rusak jika pesan mengandung kutip/HTML)
+        menjadi @json() yang aman.
+    --}}
     @if($errors->any())
-    Swal.fire({icon:'error',title:'Terdapat {{ $errors->count() }} Kesalahan',html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,confirmButtonColor:'#1f63db'});
-    @endif
-    @if(session('error'))
-    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    (function () {
+        const errors = @json($errors->all());
+        const listHtml = errors
+            .map(e => `<li>${e.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}</li>`)
+            .join('');
+        Swal.fire({
+            icon: 'error',
+            title: 'Terdapat ' + errors.length + ' Kesalahan',
+            html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">${listHtml}</ul>`,
+            confirmButtonColor: '#1f63db'
+        });
+    })();
     @endif
 
-    document.getElementById('ujianForm').addEventListener('submit', function() {
+    @if(session('error'))
+    Swal.fire({
+        icon: 'error',
+        title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
+    @endif
+
+    document.getElementById('ujianForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
-        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
+        btn.innerHTML = `
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"
+                 viewBox="0 0 24 24" style="animation:spin .7s linear infinite">
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg> Menyimpan…`;
     });
 </script>
 </x-app-layout>

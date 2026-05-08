@@ -137,30 +137,42 @@
         </a>
     </div>
 
+    {{--
+        BUG FIX: Stats dihitung dari semua data (tanpa filter request),
+        bukan dari $materi->total() yang sudah terfilter.
+        Menggunakan withTrashed() agar konsisten dengan query di controller.
+    --}}
+    @php
+        $statTotal      = \App\Models\Materi::withTrashed()->count();
+        $statPublished  = \App\Models\Materi::where('dipublikasikan', true)->count();
+        $statDraft      = \App\Models\Materi::where('dipublikasikan', false)->count();
+        $statTrashed    = \App\Models\Materi::onlyTrashed()->count();
+    @endphp
+
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
                 <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             </div>
-            <div><p class="stat-label">Total Materi</p><p class="stat-val">{{ $materi->total() }}</p></div>
+            <div><p class="stat-label">Total Materi</p><p class="stat-val">{{ $statTotal }}</p></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon green">
                 <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
             </div>
-            <div><p class="stat-label">Dipublikasikan</p><p class="stat-val">{{ \App\Models\Materi::where('dipublikasikan', true)->count() }}</p></div>
+            <div><p class="stat-label">Dipublikasikan</p><p class="stat-val">{{ $statPublished }}</p></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon orange">
                 <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
             </div>
-            <div><p class="stat-label">Draft</p><p class="stat-val">{{ \App\Models\Materi::where('dipublikasikan', false)->count() }}</p></div>
+            <div><p class="stat-label">Draft</p><p class="stat-val">{{ $statDraft }}</p></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon yellow">
                 <svg width="18" height="18" fill="none" stroke="#a16207" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
             </div>
-            <div><p class="stat-label">Terhapus</p><p class="stat-val">{{ \App\Models\Materi::onlyTrashed()->count() }}</p></div>
+            <div><p class="stat-label">Terhapus</p><p class="stat-val">{{ $statTrashed }}</p></div>
         </div>
     </div>
 
@@ -227,7 +239,7 @@
                         <th style="width:48px">#</th>
                         <th style="width:52px">Thumb</th>
                         <th>Judul / Guru</th>
-                        <th>Kelas & Mapel</th>
+                        <th>Kelas &amp; Mapel</th>
                         <th>Jenis</th>
                         <th class="center">Urutan</th>
                         <th>Status</th>
@@ -240,8 +252,9 @@
                         <td><span class="no-col">{{ $materi->firstItem() + $index }}</span></td>
                         <td>
                             <div class="thumbnail-wrap">
-                                @if($m->thumbnail)
-                                    <img src="{{ asset('storage/'.$m->thumbnail) }}" alt="">
+                                {{-- BUG FIX: Gunakan accessor thumbnail_url dari model --}}
+                                @if($m->thumbnail_url)
+                                    <img src="{{ $m->thumbnail_url }}" alt="{{ $m->judul }}">
                                 @else
                                     <svg width="18" height="18" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
                                 @endif
@@ -255,7 +268,8 @@
                             <div style="font-size:13px;font-weight:600;color:var(--text)">{{ $m->kelas->nama_kelas ?? '-' }}</div>
                             <div style="font-size:12px;color:var(--text3)">{{ $m->mataPelajaran->nama_mapel ?? '-' }}</div>
                         </td>
-                        <td><span class="jenis-pill jenis-{{ $m->jenis }}">{{ ucfirst($m->jenis) }}</span></td>
+                        {{-- BUG FIX: Gunakan accessor label_jenis dari model untuk label yang lebih tepat --}}
+                        <td><span class="jenis-pill jenis-{{ $m->jenis }}">{{ $m->label_jenis }}</span></td>
                         <td class="center" style="font-size:13px;font-weight:700;color:var(--text3)">{{ $m->urutan ?? '—' }}</td>
                         <td>
                             @if($m->trashed())
@@ -357,7 +371,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-cancel" onclick="document.getElementById('importModal').classList.remove('open')">Batal</button>
-                <button type="submit" class="btn btn-primary">Upload & Import</button>
+                <button type="submit" class="btn btn-primary">Upload &amp; Import</button>
             </div>
         </form>
     </div>

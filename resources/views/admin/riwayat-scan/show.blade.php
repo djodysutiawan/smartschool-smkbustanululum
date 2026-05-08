@@ -25,22 +25,40 @@
     .detail-item{padding:13px 20px;border-bottom:1px solid var(--border);display:flex;flex-direction:column;gap:4px;}
     .detail-item:nth-child(odd){border-right:1px solid var(--border);}
     .detail-item.full{grid-column:span 2;border-right:none;}
-    .detail-item:last-child,.detail-item:nth-last-child(1){border-bottom:none;}
+    /* Baris terakhir tidak punya border-bottom */
+    .detail-item:last-child{border-bottom:none;}
+    .detail-item:nth-last-child(2):nth-child(odd){border-bottom:none;}
     .detail-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
     .detail-value{font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);font-weight:500;}
-    /* BUGFIX: badge sesuai enum berhasil|gagal_kadaluarsa|gagal_lokasi|gagal_duplikat */
+
+    /* ── Badge — kolom HASIL ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;}
     .badge-dot{width:5px;height:5px;border-radius:50%;}
-    .badge-berhasil{background:#dcfce7;color:#15803d;}.badge-berhasil .badge-dot{background:#15803d;}
-    .badge-gagal_kadaluarsa{background:#fef9c3;color:#a16207;}.badge-gagal_kadaluarsa .badge-dot{background:#a16207;}
-    .badge-gagal_lokasi{background:#fee2e2;color:#dc2626;}.badge-gagal_lokasi .badge-dot{background:#dc2626;}
-    .badge-gagal_duplikat{background:#fdf4ff;color:#7c3aed;}.badge-gagal_duplikat .badge-dot{background:#7c3aed;}
+    .badge-berhasil          {background:#dcfce7;color:#15803d;}  .badge-berhasil .badge-dot          {background:#15803d;}
+    .badge-gagal-kadaluarsa  {background:#fef9c3;color:#a16207;}  .badge-gagal-kadaluarsa .badge-dot  {background:#a16207;}
+    .badge-gagal-lokasi      {background:#fee2e2;color:#dc2626;}  .badge-gagal-lokasi .badge-dot      {background:#dc2626;}
+    .badge-gagal-duplikat    {background:#fdf4ff;color:#7c3aed;}  .badge-gagal-duplikat .badge-dot    {background:#7c3aed;}
+    /* ── Badge — kolom STATUS ── */
+    .badge-valid                {background:#dcfce7;color:#15803d;}  .badge-valid .badge-dot                {background:#15803d;}
+    .badge-ditolak-radius       {background:#fef9c3;color:#a16207;}  .badge-ditolak-radius .badge-dot       {background:#a16207;}
+    .badge-ditolak-kadaluarsa   {background:#fee2e2;color:#dc2626;}  .badge-ditolak-kadaluarsa .badge-dot   {background:#dc2626;}
+    .badge-ditolak-nonaktif     {background:#fff7ed;color:#c2410c;}  .badge-ditolak-nonaktif .badge-dot     {background:#c2410c;}
+    .badge-ditolak-duplikat     {background:#fdf4ff;color:#7c3aed;}  .badge-ditolak-duplikat .badge-dot     {background:#7c3aed;}
+    .badge-ditolak-bukan-anggota{background:#f0f9ff;color:#0369a1;}  .badge-ditolak-bukan-anggota .badge-dot{background:#0369a1;}
+    .badge-default              {background:#f1f5f9;color:#64748b;}  .badge-default .badge-dot              {background:#64748b;}
+
     .map-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;display:flex;flex-direction:column;gap:8px;}
     .map-coords{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);font-weight:600;}
     .map-link{display:inline-flex;align-items:center;gap:5px;color:var(--brand);font-size:12.5px;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;text-decoration:none;margin-top:4px;}
     .map-link:hover{text-decoration:underline;}
     .device-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text2);line-height:1.5;word-break:break-all;}
-    @media(max-width:640px){.page{padding:16px;}.detail-grid{grid-template-columns:1fr;}.detail-item:nth-child(odd){border-right:none;}.detail-item.full{grid-column:span 1;}}
+
+    @media(max-width:640px){
+        .page{padding:16px;}
+        .detail-grid{grid-template-columns:1fr;}
+        .detail-item:nth-child(odd){border-right:none;}
+        .detail-item.full{grid-column:span 1;}
+    }
 </style>
 
 <div class="page">
@@ -57,7 +75,7 @@
             <h1 class="page-title">Detail Scan QR</h1>
             <p class="page-sub">
                 {{ $riwayatScan->siswa->nama_lengkap ?? '—' }}
-                — {{ $riwayatScan->dipindai_pada?->translatedFormat('d F Y') ?? '-' }}
+                — {{ $riwayatScan->di_scan_pada?->translatedFormat('d F Y') ?? '-' }}
             </p>
         </div>
         <div class="header-actions">
@@ -108,33 +126,39 @@
             <div class="detail-item">
                 <span class="detail-label">Hasil Scan</span>
                 <span class="detail-value">
-                    {{-- BUGFIX: badge & label sesuai enum hasil yang benar --}}
-                    <span class="badge badge-{{ $riwayatScan->hasil }}">
+                    {{-- kolom hasil (berhasil|gagal_*) — accessor badge_class_hasil & label_hasil --}}
+                    <span class="badge {{ $riwayatScan->badge_class_hasil }}">
                         <span class="badge-dot"></span>
-                        @switch($riwayatScan->hasil)
-                            @case('berhasil')         Berhasil @break
-                            @case('gagal_kadaluarsa') Gagal – Kadaluarsa @break
-                            @case('gagal_lokasi')     Gagal – Lokasi @break
-                            @case('gagal_duplikat')   Gagal – Duplikat @break
-                            @default {{ ucfirst($riwayatScan->hasil ?? '-') }}
-                        @endswitch
+                        {{ $riwayatScan->label_hasil }}
+                    </span>
+                </span>
+            </div>
+
+            <div class="detail-item">
+                <span class="detail-label">Status Teknis</span>
+                <span class="detail-value">
+                    {{-- kolom status (valid|ditolak_*) — accessor badge_class_status & label_status --}}
+                    <span class="badge {{ $riwayatScan->badge_class_status }}">
+                        <span class="badge-dot"></span>
+                        {{ $riwayatScan->label_status }}
                     </span>
                 </span>
             </div>
 
             <div class="detail-item">
                 <span class="detail-label">Tanggal</span>
-                <span class="detail-value">{{ $riwayatScan->dipindai_pada?->translatedFormat('l, d F Y') ?? '—' }}</span>
+                <span class="detail-value">{{ $riwayatScan->di_scan_pada?->translatedFormat('l, d F Y') ?? '—' }}</span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Waktu Dipindai</span>
                 <span class="detail-value" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:18px;color:var(--brand);">
-                    {{ $riwayatScan->dipindai_pada?->format('H:i:s') ?? '—' }}
+                    {{ $riwayatScan->di_scan_pada?->format('H:i:s') ?? '—' }}
                 </span>
             </div>
 
             <div class="detail-item">
                 <span class="detail-label">IP Address</span>
+                {{-- Kolom ip_address sudah ada di $fillable model --}}
                 <span class="detail-value">{{ $riwayatScan->ip_address ?? '—' }}</span>
             </div>
             <div class="detail-item">
@@ -142,10 +166,18 @@
                 <span class="detail-value">{{ $riwayatScan->created_at?->format('d F Y, H:i:s') ?? '—' }}</span>
             </div>
 
-            @if($riwayatScan->info_perangkat)
+            @if($riwayatScan->keterangan)
             <div class="detail-item full">
-                <span class="detail-label">Info Perangkat</span>
-                <div class="device-box">{{ $riwayatScan->info_perangkat }}</div>
+                <span class="detail-label">Keterangan</span>
+                <div class="device-box">{{ $riwayatScan->keterangan }}</div>
+            </div>
+            @endif
+
+            @if($riwayatScan->user_agent)
+            <div class="detail-item full">
+                <span class="detail-label">Info Perangkat (User Agent)</span>
+                {{-- Kolom user_agent di model, bukan info_perangkat --}}
+                <div class="device-box">{{ $riwayatScan->user_agent }}</div>
             </div>
             @endif
         </div>
@@ -164,8 +196,13 @@
                 <p class="map-coords">
                     Lat: {{ $riwayatScan->latitude }} &nbsp;|&nbsp; Lon: {{ $riwayatScan->longitude }}
                 </p>
+                @if($riwayatScan->jarak_meter !== null)
+                    <p style="font-size:12.5px;color:var(--text2);margin-top:2px;">
+                        Jarak dari titik referensi: <strong>{{ number_format($riwayatScan->jarak_meter, 1) }} meter</strong>
+                    </p>
+                @endif
                 <a href="https://www.google.com/maps?q={{ $riwayatScan->latitude }},{{ $riwayatScan->longitude }}"
-                   target="_blank" class="map-link">
+                   target="_blank" rel="noopener noreferrer" class="map-link">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                     Buka di Google Maps
                 </a>

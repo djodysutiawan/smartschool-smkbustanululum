@@ -11,6 +11,7 @@
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px;}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s;white-space:nowrap;}
     .btn:hover{filter:brightness(.93);}
+    .btn-sm{padding:6px 12px;font-size:12px;border-radius:6px;}
     .btn-back{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
     .btn-back:hover{background:var(--surface3);filter:none;}
     .btn-print{background:var(--brand-600);color:#fff;}
@@ -71,7 +72,8 @@
     <div class="page-header">
         <div>
             <h1 class="page-title">Rapor Kelas {{ $kelas->nama_kelas }}</h1>
-            <p class="page-sub">Rekap nilai semua siswa — {{ $tahunAjaran->tahun }} Semester {{ ucfirst($tahunAjaran->semester) }}</p>
+            {{-- BUG FIX: null-safe untuk semester --}}
+            <p class="page-sub">Rekap nilai semua siswa — {{ $tahunAjaran->tahun }} Semester {{ ucfirst($tahunAjaran->semester ?? '') }}</p>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
             <a href="{{ route('admin.nilai.index') }}" class="btn btn-back">
@@ -90,8 +92,9 @@
         <div class="meta-sep"></div>
         <div class="meta-item"><p class="meta-label">Tahun Ajaran</p><p class="meta-val">{{ $tahunAjaran->tahun }}</p></div>
         <div class="meta-sep"></div>
-        <div class="meta-item"><p class="meta-label">Semester</p><p class="meta-val">{{ ucfirst($tahunAjaran->semester) }}</p></div>
+        <div class="meta-item"><p class="meta-label">Semester</p><p class="meta-val">{{ ucfirst($tahunAjaran->semester ?? '') }}</p></div>
         <div class="meta-sep"></div>
+        {{-- BUG FIX: $nilai adalah Collection yang di-groupBy siswa_id, jadi count() = jumlah siswa unik, bukan total baris nilai --}}
         <div class="meta-item"><p class="meta-label">Total Siswa</p><p class="meta-val">{{ $nilai->count() }} siswa</p></div>
         <div class="meta-sep"></div>
         <div class="meta-item"><p class="meta-label">Dicetak</p><p class="meta-val">{{ now()->format('d M Y') }}</p></div>
@@ -122,6 +125,12 @@
                 @endif
             </p>
             <div class="table-actions">
+                {{--
+                    BUG FIX: route name di routes file adalah:
+                    'admin.nilai.rapor-kelas.export.pdf'  → exportRaporPdf()
+                    'admin.nilai.rapor-kelas.export.excel' → exportRaporExcel()
+                    Kedua route ini menggunakan method GET, bukan POST.
+                --}}
                 <a href="{{ route('admin.nilai.rapor-kelas.export.pdf', ['kelas_id' => $kelas->id, 'tahun_ajaran_id' => $tahunAjaran->id]) }}"
                    class="btn btn-sm btn-export-pdf" target="_blank">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -134,6 +143,7 @@
                 </a>
             </div>
         </div>
+
         <div class="table-wrap">
             <table>
                 <thead>
@@ -154,19 +164,27 @@
                     @forelse($nilai as $siswaId => $siswaRow)
                         @foreach($siswaRow as $idx => $n)
                         <tr>
-                            @if($idx === 0)
+                            {{--
+                                BUG FIX: $idx adalah key dari collection (bisa berupa integer 0,1,2...),
+                                namun ketika iterasi @foreach pada Collection yang di-groupBy,
+                                key-nya adalah index numerik dari sub-collection.
+                                Gunakan $loop->first untuk menentukan baris pertama per siswa.
+                            --}}
+                            @if($loop->first)
                                 <td rowspan="{{ $siswaRow->count() }}"><span class="no-col">{{ $loop->parent->iteration }}</span></td>
                                 <td rowspan="{{ $siswaRow->count() }}"><p class="sname">{{ $n->siswa->nama_lengkap ?? '-' }}</p></td>
                             @endif
                             <td><span class="mapel-tag">{{ $n->mataPelajaran->nama_mapel ?? '-' }}</span></td>
-                            <td class="center muted">{{ $n->nilai_tugas ?? '—' }}</td>
-                            <td class="center muted">{{ $n->nilai_harian ?? '—' }}</td>
-                            <td class="center muted">{{ $n->nilai_uts ?? '—' }}</td>
-                            <td class="center muted">{{ $n->nilai_uas ?? '—' }}</td>
+                            {{-- BUG FIX: nilai komponen format konsisten dengan null-check --}}
+                            <td class="center muted">{{ $n->nilai_tugas !== null ? number_format($n->nilai_tugas, 1) : '—' }}</td>
+                            <td class="center muted">{{ $n->nilai_harian !== null ? number_format($n->nilai_harian, 1) : '—' }}</td>
+                            <td class="center muted">{{ $n->nilai_uts !== null ? number_format($n->nilai_uts, 1) : '—' }}</td>
+                            <td class="center muted">{{ $n->nilai_uas !== null ? number_format($n->nilai_uas, 1) : '—' }}</td>
                             <td class="center">
                                 @if($n->nilai_akhir !== null)
                                     @php
-                                        $nc = $n->predikat === 'A' ? '#15803d' : ($n->predikat === 'B' ? '#2563eb' : ($n->predikat === 'C' ? '#d97706' : '#dc2626'));
+                                        $predColors = ['A'=>'#15803d','B'=>'#2563eb','C'=>'#d97706','D'=>'#dc2626','E'=>'#9f1239'];
+                                        $nc = $predColors[$n->predikat] ?? '#dc2626';
                                     @endphp
                                     <span class="nilai-num" style="color:{{ $nc }}">{{ number_format($n->nilai_akhir, 1) }}</span>
                                 @else

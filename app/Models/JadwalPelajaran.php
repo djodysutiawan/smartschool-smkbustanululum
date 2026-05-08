@@ -179,4 +179,5 @@ class JadwalPelajaran extends Model
     {
         return $this->hasMany(JurnalMengajar::class);
     }
+    
 }

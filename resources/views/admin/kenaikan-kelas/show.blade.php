@@ -20,6 +20,7 @@
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2;}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px;}
     .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s;white-space:nowrap;}
     .btn:hover{filter:brightness(.93);}
     .btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border2);}
@@ -36,16 +37,14 @@
 
     /* Layout */
     .layout{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;}
-    .main-col{}
-    .side-col{}
 
     /* Info card */
     .info-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
     .card-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;}
     .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px;}
     .card-body{padding:20px;}
-    .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 20px;}
-    .meta-item{}
+    .meta-item{margin-bottom:12px;}
+    .meta-item:last-child{margin-bottom:0;}
     .meta-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;}
     .meta-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:700;color:var(--text);margin-top:2px;}
     .meta-val.muted{font-weight:400;color:var(--text2);}
@@ -90,12 +89,13 @@
 
     .syarat-pass{color:#15803d;font-weight:700;font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;}
     .syarat-fail{color:#dc2626;font-weight:700;font-size:12px;font-family:'Plus Jakarta Sans',sans-serif;}
-
-    /* Catatan highlight */
     .catatan-text{font-size:12px;color:var(--text2);font-style:italic;}
 
+    /* Alert assign tidak naik */
+    .alert-info{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius-sm);margin-bottom:12px;font-size:12.5px;color:#1d4ed8;}
+
     @media(max-width:900px){.layout{grid-template-columns:1fr;}.stats-row{grid-template-columns:1fr 1fr;}}
-    @media(max-width:640px){.page{padding:16px;}.meta-grid{grid-template-columns:1fr;}}
+    @media(max-width:640px){.page{padding:16px;}}
 </style>
 
 <div class="page">
@@ -118,20 +118,17 @@
                         'dibatalkan' => 'badge-dibatalkan',
                         default      => 'badge-draft',
                     };
-                    $badgeLbl = match($kenaikanKelas->status) {
-                        'selesai'    => 'Selesai',
-                        'diproses'   => 'Diproses',
-                        'dibatalkan' => 'Dibatalkan',
-                        default      => 'Draft',
-                    };
+                    $badgeLbl = $kenaikanKelas->label_status;
                 @endphp
                 <span class="badge {{ $badgeCls }}" style="margin-left:8px;vertical-align:middle;">
                     <span class="badge-dot"></span>{{ $badgeLbl }}
                 </span>
             </h1>
             <p class="page-sub">
-                Tingkat {{ $kenaikanKelas->dari_tingkat }} → {{ $kenaikanKelas->ke_tingkat === 'lulus' ? 'Lulus' : $kenaikanKelas->ke_tingkat }}
-                · {{ optional($kenaikanKelas->tahunAjaranAsal)->nama }} → {{ optional($kenaikanKelas->tahunAjaranTujuan)->nama }}
+                Tingkat {{ $kenaikanKelas->dari_tingkat }}
+                → {{ $kenaikanKelas->ke_tingkat === 'lulus' ? 'Lulus' : $kenaikanKelas->ke_tingkat }}
+                · {{ optional($kenaikanKelas->tahunAjaranAsal)->nama ?? '—' }}
+                → {{ optional($kenaikanKelas->tahunAjaranTujuan)->nama ?? '—' }}
             </p>
         </div>
         <div class="header-actions">
@@ -139,11 +136,19 @@
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
             </a>
-            @if(! $kenaikanKelas->isSelesai() && ! $kenaikanKelas->isDibatalkan())
-            <form method="POST" action="{{ route('admin.kenaikan-kelas.batalkan', $kenaikanKelas) }}" id="formBatal">
+
+            {{--
+                BUG FIX: Delegasikan pengecekan ke model bisaDibatalkan()
+                yang sudah diperbaiki (cover STATUS_DRAFT & STATUS_DIPROSES).
+                Sebelumnya: `!isSelesai() && !isDibatalkan()` — ini memang
+                hasilnya sama, tapi lebih ekspresif dan future-proof via method.
+            --}}
+            @if($kenaikanKelas->bisaDibatalkan())
+            <form method="POST"
+                  action="{{ route('admin.kenaikan-kelas.batalkan', $kenaikanKelas) }}"
+                  id="formBatal">
                 @csrf
-                <button type="button" class="btn btn-danger-outline"
-                        onclick="confirmBatal()">
+                <button type="button" class="btn btn-danger-outline" onclick="confirmBatal()">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
                     Batalkan Proses
                 </button>
@@ -168,30 +173,56 @@
     {{-- Summary Stats --}}
     <div class="stats-row">
         <div class="stat-sm">
-            <p class="stat-sm-val">{{ $kenaikanKelas->total_siswa }}</p>
+            <p class="stat-sm-val">{{ $kenaikanKelas->total_siswa ?? 0 }}</p>
             <p class="stat-sm-lbl">Total Siswa</p>
         </div>
         <div class="stat-sm">
-            <p class="stat-sm-val" style="color:#15803d;">{{ $kenaikanKelas->naik_kelas }}</p>
+            <p class="stat-sm-val" style="color:#15803d;">{{ $kenaikanKelas->naik_kelas ?? 0 }}</p>
             <p class="stat-sm-lbl">Naik Kelas</p>
         </div>
         <div class="stat-sm">
-            <p class="stat-sm-val" style="color:#dc2626;">{{ $kenaikanKelas->tidak_naik }}</p>
+            <p class="stat-sm-val" style="color:#dc2626;">{{ $kenaikanKelas->tidak_naik ?? 0 }}</p>
             <p class="stat-sm-lbl">Tidak Naik</p>
         </div>
         <div class="stat-sm">
-            <p class="stat-sm-val" style="color:#7c3aed;">{{ $kenaikanKelas->lulus }}</p>
+            <p class="stat-sm-val" style="color:#7c3aed;">{{ $kenaikanKelas->lulus ?? 0 }}</p>
             <p class="stat-sm-lbl">Lulus</p>
         </div>
     </div>
 
     <div class="layout">
         <div class="main-col">
+            {{--
+                INFO: Tampilkan peringatan jika ada siswa 'tidak_naik'
+                yang belum di-assign kelas baru (kelas_tujuan_id null).
+                Ini sesuai dengan fitur assignKelasTidakNaik() di controller.
+            --}}
+            @if($kenaikanKelas->isSelesai() && $kenaikanKelas->tidak_naik > 0)
+                @php
+                    $belumAssign = $kenaikanKelas->detail
+                        ->where('keputusan', 'tidak_naik')
+                        ->whereNull('kelas_tujuan_id')
+                        ->count();
+                @endphp
+                @if($belumAssign > 0)
+                <div class="alert-info" style="margin-bottom:16px;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                    <div>
+                        <strong>{{ $belumAssign }} siswa tidak naik</strong> belum di-assign ke kelas baru di tahun ajaran tujuan.
+                        Silakan assign kelas mereka melalui halaman data siswa.
+                    </div>
+                </div>
+                @endif
+            @endif
+
             {{-- Tabel Detail Siswa --}}
             <div class="table-card">
                 <div class="table-topbar">
                     <p class="table-info">Detail Per Siswa</p>
-                    <input type="text" class="search-input" placeholder="Cari nama / NIS..." oninput="filterSiswa(this.value)">
+                    <input type="text"
+                           class="search-input"
+                           placeholder="Cari nama / NIS..."
+                           oninput="filterSiswa(this.value)">
                 </div>
                 <div class="table-wrap">
                     <table>
@@ -209,32 +240,54 @@
                             </tr>
                         </thead>
                         <tbody id="tabelDetail">
-                            @foreach($kenaikanKelas->detail as $i => $det)
+                            @forelse($kenaikanKelas->detail as $i => $det)
                             @php
-                                $persen = $det->persentase_kehadiran ?? 0;
+                                $persen  = $det->persentase_kehadiran ?? 0;
                                 $progCls = $persen >= 75 ? 'g' : ($persen >= 50 ? 'w' : 'r');
+                                // Safe access ke relasi siswa
+                                $siswaNama = optional($det->siswa)->nama_lengkap ?? 'Siswa #' . $det->siswa_id;
+                                $siswaNis  = optional($det->siswa)->nis ?? '—';
                             @endphp
-                            <tr class="detail-row" data-search="{{ strtolower($det->siswa->nama_lengkap . ' ' . $det->siswa->nis) }}">
+                            <tr class="detail-row"
+                                data-search="{{ strtolower($siswaNama . ' ' . $siswaNis) }}">
                                 <td><span class="no-col">{{ $i + 1 }}</span></td>
                                 <td>
-                                    <p class="siswa-name">{{ $det->siswa->nama_lengkap }}</p>
-                                    <p class="siswa-nis">{{ $det->siswa->nis }}</p>
+                                    <p class="siswa-name">{{ $siswaNama }}</p>
+                                    <p class="siswa-nis">{{ $siswaNis }}</p>
                                 </td>
-                                <td style="font-size:12.5px;">{{ optional($det->kelasAsal)->nama_kelas ?? '—' }}</td>
-                                <td style="font-size:12.5px;">{{ optional($det->kelasTujuan)->nama_kelas ?? '—' }}</td>
+                                <td style="font-size:12.5px;">
+                                    {{ optional($det->kelasAsal)->nama_kelas ?? '—' }}
+                                </td>
+                                <td style="font-size:12.5px;">
+                                    @if($det->kelasTujuan)
+                                        {{ $det->kelasTujuan->nama_kelas }}
+                                    @elseif($det->keputusan === 'tidak_naik')
+                                        <span style="color:var(--text3);font-size:11.5px;font-style:italic;">Belum di-assign</span>
+                                    @elseif($det->keputusan === 'lulus')
+                                        <span style="color:#7c3aed;font-size:11.5px;">Alumni</span>
+                                    @else
+                                        <span style="color:var(--text3);">—</span>
+                                    @endif
+                                </td>
                                 <td>
                                     <div class="prog-wrap">
                                         <div class="prog-bar">
-                                            <div class="prog-fill {{ $progCls }}" style="width:{{ min(100, $persen) }}%"></div>
+                                            <div class="prog-fill {{ $progCls }}"
+                                                 style="width:{{ min(100, $persen) }}%"></div>
                                         </div>
-                                        <span class="prog-pct" style="color:{{ $persen >= 75 ? '#15803d' : '#dc2626' }}">
+                                        <span class="prog-pct"
+                                              style="color:{{ $persen >= 75 ? '#15803d' : '#dc2626' }}">
                                             {{ number_format($persen, 1) }}%
                                         </span>
                                     </div>
-                                    <p style="font-size:10.5px;color:var(--text3);margin-top:1px;">{{ $det->total_hadir }}/{{ $det->total_pertemuan }}</p>
+                                    <p style="font-size:10.5px;color:var(--text3);margin-top:1px;">
+                                        {{ $det->total_hadir ?? 0 }}/{{ $det->total_pertemuan ?? 0 }}
+                                    </p>
                                 </td>
-                                <td class="center" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;color:{{ $det->rata_rata_nilai >= 65 ? '#15803d' : '#dc2626' }}">
-                                    {{ number_format($det->rata_rata_nilai, 1) }}
+                                <td class="center"
+                                    style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;
+                                           color:{{ ($det->rata_rata_nilai ?? 0) >= 65 ? '#15803d' : '#dc2626' }}">
+                                    {{ number_format($det->rata_rata_nilai ?? 0, 1) }}
                                 </td>
                                 <td class="center">
                                     <div style="display:flex;flex-direction:column;gap:2px;align-items:center;">
@@ -262,6 +315,9 @@
                                             <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                                             Lulus
                                         </span>
+                                    @else
+                                        {{-- Fallback jika ada keputusan tak terduga --}}
+                                        <span style="font-size:12px;color:var(--text3);">{{ $det->keputusan }}</span>
                                     @endif
                                 </td>
                                 <td>
@@ -272,7 +328,13 @@
                                     @endif
                                 </td>
                             </tr>
-                            @endforeach
+                            @empty
+                            <tr>
+                                <td colspan="9" style="text-align:center;padding:40px;color:var(--text3);font-size:13px;">
+                                    Belum ada detail siswa untuk proses ini.
+                                </td>
+                            </tr>
+                            @endforelse
                         </tbody>
                     </table>
                 </div>
@@ -289,38 +351,49 @@
                     </p>
                 </div>
                 <div class="card-body">
-                    <div style="display:flex;flex-direction:column;gap:12px;">
-                        <div class="meta-item">
-                            <p class="meta-label">ID Proses</p>
-                            <p class="meta-val">#{{ $kenaikanKelas->id }}</p>
-                        </div>
-                        <div class="meta-item">
-                            <p class="meta-label">Tingkat</p>
-                            <p class="meta-val">{{ $kenaikanKelas->dari_tingkat }} → {{ $kenaikanKelas->ke_tingkat === 'lulus' ? 'Lulus' : $kenaikanKelas->ke_tingkat }}</p>
-                        </div>
-                        <div class="meta-item">
-                            <p class="meta-label">TA Asal</p>
-                            <p class="meta-val muted">{{ optional($kenaikanKelas->tahunAjaranAsal)->nama ?? '—' }}</p>
-                        </div>
-                        <div class="meta-item">
-                            <p class="meta-label">TA Tujuan</p>
-                            <p class="meta-val muted">{{ optional($kenaikanKelas->tahunAjaranTujuan)->nama ?? '—' }}</p>
-                        </div>
-                        <div class="meta-item">
-                            <p class="meta-label">Diproses Oleh</p>
-                            <p class="meta-val muted">{{ optional($kenaikanKelas->diprosesOleh)->name ?? '—' }}</p>
-                        </div>
-                        <div class="meta-item">
-                            <p class="meta-label">Tanggal Proses</p>
-                            <p class="meta-val muted">{{ $kenaikanKelas->diproses_pada?->format('d M Y, H:i') ?? '—' }}</p>
-                        </div>
-                        @if($kenaikanKelas->catatan)
-                        <div class="meta-item" style="padding-top:8px;border-top:1px solid var(--border);">
-                            <p class="meta-label">Catatan</p>
-                            <p style="font-size:12.5px;color:var(--text2);margin-top:4px;line-height:1.5;">{{ $kenaikanKelas->catatan }}</p>
-                        </div>
-                        @endif
+                    <div class="meta-item">
+                        <p class="meta-label">ID Proses</p>
+                        <p class="meta-val">#{{ $kenaikanKelas->id }}</p>
                     </div>
+                    <div class="meta-item">
+                        <p class="meta-label">Tingkat</p>
+                        <p class="meta-val">
+                            {{ $kenaikanKelas->dari_tingkat }}
+                            → {{ $kenaikanKelas->ke_tingkat === 'lulus' ? 'Lulus' : $kenaikanKelas->ke_tingkat }}
+                        </p>
+                    </div>
+                    <div class="meta-item">
+                        <p class="meta-label">TA Asal</p>
+                        <p class="meta-val muted">
+                            {{ optional($kenaikanKelas->tahunAjaranAsal)->nama ?? '—' }}
+                        </p>
+                    </div>
+                    <div class="meta-item">
+                        <p class="meta-label">TA Tujuan</p>
+                        <p class="meta-val muted">
+                            {{ optional($kenaikanKelas->tahunAjaranTujuan)->nama ?? '—' }}
+                        </p>
+                    </div>
+                    <div class="meta-item">
+                        <p class="meta-label">Diproses Oleh</p>
+                        <p class="meta-val muted">
+                            {{ optional($kenaikanKelas->diprosesOleh)->name ?? '—' }}
+                        </p>
+                    </div>
+                    <div class="meta-item">
+                        <p class="meta-label">Tanggal Proses</p>
+                        <p class="meta-val muted">
+                            {{ $kenaikanKelas->diproses_pada?->format('d M Y, H:i') ?? '—' }}
+                        </p>
+                    </div>
+                    @if($kenaikanKelas->catatan)
+                    <div class="meta-item" style="padding-top:12px;border-top:1px solid var(--border);">
+                        <p class="meta-label">Catatan</p>
+                        <p style="font-size:12.5px;color:var(--text2);margin-top:4px;line-height:1.5;">
+                            {{ $kenaikanKelas->catatan }}
+                        </p>
+                    </div>
+                    @endif
                 </div>
             </div>
 
@@ -343,6 +416,41 @@
                     </div>
                 </div>
             </div>
+
+            {{-- Quick Stats per Keputusan --}}
+            @php
+                $detailGrouped = $kenaikanKelas->detail->groupBy('keputusan');
+            @endphp
+            @if($detailGrouped->isNotEmpty())
+            <div class="info-card">
+                <div class="card-header">
+                    <p class="card-title">
+                        <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+                        Ringkasan Keputusan
+                    </p>
+                </div>
+                <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+                    @if($detailGrouped->has('naik_kelas'))
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f0fdf4;border-radius:var(--radius-sm);">
+                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:#15803d;">Naik Kelas</span>
+                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;color:#15803d;">{{ $detailGrouped['naik_kelas']->count() }}</span>
+                    </div>
+                    @endif
+                    @if($detailGrouped->has('tidak_naik'))
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#fff0f0;border-radius:var(--radius-sm);">
+                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:#dc2626;">Tidak Naik</span>
+                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;color:#dc2626;">{{ $detailGrouped['tidak_naik']->count() }}</span>
+                    </div>
+                    @endif
+                    @if($detailGrouped->has('lulus'))
+                    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:#f3e8ff;border-radius:var(--radius-sm);">
+                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:#7c3aed;">Lulus</span>
+                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800;color:#7c3aed;">{{ $detailGrouped['lulus']->count() }}</span>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
         </div>
     </div>
 </div>
@@ -350,7 +458,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     function filterSiswa(q) {
-        const val = q.toLowerCase();
+        const val = q.toLowerCase().trim();
         document.querySelectorAll('.detail-row').forEach(row => {
             row.style.display = row.dataset.search.includes(val) ? '' : 'none';
         });
@@ -372,10 +480,18 @@
     }
 
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({
+        icon:'success', title:'Berhasil!',
+        text: @json(session('success')),
+        timer:2500, showConfirmButton:false, toast:true, position:'top-end'
+    });
     @endif
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon:'error', title:'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor:'#1f63db'
+    });
     @endif
 </script>
 </x-app-layout>

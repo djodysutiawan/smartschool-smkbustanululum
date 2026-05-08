@@ -18,18 +18,20 @@ class SesiQrGuruController extends Controller
 {
     /*
     |--------------------------------------------------------------------------
-    | CATATAN KONSISTENSI MIGRASI
+    | CATATAN KONSISTENSI
     |--------------------------------------------------------------------------
     | Tabel sesi_qr_guru:
     |   - kode_qr          : uuid, di-generate otomatis via Model::booted()
     |   - is_active        : boolean, default true
-    |   - berlaku_mulai    : timestamp
-    |   - kadaluarsa_pada  : timestamp
+    |   - berlaku_mulai    : timestamp (datetime-local dari form)
+    |   - kadaluarsa_pada  : timestamp (datetime-local dari form)
     |   - radius_meter     : nullable integer
+    |   - dibuat_oleh      : FK users.id
     |
-    | Route yang tersedia:
-    |   index, create, store, show, nonaktifkan, destroy,
-    |   cetak-qr, scan-guru, proses-qr
+    | Tabel riwayat_scan_guru:
+    |   - hasil: enum('berhasil','gagal_kadaluarsa','gagal_duplikat','gagal_lokasi')
+    |
+    | AbsensiGuru::METODE_LIST = ['manual', 'qr']
     |--------------------------------------------------------------------------
     */
 
@@ -38,7 +40,10 @@ class SesiQrGuruController extends Controller
     public function index(Request $request)
     {
         $query = SesiQrGuru::with(['pembuat'])
-            ->withCount(['riwayatScan', 'riwayatScan as scan_berhasil_count' => fn ($q) => $q->where('hasil', 'berhasil')]);
+            ->withCount([
+                'riwayatScan',
+                'riwayatScan as scan_berhasil_count' => fn ($q) => $q->where('hasil', 'berhasil'),
+            ]);
 
         if ($request->filled('tanggal')) {
             $query->whereDate('tanggal', $request->tanggal);
@@ -52,12 +57,14 @@ class SesiQrGuruController extends Controller
         return view('admin.sesi-qr-guru.index', compact('sesiList'));
     }
 
-    // ─── CREATE & STORE ───────────────────────────────────────────────────────
+    // ─── CREATE ───────────────────────────────────────────────────────────────
 
     public function create()
     {
         return view('admin.sesi-qr-guru.create');
     }
+
+    // ─── STORE ────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
     {
@@ -70,8 +77,19 @@ class SesiQrGuruController extends Controller
             'kadaluarsa_pada.after' => 'Waktu kadaluarsa harus setelah waktu berlaku.',
         ]);
 
-        // kode_qr di-generate otomatis oleh SesiQrGuru::booted()
+        // Cegah duplikat sesi aktif di tanggal yang sama
+        $existing = SesiQrGuru::whereDate('tanggal', $validated['tanggal'])
+            ->where('is_active', true)
+            ->first();
+
+        if ($existing) {
+            return back()
+                ->withInput()
+                ->with('error', 'Sudah ada sesi QR guru aktif pada tanggal ini. Nonaktifkan sesi sebelumnya terlebih dahulu.');
+        }
+
         $validated['dibuat_oleh'] = Auth::id();
+        // kode_qr di-generate otomatis oleh SesiQrGuru::booted()
 
         SesiQrGuru::create($validated);
 
@@ -103,43 +121,51 @@ class SesiQrGuruController extends Controller
 
     public function destroy(SesiQrGuru $sesiQrGuru)
     {
+        // Cegah hapus jika sudah ada scan berhasil
+        if ($sesiQrGuru->riwayatScan()->where('hasil', 'berhasil')->exists()) {
+            return back()->with('error', 'Tidak dapat menghapus sesi yang sudah memiliki scan berhasil. Nonaktifkan saja.');
+        }
+
         $sesiQrGuru->delete();
+
         return redirect()->route('admin.sesi-qr-guru.index')
             ->with('success', 'Sesi QR guru berhasil dihapus.');
     }
 
     // ─── CETAK QR (PDF satu halaman) ─────────────────────────────────────────
 
+    // public function cetakQr(SesiQrGuru $sesiQrGuru)
+    // {
+    //     $sesiQrGuru->load('pembuat');
+
+    //     $qrSvg    = QrCode::format('svg')
+    //                     ->size(300)
+    //                     ->errorCorrection('H')
+    //                     ->margin(1)
+    //                     ->generate($sesiQrGuru->kode_qr);
+
+    //     $qrBase64 = base64_encode($qrSvg);
+    //     $qrMime   = 'image/svg+xml';
+
+    //     $pdf = Pdf::loadView('admin.sesi-qr-guru.exports.cetak-qr', compact('sesiQrGuru', 'qrBase64', 'qrMime'))
+    //         ->setPaper('a5', 'portrait')
+    //         ->setOption('isHtml5ParserEnabled', true)
+    //         ->setOption('isRemoteEnabled', true);
+
+    //     return $pdf->stream('qr_guru_' . $sesiQrGuru->id . '_' . $sesiQrGuru->tanggal->format('Ymd') . '.pdf');
+    // }
     public function cetakQr(SesiQrGuru $sesiQrGuru)
     {
         $sesiQrGuru->load('pembuat');
 
-        $qrSvg    = QrCode::format('svg')
-                        ->size(300)
-                        ->errorCorrection('H')
-                        ->margin(1)
-                        ->generate($sesiQrGuru->kode_qr);
-
-        $qrBase64 = base64_encode($qrSvg);
-        $qrMime   = 'image/svg+xml';
-
-        $pdf = Pdf::loadView('admin.sesi-qr-guru.exports.cetak-qr', compact('sesiQrGuru', 'qrBase64', 'qrMime'))
-            ->setPaper('a5', 'portrait')
-            ->setOption('isHtml5ParserEnabled', true)
-            ->setOption('isRemoteEnabled', true);
-
-        return $pdf->stream('qr_guru_' . $sesiQrGuru->id . '_' . $sesiQrGuru->tanggal->format('Ymd') . '.pdf');
+        // Hapus semua kode PDF/QrCode base64 yang lama, cukup return view
+        return view('admin.sesi-qr-guru.exports.cetak-qr', compact('sesiQrGuru'));
     }
 
-    // ─── HALAMAN SCAN (ditampilkan ke guru untuk di-scan) ────────────────────
+    // ─── HALAMAN SCAN ─────────────────────────────────────────────────────────
 
-    /**
-     * Halaman yang menampilkan form scan QR oleh guru piket.
-     * Guru piket mengarahkan kamera ke QR code yang sudah dicetak/ditampilkan.
-     */
     public function scanGuru(SesiQrGuru $sesiQrGuru)
     {
-        // Cek apakah sesi masih berlaku
         if (! $sesiQrGuru->masihBerlaku()) {
             return redirect()->route('admin.sesi-qr-guru.index')
                 ->with('error', 'Sesi QR sudah tidak aktif atau telah kadaluarsa.');
@@ -150,27 +176,15 @@ class SesiQrGuruController extends Controller
         return view('admin.sesi-qr-guru.scan', compact('sesiQrGuru', 'guruList'));
     }
 
-    // ─── PROSES QR SCAN ──────────────────────────────────────────────────────
+    // ─── PROSES QR SCAN (AJAX) ────────────────────────────────────────────────
 
-    /**
-     * Memproses hasil scan QR kode dari guru.
-     * Dipanggil via AJAX dari halaman scan atau dari perangkat guru.
-     *
-     * Flow:
-     * 1. Validasi kode QR → cari SesiQrGuru
-     * 2. Cek sesi masih berlaku (is_active + waktu)
-     * 3. Cek duplikat (guru ini sudah scan di sesi yang sama)
-     * 4. Cek lokasi GPS jika radius_meter diset
-     * 5. Simpan RiwayatScanGuru
-     * 6. Buat/update AbsensiGuru
-     */
     public function prosesQr(Request $request): JsonResponse
     {
         $request->validate([
-            'kode_qr'  => ['required', 'string'],
-            'guru_id'  => ['required', 'exists:guru,id'],
-            'latitude' => ['nullable', 'numeric', 'between:-90,90'],
-            'longitude'=> ['nullable', 'numeric', 'between:-180,180'],
+            'kode_qr'   => ['required', 'string'],
+            'guru_id'   => ['required', 'exists:guru,id'],
+            'latitude'  => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude' => ['nullable', 'numeric', 'between:-180,180'],
         ]);
 
         $sesiQr    = SesiQrGuru::where('kode_qr', $request->kode_qr)->first();
@@ -178,16 +192,41 @@ class SesiQrGuruController extends Controller
         $ipAddress = $request->ip();
         $device    = $request->userAgent();
 
-        // ── Validasi sesi ────────────────────────────────────────────────────
-        if (! $sesiQr || ! $sesiQr->masihBerlaku()) {
+        // 1. Validasi QR ditemukan
+        if (! $sesiQr) {
+            return response()->json([
+                'berhasil' => false,
+                'pesan'    => 'QR code tidak dikenali.',
+            ], 404);
+        }
+
+        // 2. Cek sesi aktif
+        if (! $sesiQr->is_active) {
             $this->catatRiwayat($sesiQr, $guru->id, 'gagal_kadaluarsa', $request, $ipAddress, $device);
             return response()->json([
                 'berhasil' => false,
-                'pesan'    => 'Sesi QR sudah tidak aktif atau telah kadaluarsa.',
+                'pesan'    => 'Sesi QR sudah dinonaktifkan.',
             ], 422);
         }
 
-        // ── Cek duplikat ─────────────────────────────────────────────────────
+        // 3. Cek kadaluarsa
+        if (! $sesiQr->masihBerlaku()) {
+            $this->catatRiwayat($sesiQr, $guru->id, 'gagal_kadaluarsa', $request, $ipAddress, $device);
+            return response()->json([
+                'berhasil' => false,
+                'pesan'    => 'Sesi QR sudah kadaluarsa.',
+            ], 422);
+        }
+
+        // 4. Cek sebelum berlaku
+        if (now()->isBefore($sesiQr->berlaku_mulai)) {
+            return response()->json([
+                'berhasil' => false,
+                'pesan'    => 'QR belum aktif. Berlaku mulai ' . $sesiQr->berlaku_mulai->format('H:i'),
+            ], 422);
+        }
+
+        // 5. Cek duplikat scan berhasil
         $sudahScan = RiwayatScanGuru::where('sesi_qr_guru_id', $sesiQr->id)
             ->where('guru_id', $guru->id)
             ->where('hasil', 'berhasil')
@@ -197,44 +236,63 @@ class SesiQrGuruController extends Controller
             $this->catatRiwayat($sesiQr, $guru->id, 'gagal_duplikat', $request, $ipAddress, $device);
             return response()->json([
                 'berhasil' => false,
-                'pesan'    => 'Guru ini sudah melakukan absensi QR pada sesi ini.',
+                'pesan'    => 'Guru ini sudah melakukan absensi pada sesi ini.',
             ], 422);
         }
 
-        // ── Cek lokasi GPS (jika sesi membatasi radius) ───────────────────────
-        if ($sesiQr->radius_meter && $request->filled('latitude') && $request->filled('longitude')) {
-            // Koordinat default sekolah (harus dikonfigurasi sesuai lokasi sekolah)
+        // 6. Validasi radius GPS jika dikonfigurasi
+        if ($sesiQr->radius_meter) {
+            if (! $request->filled('latitude') || ! $request->filled('longitude')) {
+                return response()->json([
+                    'berhasil'   => false,
+                    'pesan'      => 'Izinkan akses lokasi GPS untuk absensi ini.',
+                    'butuh_gps'  => true,
+                ], 422);
+            }
+
             $latSekolah = config('sekolah.latitude', -7.2575);
             $lngSekolah = config('sekolah.longitude', 112.7521);
 
             $jarak = $this->hitungJarak(
-                $request->latitude, $request->longitude,
-                $latSekolah, $lngSekolah
+                (float) $request->latitude,
+                (float) $request->longitude,
+                $latSekolah,
+                $lngSekolah
             );
 
             if ($jarak > $sesiQr->radius_meter) {
                 $this->catatRiwayat($sesiQr, $guru->id, 'gagal_lokasi', $request, $ipAddress, $device);
                 return response()->json([
-                    'berhasil' => false,
-                    'pesan'    => "Lokasi Anda terlalu jauh dari sekolah ({$jarak}m > {$sesiQr->radius_meter}m).",
+                    'berhasil'      => false,
+                    'pesan'         => "Lokasi terlalu jauh dari sekolah ({$jarak}m). Radius maksimal {$sesiQr->radius_meter}m.",
+                    'jarak_meter'   => $jarak,
+                    'radius_meter'  => $sesiQr->radius_meter,
                 ], 422);
             }
         }
 
-        // ── Simpan riwayat & absensi dalam transaksi ──────────────────────────
+        // 7. Semua valid — simpan dalam transaksi
         DB::transaction(function () use ($sesiQr, $guru, $request, $ipAddress, $device) {
-            // Simpan riwayat scan berhasil
-            $this->catatRiwayat($sesiQr, $guru->id, 'berhasil', $request, $ipAddress, $device);
-
             // Tentukan status: telat jika scan setelah berlaku_mulai + 15 menit
-            $batasTelat = $sesiQr->berlaku_mulai->addMinutes(15);
-            $status     = now()->gt($batasTelat) ? 'telat' : 'hadir';
+            $status = now()->isAfter($sesiQr->berlaku_mulai->addMinutes(15)) ? 'telat' : 'hadir';
 
-            // Buat absensi guru (updateOrCreate agar aman dari race condition)
+            // Catat riwayat scan berhasil
+            RiwayatScanGuru::create([
+                'sesi_qr_guru_id' => $sesiQr->id,
+                'guru_id'         => $guru->id,
+                'dipindai_pada'   => now(),
+                'hasil'           => 'berhasil',
+                'latitude'        => $request->latitude,
+                'longitude'       => $request->longitude,
+                'ip_address'      => $ipAddress,
+                'info_perangkat'  => $device,
+            ]);
+
+            // Buat atau update AbsensiGuru
             AbsensiGuru::updateOrCreate(
                 [
                     'guru_id' => $guru->id,
-                    'tanggal' => $sesiQr->tanggal,
+                    'tanggal' => $sesiQr->tanggal->toDateString(),
                 ],
                 [
                     'dicatat_oleh' => Auth::id(),
@@ -245,11 +303,15 @@ class SesiQrGuruController extends Controller
             );
         });
 
+        $status = now()->isAfter($sesiQr->berlaku_mulai->addMinutes(15)) ? 'telat' : 'hadir';
+        $label  = $status === 'telat' ? 'Terlambat' : 'Hadir';
+
         return response()->json([
-            'berhasil'     => true,
-            'pesan'        => 'Absensi berhasil dicatat.',
-            'nama_guru'    => $guru->nama_lengkap,
-            'waktu_scan'   => now()->format('H:i:s'),
+            'berhasil'   => true,
+            'pesan'      => "Absensi berhasil dicatat. Status: {$label}.",
+            'nama_guru'  => $guru->nama_lengkap,
+            'waktu_scan' => now()->format('H:i:s'),
+            'status'     => $status,
         ]);
     }
 
@@ -278,11 +340,11 @@ class SesiQrGuruController extends Controller
     }
 
     /**
-     * Hitung jarak dua koordinat GPS menggunakan formula Haversine (dalam meter).
+     * Hitung jarak dua koordinat GPS menggunakan formula Haversine (meter).
      */
     private function hitungJarak(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
-        $R    = 6371000; // radius bumi dalam meter
+        $R    = 6371000;
         $phi1 = deg2rad($lat1);
         $phi2 = deg2rad($lat2);
         $dphi = deg2rad($lat2 - $lat1);
@@ -293,4 +355,5 @@ class SesiQrGuruController extends Controller
 
         return round($R * $c, 2);
     }
+
 }

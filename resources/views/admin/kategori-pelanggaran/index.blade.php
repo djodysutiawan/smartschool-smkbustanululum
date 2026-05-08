@@ -102,12 +102,13 @@
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama kategori...">
                 <select name="tingkat">
                     <option value="">Semua Tingkat</option>
-                    @foreach(['ringan','sedang','berat'] as $t)
-                    <option value="{{ $t }}" {{ request('tingkat') == $t ? 'selected' : '' }}>{{ ucfirst($t) }}</option>
+                    @foreach(['ringan', 'sedang', 'berat'] as $t)
+                        <option value="{{ $t }}" {{ request('tingkat') == $t ? 'selected' : '' }}>{{ ucfirst($t) }}</option>
                     @endforeach
                 </select>
                 <select name="is_active">
                     <option value="">Semua Status</option>
+                    {{-- Bug fix: bandingkan dengan === '1'/'0' karena request()->is_active adalah string --}}
                     <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Aktif</option>
                     <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>Nonaktif</option>
                 </select>
@@ -123,7 +124,7 @@
             <p class="table-info">
                 Daftar Kategori
                 @if($kategori->total())
-                <span>— menampilkan {{ $kategori->firstItem() }}–{{ $kategori->lastItem() }} dari {{ $kategori->total() }} data</span>
+                    <span>— menampilkan {{ $kategori->firstItem() }}–{{ $kategori->lastItem() }} dari {{ $kategori->total() }} data</span>
                 @endif
             </p>
             <div class="topbar-actions">
@@ -135,7 +136,8 @@
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
                     Export Excel
                 </a>
-                <button type="button" class="btn btn-sm btn-import" onclick="document.getElementById('importModal').style.display='flex'">
+                <button type="button" class="btn btn-sm btn-import"
+                    onclick="document.getElementById('importModal').style.display='flex'">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Import
                 </button>
@@ -153,7 +155,7 @@
                         <th class="center">Batas Poin</th>
                         <th class="center">Jml. Kasus</th>
                         <th>Status</th>
-                        <th class="center" style="width:200px">Aksi</th>
+                        <th class="center" style="width:210px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -164,12 +166,12 @@
                             <div>
                                 <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;">{{ $k->nama }}</p>
                                 @if($k->deskripsi)
-                                <p style="font-size:11.5px;color:var(--text3);margin-top:1px;">{{ \Illuminate\Support\Str::limit($k->deskripsi, 50) }}</p>
+                                    <p style="font-size:11.5px;color:var(--text3);margin-top:1px;">{{ \Illuminate\Support\Str::limit($k->deskripsi, 50) }}</p>
                                 @endif
                             </div>
                         </td>
                         <td>
-                            @php $cls=['ringan'=>'bobot-ringan','sedang'=>'bobot-sedang','berat'=>'bobot-berat'];@endphp
+                            @php $cls = ['ringan' => 'bobot-ringan', 'sedang' => 'bobot-sedang', 'berat' => 'bobot-berat']; @endphp
                             <span class="bobot-badge {{ $cls[$k->tingkat] ?? 'bobot-ringan' }}">{{ ucfirst($k->tingkat) }}</span>
                         </td>
                         <td class="center">
@@ -191,18 +193,32 @@
                             <div class="action-group">
                                 <a href="{{ route('admin.kategori-pelanggaran.show', $k->id) }}" class="btn btn-sm btn-detail">Detail</a>
                                 <a href="{{ route('admin.kategori-pelanggaran.edit', $k->id) }}" class="btn btn-sm btn-edit">Edit</a>
-                                <form action="{{ route('admin.kategori-pelanggaran.toggle-status', $k->id) }}" method="POST" id="toggleKat-{{ $k->id }}">
-                                    @csrf @method('PATCH')
+                                {{-- Toggle status --}}
+                                <form action="{{ route('admin.kategori-pelanggaran.toggle-status', $k->id) }}"
+                                    method="POST" id="toggleKat-{{ $k->id }}" style="display:contents">
+                                    @csrf
+                                    @method('PATCH')
                                     <button type="button"
                                         class="btn btn-sm {{ $k->is_active ? 'btn-toggle-on' : 'btn-toggle-off' }}"
-                                        onclick="confirmToggle(document.getElementById('toggleKat-{{ $k->id }}'), '{{ addslashes($k->nama) }}', {{ $k->is_active ? 'true' : 'false' }})">
+                                        onclick="confirmToggle(
+                                            document.getElementById('toggleKat-{{ $k->id }}'),
+                                            '{{ addslashes($k->nama) }}',
+                                            {{ $k->is_active ? 'true' : 'false' }}
+                                        )">
                                         {{ $k->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
                                     </button>
                                 </form>
-                                <form action="{{ route('admin.kategori-pelanggaran.destroy', $k->id) }}" method="POST" id="delKat-{{ $k->id }}">
-                                    @csrf @method('DELETE')
+                                {{-- Hapus --}}
+                                <form action="{{ route('admin.kategori-pelanggaran.destroy', $k->id) }}"
+                                    method="POST" id="delKat-{{ $k->id }}" style="display:contents">
+                                    @csrf
+                                    @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('delKat-{{ $k->id }}'), '{{ addslashes($k->nama) }}', {{ $k->pelanggaran_count }})">
+                                        onclick="confirmDelete(
+                                            document.getElementById('delKat-{{ $k->id }}'),
+                                            '{{ addslashes($k->nama) }}',
+                                            {{ $k->pelanggaran_count }}
+                                        )">
                                         Hapus
                                     </button>
                                 </form>
@@ -231,10 +247,15 @@
             <p class="pag-info">Menampilkan {{ $kategori->firstItem() }} – {{ $kategori->lastItem() }} dari {{ $kategori->total() }} kategori</p>
             <div class="pag-btns">
                 @if($kategori->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $kategori->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $kategori->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
+
                 @foreach($kategori->getUrlRange(1, $kategori->lastPage()) as $page => $url)
                     @if($page == $kategori->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
@@ -244,10 +265,15 @@
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
+
                 @if($kategori->hasMorePages())
-                    <a href="{{ $kategori->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $kategori->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -255,7 +281,9 @@
     </div>
 </div>
 
-<div id="importModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)this.style.display='none'">
+{{-- Import Modal --}}
+<div id="importModal" class="modal-backdrop" style="display:none"
+    onclick="if(event.target===this)this.style.display='none'">
     <div class="modal-box">
         <div class="modal-header">
             <span class="modal-title">Import Kategori Pelanggaran</span>
@@ -273,11 +301,13 @@
                 </div>
                 <div style="font-size:12px;color:var(--text3);">
                     Belum punya template?
-                    <a href="{{ route('admin.kategori-pelanggaran.import.template') }}" style="color:var(--brand-600);font-weight:600;text-decoration:none">Download template</a>
+                    <a href="{{ route('admin.kategori-pelanggaran.import.template') }}"
+                        style="color:var(--brand-600);font-weight:600;text-decoration:none">Download template</a>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-cancel-modal" onclick="document.getElementById('importModal').style.display='none'">Batal</button>
+                <button type="button" class="btn btn-cancel-modal"
+                    onclick="document.getElementById('importModal').style.display='none'">Batal</button>
                 <button type="submit" class="btn btn-success">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                     Import Sekarang
@@ -290,35 +320,64 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    Swal.fire({
+        icon: 'success', title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500, showConfirmButton: false, toast: true, position: 'top-end'
+    });
     @endif
+
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error', title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
+    @endif
+
+    {{-- Jika import gagal validasi, buka kembali modal dan tampilkan error --}}
+    @if($errors->has('file'))
+    document.getElementById('importModal').style.display = 'flex';
+    Swal.fire({
+        icon: 'error', title: 'File Tidak Valid',
+        text: @json($errors->first('file')),
+        confirmButtonColor: '#1f63db'
+    });
     @endif
 
     function confirmDelete(form, nama, jumlahKasus) {
         if (jumlahKasus > 0) {
-            Swal.fire({ icon:'error', title:'Tidak Dapat Dihapus',
-                html:`Kategori <strong>${nama}</strong> sudah digunakan di <strong>${jumlahKasus} kasus</strong> pelanggaran.`,
-                confirmButtonColor:'#1f63db' });
+            Swal.fire({
+                icon: 'error',
+                title: 'Tidak Dapat Dihapus',
+                html: `Kategori <strong>${nama}</strong> sudah digunakan di <strong>${jumlahKasus} kasus</strong> pelanggaran.`,
+                confirmButtonColor: '#1f63db'
+            });
             return;
         }
         Swal.fire({
-            title:'Hapus Kategori?', html:`Kategori <strong>${nama}</strong> akan dihapus permanen.`,
-            icon:'warning', showCancelButton:true,
-            confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!', cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) form.submit(); });
+            title: 'Hapus Kategori?',
+            html: `Kategori <strong>${nama}</strong> akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 
     function confirmToggle(form, nama, isActive) {
         Swal.fire({
-            title:`${isActive ? 'Nonaktifkan' : 'Aktifkan'} Kategori?`,
-            html:`Kategori <strong>${nama}</strong> akan di${isActive ? 'nonaktifkan' : 'aktifkan'}.`,
-            icon:'question', showCancelButton:true,
-            confirmButtonColor:'#1f63db', cancelButtonColor:'#64748b',
-            confirmButtonText:`Ya, ${isActive ? 'Nonaktifkan' : 'Aktifkan'}!`, cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) form.submit(); });
+            title: `${isActive ? 'Nonaktifkan' : 'Aktifkan'} Kategori?`,
+            html: `Kategori <strong>${nama}</strong> akan di${isActive ? 'nonaktifkan' : 'aktifkan'}.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1f63db',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `Ya, ${isActive ? 'Nonaktifkan' : 'Aktifkan'}!`,
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 </script>
 </x-app-layout>

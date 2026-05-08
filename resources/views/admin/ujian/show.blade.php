@@ -17,7 +17,6 @@
     .breadcrumb{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);margin-bottom:20px;}
     .breadcrumb a{color:var(--text3);text-decoration:none;}.breadcrumb a:hover{color:var(--brand);}
     .breadcrumb .sep{color:var(--border2);}.breadcrumb .current{color:var(--text2);}
-    /* Header */
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap;}
     .header-left{display:flex;align-items:flex-start;gap:14px;}
     .ujian-icon{width:52px;height:52px;border-radius:14px;background:var(--brand-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -29,7 +28,6 @@
     .badge-inactive{background:var(--surface3);color:var(--text3);}
     .badge-kelas{background:var(--brand-soft);color:var(--brand);}
     .header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
-    /* Buttons */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:all .15s;white-space:nowrap;}
     .btn-back{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}
     .btn-back:hover{background:var(--surface3);}
@@ -41,7 +39,10 @@
     .btn-primary:hover{background:var(--brand-h);}
     .btn-soal{background:var(--brand);color:#fff;padding:10px 22px;font-size:14px;}
     .btn-soal:hover{background:var(--brand-h);}
-    /* Stats grid */
+    /* ++ TAMBAHAN: style tombol sesi */
+    .btn-sesi{background:var(--purple-bg);color:var(--purple);border:1px solid #c4b5fd;}
+    .btn-sesi:hover{filter:brightness(.95);}
+
     .stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:24px;}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
@@ -50,19 +51,21 @@
     .stat-card.green .stat-value{color:var(--green);}
     .stat-card.red .stat-value{color:var(--red);}
     .stat-card.brand .stat-value{color:var(--brand);}
-    /* Main grid */
+    /* ++ TAMBAHAN: stat-card clickable */
+    .stat-card.clickable{cursor:pointer;transition:box-shadow .15s,border-color .15s;text-decoration:none;display:block;}
+    .stat-card.clickable:hover{border-color:var(--purple);box-shadow:0 0 0 3px rgba(124,58,237,.08);}
+    .stat-card.clickable .stat-value{color:var(--purple);}
+    .stat-card.clickable .stat-label{color:var(--purple);}
+
     .content-grid{display:grid;grid-template-columns:1fr 340px;gap:20px;}
-    /* Cards */
     .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
     .card-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);}
     .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px;}
     .card-body{padding:20px;}
-    /* Soal section */
     .soal-header{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;background:var(--surface2);border-bottom:1px solid var(--border);}
     .soal-header-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:var(--text);}
     .soal-header-sub{font-size:12.5px;color:var(--text3);margin-top:2px;}
     .soal-actions{display:flex;align-items:center;gap:8px;}
-    /* Soal list */
     .soal-list{padding:0;}
     .soal-item{display:flex;align-items:flex-start;gap:14px;padding:16px 24px;border-bottom:1px solid var(--border);transition:background .12s;}
     .soal-item:last-child{border-bottom:none;}
@@ -82,33 +85,25 @@
     .icon-btn:hover{background:var(--surface3);}
     .icon-btn.red:hover{background:var(--red-bg);color:var(--red);}
     .icon-btn.yellow:hover{background:var(--yellow-bg);color:var(--yellow);}
-    /* Empty state */
     .empty-soal{padding:56px 24px;text-align:center;}
     .empty-icon{width:64px;height:64px;border-radius:18px;background:var(--surface3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
     .empty-sub{font-size:13px;color:var(--text3);margin-bottom:20px;}
-    /* Info list */
     .info-list{display:flex;flex-direction:column;gap:0;}
     .info-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);}
     .info-row:last-child{border-bottom:none;}
     .info-icon{width:30px;height:30px;border-radius:8px;background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3);}
     .info-key{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);margin-bottom:2px;}
     .info-val{font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);}
-    /* Toggle form */
     .toggle-form{display:inline;}
-    /* Alert */
     .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:20px;font-size:13.5px;}
     .alert-success{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border);}
     .alert-error{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border);}
-    /* Progress bar */
-    .progress-wrap{background:var(--surface3);border-radius:99px;height:6px;overflow:hidden;margin-top:6px;}
-    .progress-fill{height:100%;border-radius:99px;background:var(--brand);}
     @media(max-width:1024px){.stats-grid{grid-template-columns:repeat(3,1fr);}.content-grid{grid-template-columns:1fr;}}
     @media(max-width:640px){.stats-grid{grid-template-columns:1fr 1fr;}.page{padding:16px;}.page-title{font-size:18px;}}
 </style>
 
 <div class="page">
-    {{-- Breadcrumb --}}
     <nav class="breadcrumb">
         <a href="{{ route('dashboard') }}">Dashboard</a>
         <span class="sep">›</span>
@@ -117,7 +112,6 @@
         <span class="current">{{ Str::limit($ujian->judul, 40) }}</span>
     </nav>
 
-    {{-- Alert --}}
     @if(session('success'))
     <div class="alert alert-success">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -131,7 +125,6 @@
     </div>
     @endif
 
-    {{-- Page Header --}}
     <div class="page-header">
         <div class="header-left">
             <div class="ujian-icon">
@@ -155,6 +148,11 @@
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
             </a>
+            {{-- ++ TAMBAHAN: Tombol Monitor Sesi di header --}}
+            <a href="{{ route('admin.ujian.sesi.index-admin', $ujian) }}" class="btn btn-sesi">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                Monitor Sesi
+            </a>
             <a href="{{ route('admin.ujian.edit', $ujian) }}" class="btn btn-edit">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit
@@ -169,7 +167,6 @@
         </div>
     </div>
 
-    {{-- Stats --}}
     <div class="stats-grid">
         <div class="stat-card brand">
             <div class="stat-label">Total Soal</div>
@@ -181,11 +178,12 @@
             <div class="stat-value">{{ $ujian->durasi_menit }}'</div>
             <div class="stat-sub">menit</div>
         </div>
-        <div class="stat-card green">
+        {{-- ++ TAMBAHAN: stat card siswa selesai jadi link ke sesi --}}
+        <a href="{{ route('admin.ujian.sesi.index-admin', $ujian) }}" class="stat-card clickable">
             <div class="stat-label">Siswa Selesai</div>
             <div class="stat-value">{{ $stats['siswa_selesai'] }}</div>
-            <div class="stat-sub">Lulus: {{ $stats['siswa_lulus'] }}</div>
-        </div>
+            <div class="stat-sub">Lulus: {{ $stats['siswa_lulus'] }} · Lihat sesi →</div>
+        </a>
         <div class="stat-card">
             <div class="stat-label">Rata-rata Nilai</div>
             <div class="stat-value">{{ $stats['rata_nilai'] }}</div>
@@ -208,14 +206,12 @@
                         <div class="soal-header-sub">{{ $stats['total_soal'] }} soal · Total bobot {{ $stats['total_bobot'] }} poin</div>
                     </div>
                     <div class="soal-actions">
-                        {{-- Export dropdown --}}
                         @if($stats['total_soal'] > 0)
                         <a href="{{ route('admin.ujian.soal.export.pdf', $ujian) }}" class="btn btn-back" style="font-size:12px;padding:7px 12px;">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                             Export PDF
                         </a>
                         @endif
-                        {{-- ✅ TOMBOL UTAMA: Tambah Soal --}}
                         <a href="{{ route('admin.ujian.soal.create', $ujian) }}" class="btn btn-soal">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                             Tambah Soal
@@ -244,7 +240,7 @@
                                 <div class="soal-text">{!! Str::limit(strip_tags($soal->pertanyaan), 120) !!}</div>
                                 <div class="soal-meta">
                                     @if($soal->jenis_soal === 'pilihan_ganda')
-                                        <span class="soal-badge sb-pg">PG · {{ $soal->pilihan->count() }} opsi</span>
+                                        <span class="soal-badge sb-pg">Pilihan Ganda</span>
                                     @elseif($soal->jenis_soal === 'essay')
                                         <span class="soal-badge sb-essay">Essay</span>
                                     @else
@@ -263,10 +259,15 @@
                                 <a href="{{ route('admin.ujian.soal.edit', [$ujian, $soal]) }}" class="icon-btn yellow" title="Edit Soal">
                                     <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                                 </a>
-                                <form action="{{ route('admin.ujian.soal.destroy', [$ujian, $soal]) }}" method="POST" style="display:inline">
+                                <form action="{{ route('admin.ujian.soal.destroy', [$ujian, $soal]) }}"
+                                      method="POST" style="display:inline"
+                                      class="form-hapus-soal">
                                     @csrf @method('DELETE')
-                                    <button type="submit" class="icon-btn red" title="Hapus Soal"
-                                        onclick="return confirm('Hapus soal no. {{ $soal->nomor_soal }}?')">
+                                    <button type="button"
+                                            class="icon-btn red"
+                                            title="Hapus Soal"
+                                            data-nomor="{{ $soal->nomor_soal }}"
+                                            onclick="confirmHapusSoal(this)">
                                         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
                                     </button>
                                 </form>
@@ -275,7 +276,6 @@
                         @endforeach
                     </div>
 
-                    {{-- Footer soal: link ke halaman soal penuh --}}
                     <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface2);">
                         <span style="font-size:12.5px;color:var(--text3);">Menampilkan {{ $ujian->soal->count() }} soal</span>
                         <a href="{{ route('admin.ujian.soal.index', $ujian) }}" class="btn btn-back" style="font-size:12.5px;padding:7px 14px;">
@@ -309,7 +309,9 @@
                             <div class="info-icon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
                             <div>
                                 <div class="info-key">Tanggal</div>
-                                <div class="info-val">{{ $ujian->tanggal ? $ujian->tanggal->translatedFormat('d F Y') : '-' }}</div>
+                                <div class="info-val">
+                                    {{ $ujian->tanggal ? $ujian->tanggal->locale('id')->translatedFormat('d F Y') : '-' }}
+                                </div>
                             </div>
                         </div>
                         <div class="info-row">
@@ -321,7 +323,16 @@
                         </div>
                         <div class="info-row">
                             <div class="info-icon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg></div>
-                            <div><div class="info-key">Tahun Ajaran</div><div class="info-val">{{ $ujian->tahunAjaran->tahun ?? '-' }}</div></div>
+                            <div>
+                                <div class="info-key">Tahun Ajaran</div>
+                                <div class="info-val">
+                                    @if($ujian->tahunAjaran)
+                                        {{ $ujian->tahunAjaran->tahun }} — {{ ucfirst($ujian->tahunAjaran->semester) }}
+                                    @else
+                                        -
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                         <div class="info-row">
                             <div class="info-icon"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93A10 10 0 0 0 2 12a10 10 0 0 0 17.07 7.07"/></svg></div>
@@ -334,7 +345,44 @@
                 </div>
             </div>
 
-            {{-- Pengaturan --}}
+            {{-- ++ TAMBAHAN: Card shortcut monitor sesi --}}
+            <div class="card">
+                <div class="card-header">
+                    <span class="card-title">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                        Sesi Siswa
+                    </span>
+                </div>
+                <div class="card-body" style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);">Sudah selesai</span>
+                        <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--green);">{{ $stats['siswa_selesai'] }}</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);">Lulus</span>
+                        <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--green);">{{ $stats['siswa_lulus'] }}</strong>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);">Rata-rata nilai</span>
+                        <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;color:var(--brand);">{{ $stats['rata_nilai'] }}</strong>
+                    </div>
+                    <div style="margin-top:4px;">
+                        <a href="{{ route('admin.ujian.sesi.index-admin', $ujian) }}"
+                           class="btn btn-sesi" style="width:100%;justify-content:center;">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                            Monitor Semua Sesi
+                        </a>
+                    </div>
+                    <div>
+                        <a href="{{ route('admin.ujian.sesi.export.pdf', $ujian) }}"
+                           class="btn btn-back" style="width:100%;justify-content:center;font-size:12.5px;padding:7px;">
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Export Hasil PDF
+                        </a>
+                    </div>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">
@@ -364,14 +412,15 @@
                 </div>
             </div>
 
-            {{-- Keterangan --}}
             @if($ujian->keterangan)
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">Keterangan</span>
                 </div>
                 <div class="card-body">
-                    <p style="font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text2);line-height:1.6;margin:0;">{{ $ujian->keterangan }}</p>
+                    <p style="font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text2);line-height:1.6;margin:0;">
+                        {{ $ujian->keterangan }}
+                    </p>
                 </div>
             </div>
             @endif
@@ -393,8 +442,31 @@ function confirmDelete() {
         cancelButtonColor: '#64748b',
     }).then(r => { if(r.isConfirmed) document.getElementById('formDelete').submit(); });
 }
+
+function confirmHapusSoal(btn) {
+    const nomor = btn.dataset.nomor;
+    const form  = btn.closest('.form-hapus-soal');
+    Swal.fire({
+        title: 'Hapus Soal?',
+        text: `Soal nomor ${nomor} akan dihapus permanen.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal',
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+    }).then(r => { if(r.isConfirmed) form.submit(); });
+}
+
 @if(session('success'))
-Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),confirmButtonColor:'#1f63db',timer:3000,timerProgressBar:true});
+Swal.fire({
+    icon: 'success',
+    title: 'Berhasil!',
+    text: @json(session('success')),
+    confirmButtonColor: '#1f63db',
+    timer: 3000,
+    timerProgressBar: true
+});
 @endif
 </script>
 </x-app-layout>

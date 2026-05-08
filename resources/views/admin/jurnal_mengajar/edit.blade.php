@@ -38,6 +38,7 @@
     .field input::placeholder,.field textarea::placeholder{color:var(--text3)}
     .field input.is-invalid,.field select.is-invalid,.field textarea.is-invalid{border-color:var(--red);background:#fff8f8}
     .field-error{font-size:12px;color:var(--red);font-family:'DM Sans',sans-serif;margin-top:-2px}
+    .field-hint{font-size:12px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:-2px}
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:10px;padding:16px 24px;background:var(--surface2);border-top:1px solid var(--border)}
     @keyframes spin{to{transform:rotate(360deg)}}
     @media(max-width:680px){.page{padding:16px 16px 40px}.form-grid{grid-template-columns:1fr}.col-span-2{grid-column:span 1}}
@@ -65,18 +66,6 @@
         </a>
     </div>
 
-    @if($errors->any())
-    <div class="alert">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <div>
-            <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">Terdapat {{ $errors->count() }} kesalahan:</strong>
-            <ul style="margin:6px 0 0 16px;display:flex;flex-direction:column;gap:2px">
-                @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
-            </ul>
-        </div>
-    </div>
-    @endif
-
     <form action="{{ route('admin.jurnal-mengajar.update', $jurnalMengajar->id) }}" method="POST" id="jurnalForm">
         @csrf @method('PUT')
         <div class="form-card">
@@ -87,9 +76,10 @@
                     <span class="section-label-line"></span>
                 </p>
                 <div class="form-grid">
+                    {{-- Guru — trigger cascade --}}
                     <div class="field">
                         <label>Guru <span class="req">*</span></label>
-                        <select name="guru_id" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
+                        <select name="guru_id" id="guruSelect" class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Guru —</option>
                             @foreach($guruList as $g)
                                 <option value="{{ $g->id }}" {{ old('guru_id', $jurnalMengajar->guru_id) == $g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
@@ -97,59 +87,87 @@
                         </select>
                         @error('guru_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Mata Pelajaran — pre-populated dengan $mapelGuru dari controller --}}
                     <div class="field">
                         <label>Mata Pelajaran <span class="req">*</span></label>
-                        <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
+                        <select name="mata_pelajaran_id" id="mapelSelect" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Mapel —</option>
-                            @foreach($mapelList as $m)
+                            {{-- FIX: gunakan $mapelGuru yang sudah di-filter oleh controller --}}
+                            @foreach($mapelGuru as $m)
                                 <option value="{{ $m->id }}" {{ old('mata_pelajaran_id', $jurnalMengajar->mata_pelajaran_id) == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
                             @endforeach
                         </select>
                         @error('mata_pelajaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Kelas — pre-populated dengan $kelasGuru dari controller --}}
                     <div class="field">
                         <label>Kelas <span class="req">*</span></label>
-                        <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
+                        <select name="kelas_id" id="kelasSelect" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Kelas —</option>
-                            @foreach($kelasList as $k)
+                            {{-- FIX: gunakan $kelasGuru yang sudah di-filter oleh controller --}}
+                            @foreach($kelasGuru as $k)
                                 <option value="{{ $k->id }}" {{ old('kelas_id', $jurnalMengajar->kelas_id) == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
                             @endforeach
                         </select>
                         @error('kelas_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
+                    {{-- Jadwal Pelajaran --}}
                     <div class="field">
                         <label>Jadwal Pelajaran</label>
-                        <select name="jadwal_pelajaran_id">
+                        <select name="jadwal_pelajaran_id" id="jadwalSelect">
                             <option value="">— Pilih Jadwal (opsional) —</option>
                             @foreach($jadwalList as $jd)
-                                <option value="{{ $jd->id }}" {{ old('jadwal_pelajaran_id', $jurnalMengajar->jadwal_pelajaran_id) == $jd->id ? 'selected' : '' }}>
+                                <option value="{{ $jd->id }}"
+                                    data-kelas="{{ $jd->kelas_id ?? '' }}"
+                                    data-mapel="{{ $jd->mata_pelajaran_id ?? '' }}"
+                                    {{ old('jadwal_pelajaran_id', $jurnalMengajar->jadwal_pelajaran_id) == $jd->id ? 'selected' : '' }}>
                                     {{ $jd->kelas->nama_kelas ?? '' }} — {{ $jd->mataPelajaran->nama_mapel ?? '' }} ({{ ucfirst($jd->hari) }})
                                 </option>
                             @endforeach
                         </select>
+                        <span class="field-hint">Pilih jadwal untuk mengisi otomatis mapel & kelas</span>
                     </div>
+
                     <div class="field">
                         <label>Tanggal <span class="req">*</span></label>
-                        <input type="date" name="tanggal" value="{{ old('tanggal', $jurnalMengajar->tanggal) }}" class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
+                        {{-- FIX: tanggal sudah di-cast 'date', format eksplisit agar input date dapat membacanya --}}
+                        <input type="date" name="tanggal"
+                            value="{{ old('tanggal', \Carbon\Carbon::parse($jurnalMengajar->tanggal)->format('Y-m-d')) }}"
+                            max="{{ date('Y-m-d') }}"
+                            class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
                         @error('tanggal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Pertemuan Ke-</label>
-                        <input type="number" name="pertemuan_ke" value="{{ old('pertemuan_ke', $jurnalMengajar->pertemuan_ke) }}" placeholder="cth. 5" min="1">
+                        <input type="number" name="pertemuan_ke"
+                            value="{{ old('pertemuan_ke', $jurnalMengajar->pertemuan_ke) }}"
+                            placeholder="cth. 5" min="1" max="52"
+                            class="{{ $errors->has('pertemuan_ke') ? 'is-invalid' : '' }}">
+                        @error('pertemuan_ke')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Metode Pembelajaran</label>
-                        <select name="metode_pembelajaran">
+                        <select name="metode_pembelajaran" class="{{ $errors->has('metode_pembelajaran') ? 'is-invalid' : '' }}">
                             <option value="">— Pilih Metode —</option>
                             @foreach($metodeList as $mt)
                                 <option value="{{ $mt }}" {{ old('metode_pembelajaran', $jurnalMengajar->metode_pembelajaran) == $mt ? 'selected' : '' }}>{{ ucfirst($mt) }}</option>
                             @endforeach
                         </select>
+                        @error('metode_pembelajaran')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
-                    <div class="field"></div>
+
+                    {{-- FIX: hapus field kosong, pakai visibility:hidden agar grid tetap 2-kolom --}}
+                    <div class="field" style="visibility:hidden" aria-hidden="true"></div>
+
                     <div class="field col-span-2">
                         <label>Materi Ajar <span class="req">*</span></label>
-                        <textarea name="materi_ajar" rows="3" class="{{ $errors->has('materi_ajar') ? 'is-invalid' : '' }}">{{ old('materi_ajar', $jurnalMengajar->materi_ajar) }}</textarea>
+                        <textarea name="materi_ajar" rows="3" maxlength="2000"
+                            class="{{ $errors->has('materi_ajar') ? 'is-invalid' : '' }}">{{ old('materi_ajar', $jurnalMengajar->materi_ajar) }}</textarea>
                         @error('materi_ajar')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
@@ -166,15 +184,24 @@
                 <div class="form-grid">
                     <div class="field">
                         <label>Jumlah Hadir</label>
-                        <input type="number" name="jumlah_hadir" value="{{ old('jumlah_hadir', $jurnalMengajar->jumlah_hadir) }}" placeholder="cth. 30" min="0">
+                        <input type="number" name="jumlah_hadir"
+                            value="{{ old('jumlah_hadir', $jurnalMengajar->jumlah_hadir) }}"
+                            placeholder="cth. 30" min="0"
+                            class="{{ $errors->has('jumlah_hadir') ? 'is-invalid' : '' }}">
+                        @error('jumlah_hadir')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
                         <label>Jumlah Tidak Hadir</label>
-                        <input type="number" name="jumlah_tidak_hadir" value="{{ old('jumlah_tidak_hadir', $jurnalMengajar->jumlah_tidak_hadir) }}" placeholder="cth. 2" min="0">
+                        <input type="number" name="jumlah_tidak_hadir"
+                            value="{{ old('jumlah_tidak_hadir', $jurnalMengajar->jumlah_tidak_hadir) }}"
+                            placeholder="cth. 2" min="0"
+                            class="{{ $errors->has('jumlah_tidak_hadir') ? 'is-invalid' : '' }}">
+                        @error('jumlah_tidak_hadir')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field col-span-2">
                         <label>Catatan Kelas</label>
-                        <textarea name="catatan_kelas" rows="3">{{ old('catatan_kelas', $jurnalMengajar->catatan_kelas) }}</textarea>
+                        <textarea name="catatan_kelas" rows="3" maxlength="2000">{{ old('catatan_kelas', $jurnalMengajar->catatan_kelas) }}</textarea>
+                        @error('catatan_kelas')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
             </div>
@@ -193,16 +220,91 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    Swal.fire({ icon: 'error', title: 'Gagal!', text: @json(session('error')), confirmButtonColor: '#1f63db' });
     @endif
     @if($errors->any())
     Swal.fire({
-        icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db',
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor: '#1f63db',
     });
     @endif
-    document.getElementById('jurnalForm').addEventListener('submit', function() {
+
+    // ── Cascade Dropdown ──────────────────────────────────────────────────────
+    const guruSelect   = document.getElementById('guruSelect');
+    const mapelSelect  = document.getElementById('mapelSelect');
+    const kelasSelect  = document.getElementById('kelasSelect');
+    const jadwalSelect = document.getElementById('jadwalSelect');
+
+    function populateSelect(selectEl, items, idKey, labelKey, currentVal) {
+        const placeholder = selectEl.options[0];
+        selectEl.innerHTML = '';
+        selectEl.appendChild(placeholder);
+        items.forEach(item => {
+            const opt = document.createElement('option');
+            opt.value = item[idKey];
+            opt.textContent = item[labelKey];
+            if (String(item[idKey]) === String(currentVal)) opt.selected = true;
+            selectEl.appendChild(opt);
+        });
+    }
+
+    async function loadCascade(guruId, selectedMapel, selectedKelas, selectedJadwal) {
+        if (!guruId) return;
+
+        try {
+            const [mapelRes, kelasRes, jadwalRes] = await Promise.all([
+                fetch(`/admin/jurnal-mengajar/ajax/mapel-by-guru/${guruId}`),
+                fetch(`/admin/jurnal-mengajar/ajax/kelas-by-guru/${guruId}`),
+                fetch(`/admin/jurnal-mengajar/ajax/jadwal-by-guru/${guruId}`),
+            ]);
+
+            const [mapelData, kelasData, jadwalData] = await Promise.all([
+                mapelRes.json(), kelasRes.json(), jadwalRes.json()
+            ]);
+
+            populateSelect(mapelSelect, mapelData, 'id', 'nama_mapel', selectedMapel);
+            populateSelect(kelasSelect, kelasData, 'id', 'nama_kelas', selectedKelas);
+
+            const jadwalPlaceholder = jadwalSelect.options[0];
+            jadwalSelect.innerHTML = '';
+            jadwalSelect.appendChild(jadwalPlaceholder);
+            jadwalData.forEach(j => {
+                const opt = document.createElement('option');
+                opt.value = j.id;
+                opt.textContent = `${j.kelas_nama ?? ''} — ${j.mapel_nama ?? ''} (${j.label ?? ''})`;
+                opt.dataset.kelas = j.kelas_id;
+                opt.dataset.mapel = j.mapel_id;
+                if (String(j.id) === String(selectedJadwal)) opt.selected = true;
+                jadwalSelect.appendChild(opt);
+            });
+
+        } catch (e) {
+            console.warn('Cascade dropdown error:', e);
+        }
+    }
+
+    // Event: guru berubah → reload cascade, kosongkan pilihan sebelumnya
+    guruSelect.addEventListener('change', function () {
+        loadCascade(this.value, '', '', '');
+    });
+
+    // Event: jadwal dipilih → auto-fill mapel & kelas
+    jadwalSelect.addEventListener('change', function () {
+        const opt = this.options[this.selectedIndex];
+        if (opt && opt.dataset.kelas) {
+            kelasSelect.value = opt.dataset.kelas;
+            mapelSelect.value = opt.dataset.mapel;
+        }
+    });
+
+    // FIX: pada edit, guru sudah terpilih saat halaman load → tidak perlu reload cascade
+    // karena controller sudah mengirim $mapelGuru & $kelasGuru yang sudah ter-render di HTML.
+    // Cascade AJAX baru aktif jika user mengganti guru.
+
+    // ── Submit handling ───────────────────────────────────────────────────────
+    document.getElementById('jurnalForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;

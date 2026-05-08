@@ -85,6 +85,7 @@
     .badge-demonstrasi{background:#fff7ed;color:#c2410c;}.badge-demonstrasi .badge-dot{background:#c2410c;}
     .badge-proyek{background:#fefce8;color:#a16207;}.badge-proyek .badge-dot{background:#a16207;}
     .badge-lainnya{background:var(--surface3);color:var(--text2);}.badge-lainnya .badge-dot{background:var(--text3);}
+    .badge-default{background:var(--surface3);color:var(--text2);}.badge-default .badge-dot{background:var(--text3);}
     .action-group{display:flex;align-items:center;gap:4px;justify-content:center;flex-wrap:wrap;}
     .empty-state{padding:50px 20px;text-align:center;}
     .empty-icon{width:52px;height:52px;background:var(--surface2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
@@ -137,7 +138,7 @@
             <div class="stat-icon orange">
                 <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
             </div>
-            <div><p class="stat-label">Bulan Ini</p><p class="stat-val">{{ \App\Models\JurnalMengajar::whereMonth('tanggal', now()->month)->count() }}</p></div>
+            <div><p class="stat-label">Bulan Ini</p><p class="stat-val">{{ \App\Models\JurnalMengajar::whereMonth('tanggal', now()->month)->whereYear('tanggal', now()->year)->count() }}</p></div>
         </div>
     </div>
 
@@ -147,19 +148,19 @@
                 <select name="guru_id">
                     <option value="">Semua Guru</option>
                     @foreach($guruList as $g)
-                        <option value="{{ $g->id }}" {{ request('guru_id')==$g->id?'selected':'' }}>{{ $g->nama_lengkap }}</option>
+                        <option value="{{ $g->id }}" {{ request('guru_id')==$g->id ? 'selected' : '' }}>{{ $g->nama_lengkap }}</option>
                     @endforeach
                 </select>
                 <select name="kelas_id">
                     <option value="">Semua Kelas</option>
                     @foreach($kelasList as $k)
-                        <option value="{{ $k->id }}" {{ request('kelas_id')==$k->id?'selected':'' }}>{{ $k->nama_kelas }}</option>
+                        <option value="{{ $k->id }}" {{ request('kelas_id')==$k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
                     @endforeach
                 </select>
                 <select name="mata_pelajaran_id">
                     <option value="">Semua Mapel</option>
                     @foreach($mapelList as $m)
-                        <option value="{{ $m->id }}" {{ request('mata_pelajaran_id')==$m->id?'selected':'' }}>{{ $m->nama_mapel }}</option>
+                        <option value="{{ $m->id }}" {{ request('mata_pelajaran_id')==$m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
                     @endforeach
                 </select>
                 <input type="date" name="tanggal_dari" value="{{ request('tanggal_dari') }}" style="width:148px">
@@ -175,6 +176,7 @@
         <div class="table-topbar">
             <p class="table-info">Daftar Jurnal Mengajar <span>— {{ $jurnal->total() }} data</span></p>
             <div class="table-actions">
+                {{-- FIX: gunakan route name yang sesuai dengan routes file --}}
                 <a href="{{ route('admin.jurnal-mengajar.export.pdf', request()->query()) }}" class="btn btn-sm btn-pdf" target="_blank">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     PDF
@@ -200,13 +202,13 @@
                         <th>Materi Ajar</th>
                         <th>Metode</th>
                         <th class="center">Hadir</th>
-                        <th class="center" style="width:200px">Aksi</th>
+                        <th class="center" style="width:210px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($jurnal as $i => $j)
                     <tr>
-                        <td><span class="no-col">{{ $jurnal->firstItem()+$i }}</span></td>
+                        <td><span class="no-col">{{ $jurnal->firstItem() + $i }}</span></td>
                         <td>
                             <div class="two-line">
                                 <p class="primary">{{ $j->guru->nama_lengkap ?? '—' }}</p>
@@ -216,39 +218,51 @@
                         <td class="muted" style="font-size:12.5px">{{ $j->kelas->nama_kelas ?? '—' }}</td>
                         <td>
                             <div class="two-line">
+                                {{-- FIX: tanggal sudah di-cast sebagai 'date' di model, gunakan format langsung --}}
                                 <p class="primary">{{ \Carbon\Carbon::parse($j->tanggal)->format('d M Y') }}</p>
-                                @if($j->pertemuan_ke)<p class="secondary">Pertemuan ke-{{ $j->pertemuan_ke }}</p>@endif
+                                @if($j->pertemuan_ke)
+                                    <p class="secondary">Pertemuan ke-{{ $j->pertemuan_ke }}</p>
+                                @endif
                             </div>
                         </td>
                         <td style="max-width:200px">
                             <p style="font-size:13px;color:var(--text);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">{{ $j->materi_ajar }}</p>
                         </td>
                         <td>
+                            {{-- FIX: fallback ke 'lainnya' jika null agar badge class tidak kosong --}}
                             @php $metode = $j->metode_pembelajaran ?? 'lainnya'; @endphp
-                            <span class="badge badge-{{ $metode }}"><span class="badge-dot"></span>{{ ucfirst($metode) }}</span>
+                            <span class="badge badge-{{ in_array($metode, ['ceramah','diskusi','praktikum','demonstrasi','proyek','lainnya']) ? $metode : 'lainnya' }}">
+                                <span class="badge-dot"></span>{{ ucfirst($metode) }}
+                            </span>
                         </td>
                         <td class="center">
                             @if($j->jumlah_hadir !== null)
                                 <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px">{{ $j->jumlah_hadir }}</span>
-                                @if($j->jumlah_tidak_hadir)<span style="font-size:12px;color:var(--text3)"> / {{ $j->jumlah_tidak_hadir }}α</span>@endif
+                                {{-- FIX: hapus karakter 'α' yang tidak relevan --}}
+                                @if($j->jumlah_tidak_hadir !== null)
+                                    <span style="font-size:12px;color:var(--text3)"> / {{ $j->jumlah_tidak_hadir }} absen</span>
+                                @endif
                             @else
                                 <span class="muted">—</span>
                             @endif
                         </td>
                         <td class="center">
                             <div class="action-group">
-                                <a href="{{ route('admin.jurnal-mengajar.show',$j->id) }}" class="btn btn-sm btn-detail">Detail</a>
-                                <a href="{{ route('admin.jurnal-mengajar.edit',$j->id) }}" class="btn btn-sm btn-edit">Edit</a>
-                                @if(!$j->sudah_diverifikasi)
-                                <form action="{{ route('admin.jurnal-mengajar.verifikasi',$j->id) }}" method="POST">
-                                    @csrf @method('PATCH')
-                                    <button type="submit" class="btn btn-sm btn-verif">Verifikasi</button>
-                                </form>
+                                <a href="{{ route('admin.jurnal-mengajar.show', $j->id) }}" class="btn btn-sm btn-detail">Detail</a>
+                                <a href="{{ route('admin.jurnal-mengajar.edit', $j->id) }}" class="btn btn-sm btn-edit">Edit</a>
+                                {{-- FIX: tampilkan badge terverifikasi jika sudah, atau tombol verifikasi --}}
+                                @if($j->sudah_diverifikasi)
+                                    <span class="btn btn-sm" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;cursor:default">✓ Terverifikasi</span>
+                                @else
+                                    <form action="{{ route('admin.jurnal-mengajar.verifikasi', $j->id) }}" method="POST" style="display:inline">
+                                        @csrf @method('PATCH')
+                                        <button type="submit" class="btn btn-sm btn-verif">Verifikasi</button>
+                                    </form>
                                 @endif
-                                <form action="{{ route('admin.jurnal-mengajar.destroy',$j->id) }}" method="POST" id="delJ-{{ $j->id }}">
+                                <form action="{{ route('admin.jurnal-mengajar.destroy', $j->id) }}" method="POST" id="delJ-{{ $j->id }}" style="display:inline">
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('delJ-{{ $j->id }}'),'{{ addslashes($j->guru->nama_lengkap ?? '') }}')">
+                                        onclick="confirmDelete(document.getElementById('delJ-{{ $j->id }}'), '{{ addslashes($j->guru->nama_lengkap ?? '') }}')">
                                         Hapus
                                     </button>
                                 </form>
@@ -256,39 +270,52 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="8">
-                        <div class="empty-state">
-                            <div class="empty-icon"><svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
-                            <p class="empty-title">Belum ada jurnal mengajar</p>
-                            <p class="empty-sub">Coba ubah filter atau tambah jurnal baru</p>
-                        </div>
-                    </td></tr>
+                    <tr>
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                </div>
+                                <p class="empty-title">Belum ada jurnal mengajar</p>
+                                <p class="empty-sub">Coba ubah filter atau tambah jurnal baru</p>
+                            </div>
+                        </td>
+                    </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+
         @if($jurnal->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">Menampilkan {{ $jurnal->firstItem() }} – {{ $jurnal->lastItem() }} dari {{ $jurnal->total() }} jurnal</p>
             <div class="pag-btns">
                 @if($jurnal->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $jurnal->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $jurnal->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
-                @foreach($jurnal->getUrlRange(1,$jurnal->lastPage()) as $page => $url)
-                    @if($page==$jurnal->currentPage())
+                @foreach($jurnal->getUrlRange(1, $jurnal->lastPage()) as $page => $url)
+                    @if($page == $jurnal->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page==1||$page==$jurnal->lastPage()||abs($page-$jurnal->currentPage())<=1)
+                    @elseif($page == 1 || $page == $jurnal->lastPage() || abs($page - $jurnal->currentPage()) <= 1)
                         <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page-$jurnal->currentPage())==2)
+                    @elseif(abs($page - $jurnal->currentPage()) == 2)
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
                 @if($jurnal->hasMorePages())
-                    <a href="{{ $jurnal->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $jurnal->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -296,6 +323,7 @@
     </div>
 </div>
 
+{{-- Import Modal --}}
 <div class="import-modal" id="importModal">
     <div class="import-box">
         <p class="import-title">Import Jurnal Mengajar</p>
@@ -317,14 +345,35 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if(session('success'))
-    Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+    Swal.fire({ icon: 'success', title: 'Berhasil!', text: @json(session('success')), timer: 2500, showConfirmButton: false, toast: true, position: 'top-end' });
     @endif
     @if(session('error'))
-    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    Swal.fire({ icon: 'error', title: 'Gagal!', text: @json(session('error')), confirmButtonColor: '#1f63db' });
     @endif
-    function confirmDelete(form,nama){
-        Swal.fire({title:'Hapus Jurnal?',text:`Jurnal milik "${nama}" akan dihapus permanen.`,icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)form.submit();});
+    @if(session('import_errors'))
+    Swal.fire({
+        icon: 'warning', title: 'Import Selesai dengan Peringatan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0">@foreach(session('import_errors') as $err)<li>{{ $err }}</li>@endforeach</ul>`,
+        confirmButtonColor: '#1f63db'
+    });
+    @endif
+
+    function confirmDelete(form, nama) {
+        Swal.fire({
+            title: 'Hapus Jurnal?',
+            text: `Jurnal milik "${nama}" akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
-    document.getElementById('importModal').addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');});
+
+    // Tutup modal jika klik di luar box
+    document.getElementById('importModal').addEventListener('click', function(e) {
+        if (e.target === this) this.classList.remove('open');
+    });
 </script>
 </x-app-layout>

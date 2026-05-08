@@ -2,16 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\SesiQrExport;
 use App\Http\Controllers\Controller;
 use App\Models\Absensi;
 use App\Models\JadwalPelajaran;
 use App\Models\Kelas;
-use App\Models\RiwayatScanQr;
 use App\Models\SesiQr;
 use App\Models\Siswa;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SesiQrController extends Controller
 {
@@ -24,9 +26,7 @@ class SesiQrController extends Controller
                 'mataPelajaran',
                 'guru',
                 'jadwalPelajaran',
-                // Perbaikan bug: relasi dibuatOleh tidak di-eager-load di index()
-                // sehingga view menyebabkan N+1 query pada kolom "Dibuat Oleh".
-                'dibuatOleh',
+                'dibuatOleh',           // eager-load agar tidak N+1 di kolom "Dibuat Oleh"
             ])
             ->withCount([
                 'riwayatScan',
@@ -37,8 +37,6 @@ class SesiQrController extends Controller
         if ($request->filled('tanggal'))   $query->whereDate('tanggal', $request->tanggal);
         if ($request->filled('is_active')) $query->where('is_active', $request->boolean('is_active'));
 
-        // Perbaikan bug: controller mengirim $sesiList tapi view memakai $sesiQrs.
-        // Sekarang nama variabel diseragamkan menjadi $sesiQrs.
         $sesiQrs   = $query->latest()->paginate(20)->withQueryString();
         $kelasList = Kelas::aktif()->orderBy('nama_kelas')->get();
 
@@ -113,9 +111,7 @@ class SesiQrController extends Controller
         $berlakuMulai   = \Carbon\Carbon::parse($validated['tanggal'] . ' ' . $validated['berlaku_mulai']);
         $kadaluarsaPada = $berlakuMulai->copy()->addMinutes((int) $validated['durasi_menit']);
 
-        // Perbaikan bug: guru_id tidak pernah diisi dari controller sehingga selalu null
-        // ketika sesi dibuat manual. Sekarang diambil eksplisit dari jadwal jika ada,
-        // atau dari user yang sedang login (asumsi guru/admin).
+        // Ambil guru_id dari jadwal jika ada; fallback null (model boot juga handle ini)
         $guruId = null;
         if (! empty($validated['jadwal_pelajaran_id'])) {
             $jadwal = JadwalPelajaran::find($validated['jadwal_pelajaran_id']);
@@ -151,8 +147,6 @@ class SesiQrController extends Controller
             'mataPelajaran',
             'jadwalPelajaran',
             'guru',
-            // Perbaikan bug: dibuatOleh tidak di-load di show() sehingga view
-            // $sesiQr->dibuatOleh->name menyebabkan N+1 query atau null error.
             'dibuatOleh',
             'riwayatScan.siswa',
         ]);
@@ -175,6 +169,15 @@ class SesiQrController extends Controller
         ];
 
         return view('admin.sesi-qr.show', compact('sesiQr', 'sudahScan', 'belumScan', 'stats'));
+    }
+
+    // ── CETAK QR ─────────────────────────────────────────────────────────────
+
+    public function cetakQr(SesiQr $sesiQr)
+    {
+        $sesiQr->load(['kelas', 'mataPelajaran', 'guru']);
+
+        return view('admin.sesi-qr.cetak-qr', compact('sesiQr'));
     }
 
     // ── NONAKTIFKAN ───────────────────────────────────────────────────────────
@@ -201,10 +204,7 @@ class SesiQrController extends Controller
 
         DB::transaction(function () use ($sesiQr, $belumScan) {
             foreach ($belumScan as $siswa) {
-                // Perbaikan bug: firstOrNew() dengan jadwal_pelajaran_id = null tidak
-                // pernah match karena SQL "WHERE col = NULL" selalu false (harus IS NULL).
-                // Sekarang query dipisah: jika jadwal_pelajaran_id ada, pakai nilai tersebut;
-                // jika null, cari berdasarkan siswa_id + sesi_qr_id + tanggal saja.
+                // Pisah kondisi cari: WHERE col IS NULL tidak sama dengan WHERE col = NULL
                 $kondisi = [
                     'siswa_id' => $siswa->id,
                     'tanggal'  => $sesiQr->tanggal->toDateString(),
@@ -287,8 +287,9 @@ class SesiQrController extends Controller
             ->get()
             ->map(fn ($r) => [
                 'siswa_id'     => $r->siswa_id,
-                'nama'         => $r->siswa->nama_lengkap,
-                'nis'          => $r->siswa->nis,
+                'nama'         => $r->siswa->nama_lengkap ?? '—',
+                'nis'          => $r->siswa->nis ?? '—',
+                // Gunakan nama kolom yang konsisten: dipindai_pada
                 'di_scan_pada' => $r->dipindai_pada->format('H:i:s'),
             ]);
 
@@ -297,8 +298,43 @@ class SesiQrController extends Controller
             'is_kadaluarsa' => $sesiQr->isKadaluarsa(),
             'jumlah_scan'   => $sesiQr->jumlah_scan,
             'sudah_scan'    => $sudahScan,
+            // max(0, ...) dengan false agar negatif menjadi 0
             'sisa_waktu'    => max(0, now()->diffInSeconds($sesiQr->kadaluarsa_pada, false)),
         ]);
+    }
+
+    // ── EXPORT PDF ────────────────────────────────────────────────────────────
+
+    public function exportPdf(Request $request)
+    {
+        $query = SesiQr::with(['kelas', 'mataPelajaran', 'guru', 'dibuatOleh'])
+            ->withCount([
+                'riwayatScan',
+                'riwayatScan as scan_valid_count' => fn ($q) => $q->where('status', 'valid'),
+            ]);
+
+        if ($request->filled('kelas_id'))  $query->where('kelas_id', $request->kelas_id);
+        if ($request->filled('tanggal'))   $query->whereDate('tanggal', $request->tanggal);
+        if ($request->filled('is_active')) $query->where('is_active', $request->boolean('is_active'));
+
+        $sesiQrs = $query->latest()->get();
+
+        $pdf = Pdf::loadView('admin.sesi-qr.exports.pdf', compact('sesiQrs'))
+            ->setPaper('a4', 'landscape');
+
+        return $pdf->download('sesi_qr_' . now()->format('Ymd_His') . '.pdf');
+    }
+
+    // ── EXPORT EXCEL ─────────────────────────────────────────────────────────
+
+    public function exportExcel(Request $request)
+    {
+        $filters = $request->only(['kelas_id', 'tanggal', 'is_active']);
+
+        return Excel::download(
+            new SesiQrExport($filters),
+            'sesi_qr_' . now()->format('Ymd_His') . '.xlsx'
+        );
     }
 
     // ── DESTROY ───────────────────────────────────────────────────────────────

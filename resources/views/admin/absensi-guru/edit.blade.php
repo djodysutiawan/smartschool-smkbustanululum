@@ -14,7 +14,6 @@
     .btn-primary{background:var(--brand);color:#fff}.btn-primary:hover{filter:brightness(.93)}.btn-primary:disabled{opacity:.6;cursor:not-allowed;filter:none}
     .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .form-section{padding:20px 24px 24px}
-    .section-divider{border:none;border-top:1px solid var(--border);margin:0}
     .section-label{display:flex;align-items:center;gap:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:16px}
     .section-label-line{flex:1;height:1px;background:var(--border)}
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
@@ -46,9 +45,13 @@
     <div class="page-header">
         <div>
             <h1 class="page-title">Edit Absensi Guru</h1>
+            {{--
+                FIX: $absensiGuru->tanggal sudah di-cast sebagai 'date' (Carbon),
+                tidak perlu Carbon::parse() lagi — langsung pakai translatedFormat().
+            --}}
             <p class="page-sub">
                 {{ $absensiGuru->guru->nama_lengkap ?? '—' }} —
-                {{ \Carbon\Carbon::parse($absensiGuru->tanggal)->translatedFormat('d F Y') }}
+                {{ $absensiGuru->tanggal->translatedFormat('d F Y') }}
             </p>
         </div>
         <a href="{{ route('admin.absensi-guru.show', $absensiGuru->id) }}" class="btn btn-back">
@@ -67,7 +70,7 @@
                     <span class="section-label-line"></span>
                 </p>
 
-                {{-- Info readonly (guru & tanggal tidak bisa diubah via update) --}}
+                {{-- Info readonly: guru & tanggal tidak bisa diubah via update() --}}
                 <div class="form-grid" style="margin-bottom:16px">
                     <div class="field">
                         <label>Guru</label>
@@ -75,7 +78,8 @@
                     </div>
                     <div class="field">
                         <label>Tanggal</label>
-                        <div class="info-badge">{{ \Carbon\Carbon::parse($absensiGuru->tanggal)->translatedFormat('d F Y') }}</div>
+                        {{-- FIX: cast 'date' → langsung pakai translatedFormat() --}}
+                        <div class="info-badge">{{ $absensiGuru->tanggal->translatedFormat('d F Y') }}</div>
                     </div>
                 </div>
 
@@ -84,43 +88,67 @@
                         <label>Status Kehadiran <span class="req">*</span></label>
                         <select name="status" class="{{ $errors->has('status') ? 'is-invalid' : '' }}">
                             @foreach($statusList as $s)
-                                <option value="{{ $s }}" {{ old('status', $absensiGuru->status) == $s ? 'selected' : '' }}>{{ ucfirst($s) }}</option>
+                                <option value="{{ $s }}" {{ old('status', $absensiGuru->status) == $s ? 'selected' : '' }}>
+                                    {{ ucfirst($s) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('status')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Metode</label>
                         <select name="metode" class="{{ $errors->has('metode') ? 'is-invalid' : '' }}">
                             @foreach($metodeList as $m)
-                                <option value="{{ $m }}" {{ old('metode', $absensiGuru->metode) == $m ? 'selected' : '' }}>{{ ucfirst($m) }}</option>
+                                <option value="{{ $m }}" {{ old('metode', $absensiGuru->metode) == $m ? 'selected' : '' }}>
+                                    {{ ucfirst($m) }}
+                                </option>
                             @endforeach
                         </select>
                         @error('metode')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Jam Masuk</label>
-                        <input type="time" name="jam_masuk" value="{{ old('jam_masuk', $absensiGuru->jam_masuk) }}"
+                        {{--
+                            FIX: $absensiGuru->jam_masuk di-cast sebagai 'datetime:H:i' (Carbon).
+                            Gunakan ->format('H:i') agar value input type="time" selalu string "HH:MM".
+                            old() me-return string, sehingga ternary diperlukan agar tidak error saat
+                            old() null dan model mengembalikan Carbon object.
+                        --}}
+                        <input type="time" name="jam_masuk"
+                            value="{{ old('jam_masuk') ?? ($absensiGuru->jam_masuk ? $absensiGuru->jam_masuk->format('H:i') : '') }}"
                             class="{{ $errors->has('jam_masuk') ? 'is-invalid' : '' }}">
                         @error('jam_masuk')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Jam Keluar</label>
-                        <input type="time" name="jam_keluar" value="{{ old('jam_keluar', $absensiGuru->jam_keluar) }}"
+                        {{-- FIX: sama seperti jam_masuk --}}
+                        <input type="time" name="jam_keluar"
+                            value="{{ old('jam_keluar') ?? ($absensiGuru->jam_keluar ? $absensiGuru->jam_keluar->format('H:i') : '') }}"
                             class="{{ $errors->has('jam_keluar') ? 'is-invalid' : '' }}">
                         @error('jam_keluar')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field col-span-2">
                         <label>Surat Izin / Dokumen Baru</label>
                         <input type="file" name="path_surat_izin" accept=".pdf,.jpg,.jpeg,.png"
                             class="{{ $errors->has('path_surat_izin') ? 'is-invalid' : '' }}">
                         @if($absensiGuru->path_surat_izin)
-                            <span class="field-hint">File saat ini: <a href="{{ asset('storage/'.$absensiGuru->path_surat_izin) }}" target="_blank" style="color:var(--brand)">Lihat dokumen</a> — upload baru untuk mengganti</span>
+                            <span class="field-hint">
+                                File saat ini:
+                                <a href="{{ asset('storage/' . $absensiGuru->path_surat_izin) }}" target="_blank" style="color:var(--brand)">
+                                    Lihat dokumen
+                                </a>
+                                — upload baru untuk mengganti
+                            </span>
                         @else
                             <span class="field-hint">PDF/JPG/PNG maks. 2MB (opsional)</span>
                         @endif
                         @error('path_surat_izin')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field col-span-2">
                         <label>Keterangan</label>
                         <textarea name="keterangan" rows="3" placeholder="Catatan tambahan..."
@@ -129,6 +157,7 @@
                     </div>
                 </div>
             </div>
+
             <div class="form-footer">
                 <a href="{{ route('admin.absensi-guru.show', $absensiGuru->id) }}" class="btn btn-cancel">Batal</a>
                 <button type="submit" class="btn btn-primary" id="btnSubmit">
@@ -142,16 +171,29 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    @if(session('success'))Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});@endif
-    @if(session('error'))Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});@endif
-    @if($errors->any())
-    Swal.fire({icon:'error',title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db'});
+    @if(session('success'))
+        Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
     @endif
-    document.getElementById('editForm').addEventListener('submit',function(){
-        const btn=document.getElementById('btnSubmit');btn.disabled=true;
-        btn.innerHTML=`<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
+    @if(session('error'))
+        Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    @endif
+    @if($errors->any())
+        Swal.fire({
+            icon: 'error',
+            title: 'Terdapat {{ $errors->count() }} Kesalahan',
+            html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">
+                @foreach($errors->all() as $e)
+                    <li>{{ $e }}</li>
+                @endforeach
+            </ul>`,
+            confirmButtonColor: '#1f63db'
+        });
+    @endif
+
+    document.getElementById('editForm').addEventListener('submit', function () {
+        const btn = document.getElementById('btnSubmit');
+        btn.disabled = true;
+        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
     });
 </script>
 </x-app-layout>

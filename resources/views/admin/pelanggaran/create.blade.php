@@ -80,14 +80,17 @@
                         </select>
                         @error('siswa_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Kategori Pelanggaran <span class="req">*</span></label>
                         <select name="kategori_pelanggaran_id" id="kategoriSelect"
                             class="{{ $errors->has('kategori_pelanggaran_id') ? 'is-invalid' : '' }}"
-                            onchange="showKategoriInfo(this)">
+                            onchange="onKategoriChange(this)">
                             <option value="">— Pilih Kategori —</option>
                             @foreach($kategoriList as $k)
-                            <option value="{{ $k->id }}" data-poin="{{ $k->poin_default }}" data-tingkat="{{ $k->tingkat }}"
+                            <option value="{{ $k->id }}"
+                                data-poin="{{ $k->poin_default }}"
+                                data-tingkat="{{ $k->tingkat }}"
                                 {{ old('kategori_pelanggaran_id') == $k->id ? 'selected' : '' }}>
                                 {{ $k->nama }} ({{ $k->poin_default }} poin)
                             </option>
@@ -102,34 +105,45 @@
                         </div>
                         @error('kategori_pelanggaran_id')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
                         <label>Tanggal Kejadian <span class="req">*</span></label>
-                        <input type="date" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}"
+                        <input type="date" name="tanggal"
+                            value="{{ old('tanggal', date('Y-m-d')) }}"
+                            max="{{ date('Y-m-d') }}"
                             class="{{ $errors->has('tanggal') ? 'is-invalid' : '' }}">
                         @error('tanggal')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
+                        {{-- FIX: poin wajib diisi (required), auto-fill dari kategori via JS --}}
                         <label>Poin Pelanggaran <span class="req">*</span></label>
                         <input type="number" name="poin" id="poinInput"
-                            value="{{ old('poin') }}" min="1" max="100"
-                            placeholder="Otomatis dari kategori"
-                            class="{{ $errors->has('poin') ? 'is-invalid' : '' }}">
-                        <span class="field-hint">Kosongkan untuk menggunakan poin default kategori.</span>
+                            value="{{ old('poin') }}"
+                            min="1" max="100"
+                            placeholder="Pilih kategori untuk mengisi otomatis"
+                            class="{{ $errors->has('poin') ? 'is-invalid' : '' }}"
+                            required>
+                        <span class="field-hint">Dapat diubah dari poin default kategori (1–100).</span>
                         @error('poin')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field">
+                        {{-- FIX: status tidak include 'dibatalkan' di form create — sesuai logika bisnis --}}
                         <label>Status <span class="req">*</span></label>
                         <select name="status" class="{{ $errors->has('status') ? 'is-invalid' : '' }}">
-                            <option value="pending"  {{ old('status','pending') == 'pending'  ? 'selected' : '' }}>Pending</option>
+                            <option value="pending"  {{ old('status', 'pending') == 'pending'  ? 'selected' : '' }}>Pending</option>
                             <option value="diproses" {{ old('status') == 'diproses' ? 'selected' : '' }}>Sedang Diproses</option>
                             <option value="selesai"  {{ old('status') == 'selesai'  ? 'selected' : '' }}>Selesai</option>
                             <option value="banding"  {{ old('status') == 'banding'  ? 'selected' : '' }}>Banding</option>
                         </select>
                         @error('status')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
+
                     <div class="field col-span-2">
                         <label>Deskripsi Pelanggaran <span class="req">*</span></label>
-                        <textarea name="deskripsi" rows="4" placeholder="Jelaskan kronologi dan detail pelanggaran yang terjadi..."
+                        <textarea name="deskripsi" rows="4"
+                            placeholder="Jelaskan kronologi dan detail pelanggaran yang terjadi..."
                             class="{{ $errors->has('deskripsi') ? 'is-invalid' : '' }}">{{ old('deskripsi') }}</textarea>
                         @error('deskripsi')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
@@ -147,7 +161,9 @@
                 <div class="form-grid">
                     <div class="field col-span-2">
                         <label>Tindakan yang Diambil</label>
-                        <textarea name="tindakan" rows="3" placeholder="Tindakan yang sudah atau akan diambil oleh pihak sekolah...">{{ old('tindakan') }}</textarea>
+                        <textarea name="tindakan" rows="3"
+                            placeholder="Tindakan yang sudah atau akan diambil oleh pihak sekolah...">{{ old('tindakan') }}</textarea>
+                        @error('tindakan')<span class="field-error">{{ $message }}</span>@enderror
                     </div>
                 </div>
             </div>
@@ -166,39 +182,57 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     @if($errors->any())
-    Swal.fire({ icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db' });
+    Swal.fire({
+        icon: 'error',
+        title: 'Terdapat {{ $errors->count() }} Kesalahan',
+        html: `<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
+        confirmButtonColor: '#1f63db'
+    });
     @endif
 
-    function showKategoriInfo(sel) {
-        const opt  = sel.options[sel.selectedIndex];
-        const info = document.getElementById('kategoriInfo');
+    function onKategoriChange(sel) {
+        const opt      = sel.options[sel.selectedIndex];
+        const info     = document.getElementById('kategoriInfo');
+        const poinInput = document.getElementById('poinInput');
+
         if (opt.value) {
-            document.getElementById('kategoriPoin').textContent    = opt.dataset.poin;
-            document.getElementById('kategoriTingkat').textContent = 'Tingkat: ' + ucfirstTingkat(opt.dataset.tingkat);
+            const poin   = opt.dataset.poin;
+            const tingkat = opt.dataset.tingkat;
+
+            document.getElementById('kategoriPoin').textContent    = poin;
+            document.getElementById('kategoriTingkat').textContent = 'Tingkat: ' + ucfirst(tingkat);
             info.style.display = 'flex';
-            const poinInput = document.getElementById('poinInput');
-            if (!poinInput.value) {
-                poinInput.placeholder = 'Default: ' + opt.dataset.poin + ' poin';
-                poinInput.value       = opt.dataset.poin;
+
+            // FIX: selalu isi poin dari default kategori jika user belum mengubahnya secara manual
+            if (!poinInput.dataset.manuallyEdited) {
+                poinInput.value = poin;
             }
         } else {
             info.style.display = 'none';
         }
     }
 
-    function ucfirstTingkat(s) {
-        if (!s) return '';
-        return s.charAt(0).toUpperCase() + s.slice(1);
-    }
-
-    window.addEventListener('load', function() {
-        const sel = document.getElementById('kategoriSelect');
-        if (sel.value) showKategoriInfo(sel);
+    // Tandai jika user mengubah poin secara manual
+    document.getElementById('poinInput').addEventListener('input', function () {
+        this.dataset.manuallyEdited = '1';
     });
 
-    document.getElementById('pelForm').addEventListener('submit', function() {
+    function ucfirst(s) {
+        return s ? s.charAt(0).toUpperCase() + s.slice(1) : '';
+    }
+
+    // Inisialisasi saat halaman load (untuk kasus old() setelah validasi gagal)
+    window.addEventListener('load', function () {
+        const sel = document.getElementById('kategoriSelect');
+        if (sel.value) {
+            // Tandai sebagai manual agar poin old() tidak ditimpa
+            const poinInput = document.getElementById('poinInput');
+            if (poinInput.value) poinInput.dataset.manuallyEdited = '1';
+            onKategoriChange(sel);
+        }
+    });
+
+    document.getElementById('pelForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
         btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;

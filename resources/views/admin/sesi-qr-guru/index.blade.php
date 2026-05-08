@@ -1,28 +1,53 @@
 <x-app-layout>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-    :root{--brand:#1f63db;--brand-h:#3582f0;--brand-50:#eef6ff;--brand-100:#d9ebff;--brand-700:#1750c0;--surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;--border:#e2e8f0;--border2:#cbd5e1;--text:#0f172a;--text2:#475569;--text3:#94a3b8;--radius:10px;--radius-sm:7px}
+    :root{
+        --brand:#1f63db;--brand-h:#3582f0;--brand-50:#eef6ff;--brand-100:#d9ebff;--brand-700:#1750c0;
+        --surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;
+        --border:#e2e8f0;--border2:#cbd5e1;
+        --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+        --green:#15803d;--green-bg:#f0fdf4;--green-border:#bbf7d0;
+        --red:#dc2626;--red-bg:#fee2e2;--red-border:#fecaca;
+        --amber:#a16207;--amber-bg:#fefce8;--amber-border:#fde68a;
+        --purple:#7c3aed;--purple-bg:#faf5ff;--purple-border:#e9d5ff;
+        --radius:10px;--radius-sm:7px;
+    }
     .page{padding:28px 28px 60px;max-width:2000px;margin:0 auto}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
+
+    /* ── Stats ── */
+    .stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px}
+    .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .stat-icon.blue{background:var(--brand-50)} .stat-icon.green{background:var(--green-bg)} .stat-icon.yellow{background:var(--amber-bg)}
+    .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.03em;text-transform:uppercase}
+    .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
+
+    /* ── Buttons ── */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s;white-space:nowrap}
     .btn:hover{filter:brightness(.93)}
     .btn-primary{background:var(--brand);color:#fff}
     .btn-sm{padding:6px 12px;font-size:12px;border-radius:6px}
-    .btn-detail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}.btn-detail:hover{background:#dcfce7;filter:none}
-    .btn-del{background:#fff0f0;color:#dc2626;border:1px solid #fecaca}.btn-del:hover{background:#fee2e2;filter:none}
-    .btn-purple{background:#faf5ff;color:#6d28d9;border:1px solid #e9d5ff}.btn-purple:hover{background:#f3e8ff;filter:none}
-    .btn-yellow{background:#fef9c3;color:#a16207;border:1px solid #fde68a}.btn-yellow:hover{background:#fef08a;filter:none}
-    .btn-outline{background:var(--surface);color:var(--text2);border:1px solid var(--border)}.btn-outline:hover{background:var(--surface2);filter:none}
-    .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px}
+    .btn-detail{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}.btn-detail:hover{background:#dcfce7;filter:none}
+    .btn-del{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}.btn-del:hover{background:#fecaca;filter:none}
+    .btn-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}.btn-purple:hover{background:#f3e8ff;filter:none}
+    .btn-yellow{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}.btn-yellow:hover{background:#fef08a;filter:none}
+    .btn-scan{background:var(--brand-50);color:var(--brand);border:1px solid var(--brand-100)}.btn-scan:hover{background:#dbeafe;filter:none}
+
+    /* ── Filter ── */
+    .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;margin-bottom:16px}
     .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-    .filter-row input,.filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none}
+    .filter-row input,.filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
     .filter-row input:focus,.filter-row select:focus{border-color:var(--brand-h);background:#fff}
     .filter-sep{flex:1}
     .btn-filter{height:36px;padding:0 18px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
+    .btn-filter:hover{background:var(--brand-700)}
     .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;text-decoration:none;display:inline-flex;align-items:center}
     .btn-reset:hover{background:var(--surface3)}
+
+    /* ── Table ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
@@ -39,15 +64,18 @@
     td.center{text-align:center}
     td.muted{color:var(--text3);font-size:12.5px}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)}
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700}
+    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%}
-    .b-aktif{background:#dcfce7;color:#15803d}.b-aktif .badge-dot{background:#15803d}
-    .b-nonaktif{background:#fee2e2;color:#dc2626}.b-nonaktif .badge-dot{background:#dc2626}
-    .b-kadaluarsa{background:#fef9c3;color:#a16207}.b-kadaluarsa .badge-dot{background:#a16207}
+    .b-aktif{background:var(--green-bg);color:var(--green)}.b-aktif .badge-dot{background:var(--green)}
+    .b-nonaktif{background:var(--red-bg);color:var(--red)}.b-nonaktif .badge-dot{background:var(--red)}
+    .b-kadaluarsa{background:var(--amber-bg);color:var(--amber)}.b-kadaluarsa .badge-dot{background:var(--amber)}
     .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap}
     .empty-state{padding:60px 20px;text-align:center}
+    .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
     .empty-sub{font-size:13px;color:var(--text3)}
+
+    /* ── Pagination ── */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
     .pag-btns{display:flex;gap:4px;align-items:center}
@@ -55,7 +83,7 @@
     .pag-btn:hover{background:var(--surface2)}
     .pag-btn.active{background:var(--brand);border-color:var(--brand);color:#fff}
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
-    @media(max-width:640px){.page{padding:16px}}
+    @media(max-width:640px){.page{padding:16px}.stats-strip{grid-template-columns:1fr 1fr}}
 </style>
 
 <div class="page">
@@ -70,6 +98,35 @@
         </a>
     </div>
 
+    {{-- Stats --}}
+    <div class="stats-strip">
+        <div class="stat-card">
+            <div class="stat-icon blue">
+                <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h.01M14 17h.01M17 14h.01M17 17h.01M20 14h.01"/></svg>
+            </div>
+            <div><p class="stat-label">Total Sesi</p><p class="stat-val">{{ $sesiList->total() }}</p></div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon green">
+                <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Sesi Aktif</p>
+                <p class="stat-val">{{ \App\Models\SesiQrGuru::aktif()->count() }}</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon yellow">
+                <svg width="18" height="18" fill="none" stroke="#a16207" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Nonaktif / Kadaluarsa</p>
+                <p class="stat-val">{{ \App\Models\SesiQrGuru::where(fn($q) => $q->where('is_active', false)->orWhere('kadaluarsa_pada', '<', now()))->count() }}</p>
+            </div>
+        </div>
+    </div>
+
+    {{-- Filter --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.sesi-qr-guru.index') }}">
             <div class="filter-row">
@@ -90,7 +147,9 @@
         <div class="table-topbar">
             <p class="table-info">
                 Daftar Sesi QR
-                <span>— {{ $sesiList->firstItem() ?? 0 }}–{{ $sesiList->lastItem() ?? 0 }} dari {{ $sesiList->total() }} sesi</span>
+                @if($sesiList->total())
+                <span>— {{ $sesiList->firstItem() }}–{{ $sesiList->lastItem() }} dari {{ $sesiList->total() }} sesi</span>
+                @endif
             </p>
         </div>
         <div class="table-wrap">
@@ -106,25 +165,27 @@
                         <th class="center">Berhasil</th>
                         <th>Dibuat Oleh</th>
                         <th class="center">Status</th>
-                        <th class="center" style="width:240px">Aksi</th>
+                        <th class="center" style="width:280px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($sesiList as $idx => $s)
                     @php
-                        $statusBadge = $s->is_active && now()->lt($s->kadaluarsa_pada) ? 'b-aktif' : ($s->is_active ? 'b-kadaluarsa' : 'b-nonaktif');
-                        $statusLabel = $s->is_active && now()->lt($s->kadaluarsa_pada) ? 'Aktif' : ($s->is_active ? 'Kadaluarsa' : 'Nonaktif');
+                        $isAktif      = $s->is_active && now()->lt($s->kadaluarsa_pada);
+                        $isKadaluarsa = $s->is_active && now()->gte($s->kadaluarsa_pada);
+                        $statusBadge  = $isAktif ? 'b-aktif' : ($isKadaluarsa ? 'b-kadaluarsa' : 'b-nonaktif');
+                        $statusLabel  = $isAktif ? 'Aktif' : ($isKadaluarsa ? 'Kadaluarsa' : 'Nonaktif');
                     @endphp
                     <tr>
                         <td><span class="no-col">{{ $sesiList->firstItem() + $idx }}</span></td>
-                        <td style="font-weight:600;font-family:'Plus Jakarta Sans',sans-serif">
+                        <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">
                             {{ \Carbon\Carbon::parse($s->tanggal)->translatedFormat('d M Y') }}
                         </td>
                         <td class="muted">{{ \Carbon\Carbon::parse($s->berlaku_mulai)->format('H:i') }}</td>
                         <td class="muted">{{ \Carbon\Carbon::parse($s->kadaluarsa_pada)->format('H:i') }}</td>
                         <td class="center muted">{{ $s->radius_meter ? $s->radius_meter.'m' : '—' }}</td>
                         <td class="center" style="font-weight:600">{{ $s->riwayat_scan_count }}</td>
-                        <td class="center" style="color:#15803d;font-weight:600">{{ $s->scan_berhasil_count }}</td>
+                        <td class="center" style="color:var(--green);font-weight:600">{{ $s->scan_berhasil_count }}</td>
                         <td class="muted">{{ $s->pembuat->name ?? '—' }}</td>
                         <td class="center">
                             <span class="badge {{ $statusBadge }}"><span class="badge-dot"></span>{{ $statusLabel }}</span>
@@ -133,7 +194,11 @@
                             <div class="action-group">
                                 <a href="{{ route('admin.sesi-qr-guru.show', $s->id) }}" class="btn btn-sm btn-detail">Detail</a>
                                 <a href="{{ route('admin.sesi-qr-guru.cetak-qr', $s->id) }}" class="btn btn-sm btn-purple" target="_blank">Cetak QR</a>
-                                @if($s->is_active && now()->lt($s->kadaluarsa_pada))
+                                @if($isAktif)
+                                <a href="{{ route('admin.sesi-qr-guru.scan', $s->id) }}" class="btn btn-sm btn-scan">
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                                    Scan
+                                </a>
                                 <form action="{{ route('admin.sesi-qr-guru.nonaktifkan', $s->id) }}" method="POST" id="nonaktifForm-{{ $s->id }}">
                                     @csrf
                                     <button type="button" class="btn btn-sm btn-yellow"
@@ -142,10 +207,10 @@
                                     </button>
                                 </form>
                                 @endif
-                                <form action="{{ route('admin.sesi-qr-guru.destroy', $s->id) }}" method="POST" id="delSesiForm-{{ $s->id }}">
+                                <form action="{{ route('admin.sesi-qr-guru.destroy', $s->id) }}" method="POST" id="delForm-{{ $s->id }}">
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('delSesiForm-{{ $s->id }}'), '{{ \Carbon\Carbon::parse($s->tanggal)->format('d/m/Y') }}')">
+                                        onclick="confirmDelete(document.getElementById('delForm-{{ $s->id }}'), '{{ \Carbon\Carbon::parse($s->tanggal)->format('d/m/Y') }}')">
                                         Hapus
                                     </button>
                                 </form>
@@ -155,8 +220,11 @@
                     @empty
                     <tr><td colspan="10">
                         <div class="empty-state">
+                            <div class="empty-icon">
+                                <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                            </div>
                             <p class="empty-title">Belum ada sesi QR</p>
-                            <p class="empty-sub">Buat sesi QR baru untuk mengaktifkan absensi via QR code</p>
+                            <p class="empty-sub">Buat sesi QR baru untuk mengaktifkan absensi guru via QR code</p>
                         </div>
                     </td></tr>
                     @endforelse
@@ -195,13 +263,30 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    @if(session('success'))Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});@endif
-    @if(session('error'))Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});@endif
-    function confirmDelete(form, label) {
-        Swal.fire({title:'Hapus Sesi QR?',html:`Sesi QR tanggal <strong>${label}</strong> akan dihapus permanen.`,icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)form.submit()});
-    }
+    @if(session('success'))
+    Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2500,showConfirmButton:false,toast:true,position:'top-end'});
+    @endif
+    @if(session('error'))
+    Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
+    @endif
+
     function confirmNonaktif(form) {
-        Swal.fire({title:'Nonaktifkan Sesi QR?',text:'Sesi ini tidak akan bisa diaktifkan kembali.',icon:'warning',showCancelButton:true,confirmButtonColor:'#a16207',cancelButtonColor:'#64748b',confirmButtonText:'Ya, Nonaktifkan',cancelButtonText:'Batal'}).then(r=>{if(r.isConfirmed)form.submit()});
+        Swal.fire({
+            title:'Nonaktifkan Sesi QR?',
+            text:'Sesi ini tidak akan bisa digunakan kembali untuk scan.',
+            icon:'warning',showCancelButton:true,
+            confirmButtonColor:'#a16207',cancelButtonColor:'#64748b',
+            confirmButtonText:'Ya, Nonaktifkan',cancelButtonText:'Batal'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
+    }
+    function confirmDelete(form, label) {
+        Swal.fire({
+            title:'Hapus Sesi QR?',
+            html:`Sesi QR tanggal <strong>${label}</strong> akan dihapus permanen.`,
+            icon:'warning',showCancelButton:true,
+            confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
+            confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 </script>
 </x-app-layout>

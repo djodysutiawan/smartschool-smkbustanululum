@@ -21,10 +21,10 @@
     .page-sub { font-size: 12.5px; color: var(--text3); margin-top: 3px; }
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius-sm); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; border: none; text-decoration: none; transition: filter .15s; white-space: nowrap; }
     .btn:hover { filter: brightness(.93); }
-    .btn-back { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+    .btn-back    { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
     .btn-back:hover { background: var(--surface3); filter: none; }
     .btn-primary { background: var(--brand); color: #fff; }
-    .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+    .btn-danger  { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
     .btn-danger:hover { background: #fecaca; filter: none; }
     .btn-warning { background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa; }
     .btn-warning:hover { background: #ffedd5; filter: none; }
@@ -38,14 +38,15 @@
     .dl dt { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700; color: var(--text3); align-self: start; padding-top: 1px; }
     .dl dd { font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: var(--text); margin: 0; }
 
+    /* Status pills — sesuai konstanta model */
     .status-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
-    .status-dot { width: 5px; height: 5px; border-radius: 50%; }
-    .s-sudah_dinilai { background: #dcfce7; color: #15803d; }
-    .s-sudah_dinilai .status-dot { background: #15803d; }
-    .s-dikumpulkan { background: #dbeafe; color: #1d4ed8; }
-    .s-dikumpulkan .status-dot { background: #1d4ed8; }
-    .s-terlambat { background: #fee2e2; color: #dc2626; }
-    .s-terlambat .status-dot { background: #dc2626; }
+    .status-dot  { width: 5px; height: 5px; border-radius: 50%; }
+    .s-sudah_dinilai     { background: #dcfce7; color: #15803d; }
+    .s-sudah_dinilai .status-dot     { background: #15803d; }
+    .s-dikumpulkan       { background: #dbeafe; color: #1d4ed8; }
+    .s-dikumpulkan .status-dot       { background: #1d4ed8; }
+    .s-terlambat         { background: #fee2e2; color: #dc2626; }
+    .s-terlambat .status-dot         { background: #dc2626; }
     .s-belum_dikumpulkan { background: #f1f5f9; color: #64748b; }
     .s-belum_dikumpulkan .status-dot { background: #64748b; }
 
@@ -64,15 +65,18 @@
     .field input, .field textarea { padding: 0 12px; height: 38px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13.5px; color: var(--text); background: var(--surface2); width: 100%; outline: none; transition: border-color .15s; box-sizing: border-box; }
     .field textarea { height: auto; padding: 10px 12px; resize: vertical; }
     .field input:focus, .field textarea:focus { border-color: var(--brand-h); background: #fff; box-shadow: 0 0 0 3px rgba(53,130,240,.1); }
-    .field-hint { font-size: 12px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
+    .field-hint  { font-size: 12px; color: var(--text3); font-family: 'DM Sans', sans-serif; }
     .field-error { font-size: 12px; color: var(--red); font-family: 'DM Sans', sans-serif; }
 
     .nilai-sudah { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 14px 16px; display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
     .nilai-sudah .ns-label { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 700; color: #15803d; }
-    .nilai-sudah .ns-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: #15803d; }
+    .nilai-sudah .ns-val   { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 28px; font-weight: 800; color: #15803d; }
 
     .kembalikan-card { background: #fff7ed; border: 1px solid #fed7aa; border-radius: var(--radius-sm); padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
     .kembalikan-card p { font-family: 'DM Sans', sans-serif; font-size: 13px; color: #92400e; }
+
+    .belum-dikumpulkan-notice { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 16px; }
+    .belum-dikumpulkan-notice p { font-family: 'DM Sans', sans-serif; font-size: 13px; color: var(--text3); font-style: italic; }
 
     @media (max-width: 860px) { .grid-2 { grid-template-columns: 1fr; } }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -148,13 +152,21 @@
                         <dd>{{ $pengumpulanTugas->tugas->mataPelajaran->nama_mapel ?? '-' }}</dd>
                         <dt>Batas Waktu</dt>
                         <dd style="color:var(--text2)">
-                            {{ $pengumpulanTugas->tugas ? \Carbon\Carbon::parse($pengumpulanTugas->tugas->batas_waktu)->format('d M Y, H:i') : '-' }}
+                            {{--
+                                BUG FIX: Gunakan Carbon::parse() dengan aman.
+                                batas_waktu mungkin belum di-cast sebagai datetime di model Tugas,
+                                Carbon::parse() lebih aman daripada langsung ->format().
+                            --}}
+                            {{ $pengumpulanTugas->tugas
+                                ? \Carbon\Carbon::parse($pengumpulanTugas->tugas->batas_waktu)->format('d M Y, H:i')
+                                : '-' }}
                         </dd>
                         <dt>Status</dt>
                         <dd>
                             <span class="status-pill s-{{ $pengumpulanTugas->status }}">
                                 <span class="status-dot"></span>
-                                {{ ucfirst(str_replace('_', ' ', $pengumpulanTugas->status)) }}
+                                {{-- Gunakan accessor label_status dari model --}}
+                                {{ $pengumpulanTugas->label_status }}
                             </span>
                         </dd>
                         <dt>Dikumpulkan</dt>
@@ -165,7 +177,9 @@
                         </dd>
                         @if($pengumpulanTugas->dinilai_pada)
                         <dt>Dinilai Pada</dt>
-                        <dd style="color:var(--text2);font-size:12.5px">{{ $pengumpulanTugas->dinilai_pada->format('d M Y, H:i') }}</dd>
+                        <dd style="color:var(--text2);font-size:12.5px">
+                            {{ $pengumpulanTugas->dinilai_pada->format('d M Y, H:i') }}
+                        </dd>
                         @endif
                     </dl>
                 </div>
@@ -191,7 +205,7 @@
 
                     @if($pengumpulanTugas->url_link)
                         <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);margin-top:12px;margin-bottom:8px">LINK</p>
-                        <a href="{{ $pengumpulanTugas->url_link }}" target="_blank" class="file-link">
+                        <a href="{{ $pengumpulanTugas->url_link }}" target="_blank" rel="noopener noreferrer" class="file-link">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                             Buka Link
                         </a>
@@ -199,7 +213,12 @@
 
                     @if($pengumpulanTugas->path_file)
                         <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);margin-top:12px;margin-bottom:8px">FILE</p>
-                        <a href="{{ asset('storage/' . $pengumpulanTugas->path_file) }}" target="_blank" class="file-link">
+                        {{--
+                            BUG FIX: Gunakan $pengumpulanTugas->file_url dari accessor model
+                            (getFileUrlAttribute) agar konsisten dengan logika storage di model.
+                            Accessor sudah mengembalikan asset('storage/'.$this->path_file).
+                        --}}
+                        <a href="{{ $pengumpulanTugas->file_url }}" target="_blank" rel="noopener noreferrer" class="file-link">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                             Unduh File Pengumpulan
                         </a>
@@ -211,8 +230,14 @@
                 </div>
             </div>
 
-            {{-- Kembalikan nilai jika sudah dinilai --}}
-            @if(in_array($pengumpulanTugas->status, ['sudah_dinilai', 'dikumpulkan', 'terlambat']))
+            {{--
+                BUG FIX: Tombol "Kembalikan Penilaian" sebelumnya muncul juga saat status
+                dikumpulkan & terlambat (padahal belum ada nilai yang perlu dikembalikan).
+                Controller method kembalikan() memang mengizinkan ketiga status tersebut,
+                tapi secara UX hanya relevan jika sudah ada nilai / sudah dinilai.
+                Batasi tampilan ke STATUS_DINILAI saja agar tidak membingungkan.
+            --}}
+            @if($pengumpulanTugas->status === \App\Models\PengumpulanTugas::STATUS_DINILAI)
             <div class="kembalikan-card">
                 <p>Batalkan penilaian untuk mengizinkan siswa memperbaiki pengumpulan.</p>
                 <form action="{{ route('admin.pengumpulan-tugas.kembalikan', $pengumpulanTugas->id) }}" method="POST" id="kembalikanForm">
@@ -226,7 +251,12 @@
             </div>
             @endif
 
-            {{-- Form Beri Nilai --}}
+            {{--
+                Form Beri Nilai.
+                Hanya tampil jika status bukan belum_dikumpulkan
+                (siswa harus sudah mengumpulkan sebelum bisa dinilai).
+            --}}
+            @if($pengumpulanTugas->status !== \App\Models\PengumpulanTugas::STATUS_BELUM)
             <div class="nilai-form-card">
                 <div class="nilai-form-header">
                     <svg width="14" height="14" fill="none" stroke="#1750c0" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
@@ -234,11 +264,12 @@
                 </div>
                 <div class="nilai-form-body">
 
-                    @if($pengumpulanTugas->status === 'sudah_dinilai' && $pengumpulanTugas->nilai !== null)
+                    @if($pengumpulanTugas->sudahDinilai() && $pengumpulanTugas->nilai !== null)
                         <div class="nilai-sudah">
                             <div>
                                 <p class="ns-label">Nilai Saat Ini</p>
-                                <p class="ns-val">{{ $pengumpulanTugas->nilai }}</p>
+                                {{-- nilai di-cast decimal:2 di model, format agar tidak tampil 85.00 --}}
+                                <p class="ns-val">{{ rtrim(rtrim(number_format($pengumpulanTugas->nilai, 2), '0'), '.') }}</p>
                             </div>
                             @if($pengumpulanTugas->umpan_balik)
                             <div style="border-left:2px solid #bbf7d0;padding-left:14px">
@@ -255,9 +286,11 @@
 
                         <div class="field">
                             <label>Nilai <span class="req">*</span></label>
-                            <input type="number" name="nilai" min="0"
+                            <input type="number" name="nilai"
+                                min="0"
                                 max="{{ $pengumpulanTugas->tugas->nilai_maksimal ?? 100 }}"
-                                value="{{ old('nilai', $pengumpulanTugas->nilai) }}"
+                                step="0.01"
+                                value="{{ old('nilai', $pengumpulanTugas->nilai !== null ? rtrim(rtrim(number_format($pengumpulanTugas->nilai, 2), '0'), '.') : '') }}"
                                 placeholder="0 – {{ $pengumpulanTugas->tugas->nilai_maksimal ?? 100 }}"
                                 style="{{ $errors->has('nilai') ? 'border-color:#dc2626' : '' }}">
                             <span class="field-hint">Nilai maksimal: {{ $pengumpulanTugas->tugas->nilai_maksimal ?? 100 }}</span>
@@ -274,12 +307,18 @@
                         <div style="display:flex;justify-content:flex-end">
                             <button type="submit" class="btn btn-primary" id="btnNilai">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
-                                {{ $pengumpulanTugas->status === 'sudah_dinilai' ? 'Perbarui Nilai' : 'Simpan Nilai' }}
+                                {{ $pengumpulanTugas->sudahDinilai() ? 'Perbarui Nilai' : 'Simpan Nilai' }}
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
+            @else
+            {{-- Siswa belum mengumpulkan — tampilkan notice, sembunyikan form nilai --}}
+            <div class="belum-dikumpulkan-notice">
+                <p>Siswa belum mengumpulkan tugas ini. Form penilaian akan tersedia setelah siswa mengumpulkan.</p>
+            </div>
+            @endif
         </div>
     </div>
 </div>
@@ -327,16 +366,20 @@
         }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 
-    document.getElementById('nilaiForm').addEventListener('submit', function (e) {
-        const nilaiVal = this.querySelector('[name="nilai"]').value;
-        if (!nilaiVal) {
-            e.preventDefault();
-            Swal.fire({ icon: 'warning', title: 'Nilai Wajib Diisi', text: 'Masukkan nilai sebelum menyimpan.', confirmButtonColor: '#1f63db' });
-            return;
-        }
-        const btn = document.getElementById('btnNilai');
-        btn.disabled = true;
-        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
-    });
+    // BUG FIX: Cegah double-submit dengan disable tombol hanya setelah validasi lolos
+    const nilaiForm = document.getElementById('nilaiForm');
+    if (nilaiForm) {
+        nilaiForm.addEventListener('submit', function (e) {
+            const nilaiInput = this.querySelector('[name="nilai"]');
+            if (!nilaiInput || nilaiInput.value === '') {
+                e.preventDefault();
+                Swal.fire({ icon: 'warning', title: 'Nilai Wajib Diisi', text: 'Masukkan nilai sebelum menyimpan.', confirmButtonColor: '#1f63db' });
+                return;
+            }
+            const btn = document.getElementById('btnNilai');
+            btn.disabled = true;
+            btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
+        });
+    }
 </script>
 </x-app-layout>

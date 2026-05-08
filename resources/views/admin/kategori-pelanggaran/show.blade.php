@@ -15,6 +15,8 @@
     .btn-back{background:var(--surface2);color:var(--text2);border:1px solid var(--border);}.btn-back:hover{background:var(--surface3);filter:none;}
     .btn-edit{background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100);}.btn-edit:hover{background:var(--brand-100);filter:none;}
     .btn-del{background:#fff0f0;color:#dc2626;border:1px solid #fecaca;}.btn-del:hover{background:#fee2e2;filter:none;}
+    .btn-toggle-on{background:#fef9c3;color:#a16207;border:1px solid #fde68a;}.btn-toggle-on:hover{background:#fef08a;filter:none;}
+    .btn-toggle-off{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;}.btn-toggle-off:hover{background:#dcfce7;filter:none;}
     .stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
@@ -66,9 +68,23 @@
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Edit
             </a>
-            <form action="{{ route('admin.kategori-pelanggaran.destroy', $kategoriPelanggaran->id) }}" method="POST" id="delForm">
-                @csrf @method('DELETE')
-                <button type="button" class="btn btn-del" onclick="confirmDelete(document.getElementById('delForm'), {{ $totalKasus }})">
+            {{-- Toggle status dari halaman show --}}
+            <form action="{{ route('admin.kategori-pelanggaran.toggle-status', $kategoriPelanggaran->id) }}"
+                method="POST" id="toggleForm">
+                @csrf
+                @method('PATCH')
+                <button type="button"
+                    class="btn {{ $kategoriPelanggaran->is_active ? 'btn-toggle-on' : 'btn-toggle-off' }}"
+                    onclick="confirmToggle(document.getElementById('toggleForm'), {{ $kategoriPelanggaran->is_active ? 'true' : 'false' }})">
+                    {{ $kategoriPelanggaran->is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                </button>
+            </form>
+            <form action="{{ route('admin.kategori-pelanggaran.destroy', $kategoriPelanggaran->id) }}"
+                method="POST" id="delForm">
+                @csrf
+                @method('DELETE')
+                <button type="button" class="btn btn-del"
+                    onclick="confirmDelete(document.getElementById('delForm'), {{ $totalKasus }})">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M9 6V4h6v2"/></svg>
                     Hapus
                 </button>
@@ -85,19 +101,28 @@
             <div class="stat-icon blue">
                 <svg width="18" height="18" fill="none" stroke="#1f63db" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             </div>
-            <div><p class="stat-label">Total Kasus</p><p class="stat-val">{{ $totalKasus }}</p></div>
+            <div>
+                <p class="stat-label">Total Kasus</p>
+                <p class="stat-val">{{ $totalKasus }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon red">
                 <svg width="18" height="18" fill="none" stroke="#dc2626" stroke-width="1.8" viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
             </div>
-            <div><p class="stat-label">Poin Default</p><p class="stat-val">{{ $kategoriPelanggaran->poin_default }}</p></div>
+            <div>
+                <p class="stat-label">Poin Default</p>
+                <p class="stat-val">{{ $kategoriPelanggaran->poin_default }}</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon orange">
                 <svg width="18" height="18" fill="none" stroke="#c2410c" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             </div>
-            <div><p class="stat-label">Siswa Terdampak</p><p class="stat-val">{{ $siswaUnik }}</p></div>
+            <div>
+                <p class="stat-label">Siswa Terdampak</p>
+                <p class="stat-val">{{ $siswaUnik }}</p>
+            </div>
         </div>
     </div>
 
@@ -114,13 +139,17 @@
             <div class="detail-item">
                 <span class="detail-label">Tingkat</span>
                 <span class="detail-value">
-                    @php $cls=['ringan'=>'bobot-ringan','sedang'=>'bobot-sedang','berat'=>'bobot-berat'];@endphp
-                    <span class="bobot-badge {{ $cls[$kategoriPelanggaran->tingkat] ?? 'bobot-ringan' }}">{{ ucfirst($kategoriPelanggaran->tingkat) }}</span>
+                    @php $cls = ['ringan' => 'bobot-ringan', 'sedang' => 'bobot-sedang', 'berat' => 'bobot-berat']; @endphp
+                    <span class="bobot-badge {{ $cls[$kategoriPelanggaran->tingkat] ?? 'bobot-ringan' }}">
+                        {{ ucfirst($kategoriPelanggaran->tingkat) }}
+                    </span>
                 </span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Poin Default</span>
-                <span class="detail-value"><strong style="font-size:18px;font-family:'Plus Jakarta Sans',sans-serif;">{{ $kategoriPelanggaran->poin_default }}</strong> poin</span>
+                <span class="detail-value">
+                    <strong style="font-size:18px;font-family:'Plus Jakarta Sans',sans-serif;">{{ $kategoriPelanggaran->poin_default }}</strong> poin
+                </span>
             </div>
             <div class="detail-item">
                 <span class="detail-label">Batas Poin Maks.</span>
@@ -129,6 +158,7 @@
             <div class="detail-item">
                 <span class="detail-label">Warna</span>
                 <span class="detail-value" style="display:flex;align-items:center;gap:8px;">
+                    {{-- Bug fix: gunakan accessor warna_hex dari model --}}
                     <span style="display:inline-block;width:20px;height:20px;border-radius:4px;background:{{ $kategoriPelanggaran->warna_hex }}"></span>
                     {{ $kategoriPelanggaran->warna ?? 'Default' }}
                 </span>
@@ -180,8 +210,8 @@
                     @foreach($pelanggaranTerbaru as $i => $p)
                     <tr>
                         <td style="color:var(--text3);font-size:12px;">{{ $i + 1 }}</td>
-                        <td style="font-weight:600;">{{ $p->siswa->nama_lengkap ?? '—' }}</td>
-                        <td style="color:var(--text3);font-size:12.5px;">{{ $p->siswa->kelas->nama_kelas ?? '—' }}</td>
+                        <td style="font-weight:600;">{{ optional($p->siswa)->nama_lengkap ?? '—' }}</td>
+                        <td style="color:var(--text3);font-size:12.5px;">{{ optional($p->siswa->kelas ?? null)->nama_kelas ?? '—' }}</td>
                         <td style="color:var(--text3);font-size:12.5px;">{{ \Carbon\Carbon::parse($p->tanggal)->format('d M Y') }}</td>
                         <td><strong style="font-family:'Plus Jakarta Sans',sans-serif;">{{ $p->poin }}</strong></td>
                         <td style="font-size:12px;color:var(--text3);text-transform:capitalize;">{{ $p->status }}</td>
@@ -196,21 +226,55 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    @if(session('success'))Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });@endif
-    @if(session('error'))Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });@endif
+    @if(session('success'))
+    Swal.fire({
+        icon: 'success', title: 'Berhasil!',
+        text: @json(session('success')),
+        timer: 2500, showConfirmButton: false, toast: true, position: 'top-end'
+    });
+    @endif
+
+    @if(session('error'))
+    Swal.fire({
+        icon: 'error', title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db'
+    });
+    @endif
+
     function confirmDelete(form, jumlahKasus) {
         if (jumlahKasus > 0) {
-            Swal.fire({ icon:'error', title:'Tidak Dapat Dihapus',
-                html:`Kategori ini sudah digunakan di <strong>${jumlahKasus} kasus</strong> pelanggaran.`,
-                confirmButtonColor:'#1f63db' });
+            Swal.fire({
+                icon: 'error',
+                title: 'Tidak Dapat Dihapus',
+                html: `Kategori ini sudah digunakan di <strong>${jumlahKasus} kasus</strong> pelanggaran.`,
+                confirmButtonColor: '#1f63db'
+            });
             return;
         }
         Swal.fire({
-            title:'Hapus Kategori?', text:'Kategori ini akan dihapus permanen.',
-            icon:'warning', showCancelButton:true,
-            confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!', cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) form.submit(); });
+            title: 'Hapus Kategori?',
+            text: 'Kategori ini akan dihapus permanen.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
+    }
+
+    function confirmToggle(form, isActive) {
+        Swal.fire({
+            title: `${isActive ? 'Nonaktifkan' : 'Aktifkan'} Kategori?`,
+            html: `Kategori ini akan di${isActive ? 'nonaktifkan' : 'aktifkan'}.`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#1f63db',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: `Ya, ${isActive ? 'Nonaktifkan' : 'Aktifkan'}!`,
+            cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 </script>
 </x-app-layout>

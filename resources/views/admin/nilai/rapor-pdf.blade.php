@@ -21,7 +21,10 @@
         .stat-box { flex: 1; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; text-align: center; }
         .stat-box .val { font-size: 17px; font-weight: 700; }
         .stat-box .lbl { font-size: 9px; color: #64748b; text-transform: uppercase; letter-spacing: .04em; margin-top: 2px; }
-        .stat-box.blue .val { color: #1d4ed8; } .stat-box.green .val { color: #15803d; } .stat-box.orange .val { color: #d97706; } .stat-box.red .val { color: #dc2626; }
+        .stat-box.blue .val { color: #1d4ed8; }
+        .stat-box.green .val { color: #15803d; }
+        .stat-box.orange .val { color: #d97706; }
+        .stat-box.red .val { color: #dc2626; }
         table { width: 100%; border-collapse: collapse; }
         thead tr { background: #1f63db; }
         thead th { padding: 8px 10px; text-align: left; font-size: 10px; font-weight: 700; color: #fff; text-transform: uppercase; letter-spacing: .04em; }
@@ -31,8 +34,10 @@
         td { padding: 7px 10px; font-size: 10.5px; color: #334155; vertical-align: middle; }
         td.center { text-align: center; }
         .badge { display: inline-block; padding: 2px 7px; border-radius: 99px; font-size: 9.5px; font-weight: 700; }
-        .badge-a { background: #dcfce7; color: #15803d; } .badge-b { background: #dbeafe; color: #1d4ed8; }
-        .badge-c { background: #fef9c3; color: #a16207; } .badge-d { background: #fee2e2; color: #dc2626; }
+        .badge-a { background: #dcfce7; color: #15803d; }
+        .badge-b { background: #dbeafe; color: #1d4ed8; }
+        .badge-c { background: #fef9c3; color: #a16207; }
+        .badge-d { background: #fee2e2; color: #dc2626; }
         .badge-e { background: #ffe4e6; color: #9f1239; }
         .mapel-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; background: #eff6ff; color: #1d4ed8; }
         .footer { margin-top: 20px; padding-top: 8px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; }
@@ -53,10 +58,23 @@
         </div>
     </div>
     <div class="meta-row">
-        <div class="meta-item"><span class="meta-label">Kelas</span><span class="meta-val">{{ $kelas->nama_kelas }}</span></div>
-        <div class="meta-item"><span class="meta-label">Tahun Ajaran</span><span class="meta-val">{{ $tahunAjaran->tahun }}</span></div>
-        <div class="meta-item"><span class="meta-label">Semester</span><span class="meta-val">{{ ucfirst($tahunAjaran->semester) }}</span></div>
-        <div class="meta-item"><span class="meta-label">Total Siswa</span><span class="meta-val">{{ $nilai->count() }} siswa</span></div>
+        <div class="meta-item">
+            <span class="meta-label">Kelas</span>
+            <span class="meta-val">{{ $kelas->nama_kelas }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Tahun Ajaran</span>
+            <span class="meta-val">{{ $tahunAjaran->tahun }}</span>
+        </div>
+        {{-- BUG FIX: null-safe untuk semester --}}
+        <div class="meta-item">
+            <span class="meta-label">Semester</span>
+            <span class="meta-val">{{ ucfirst($tahunAjaran->semester ?? '') }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="meta-label">Total Siswa</span>
+            <span class="meta-val">{{ $nilai->count() }} siswa</span>
+        </div>
     </div>
 </div>
 
@@ -97,16 +115,31 @@
         @forelse($nilai as $siswaId => $siswaRow)
             @foreach($siswaRow as $idx => $n)
             <tr>
-                @if($idx === 0)
-                    <td rowspan="{{ $siswaRow->count() }}" style="text-align:center;font-weight:700;color:#94a3b8">{{ $loop->parent->iteration }}</td>
-                    <td rowspan="{{ $siswaRow->count() }}" style="font-weight:700;color:#0f172a">{{ $n->siswa->nama_lengkap ?? '-' }}</td>
+                {{--
+                    BUG FIX KRITIS: $idx === 0 TIDAK RELIABLE untuk collection yang di-groupBy.
+                    Key sub-collection bisa bukan 0 karena collection tidak selalu di-reindex.
+                    Gunakan $loop->first yang selalu benar untuk baris pertama di setiap sub-loop.
+
+                    BUG FIX: DomPDF tidak mendukung CSS display:flex dan rowspan dengan baik
+                    pada nested loop. Gunakan rowspan hanya ketika $loop->first.
+                --}}
+                @if($loop->first)
+                    <td rowspan="{{ $siswaRow->count() }}" style="text-align:center;font-weight:700;color:#94a3b8;vertical-align:middle">
+                        {{ $loop->parent->iteration }}
+                    </td>
+                    <td rowspan="{{ $siswaRow->count() }}" style="font-weight:700;color:#0f172a;vertical-align:middle">
+                        {{ $n->siswa->nama_lengkap ?? '-' }}
+                    </td>
                 @endif
                 <td><span class="mapel-tag">{{ $n->mataPelajaran->nama_mapel ?? '-' }}</span></td>
-                <td class="center">{{ $n->nilai_tugas ?? '—' }}</td>
-                <td class="center">{{ $n->nilai_harian ?? '—' }}</td>
-                <td class="center">{{ $n->nilai_uts ?? '—' }}</td>
-                <td class="center">{{ $n->nilai_uas ?? '—' }}</td>
-                <td class="center" style="font-weight:700">{{ $n->nilai_akhir !== null ? number_format($n->nilai_akhir, 1) : '—' }}</td>
+                {{-- BUG FIX: null-check + number_format agar '0' tidak tampil sebagai '—' --}}
+                <td class="center">{{ $n->nilai_tugas !== null ? number_format($n->nilai_tugas, 1) : '—' }}</td>
+                <td class="center">{{ $n->nilai_harian !== null ? number_format($n->nilai_harian, 1) : '—' }}</td>
+                <td class="center">{{ $n->nilai_uts !== null ? number_format($n->nilai_uts, 1) : '—' }}</td>
+                <td class="center">{{ $n->nilai_uas !== null ? number_format($n->nilai_uas, 1) : '—' }}</td>
+                <td class="center" style="font-weight:700">
+                    {{ $n->nilai_akhir !== null ? number_format($n->nilai_akhir, 1) : '—' }}
+                </td>
                 <td class="center">
                     @if($n->predikat)
                         <span class="badge badge-{{ strtolower($n->predikat) }}">{{ $n->predikat }}</span>
@@ -119,7 +152,9 @@
             @endforeach
         @empty
         <tr>
-            <td colspan="10" style="text-align:center;padding:20px;color:#94a3b8;font-style:italic">Tidak ada data nilai untuk kelas ini.</td>
+            <td colspan="10" style="text-align:center;padding:20px;color:#94a3b8;font-style:italic">
+                Tidak ada data nilai untuk kelas ini.
+            </td>
         </tr>
         @endforelse
     </tbody>

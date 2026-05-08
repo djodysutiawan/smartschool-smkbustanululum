@@ -58,6 +58,7 @@
     .badge-diproses{background:#dbeafe;color:#1d4ed8;}.badge-diproses .badge-dot{background:#1d4ed8;}
     .badge-selesai{background:#dcfce7;color:#15803d;}.badge-selesai .badge-dot{background:#15803d;}
     .badge-banding{background:#fef9c3;color:#a16207;}.badge-banding .badge-dot{background:#a16207;}
+    .badge-dibatalkan{background:#f1f5f9;color:#64748b;text-decoration:line-through;}.badge-dibatalkan .badge-dot{background:#94a3b8;}
     .tingkat-ringan{background:#dbeafe;color:#1d4ed8;padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:700;}
     .tingkat-sedang{background:#fef9c3;color:#a16207;padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:700;}
     .tingkat-berat{background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:4px;font-size:11.5px;font-weight:700;}
@@ -140,12 +141,14 @@
                     <option value="{{ $k->id }}" {{ request('kategori_id') == $k->id ? 'selected' : '' }}>{{ $k->nama }}</option>
                     @endforeach
                 </select>
+                {{-- FIX: tambah opsi dibatalkan agar konsisten dengan model --}}
                 <select name="status">
                     <option value="">Semua Status</option>
-                    <option value="pending"   {{ request('status') == 'pending'   ? 'selected' : '' }}>Pending</option>
-                    <option value="diproses"  {{ request('status') == 'diproses'  ? 'selected' : '' }}>Diproses</option>
-                    <option value="selesai"   {{ request('status') == 'selesai'   ? 'selected' : '' }}>Selesai</option>
-                    <option value="banding"   {{ request('status') == 'banding'   ? 'selected' : '' }}>Banding</option>
+                    <option value="pending"     {{ request('status') == 'pending'     ? 'selected' : '' }}>Pending</option>
+                    <option value="diproses"    {{ request('status') == 'diproses'    ? 'selected' : '' }}>Diproses</option>
+                    <option value="selesai"     {{ request('status') == 'selesai'     ? 'selected' : '' }}>Selesai</option>
+                    <option value="banding"     {{ request('status') == 'banding'     ? 'selected' : '' }}>Banding</option>
+                    <option value="dibatalkan"  {{ request('status') == 'dibatalkan'  ? 'selected' : '' }}>Dibatalkan</option>
                 </select>
                 <select name="kelas_id">
                     <option value="">Semua Kelas</option>
@@ -212,34 +215,56 @@
                         <td class="muted" style="font-size:12.5px">{{ $p->siswa->kelas->nama_kelas ?? '—' }}</td>
                         <td>
                             @if($p->kategori)
-                            <span style="font-size:13px;font-weight:600;">{{ $p->kategori->nama }}</span><br>
-                            <span class="tingkat-{{ $p->kategori->tingkat }}">{{ ucfirst($p->kategori->tingkat) }}</span>
-                            @else <span class="muted">—</span>
+                                <span style="font-size:13px;font-weight:600;">{{ $p->kategori->nama }}</span><br>
+                                <span class="tingkat-{{ $p->kategori->tingkat }}">{{ ucfirst($p->kategori->tingkat) }}</span>
+                            @else
+                                <span class="muted">—</span>
                             @endif
                         </td>
                         <td class="center">
                             <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:16px;">{{ $p->poin }}</span>
                         </td>
-                        <td class="muted" style="font-size:12.5px">{{ \Carbon\Carbon::parse($p->tanggal)->format('d M Y') }}</td>
+                        <td class="muted" style="font-size:12.5px">{{ \Carbon\Carbon::parse($p->tanggal)->translatedFormat('d M Y') }}</td>
                         <td>
-                            @php $statusMap = ['pending'=>'badge-pending','diproses'=>'badge-diproses','selesai'=>'badge-selesai','banding'=>'badge-banding']; @endphp
+                            {{-- FIX: tambah dibatalkan ke statusMap --}}
+                            @php
+                                $statusMap = [
+                                    'pending'    => 'badge-pending',
+                                    'diproses'   => 'badge-diproses',
+                                    'selesai'    => 'badge-selesai',
+                                    'banding'    => 'badge-banding',
+                                    'dibatalkan' => 'badge-dibatalkan',
+                                ];
+                                $statusLabel = [
+                                    'pending'    => 'Pending',
+                                    'diproses'   => 'Diproses',
+                                    'selesai'    => 'Selesai',
+                                    'banding'    => 'Banding',
+                                    'dibatalkan' => 'Dibatalkan',
+                                ];
+                            @endphp
                             <span class="badge {{ $statusMap[$p->status] ?? 'badge-pending' }}">
                                 <span class="badge-dot"></span>
-                                {{ ucfirst($p->status) }}
+                                {{ $statusLabel[$p->status] ?? ucfirst($p->status) }}
                             </span>
                         </td>
                         <td class="muted" style="font-size:12.5px">{{ $p->dicatatOleh->name ?? '—' }}</td>
                         <td class="center">
                             <div class="action-group">
                                 <a href="{{ route('admin.pelanggaran.show', $p->id) }}" class="btn btn-sm btn-detail">Detail</a>
-                                <a href="{{ route('admin.pelanggaran.edit', $p->id) }}" class="btn btn-sm btn-edit">Edit</a>
-                                <form action="{{ route('admin.pelanggaran.destroy', $p->id) }}" method="POST" id="delP-{{ $p->id }}">
-                                    @csrf @method('DELETE')
-                                    <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('delP-{{ $p->id }}'), '{{ addslashes($p->siswa->nama_lengkap ?? '') }}')">
-                                        Hapus
-                                    </button>
-                                </form>
+                                {{-- Sembunyikan Edit & Hapus jika sudah dibatalkan --}}
+                                @if($p->status !== 'dibatalkan')
+                                    <a href="{{ route('admin.pelanggaran.edit', $p->id) }}" class="btn btn-sm btn-edit">Edit</a>
+                                @endif
+                                @if($p->status !== 'selesai' && $p->status !== 'dibatalkan')
+                                    <form action="{{ route('admin.pelanggaran.destroy', $p->id) }}" method="POST" id="delP-{{ $p->id }}">
+                                        @csrf @method('DELETE')
+                                        <button type="button" class="btn btn-sm btn-del"
+                                            onclick="confirmDelete(document.getElementById('delP-{{ $p->id }}'), '{{ addslashes($p->siswa->nama_lengkap ?? '') }}')">
+                                            Hapus
+                                        </button>
+                                    </form>
+                                @endif
                             </div>
                         </td>
                     </tr>
@@ -289,6 +314,7 @@
     </div>
 </div>
 
+{{-- Modal Import --}}
 <div id="importModal" class="modal-backdrop" style="display:none" onclick="if(event.target===this)this.style.display='none'">
     <div class="modal-box">
         <div class="modal-header">
@@ -323,16 +349,21 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    @if(session('success'))Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });@endif
-    @if(session('error'))Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });@endif
+    @if(session('success'))
+    Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+    @endif
+    @if(session('error'))
+    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+    @endif
+
     function confirmDelete(form, nama) {
         Swal.fire({
-            title:'Hapus Catatan Pelanggaran?',
-            html:`Data pelanggaran milik <strong>${nama}</strong> akan dihapus permanen.`,
-            icon:'warning', showCancelButton:true,
-            confirmButtonColor:'#dc2626', cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!', cancelButtonText:'Batal',
-        }).then(r => { if(r.isConfirmed) form.submit(); });
+            title: 'Hapus Catatan Pelanggaran?',
+            html: `Data pelanggaran milik <strong>${nama}</strong> akan dihapus permanen.`,
+            icon: 'warning', showCancelButton: true,
+            confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 </script>
 </x-app-layout>

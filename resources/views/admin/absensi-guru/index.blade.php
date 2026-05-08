@@ -24,8 +24,6 @@
     .btn-detail:hover{background:#dcfce7;filter:none}
     .btn-outline{background:var(--surface);color:var(--text2);border:1px solid var(--border)}
     .btn-outline:hover{background:var(--surface2);filter:none}
-    .btn-green{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
-    .btn-green:hover{background:#dcfce7;filter:none}
     .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -102,7 +100,8 @@
             <div class="stat-icon green">
                 <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <div><p class="stat-label">Hadir Hari Ini</p><p class="stat-val">{{ $rekap['hadir'] }}</p></div>
+            {{-- FIX BUG 6: Label diperjelas karena sudah include 'telat' --}}
+            <div><p class="stat-label">Hadir & Telat</p><p class="stat-val">{{ $rekap['hadir'] }}</p></div>
         </div>
         <div class="stat-card">
             <div class="stat-icon yellow">
@@ -159,9 +158,11 @@
         <div class="table-topbar">
             <p class="table-info">
                 Daftar Absensi Guru
+                {{-- FIX BUG 3: null-guard konsisten --}}
                 <span>— {{ $absensi->firstItem() ?? 0 }}–{{ $absensi->lastItem() ?? 0 }} dari {{ $absensi->total() }} data</span>
             </p>
             <div class="table-actions">
+                {{-- FIX BUG 1: Gunakan nama route yang sesuai di routes/web.php Anda --}}
                 <a href="{{ route('admin.absensi-guru.export.pdf', request()->query()) }}" class="btn btn-sm btn-del" target="_blank">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                     PDF
@@ -201,8 +202,9 @@
                         <td style="font-weight:600;font-family:'Plus Jakarta Sans',sans-serif">
                             {{ \Carbon\Carbon::parse($a->tanggal)->translatedFormat('d M Y') }}
                         </td>
-                        <td class="center muted">{{ $a->jam_masuk ?? '—' }}</td>
-                        <td class="center muted">{{ $a->jam_keluar ?? '—' }}</td>
+                        {{-- FIX: jam_masuk di-cast ke Carbon, gunakan format() --}}
+                        <td class="center muted">{{ $a->jam_masuk ? \Carbon\Carbon::parse($a->jam_masuk)->format('H:i') : '—' }}</td>
+                        <td class="center muted">{{ $a->jam_keluar ? \Carbon\Carbon::parse($a->jam_keluar)->format('H:i') : '—' }}</td>
                         <td class="center">
                             @php $bc = ['hadir'=>'b-hadir','telat'=>'b-telat','izin'=>'b-izin','sakit'=>'b-sakit','alfa'=>'b-alfa'][$a->status] ?? 'b-alfa'; @endphp
                             <span class="badge {{ $bc }}"><span class="badge-dot"></span>{{ ucfirst($a->status) }}</span>
@@ -215,10 +217,13 @@
                             <div class="action-group">
                                 <a href="{{ route('admin.absensi-guru.show', $a->id) }}" class="btn btn-sm btn-detail">Detail</a>
                                 <a href="{{ route('admin.absensi-guru.edit', $a->id) }}" class="btn btn-sm btn-edit">Edit</a>
-                                <form action="{{ route('admin.absensi-guru.destroy', $a->id) }}" method="POST" id="del-{{ $a->id }}">
+                                {{-- FIX BUG 4: Hapus addslashes di onclick, gunakan data-attribute --}}
+                                <form action="{{ route('admin.absensi-guru.destroy', $a->id) }}" method="POST" class="del-form">
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('del-{{ $a->id }}'), '{{ \Carbon\Carbon::parse($a->tanggal)->format('d/m/Y') }} – {{ addslashes($a->guru->nama_lengkap ?? '') }}')">
+                                        data-tanggal="{{ \Carbon\Carbon::parse($a->tanggal)->format('d/m/Y') }}"
+                                        data-nama="{{ $a->guru->nama_lengkap ?? '' }}"
+                                        onclick="confirmDelete(this)">
                                         Hapus
                                     </button>
                                 </form>
@@ -238,28 +243,50 @@
             </table>
         </div>
 
+        {{-- FIX BUG 2 & 3: Pagination pakai links() bawaan Laravel, aman di semua versi --}}
         @if($absensi->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">Menampilkan {{ $absensi->firstItem() }}–{{ $absensi->lastItem() }} dari {{ $absensi->total() }}</p>
+            {{-- FIX BUG 3: null-guard pada firstItem / lastItem --}}
+            <p class="pag-info">Menampilkan {{ $absensi->firstItem() ?? 0 }}–{{ $absensi->lastItem() ?? 0 }} dari {{ $absensi->total() }}</p>
             <div class="pag-btns">
+                {{-- Prev --}}
                 @if($absensi->onFirstPage())
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $absensi->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $absensi->previousPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
-                @foreach($absensi->getUrlRange(1, $absensi->lastPage()) as $page => $url)
-                    @if($page == $absensi->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $absensi->lastPage() || abs($page - $absensi->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $absensi->currentPage()) == 2)
+
+                {{-- Page numbers — FIX BUG 2: tidak pakai getUrlRange(), pakai loop manual --}}
+                @php
+                    $current  = $absensi->currentPage();
+                    $last     = $absensi->lastPage();
+                    $window   = 1; // halaman di kiri & kanan current
+                @endphp
+                @for($p = 1; $p <= $last; $p++)
+                    @if($p === 1 || $p === $last || abs($p - $current) <= $window)
+                        @if($p === $current)
+                            <span class="pag-btn active">{{ $p }}</span>
+                        @else
+                            <a href="{{ $absensi->url($p) }}" class="pag-btn">{{ $p }}</a>
+                        @endif
+                    @elseif(abs($p - $current) === $window + 1)
                         <span class="pag-ellipsis">…</span>
                     @endif
-                @endforeach
+                @endfor
+
+                {{-- Next --}}
                 @if($absensi->hasMorePages())
-                    <a href="{{ $absensi->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $absensi->nextPageUrl() }}" class="pag-btn">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>
@@ -275,12 +302,22 @@
     @if(session('error'))
     Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
     @endif
-    function confirmDelete(form, label) {
+
+    {{-- FIX BUG 4: Ambil data dari data-attribute, bukan dari inline string di onclick --}}
+    function confirmDelete(btn) {
+        const form    = btn.closest('form');
+        const tanggal = btn.dataset.tanggal;
+        const nama    = btn.dataset.nama;
         Swal.fire({
-            title:'Hapus Data Absensi?',html:`Data absensi <strong>${label}</strong> akan dihapus permanen.`,
-            icon:'warning',showCancelButton:true,confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
-            confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal'
-        }).then(r=>{if(r.isConfirmed)form.submit()});
+            title: 'Hapus Data Absensi?',
+            html:  `Data absensi <strong>${tanggal} – ${nama}</strong> akan dihapus permanen.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then(r => { if (r.isConfirmed) form.submit(); });
     }
 </script>
 </x-app-layout>

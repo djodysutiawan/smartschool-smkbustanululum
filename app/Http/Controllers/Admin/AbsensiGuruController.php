@@ -7,14 +7,26 @@ use App\Models\AbsensiGuru;
 use App\Models\Guru;
 use App\Models\JadwalPiketGuru;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
 class AbsensiGuruController extends Controller
 {
+    /*
+    |--------------------------------------------------------------------------
+    | CATATAN KONSISTENSI ENUM DB
+    |--------------------------------------------------------------------------
+    | Kolom `status` : ENUM('hadir','telat','izin','sakit','alfa')
+    | Kolom `metode` : ENUM('manual','qr')
+    |
+    | Nilai 'qr' dicatat otomatis oleh SesiQrGuruController::prosesQr().
+    | Form admin hanya menggunakan 'manual'.
+    |--------------------------------------------------------------------------
+    */
+
     // ─── INDEX ────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
@@ -23,18 +35,22 @@ class AbsensiGuruController extends Controller
 
         $this->applyFilters($query, $request);
 
-        $absensi   = $query->orderByDesc('tanggal')->paginate(20)->withQueryString();
-        $guruList  = Guru::aktif()->orderBy('nama_lengkap')->get();
+        $absensi  = $query->orderByDesc('tanggal')->paginate(20)->withQueryString();
+        $guruList = Guru::aktif()->orderBy('nama_lengkap')->get();
+
+        $rekapRaw = AbsensiGuru::whereDate('tanggal', today())
+            ->selectRaw('status, COUNT(*) as total')
+            ->groupBy('status')
+            ->pluck('total', 'status');
+
         $rekap = [
-            'hadir' => AbsensiGuru::whereIn('status', ['hadir', 'telat'])->whereDate('tanggal', today())->count(),
-            'izin'  => AbsensiGuru::where('status', 'izin')->whereDate('tanggal', today())->count(),
-            'sakit' => AbsensiGuru::where('status', 'sakit')->whereDate('tanggal', today())->count(),
-            'alfa'  => AbsensiGuru::where('status', 'alfa')->whereDate('tanggal', today())->count(),
+            'hadir' => ($rekapRaw['hadir'] ?? 0) + ($rekapRaw['telat'] ?? 0),
+            'izin'  => $rekapRaw['izin']  ?? 0,
+            'sakit' => $rekapRaw['sakit'] ?? 0,
+            'alfa'  => $rekapRaw['alfa']  ?? 0,
         ];
 
-        return view('admin.absensi-guru.index', compact(
-            'absensi', 'guruList', 'rekap'
-        ) + [
+        return view('admin.absensi-guru.index', compact('absensi', 'guruList', 'rekap') + [
             'statusList' => AbsensiGuru::STATUS_LIST,
             'metodeList' => AbsensiGuru::METODE_LIST,
         ]);
@@ -44,15 +60,15 @@ class AbsensiGuruController extends Controller
 
     public function create()
     {
-        $guruList    = Guru::aktif()->orderBy('nama_lengkap')->get();
-        $jadwalList  = JadwalPiketGuru::where('is_active', true)
+        $guruList   = Guru::aktif()->orderBy('nama_lengkap')->get();
+        $jadwalList = JadwalPiketGuru::where('is_active', true)
                         ->with('guru')
                         ->orderBy('hari')
                         ->get();
 
         return view('admin.absensi-guru.create', compact('guruList', 'jadwalList') + [
             'statusList' => AbsensiGuru::STATUS_LIST,
-            'metodeList' => AbsensiGuru::METODE_LIST,
+            'metodeList' => ['manual'],        // form hanya izinkan manual
         ]);
     }
 
@@ -61,13 +77,11 @@ class AbsensiGuruController extends Controller
         $validated = $request->validate([
             'guru_id'         => ['required', 'exists:guru,id'],
             'jadwal_piket_id' => ['nullable', 'exists:jadwal_piket_guru,id'],
-            'dicatat_oleh'    => ['nullable', 'exists:users,id'],
             'tanggal'         => [
                 'required', 'date',
-                // Pastikan belum ada absensi guru di hari yang sama
-                Rule::unique('absensi_guru')->where(fn ($q) =>
-                    $q->where('guru_id', $request->guru_id)
-                      ->whereDate('tanggal', $request->tanggal)
+                Rule::unique('absensi_guru')->where(
+                    fn ($q) => $q->where('guru_id', $request->guru_id)
+                                 ->whereDate('tanggal', $request->tanggal)
                 ),
             ],
             'jam_masuk'       => ['nullable', 'date_format:H:i'],
@@ -85,7 +99,7 @@ class AbsensiGuruController extends Controller
                 ->store('absensi-guru/surat-izin', 'public');
         }
 
-        $validated['dicatat_oleh'] = $validated['dicatat_oleh'] ?? Auth::id();
+        $validated['dicatat_oleh'] = Auth::id();
         $validated['metode']       = $validated['metode'] ?? 'manual';
 
         AbsensiGuru::create($validated);
@@ -111,7 +125,7 @@ class AbsensiGuruController extends Controller
 
         return view('admin.absensi-guru.edit', compact('absensiGuru', 'guruList', 'jadwalList') + [
             'statusList' => AbsensiGuru::STATUS_LIST,
-            'metodeList' => AbsensiGuru::METODE_LIST,
+            'metodeList' => AbsensiGuru::METODE_LIST,   // edit boleh lihat semua metode
         ]);
     }
 
@@ -127,6 +141,10 @@ class AbsensiGuruController extends Controller
         ]);
 
         if ($request->hasFile('path_surat_izin')) {
+            // Hapus file lama sebelum menyimpan yang baru
+            if ($absensiGuru->path_surat_izin) {
+                Storage::disk('public')->delete($absensiGuru->path_surat_izin);
+            }
             $validated['path_surat_izin'] = $request->file('path_surat_izin')
                 ->store('absensi-guru/surat-izin', 'public');
         }
@@ -141,21 +159,24 @@ class AbsensiGuruController extends Controller
 
     public function destroy(AbsensiGuru $absensiGuru)
     {
+        // Hapus file surat izin jika ada
+        if ($absensiGuru->path_surat_izin) {
+            Storage::disk('public')->delete($absensiGuru->path_surat_izin);
+        }
+
         $absensiGuru->delete();
+
         return redirect()->route('admin.absensi-guru.index')
             ->with('success', 'Data absensi guru berhasil dihapus.');
     }
 
     // ─── REKAP PER GURU ───────────────────────────────────────────────────────
 
-    /**
-     * Rekap absensi guru dalam rentang tanggal tertentu.
-     * Menggunakan GET agar parameter tersedia untuk link ekspor.
-     */
     public function rekapGuru(Request $request)
     {
-        if (! $request->filled('guru_id') && ! $request->filled('tanggal_dari')) {
-            $guruList = Guru::aktif()->orderBy('nama_lengkap')->get();
+        $guruList = Guru::aktif()->orderBy('nama_lengkap')->get();
+
+        if (! $request->filled('tanggal_dari')) {
             return view('admin.absensi-guru.rekap', [
                 'absensi'  => null,
                 'guru'     => null,
@@ -176,11 +197,11 @@ class AbsensiGuruController extends Controller
             $query->where('guru_id', $request->guru_id);
         }
 
-        $absensi  = $query->orderBy('tanggal')->get()->groupBy('guru_id');
-        $guru     = $request->filled('guru_id') ? Guru::find($request->guru_id) : null;
-        $guruList = Guru::aktif()->orderBy('nama_lengkap')->get();
+        $absensi = $query->orderBy('tanggal')->get()->groupBy('guru_id');
+        $guru    = $request->filled('guru_id') ? Guru::find($request->guru_id) : null;
 
-        return view('admin.absensi-guru.rekap', compact('absensi', 'guru', 'guruList', 'request'));
+        return view('admin.absensi-guru.rekap',
+            compact('absensi', 'guru', 'guruList', 'request'));
     }
 
     // ─── EXPORT PDF ──────────────────────────────────────────────────────────
@@ -209,11 +230,10 @@ class AbsensiGuruController extends Controller
 
         if ($request->filled('guru_id')) {
             $query->where('guru_id', $request->guru_id);
-            $guru = Guru::find($request->guru_id);
         }
 
         $absensi = $query->orderBy('tanggal')->get()->groupBy('guru_id');
-        $guru    = $guru ?? null;
+        $guru    = $request->filled('guru_id') ? Guru::find($request->guru_id) : null;
 
         $pdf = Pdf::loadView('admin.absensi-guru.exports.rekap-pdf', compact('absensi', 'guru', 'request'))
             ->setPaper('a4', 'landscape');
@@ -225,10 +245,10 @@ class AbsensiGuruController extends Controller
 
     private function applyFilters(\Illuminate\Database\Eloquent\Builder $query, Request $request): void
     {
-        if ($request->filled('guru_id'))       $query->where('guru_id', $request->guru_id);
-        if ($request->filled('status'))        $query->where('status', $request->status);
-        if ($request->filled('metode'))        $query->where('metode', $request->metode);
-        if ($request->filled('tanggal_dari'))  $query->whereDate('tanggal', '>=', $request->tanggal_dari);
-        if ($request->filled('tanggal_sampai'))$query->whereDate('tanggal', '<=', $request->tanggal_sampai);
+        if ($request->filled('guru_id'))        $query->where('guru_id', $request->guru_id);
+        if ($request->filled('status'))         $query->where('status', $request->status);
+        if ($request->filled('metode'))         $query->where('metode', $request->metode);
+        if ($request->filled('tanggal_dari'))   $query->whereDate('tanggal', '>=', $request->tanggal_dari);
+        if ($request->filled('tanggal_sampai')) $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
     }
 }
