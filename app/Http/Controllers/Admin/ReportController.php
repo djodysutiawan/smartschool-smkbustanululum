@@ -249,6 +249,8 @@ class ReportController extends Controller
             'diproses' => $statusCounts['diproses']   ?? 0,
             'selesai'  => $statusCounts['selesai']    ?? 0,
             'banding'  => $statusCounts['banding']    ?? 0,
+            'pending'    => $statusCounts['pending']    ?? 0,
+            'dibatalkan' => $statusCounts['dibatalkan'] ?? 0,
         ];
 
         return view('admin.laporan.pelanggaran', compact(
@@ -383,70 +385,84 @@ class ReportController extends Controller
      */
     public function teachingJournal(Request $request)
     {
-        $query = JurnalMengajar::with(['guru', 'kelas', 'mataPelajaran', 'tahunAjaran'])
+        // Eager load hanya relasi yang BENAR-BENAR ada di model
+        $query = JurnalMengajar::with(['guru', 'kelas', 'mataPelajaran', 'diverifikasiOleh'])
             ->orderByDesc('tanggal');
+    
         $this->applyJurnalFilters($query, $request);
-        $jurnal = $query->paginate(25)->withQueryString();
-
-        $guruList    = Guru::aktif()->orderBy('nama_lengkap')->get();
-        $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $mapelList   = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
-        $tahunAjaran = TahunAjaran::orderByDesc('id')->get();
-
-        // FIX: stats via GROUP BY — bukan N query COUNT terpisah.
-        $statusCounts = JurnalMengajar::select('status', DB::raw('COUNT(*) as jumlah'))
-            ->groupBy('status')
-            ->pluck('jumlah', 'status')
-            ->toArray();
-
+    
+        $jurnal    = $query->paginate(25)->withQueryString();
+        $guruList  = Guru::aktif()->orderBy('nama_lengkap')->get();
+        $kelasList = Kelas::aktif()->orderBy('nama_kelas')->get();
+        $mapelList = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
+        // Tidak ada tahunAjaran di model — $tahunAjaran dikirim kosong
+        // agar filter dropdown di view tidak error jika masih ada
+        $tahunAjaran = collect();
+    
+        // Stats — "status" diturunkan dari diverifikasi_pada (bukan kolom status)
+        // disetujui  = sudah diverifikasi (diverifikasi_pada NOT NULL)
+        // menunggu   = belum diverifikasi (diverifikasi_pada IS NULL)
+        // Tidak ada kolom ditolak/draft di model ini
+        $totalJurnal  = JurnalMengajar::count();
+        $disetujui    = JurnalMengajar::whereNotNull('diverifikasi_pada')->count();
+        $menunggu     = JurnalMengajar::whereNull('diverifikasi_pada')->count();
+        $bulanIni     = JurnalMengajar::whereMonth('tanggal', now()->month)
+                            ->whereYear('tanggal', now()->year)->count();
+    
         $statsJ = [
-            'total'      => array_sum($statusCounts),
-            'bulan_ini'  => JurnalMengajar::whereMonth('tanggal', now()->month)
-                                ->whereYear('tanggal', now()->year)->count(),
-            'disetujui'  => $statusCounts['disetujui'] ?? 0,
-            'menunggu'   => $statusCounts['menunggu']  ?? 0,
-            'ditolak'    => $statusCounts['ditolak']   ?? 0,
+            'total'      => $totalJurnal,
+            'bulan_ini'  => $bulanIni,
+            'disetujui'  => $disetujui,
+            'menunggu'   => $menunggu,
+            'ditolak'    => 0, // tidak ada di model, diisi 0 agar view tidak error
         ];
-
+    
         // Tren 14 hari — satu GROUP BY query
         $tren14Hari = JurnalMengajar::select(
                 DB::raw('DATE(tanggal) as tgl'),
-                DB::raw('COUNT(*) as jumlah')
+                DB::raw('COUNT(*) as jumlah'),
+                DB::raw('SUM(CASE WHEN diverifikasi_pada IS NOT NULL THEN 1 ELSE 0 END) as diverifikasi'),
+                DB::raw('SUM(CASE WHEN diverifikasi_pada IS NULL THEN 1 ELSE 0 END) as belum')
             )
             ->whereDate('tanggal', '>=', now()->subDays(13)->toDateString())
             ->groupBy(DB::raw('DATE(tanggal)'))
             ->orderBy('tgl')
             ->get()
             ->keyBy('tgl');
-
-        $trendLabels = [];
-        $trendJurnal = [];
+    
+        $trendLabels      = [];
+        $trendJurnal      = [];
+        $trendDiverifikasi = [];
+        $trendBelum       = [];
+    
         for ($i = 13; $i >= 0; $i--) {
-            $date          = now()->subDays($i)->toDateString();
-            $trendLabels[] = now()->subDays($i)->format('d/m');
-            $trendJurnal[] = $tren14Hari->get($date)?->jumlah ?? 0;
+            $date               = now()->subDays($i)->toDateString();
+            $trendLabels[]      = now()->subDays($i)->format('d/m');
+            $trendJurnal[]      = $tren14Hari->get($date)?->jumlah      ?? 0;
+            $trendDiverifikasi[]= $tren14Hari->get($date)?->diverifikasi ?? 0;
+            $trendBelum[]       = $tren14Hari->get($date)?->belum        ?? 0;
         }
-
+    
         return view('admin.laporan.jurnal-mengajar', compact(
             'jurnal', 'guruList', 'kelasList', 'mapelList', 'tahunAjaran',
-            'statsJ', 'trendLabels', 'trendJurnal'
+            'statsJ', 'trendLabels', 'trendJurnal', 'trendDiverifikasi', 'trendBelum'
         ));
     }
 
     public function exportTeachingJournalPdf(Request $request)
     {
-        $query = JurnalMengajar::with(['guru', 'kelas', 'mataPelajaran', 'tahunAjaran'])
+        $query = JurnalMengajar::with(['guru', 'kelas', 'mataPelajaran', 'diverifikasiOleh'])
             ->orderByDesc('tanggal');
         $this->applyJurnalFilters($query, $request);
         $data         = $query->get();
         $generated_at = now()->format('d M Y, H:i');
-
+    
         $pdf = Pdf::loadView('admin.laporan.exports.jurnal-mengajar-pdf', compact('data', 'generated_at'))
             ->setPaper('a4', 'landscape');
-
+    
         return $pdf->download('laporan-jurnal-mengajar-' . now()->format('Ymd') . '.pdf');
     }
-
+ 
     public function exportTeachingJournalExcel(Request $request)
     {
         return Excel::download(
@@ -558,8 +574,6 @@ class ReportController extends Controller
      */
     public function exam(Request $request)
     {
-        // Guard: jika model Ujian belum dibuat, kembalikan view dengan data kosong
-        // agar tidak 500 error di production sebelum model tersedia.
         if (! class_exists(\App\Models\Ujian::class)) {
             return view('admin.laporan.ujian', [
                 'ujians'       => collect(),
@@ -567,14 +581,14 @@ class ReportController extends Controller
                 'mapelList'    => MataPelajaran::aktif()->orderBy('nama_mapel')->get(),
                 'tahunAjaran'  => TahunAjaran::orderByDesc('id')->get(),
                 'guruList'     => Guru::aktif()->orderBy('nama_lengkap')->get(),
-                'statsU'       => ['total' => 0, 'bulan_ini' => 0, 'aktif' => 0, 'selesai' => 0],
+                'statsU'       => ['total' => 0, 'bulan_ini' => 0, 'aktif' => 0, 'tidak_aktif' => 0],
                 'trendLabels'  => [],
                 'trendUjian'   => [],
             ]);
         }
 
         $query = \App\Models\Ujian::with(['mataPelajaran', 'guru', 'kelas', 'tahunAjaran'])
-            ->orderByDesc('tanggal_mulai');
+            ->orderByDesc('tanggal');
         $this->applyUjianFilters($query, $request);
         $ujians = $query->paginate(25)->withQueryString();
 
@@ -583,27 +597,22 @@ class ReportController extends Controller
         $tahunAjaran = TahunAjaran::orderByDesc('id')->get();
         $guruList    = Guru::aktif()->orderBy('nama_lengkap')->get();
 
-        // FIX: stats via GROUP BY
-        $statusCounts = \App\Models\Ujian::select('status', DB::raw('COUNT(*) as jumlah'))
-            ->groupBy('status')
-            ->pluck('jumlah', 'status')
-            ->toArray();
-
+        // is_active (boolean) bukan kolom 'status'
         $statsU = [
-            'total'     => array_sum($statusCounts),
-            'bulan_ini' => \App\Models\Ujian::whereMonth('tanggal_mulai', now()->month)
-                                ->whereYear('tanggal_mulai', now()->year)->count(),
-            'aktif'     => $statusCounts['aktif']   ?? 0,
-            'selesai'   => $statusCounts['selesai'] ?? 0,
+            'total'       => \App\Models\Ujian::count(),
+            'bulan_ini'   => \App\Models\Ujian::whereMonth('tanggal', now()->month)
+                                ->whereYear('tanggal', now()->year)->count(),
+            'aktif'       => \App\Models\Ujian::where('is_active', true)->count(),
+            'tidak_aktif' => \App\Models\Ujian::where('is_active', false)->count(),
         ];
 
-        // Tren 14 hari
+        // Tren 14 hari — GROUP BY tanggal (bukan tanggal_mulai)
         $tren14Hari = \App\Models\Ujian::select(
-                DB::raw('DATE(tanggal_mulai) as tgl'),
+                DB::raw('DATE(tanggal) as tgl'),
                 DB::raw('COUNT(*) as jumlah')
             )
-            ->whereDate('tanggal_mulai', '>=', now()->subDays(13)->toDateString())
-            ->groupBy(DB::raw('DATE(tanggal_mulai)'))
+            ->whereDate('tanggal', '>=', now()->subDays(13)->toDateString())
+            ->groupBy(DB::raw('DATE(tanggal)'))
             ->orderBy('tgl')
             ->get()
             ->keyBy('tgl');
@@ -629,7 +638,7 @@ class ReportController extends Controller
         }
 
         $query = \App\Models\Ujian::with(['mataPelajaran', 'guru', 'kelas', 'tahunAjaran'])
-            ->orderByDesc('tanggal_mulai');
+            ->orderByDesc('tanggal');
         $this->applyUjianFilters($query, $request);
         $data         = $query->get();
         $generated_at = now()->format('d M Y, H:i');
@@ -831,15 +840,26 @@ class ReportController extends Controller
         if ($r->filled('guru_id'))           $q->where('guru_id', $r->guru_id);
         if ($r->filled('kelas_id'))          $q->where('kelas_id', $r->kelas_id);
         if ($r->filled('mata_pelajaran_id')) $q->where('mata_pelajaran_id', $r->mata_pelajaran_id);
-        if ($r->filled('tahun_ajaran_id'))   $q->where('tahun_ajaran_id', $r->tahun_ajaran_id);
-        if ($r->filled('status'))            $q->where('status', $r->status);
+    
+        // "status" di filter → diterjemahkan ke kondisi diverifikasi_pada
+        if ($r->filled('status')) {
+            match ($r->status) {
+                'disetujui' => $q->whereNotNull('diverifikasi_pada'),
+                'menunggu'  => $q->whereNull('diverifikasi_pada'),
+                default     => null,
+            };
+        }
+    
+        // Search: materi_ajar (bukan materi_pokok) atau nama guru
         if ($r->filled('search')) {
             $s = $r->search;
             $q->where(fn($q2) => $q2
-                ->where('materi_pokok', 'like', "%{$s}%")
+                ->where('materi_ajar', 'like', "%{$s}%")
                 ->orWhereHas('guru', fn($g) => $g->where('nama_lengkap', 'like', "%{$s}%"))
             );
         }
+    
+        // tahun_ajaran_id & status (kolom) DIHAPUS — tidak ada di model
     }
 
     /**
@@ -878,8 +898,8 @@ class ReportController extends Controller
      */
     private function applyUjianFilters($q, Request $r): void
     {
-        if ($r->filled('tanggal_dari'))      $q->whereDate('tanggal_mulai', '>=', $r->tanggal_dari);
-        if ($r->filled('tanggal_sampai'))    $q->whereDate('tanggal_mulai', '<=', $r->tanggal_sampai);
+        if ($r->filled('tanggal_dari'))      $q->whereDate('tanggal', '>=', $r->tanggal_dari);
+        if ($r->filled('tanggal_sampai'))    $q->whereDate('tanggal', '<=', $r->tanggal_sampai);
         if ($r->filled('kelas_id'))          $q->where('kelas_id', $r->kelas_id);
         if ($r->filled('mata_pelajaran_id')) $q->where('mata_pelajaran_id', $r->mata_pelajaran_id);
         if ($r->filled('guru_id'))           $q->where('guru_id', $r->guru_id);
@@ -912,4 +932,6 @@ class ReportController extends Controller
                 ->orWhere('tujuan',      'like', "%{$s}%"));
         }
     }
+
+
 }

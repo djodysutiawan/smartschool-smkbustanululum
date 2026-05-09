@@ -16,7 +16,6 @@
     .header-actions{display:flex;gap:8px;flex-wrap:wrap;}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s;white-space:nowrap;}
     .btn:hover{filter:brightness(.93);}
-    .btn-primary{background:var(--brand-600);color:#fff;}
     .btn-outline{background:var(--surface);color:var(--text2);border:1px solid var(--border);}
     .btn-outline:hover{background:var(--surface2);filter:none;}
     .btn-pdf{background:#fff0f0;color:#dc2626;border:1px solid #fecaca;}
@@ -34,22 +33,20 @@
     .stat-icon.red{background:#fff0f0;}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:600;color:var(--text3);letter-spacing:.03em;text-transform:uppercase;}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px;}
-    .charts-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
+    .charts-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;}
     .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;}
-    .card-header{padding:13px 20px;border-bottom:1px solid var(--border);background:var(--surface2);}
+    .card-header{padding:13px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;gap:8px;}
     .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
+    .card-sub{font-size:11.5px;color:var(--text3);}
     .card-body{padding:16px 20px;}
     .chart-wrap{position:relative;height:200px;}
-    .rapor-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
-    .rapor-header{padding:13px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:8px;}
-    .rapor-header span{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);}
-    .rapor-body{padding:16px 20px;display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;}
+    .chart-wrap-lg{position:relative;height:220px;}
+    .kkm-note{font-size:11px;color:var(--text3);margin-top:6px;}
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;}
     .filter-grid{display:grid;grid-template-columns:repeat(4,1fr) auto auto;gap:10px;align-items:end;}
-    .filter-search-row{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:end;margin-top:10px;}
+    .filter-search-row{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px;}
     .field{display:flex;flex-direction:column;gap:5px;}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2);}
-    .field label .req{color:#dc2626;}
     .field input,.field select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;width:100%;}
     .field input:focus,.field select:focus{border-color:var(--brand-500);background:#fff;}
     .btn-filter{height:36px;padding:0 18px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
@@ -73,7 +70,7 @@
     td.center{text-align:center;}
     td.muted{color:var(--text3);font-size:12.5px;}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3);}
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap;}
+    .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap;}
     .badge-A{background:#dcfce7;color:#15803d;}
     .badge-B{background:#dbeafe;color:#1d4ed8;}
     .badge-C{background:#fef9c3;color:#a16207;}
@@ -85,7 +82,7 @@
     .nilai-rendah{color:#dc2626;}
     .btn-sm-detail{padding:4px 10px;font-size:11.5px;border-radius:6px;background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;text-decoration:none;display:inline-flex;}
     .btn-sm-edit{padding:4px 10px;font-size:11.5px;border-radius:6px;background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100);font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;text-decoration:none;display:inline-flex;}
-    .btn-sm-del{padding:4px 10px;font-size:11.5px;border-radius:6px;background:#fff0f0;color:#dc2626;border:1px solid #fecaca;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;cursor:pointer;border:1px solid #fecaca;}
+    .btn-sm-del{padding:4px 10px;font-size:11.5px;border-radius:6px;background:#fff0f0;color:#dc2626;border:1px solid #fecaca;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;cursor:pointer;}
     .empty-state{padding:50px 20px;text-align:center;}
     .empty-icon{width:52px;height:52px;background:var(--surface2);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px;}
@@ -97,37 +94,33 @@
     .pag-btn:hover{background:var(--surface2);}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff;}
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px;display:flex;align-items:center;}
-    @media(max-width:900px){
-        .stats-strip{grid-template-columns:1fr 1fr 1fr;}
-        .filter-grid{grid-template-columns:1fr 1fr;}
-        .filter-search-row{grid-template-columns:1fr auto;}
-        .charts-row{grid-template-columns:1fr;}
-        .page{padding:16px;}
-    }
+    @media(max-width:1100px){.stats-strip{grid-template-columns:repeat(3,1fr);}.charts-row-3{grid-template-columns:1fr 1fr;}}
+    @media(max-width:900px){.stats-strip{grid-template-columns:1fr 1fr;}.filter-grid{grid-template-columns:1fr 1fr;}.charts-row-3{grid-template-columns:1fr;}.page{padding:16px;}}
 </style>
 
 <div class="page">
 
-    {{-- ── Page Header ── --}}
     <div class="page-header">
         <div>
-            <h1 class="page-title">Laporan Nilai</h1>
-            <p class="page-sub">Data nilai siswa — tugas, harian, UTS, UAS, dan rekap rapor</p>
+            <h1 class="page-title">&#128202; Laporan Nilai</h1>
+            <p class="page-sub">Data nilai siswa &mdash; tugas, harian, UTS, UAS, dan rekap akhir per kelas &amp; mata pelajaran</p>
         </div>
         <div class="header-actions">
             <a href="{{ route('admin.laporan.index') }}" class="btn btn-outline">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 Kembali
             </a>
-            <a href="{{ route('admin.nilai.create') }}" class="btn btn-primary">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Input Nilai
+            <a href="{{ route('admin.laporan.nilai.export.pdf', request()->query()) }}" class="btn btn-pdf" target="_blank">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                Export PDF
+            </a>
+            <a href="{{ route('admin.laporan.nilai.export.excel', request()->query()) }}" class="btn btn-excel">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                Export Excel
             </a>
         </div>
     </div>
 
-    {{-- ── Stats Strip ── --}}
-    {{-- FIX: semua key pakai $stats['...'] yang dikirim controller, bukan $avgNilai langsung --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -135,8 +128,7 @@
             </div>
             <div>
                 <p class="stat-label">Total Record</p>
-                {{-- FIX: $nilai->total() aman dipakai, tapi pastikan $nilai tidak null --}}
-                <p class="stat-val">{{ $nilai->total() }}</p>
+                <p class="stat-val">{{ number_format($nilai->total()) }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -145,8 +137,7 @@
             </div>
             <div>
                 <p class="stat-label">Rata-rata Nilai</p>
-                {{-- FIX: controller kirim $stats['rata_nilai'] DAN $avgNilai; pakai $stats --}}
-                <p class="stat-val">{{ number_format($stats['rata_nilai'] ?? 0, 1) }}</p>
+                <p class="stat-val">{{ number_format($stats['rata_nilai'], 1) }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -155,7 +146,7 @@
             </div>
             <div>
                 <p class="stat-label">Predikat A</p>
-                <p class="stat-val">{{ $stats['predikat_A'] ?? 0 }}</p>
+                <p class="stat-val">{{ number_format($stats['predikat_A']) }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -164,7 +155,7 @@
             </div>
             <div>
                 <p class="stat-label">Di Bawah KKM</p>
-                <p class="stat-val">{{ $stats['bawah_kkm'] ?? 0 }}</p>
+                <p class="stat-val">{{ number_format($stats['bawah_kkm']) }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -173,63 +164,59 @@
             </div>
             <div>
                 <p class="stat-label">Predikat E</p>
-                <p class="stat-val">{{ $stats['predikat_E'] ?? 0 }}</p>
+                <p class="stat-val">{{ number_format($stats['predikat_E']) }}</p>
             </div>
         </div>
     </div>
 
-    {{-- ── Charts Row ── --}}
-    <div class="charts-row">
+    <div class="charts-row-3">
         <div class="card">
-            <div class="card-header"><span class="card-title">Distribusi Predikat</span></div>
-            <div class="card-body"><div class="chart-wrap"><canvas id="predikatChart"></canvas></div></div>
+            <div class="card-header">
+                <span class="card-title">Distribusi Predikat</span>
+                <span class="card-sub">Seluruh data</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-wrap"><canvas id="chartPredikat"></canvas></div>
+            </div>
         </div>
         <div class="card">
-            <div class="card-header"><span class="card-title">Rata-rata Komponen</span></div>
-            <div class="card-body"><div class="chart-wrap"><canvas id="komponenChart"></canvas></div></div>
+            <div class="card-header">
+                <span class="card-title">Rata-rata Komponen</span>
+                <span class="card-sub">Skala 0&ndash;100</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-wrap"><canvas id="chartKomponen"></canvas></div>
+            </div>
         </div>
         <div class="card">
-            <div class="card-header"><span class="card-title">Rentang Nilai Akhir</span></div>
-            <div class="card-body"><div class="chart-wrap"><canvas id="rentangChart"></canvas></div></div>
+            <div class="card-header">
+                <span class="card-title">Rentang Nilai Akhir</span>
+                <span class="card-sub">Distribusi skor</span>
+            </div>
+            <div class="card-body">
+                <div class="chart-wrap"><canvas id="chartRentang"></canvas></div>
+            </div>
         </div>
     </div>
 
-    {{-- ── Rapor Per Kelas ── --}}
-    <div class="rapor-card">
-        <div class="rapor-header">
-            <svg width="14" height="14" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span>Lihat Rapor Per Kelas</span>
+    @php
+        $rataMapel = $nilai->getCollection()
+            ->groupBy(fn($n) => $n->mataPelajaran->nama_mapel ?? 'Unknown')
+            ->map(fn($rows) => round($rows->avg('nilai_akhir'), 1))
+            ->sortByDesc(fn($v) => $v)
+            ->take(8);
+    @endphp
+    <div class="card" style="margin-bottom:16px;">
+        <div class="card-header">
+            <span class="card-title">Rata-rata Nilai per Mata Pelajaran</span>
+            <span class="card-sub">8 mapel teratas &middot; KKM 70</span>
         </div>
-        <div class="rapor-body">
-            <form method="GET" action="{{ route('admin.nilai.rapor-kelas') }}" style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
-                <div class="field">
-                    <label>Kelas <span class="req">*</span></label>
-                    <select name="kelas_id" required style="min-width:180px;">
-                        <option value="">— Pilih Kelas —</option>
-                        @foreach($kelasList as $k)
-                            <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                                {{ $k->nama_kelas }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="field">
-                    <label>Tahun Ajaran <span class="req">*</span></label>
-                    <select name="tahun_ajaran_id" required style="min-width:180px;">
-                        <option value="">— Pilih Tahun Ajaran —</option>
-                        @foreach($tahunAjaran as $ta)
-                            <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>
-                                {{ $ta->tahun }} – {{ ucfirst($ta->semester) }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <button type="submit" class="btn-filter">Tampilkan Rapor</button>
-            </form>
+        <div class="card-body">
+            <div class="chart-wrap-lg"><canvas id="chartMapel"></canvas></div>
+            <p class="kkm-note">&#9888; Garis merah putus-putus = batas KKM (70)</p>
         </div>
     </div>
 
-    {{-- ── Filter ── --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('admin.laporan.nilai') }}">
             <div class="filter-grid">
@@ -239,7 +226,7 @@
                         <option value="">Semua Tahun</option>
                         @foreach($tahunAjaran as $ta)
                             <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>
-                                {{ $ta->tahun }} – {{ ucfirst($ta->semester) }}
+                                {{ $ta->tahun }} &ndash; {{ ucfirst($ta->semester) }}
                             </option>
                         @endforeach
                     </select>
@@ -278,7 +265,6 @@
                 <a href="{{ route('admin.laporan.nilai') }}" class="btn-reset">Reset</a>
                 <button type="submit" class="btn-filter">Filter</button>
             </div>
-            {{-- FIX: tambah input search yang hilang di view lama --}}
             <div class="filter-search-row">
                 <div class="field">
                     <label>Cari Siswa / NIS</label>
@@ -288,24 +274,20 @@
         </form>
     </div>
 
-    {{-- ── Table ── --}}
     <div class="table-card">
         <div class="table-topbar">
             <p class="table-info">
                 Data Nilai
-                {{-- FIX: null-safe agar tidak error saat data kosong --}}
-                <span>— {{ $nilai->firstItem() ?? 0 }}–{{ $nilai->lastItem() ?? 0 }} dari {{ $nilai->total() }} record</span>
+                <span>&mdash; {{ $nilai->firstItem() ?? 0 }}&ndash;{{ $nilai->lastItem() ?? 0 }} dari {{ $nilai->total() }} record</span>
             </p>
             <div class="table-actions">
-                <a href="{{ route('admin.laporan.nilai.export.pdf', request()->query()) }}"
-                   class="btn btn-sm btn-pdf" target="_blank">
+                <a href="{{ route('admin.laporan.nilai.export.pdf', request()->query()) }}" class="btn btn-sm btn-pdf" target="_blank">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    Export PDF
+                    PDF
                 </a>
-                <a href="{{ route('admin.laporan.nilai.export.excel', request()->query()) }}"
-                   class="btn btn-sm btn-excel">
+                <a href="{{ route('admin.laporan.nilai.export.excel', request()->query()) }}" class="btn btn-sm btn-excel">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-                    Export Excel
+                    Excel
                 </a>
             </div>
         </div>
@@ -317,8 +299,9 @@
                         <th style="width:48px">#</th>
                         <th>Siswa</th>
                         <th>Mata Pelajaran</th>
-                        {{-- FIX: header "Kelas" tetap tapi datanya diambil dari siswa->kelas --}}
                         <th>Kelas</th>
+                        <th>Guru</th>
+                        <th>Tahun Ajaran</th>
                         <th class="center">Tugas</th>
                         <th class="center">Harian</th>
                         <th class="center">UTS</th>
@@ -332,86 +315,62 @@
                     @forelse($nilai as $i => $n)
                     <tr>
                         <td><span class="no-col">{{ ($nilai->firstItem() ?? 0) + $i }}</span></td>
-
                         <td>
-                            <p style="font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;">
-                                {{ $n->siswa->nama_lengkap ?? '—' }}
-                            </p>
-                            <p style="font-size:11px;color:var(--text3);">
-                                {{ $n->siswa->nis ?? '' }}
-                            </p>
+                            <p style="font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;">{{ $n->siswa->nama_lengkap ?? '—' }}</p>
+                            <p style="font-size:11px;color:var(--text3);">NIS: {{ $n->siswa->nis ?? '—' }}</p>
                         </td>
-
                         <td>
-                            <p style="font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;">
-                                {{ $n->mataPelajaran->nama_mapel ?? '—' }}
-                            </p>
-                            <p style="font-size:11px;color:var(--text3);">
-                                {{ $n->mataPelajaran->kode_mapel ?? '' }}
-                            </p>
+                            <p style="font-weight:600;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;">{{ $n->mataPelajaran->nama_mapel ?? '—' }}</p>
+                            <p style="font-size:11px;color:var(--text3);">{{ $n->mataPelajaran->kode_mapel ?? '' }}</p>
                         </td>
-
-                        {{-- FIX: relasi Nilai → siswa → kelas (bukan $n->kelas langsung) --}}
-                        <td class="muted">{{ $n->siswa->kelas->nama_kelas ?? '—' }}</td>
-
-                        {{-- FIX: null-safe operator agar tidak error jika kolom null --}}
-                        <td class="center" style="font-size:12.5px;font-weight:600;">
-                            {{ $n->nilai_tugas ?? '—' }}
-                        </td>
-                        <td class="center" style="font-size:12.5px;font-weight:600;">
-                            {{ $n->nilai_harian ?? '—' }}
-                        </td>
-                        <td class="center" style="font-size:12.5px;font-weight:600;">
-                            {{ $n->nilai_uts ?? '—' }}
-                        </td>
-                        <td class="center" style="font-size:12.5px;font-weight:600;">
-                            {{ $n->nilai_uas ?? '—' }}
-                        </td>
-
-                        <td class="center">
-                            @php
-                                $na = (float) ($n->nilai_akhir ?? 0);
-                                $naClass = $na >= 75 ? 'nilai-tinggi' : ($na >= 60 ? 'nilai-sedang' : 'nilai-rendah');
-                            @endphp
-                            <span class="nilai-cell {{ $naClass }}">
-                                {{ $n->nilai_akhir !== null ? $n->nilai_akhir : '—' }}
-                            </span>
-                        </td>
-
-                        <td class="center">
-                            @if($n->predikat)
-                                {{-- FIX: in_array guard agar class badge-X tidak error jika nilai predikat tidak valid --}}
-                                @php $validPred = ['A','B','C','D','E']; @endphp
-                                <span class="badge {{ in_array($n->predikat, $validPred) ? 'badge-'.$n->predikat : '' }}">
-                                    {{ $n->predikat }}
-                                </span>
+                        <td class="muted">{{ $n->kelas->nama_kelas ?? ($n->siswa->kelas->nama_kelas ?? '—') }}</td>
+                        <td class="muted" style="font-size:12px;">{{ $n->guru->nama_lengkap ?? '—' }}</td>
+                        <td class="muted" style="font-size:12px;">
+                            @if($n->tahunAjaran)
+                                {{ $n->tahunAjaran->tahun }}
+                                <span style="font-size:11px;color:var(--text3);">({{ ucfirst($n->tahunAjaran->semester) }})</span>
                             @else
-                                <span class="muted">—</span>
+                                &mdash;
                             @endif
                         </td>
-
+                        <td class="center" style="font-size:12.5px;font-weight:600;">{{ $n->nilai_tugas  !== null ? $n->nilai_tugas  : '—' }}</td>
+                        <td class="center" style="font-size:12.5px;font-weight:600;">{{ $n->nilai_harian !== null ? $n->nilai_harian : '—' }}</td>
+                        <td class="center" style="font-size:12.5px;font-weight:600;">{{ $n->nilai_uts    !== null ? $n->nilai_uts    : '—' }}</td>
+                        <td class="center" style="font-size:12.5px;font-weight:600;">{{ $n->nilai_uas    !== null ? $n->nilai_uas    : '—' }}</td>
+                        <td class="center">
+                            @php
+                                $na      = (float)($n->nilai_akhir ?? 0);
+                                $naClass = $na >= 75 ? 'nilai-tinggi' : ($na >= 60 ? 'nilai-sedang' : 'nilai-rendah');
+                            @endphp
+                            <span class="nilai-cell {{ $naClass }}">{{ $n->nilai_akhir !== null ? $n->nilai_akhir : '—' }}</span>
+                        </td>
+                        <td class="center">
+                            @if($n->predikat && in_array($n->predikat, ['A','B','C','D','E']))
+                                <span class="badge badge-{{ $n->predikat }}">{{ $n->predikat }}</span>
+                            @elseif($n->predikat)
+                                <span class="badge" style="background:var(--surface3);color:var(--text2);">{{ $n->predikat }}</span>
+                            @else
+                                <span class="muted">&mdash;</span>
+                            @endif
+                        </td>
                         <td class="center">
                             <div style="display:flex;gap:4px;justify-content:center;">
                                 <a href="{{ route('admin.nilai.show', $n->id) }}" class="btn-sm-detail">Detail</a>
-                                <a href="{{ route('admin.nilai.edit', $n->id) }}" class="btn-sm-edit">Edit</a>
-                                <form action="{{ route('admin.nilai.destroy', $n->id) }}"
-                                      method="POST"
-                                      id="delNilai-{{ $n->id }}">
+                                <a href="{{ route('admin.nilai.edit',  $n->id) }}" class="btn-sm-edit">Edit</a>
+                                <form action="{{ route('admin.nilai.destroy', $n->id) }}" method="POST" id="delForm-{{ $n->id }}">
                                     @csrf
                                     @method('DELETE')
                                     <button type="button" class="btn-sm-del"
-                                        onclick="confirmDelNilai(
-                                            document.getElementById('delNilai-{{ $n->id }}'),
-                                            '{{ addslashes($n->siswa->nama_lengkap ?? '') }}',
-                                            '{{ addslashes($n->mataPelajaran->nama_mapel ?? '') }}'
-                                        )">Hapus</button>
+                                        onclick="confirmDel('{{ $n->id }}','{{ addslashes($n->siswa->nama_lengkap ?? '') }}','{{ addslashes($n->mataPelajaran->nama_mapel ?? '') }}')">
+                                        Hapus
+                                    </button>
                                 </form>
                             </div>
                         </td>
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="11">
+                        <td colspan="13">
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <svg width="22" height="22" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
@@ -426,16 +385,10 @@
             </table>
         </div>
 
-        {{-- ── Pagination ── --}}
-        {{-- FIX: guard hasPages() sebelum render, dan null-safe firstItem/lastItem --}}
         @if($nilai->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">
-                Menampilkan {{ $nilai->firstItem() ?? 0 }} – {{ $nilai->lastItem() ?? 0 }}
-                dari {{ $nilai->total() }} nilai
-            </p>
+            <p class="pag-info">Menampilkan {{ $nilai->firstItem() ?? 0 }}&ndash;{{ $nilai->lastItem() ?? 0 }} dari {{ $nilai->total() }} nilai</p>
             <div class="pag-btns">
-                {{-- Prev --}}
                 @if($nilai->onFirstPage())
                     <span class="pag-btn" style="opacity:.4;cursor:not-allowed">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -445,36 +398,21 @@
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                     </a>
                 @endif
-
-                {{-- Pages --}}
-                {{-- FIX: tambah guard $nilai->lastPage() > 0 dan hindari range error --}}
-                @if($nilai->lastPage() > 0)
-                    @php
-                        $current  = $nilai->currentPage();
-                        $last     = $nilai->lastPage();
-                        $ellLeft  = false;
-                        $ellRight = false;
-                    @endphp
-                    @foreach($nilai->getUrlRange(1, $last) as $page => $url)
-                        @php
-                            $near = abs($page - $current) <= 1;
-                            $edge = $page == 1 || $page == $last;
-                        @endphp
-                        @if($page == $current)
-                            <span class="pag-btn active">{{ $page }}</span>
-                        @elseif($edge || $near)
-                            <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                        @elseif(!$ellLeft && $page < $current)
-                            @php $ellLeft = true @endphp
-                            <span class="pag-ellipsis">…</span>
-                        @elseif(!$ellRight && $page > $current)
-                            @php $ellRight = true @endphp
-                            <span class="pag-ellipsis">…</span>
-                        @endif
-                    @endforeach
-                @endif
-
-                {{-- Next --}}
+                @php $cur = $nilai->currentPage(); $last = $nilai->lastPage(); $ellL = false; $ellR = false; @endphp
+                @foreach($nilai->getUrlRange(1, $last) as $page => $url)
+                    @php $near = abs($page - $cur) <= 1; $edge = $page == 1 || $page == $last; @endphp
+                    @if($page == $cur)
+                        <span class="pag-btn active">{{ $page }}</span>
+                    @elseif($edge || $near)
+                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
+                    @elseif(!$ellL && $page < $cur)
+                        @php $ellL = true @endphp
+                        <span class="pag-ellipsis">&hellip;</span>
+                    @elseif(!$ellR && $page > $cur)
+                        @php $ellR = true @endphp
+                        <span class="pag-ellipsis">&hellip;</span>
+                    @endif
+                @endforeach
                 @if($nilai->hasMorePages())
                     <a href="{{ $nilai->nextPageUrl() }}" class="pag-btn">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -487,137 +425,173 @@
             </div>
         </div>
         @endif
-    </div>{{-- /table-card --}}
 
-</div>{{-- /page --}}
+    </div>
+
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // ── Flash messages ──────────────────────────────────────────────────────
-    @if(session('success'))
-    Swal.fire({
-        icon:'success', title:'Berhasil!',
-        text: @json(session('success')),
-        timer:2500, showConfirmButton:false, toast:true, position:'top-end'
-    });
-    @endif
-    @if(session('error'))
-    Swal.fire({
-        icon:'error', title:'Gagal!',
-        text: @json(session('error')),
-        confirmButtonColor:'#1f63db'
-    });
-    @endif
+@if(session('success'))
+Swal.fire({ icon:'success', title:'Berhasil!', text: @json(session('success')), timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+@endif
+@if(session('error'))
+Swal.fire({ icon:'error', title:'Gagal!', text: @json(session('error')), confirmButtonColor:'#1f63db' });
+@endif
 
-    // ── Confirm delete ──────────────────────────────────────────────────────
-    function confirmDelNilai(form, siswa, mapel) {
-        Swal.fire({
-            title: 'Hapus Data Nilai?',
-            html: `Nilai <strong>${siswa}</strong> untuk mapel <strong>${mapel}</strong> akan dihapus permanen.`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#dc2626',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
-        }).then(r => { if (r.isConfirmed) form.submit(); });
+function confirmDel(id, siswa, mapel) {
+    Swal.fire({
+        title: 'Hapus Data Nilai?',
+        html: 'Nilai <b>' + siswa + '</b> untuk mapel <b>' + mapel + '</b> akan dihapus permanen.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal'
+    }).then(function(r) { if (r.isConfirmed) document.getElementById('delForm-' + id).submit(); });
+}
+
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.color = '#94a3b8';
+
+var predikatData = @json($predikatData);
+new Chart(document.getElementById('chartPredikat'), {
+    type: 'bar',
+    data: {
+        labels: Object.keys(predikatData),
+        datasets: [{
+            label: 'Jumlah Siswa',
+            data: Object.values(predikatData),
+            backgroundColor: ['#22c55e','#3b82f6','#f59e0b','#f97316','#ef4444'],
+            borderRadius: 6,
+            borderSkipped: false
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } },
+        scales: {
+            y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
+            x: { grid: { display: false } }
+        }
     }
+});
 
-    // ── Chart defaults ──────────────────────────────────────────────────────
-    Chart.defaults.font.family = "'DM Sans', sans-serif";
-    Chart.defaults.color = '#94a3b8';
-
-    // ── Chart 1: Distribusi Predikat (bar) ──────────────────────────────────
-    // FIX: $predikatData dikirim controller sebagai assoc array ['A'=>n,'B'=>n,...]
-    // Gunakan Object.keys/values agar urutan terjaga.
-    const predikatData = @json($predikatData ?? ['A'=>0,'B'=>0,'C'=>0,'D'=>0,'E'=>0]);
-    new Chart(document.getElementById('predikatChart'), {
-        type: 'bar',
-        data: {
-            labels: Object.keys(predikatData),
-            datasets: [{
-                label: 'Jumlah Siswa',
-                data: Object.values(predikatData),
-                backgroundColor: ['#22c55e','#3b82f6','#f59e0b','#f97316','#ef4444'],
-                borderRadius: 6,
-                borderSkipped: false
-            }]
+var komponenData = @json($komponenData);
+new Chart(document.getElementById('chartKomponen'), {
+    type: 'radar',
+    data: {
+        labels: Object.keys(komponenData),
+        datasets: [{
+            label: 'Rata-rata',
+            data: Object.values(komponenData),
+            borderColor: '#1f63db',
+            backgroundColor: 'rgba(31,99,219,.15)',
+            pointBackgroundColor: '#1f63db',
+            pointRadius: 4,
+            pointHoverRadius: 6
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            r: {
+                beginAtZero: true,
+                max: 100,
+                ticks: { stepSize: 20, font: { size: 10 } },
+                grid: { color: '#f1f5f9' },
+                pointLabels: { font: { family: "'Plus Jakarta Sans'", weight: '700', size: 12 } }
+            }
         },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } },
-                x: { grid: { display: false } }
+        plugins: { legend: { display: false } }
+    }
+});
+
+var rentangData = @json($rentangData);
+new Chart(document.getElementById('chartRentang'), {
+    type: 'doughnut',
+    data: {
+        labels: Object.keys(rentangData),
+        datasets: [{
+            data: Object.values(rentangData),
+            backgroundColor: ['#22c55e','#84cc16','#f59e0b','#f97316','#ef4444'],
+            borderWidth: 2,
+            borderColor: '#fff',
+            hoverOffset: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '55%',
+        plugins: {
+            legend: {
+                display: true,
+                position: 'right',
+                labels: { boxWidth: 10, padding: 8, font: { family: "'Plus Jakarta Sans'", weight: '700', size: 11 } }
             }
         }
-    });
+    }
+});
 
-    // ── Chart 2: Rata-rata Komponen (radar) ────────────────────────────────
-    // FIX: $komponenData dikirim controller sebagai ['Tugas'=>n,'Harian'=>n,'UTS'=>n,'UAS'=>n]
-    // Key sudah dalam bahasa Indonesia — tidak perlu mapping ulang.
-    const komponenData = @json($komponenData ?? ['Tugas'=>0,'Harian'=>0,'UTS'=>0,'UAS'=>0]);
-    new Chart(document.getElementById('komponenChart'), {
-        type: 'radar',
-        data: {
-            labels: Object.keys(komponenData),
-            datasets: [{
-                label: 'Rata-rata',
-                data: Object.values(komponenData),
-                borderColor: '#1f63db',
-                backgroundColor: 'rgba(31,99,219,.15)',
-                pointBackgroundColor: '#1f63db',
-                pointRadius: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                r: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: { stepSize: 20 },
-                    grid: { color: '#f1f5f9' }
-                }
+var mapelLabels = @json($rataMapel->keys()->values());
+var mapelValues = @json($rataMapel->values()->values());
+var mapelColors = mapelValues.map(function(v) {
+    return v >= 75 ? 'rgba(34,197,94,.8)' : v >= 60 ? 'rgba(245,158,11,.8)' : 'rgba(239,68,68,.8)';
+});
+
+new Chart(document.getElementById('chartMapel'), {
+    type: 'bar',
+    data: {
+        labels: mapelLabels,
+        datasets: [
+            {
+                label: 'Rata-rata Nilai',
+                data: mapelValues,
+                backgroundColor: mapelColors,
+                borderRadius: 5,
+                borderSkipped: false,
+                barThickness: 22
             },
-            plugins: { legend: { display: false } }
-        }
-    });
-
-    // ── Chart 3: Rentang Nilai Akhir (doughnut) ────────────────────────────
-    // FIX: $rentangData dikirim controller sebagai ['90-100'=>n,'80-89'=>n,...]
-    const rentangData = @json($rentangData ?? {'90-100':0,'80-89':0,'70-79':0,'60-69':0,'<60':0});
-    new Chart(document.getElementById('rentangChart'), {
-        type: 'doughnut',
-        data: {
-            labels: Object.keys(rentangData),
-            datasets: [{
-                data: Object.values(rentangData),
-                backgroundColor: ['#22c55e','#84cc16','#f59e0b','#f97316','#ef4444'],
-                borderWidth: 2,
-                borderColor: '#fff',
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '55%',
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'right',
-                    labels: {
-                        boxWidth: 10,
-                        padding: 8,
-                        font: { family:"'Plus Jakarta Sans'", weight:'700', size:11 }
+            {
+                label: 'KKM (70)',
+                data: mapelLabels.map(function() { return 70; }),
+                type: 'line',
+                borderColor: '#ef4444',
+                borderDash: [5, 4],
+                borderWidth: 1.5,
+                pointRadius: 0,
+                fill: false,
+                tension: 0
+            }
+        ]
+    },
+    options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                labels: { boxWidth: 14, font: { family: "'Plus Jakarta Sans'", weight: '700', size: 11 } }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function(ctx) {
+                        return ctx.datasetIndex === 0 ? ' Rata-rata: ' + ctx.raw : ' KKM: ' + ctx.raw;
                     }
                 }
             }
+        },
+        scales: {
+            x: { beginAtZero: true, max: 100, grid: { color: '#f1f5f9' }, ticks: { stepSize: 10 } },
+            y: { grid: { display: false } }
         }
-    });
+    }
+});
 </script>
 </x-app-layout>

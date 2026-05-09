@@ -687,12 +687,46 @@
                 <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
             <div class="sb-sub">
-                <a href="{{ route('admin.laporan.index') }}"       class="sb-item {{ request()->routeIs('admin.laporan.index') ? 'active' : '' }}">Grafik & Insight</a>
-                <a href="{{ route('admin.laporan.absensi') }}"     class="sb-item {{ request()->routeIs('admin.laporan.absensi') ? 'active' : '' }}">Laporan Absensi</a>
-                <a href="{{ route('admin.laporan.nilai') }}"       class="sb-item {{ request()->routeIs('admin.laporan.nilai') ? 'active' : '' }}">Laporan Nilai</a>
-                <a href="{{ route('admin.laporan.pelanggaran') }}" class="sb-item {{ request()->routeIs('admin.laporan.pelanggaran') ? 'active' : '' }}">Laporan Pelanggaran</a>
-                <a href="{{ route('admin.laporan.siswa') }}"       class="sb-item {{ request()->routeIs('admin.laporan.siswa') ? 'active' : '' }}">Laporan Siswa</a>
-                <a href="{{ route('admin.laporan.guru') }}"        class="sb-item {{ request()->routeIs('admin.laporan.guru') ? 'active' : '' }}">Laporan Guru</a>
+                <a href="{{ route('admin.laporan.index') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.index') ? 'active' : '' }}">
+                    Grafik & Insight
+                </a>
+                <a href="{{ route('admin.laporan.absensi') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.absensi*') ? 'active' : '' }}">
+                    Laporan Absensi
+                </a>
+                <a href="{{ route('admin.laporan.nilai') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.nilai*') ? 'active' : '' }}">
+                    Laporan Nilai
+                </a>
+                <a href="{{ route('admin.laporan.pelanggaran') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.pelanggaran*') ? 'active' : '' }}">
+                    Laporan Pelanggaran
+                </a>
+                <a href="{{ route('admin.laporan.siswa') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.siswa*') ? 'active' : '' }}">
+                    Laporan Siswa
+                </a>
+                <a href="{{ route('admin.laporan.guru') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.guru*') ? 'active' : '' }}">
+                    Laporan Guru
+                </a>
+                <a href="{{ route('admin.laporan.jurnal-mengajar') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.jurnal-mengajar*') ? 'active' : '' }}">
+                    Jurnal Mengajar
+                </a>
+                <a href="{{ route('admin.laporan.log-piket') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.log-piket*') ? 'active' : '' }}">
+                    Log Piket
+                </a>
+                <a href="{{ route('admin.laporan.ujian') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.ujian*') ? 'active' : '' }}">
+                    Laporan Ujian
+                </a>
+                <a href="{{ route('admin.laporan.izin-keluar') }}"
+                class="sb-item {{ request()->routeIs('admin.laporan.izin-keluar*') ? 'active' : '' }}">
+                    Izin Keluar Siswa
+                </a>
             </div>
         </details>
 
