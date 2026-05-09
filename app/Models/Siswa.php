@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Siswa extends Model
@@ -173,6 +174,60 @@ class Siswa extends Model
             ->first();
     }
 
+    /**
+     * Helper: ambil scan masuk hari ini (jika ada).
+     */
+    public function scanMasukHariIni(): ?AbsensiGerbang
+    {
+        return $this->absensiGerbang()
+                    ->where('tanggal_scan', now()->toDateString())
+                    ->where('tipe', 'masuk')
+                    ->whereIn('status', ['normal', 'manual', 'koreksi'])
+                    ->latest('waktu_scan')
+                    ->first();
+    }
+
+    /**
+     * Helper: ambil scan pulang hari ini (jika ada).
+     */
+    public function scanPulangHariIni(): ?AbsensiGerbang
+    {
+        return $this->absensiGerbang()
+                    ->where('tanggal_scan', now()->toDateString())
+                    ->where('tipe', 'pulang')
+                    ->whereIn('status', ['normal', 'manual', 'koreksi'])
+                    ->latest('waktu_scan')
+                    ->first();
+    }
+
+    /**
+     * Persentase kehadiran gerbang (masuk) untuk periode tertentu.
+     * Menghitung berapa hari sekolah siswa ini sudah scan masuk.
+     *
+     * @param  string  $dari    Format: Y-m-d
+     * @param  string  $sampai  Format: Y-m-d
+     */
+    public function persentaseKehadiranGerbang(string $dari, string $sampai): float
+    {
+        // Hitung total hari sesi gerbang masuk yang sudah ditutup di periode ini
+        $totalHari = SesiGerbang::where('tipe', 'masuk')
+                                 ->whereBetween('tanggal', [$dari, $sampai])
+                                 ->where('status', 'ditutup')
+                                 ->distinct('tanggal')
+                                 ->count('tanggal');
+
+        if ($totalHari === 0) return 0.0;
+
+        $hariHadir = $this->absensiGerbang()
+                          ->where('tipe', 'masuk')
+                          ->whereBetween('tanggal_scan', [$dari, $sampai])
+                          ->whereIn('status', ['normal', 'manual', 'koreksi'])
+                          ->distinct('tanggal_scan')
+                          ->count('tanggal_scan');
+
+        return round(($hariHadir / $totalHari) * 100, 2);
+    }
+
     // ── Relations ─────────────────────────────────────────────────────────────
 
     public function pengguna(): BelongsTo
@@ -241,5 +296,43 @@ class Siswa extends Model
     public function kenaikanKelasDetail(): HasMany
     {
         return $this->hasMany(KenaikanKelasDetail::class);
+    }
+
+    // ── Relations: Absensi Gerbang ────────────────────────────────────────────
+
+    /**
+     * Semua barcode gerbang milik siswa ini (termasuk riwayat lama).
+     */
+    public function barcodeGerbang(): HasMany
+    {
+        return $this->hasMany(BarcodeGerbang::class);
+    }
+
+    /**
+     * Barcode gerbang yang sedang aktif saat ini.
+     * Gunakan: $siswa->barcodeAktif
+     */
+    public function barcodeAktif(): HasOne
+    {
+        return $this->hasOne(BarcodeGerbang::class)
+                    ->where('is_aktif', true)
+                    ->latestOfMany('id');
+    }
+
+    /**
+     * Semua log scan absensi gerbang milik siswa ini.
+     */
+    public function absensiGerbang(): HasMany
+    {
+        return $this->hasMany(AbsensiGerbang::class);
+    }
+
+    /**
+     * Log scan absensi gerbang yang valid saja (bukan duplikat).
+     */
+    public function absensiGerbangValid(): HasMany
+    {
+        return $this->hasMany(AbsensiGerbang::class)
+                    ->whereIn('status', ['normal', 'manual', 'koreksi']);
     }
 }

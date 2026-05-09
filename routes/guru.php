@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+
+// ── Guru Controllers ──────────────────────────────────────────────────────────
 use App\Http\Controllers\Guru\DashboardController;
 use App\Http\Controllers\Guru\JadwalController;
 use App\Http\Controllers\Guru\KetersediaanController;
@@ -16,142 +18,215 @@ use App\Http\Controllers\Guru\NotifikasiController;
 use App\Http\Controllers\Guru\PengumumanController;
 use App\Http\Controllers\Guru\GuruIzinController;
 
+// ── [BARU] Controllers yang belum ada sebelumnya ──────────────────────────────
+use App\Http\Controllers\Guru\BarcodeKelasController;
+use App\Http\Controllers\Guru\RiwayatScanController;
+
 Route::prefix('guru')
     ->name('guru.')
     ->middleware(['auth', 'role:guru'])
     ->group(function () {
 
-        // Dashboard
+        // ──────────────────────────────────────────────────────────────────────
+        // DASHBOARD
+        // ──────────────────────────────────────────────────────────────────────
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Jadwal Mengajar
+        // ──────────────────────────────────────────────────────────────────────
+        // JADWAL MENGAJAR (read-only)
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('jadwal')->name('jadwal.')->group(function () {
-            Route::get('/', [JadwalController::class, 'index'])->name('index');
-            Route::get('/{jadwal}', [JadwalController::class, 'show'])->name('show');
+            Route::get('/',          [JadwalController::class, 'index'])->name('index');
+            Route::get('/{jadwal}',  [JadwalController::class, 'show'])->name('show');
         });
 
-        // Ketersediaan
+        // ──────────────────────────────────────────────────────────────────────
+        // KETERSEDIAAN SAYA
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('ketersediaan')->name('ketersediaan.')->group(function () {
-            Route::get('/', [KetersediaanController::class, 'index'])->name('index');
-            Route::post('/', [KetersediaanController::class, 'store'])->name('store');
-            Route::put('/{ketersediaan}', [KetersediaanController::class, 'update'])->name('update');
-            Route::delete('/{ketersediaan}', [KetersediaanController::class, 'destroy'])->name('destroy');
+            Route::get('/',                    [KetersediaanController::class, 'index'])->name('index');
+            Route::post('/',                   [KetersediaanController::class, 'store'])->name('store');
+            Route::put('/{ketersediaan}',      [KetersediaanController::class, 'update'])->name('update');
+            Route::delete('/{ketersediaan}',   [KetersediaanController::class, 'destroy'])->name('destroy');
         });
 
-        // Materi
+        // ──────────────────────────────────────────────────────────────────────
+        // MATERI PELAJARAN
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('materi')->name('materi.')->group(function () {
-            Route::get('/', [MateriController::class, 'index'])->name('index');
-            Route::get('/create', [MateriController::class, 'create'])->name('create');
-            Route::post('/', [MateriController::class, 'store'])->name('store');
-            Route::get('/{materi}', [MateriController::class, 'show'])->name('show');
-            Route::get('/{materi}/edit', [MateriController::class, 'edit'])->name('edit');
-            Route::put('/{materi}', [MateriController::class, 'update'])->name('update');
-            Route::delete('/{materi}', [MateriController::class, 'destroy'])->name('destroy');
-            Route::patch('/{materi}/toggle-publish', [MateriController::class, 'togglePublish'])->name('toggle-publish');
+            Route::get('/',                            [MateriController::class, 'index'])->name('index');
+            Route::get('/create',                      [MateriController::class, 'create'])->name('create');
+            Route::post('/',                           [MateriController::class, 'store'])->name('store');
+            Route::get('/{materi}',                    [MateriController::class, 'show'])->name('show');
+            Route::get('/{materi}/edit',               [MateriController::class, 'edit'])->name('edit');
+            Route::put('/{materi}',                    [MateriController::class, 'update'])->name('update');
+            Route::delete('/{materi}',                 [MateriController::class, 'destroy'])->name('destroy');
+            Route::patch('/{materi}/toggle-publish',   [MateriController::class, 'togglePublish'])->name('toggle-publish');
         });
 
-        // Tugas
+        // ──────────────────────────────────────────────────────────────────────
+        // TUGAS
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('tugas')->name('tugas.')->group(function () {
-            Route::get('/', [TugasController::class, 'index'])->name('index');
-            Route::get('/create', [TugasController::class, 'create'])->name('create');
-            Route::post('/', [TugasController::class, 'store'])->name('store');
-            Route::get('/{tugas}', [TugasController::class, 'show'])->name('show');
-            Route::get('/{tugas}/edit', [TugasController::class, 'edit'])->name('edit');
-            Route::put('/{tugas}', [TugasController::class, 'update'])->name('update');
-            Route::delete('/{tugas}', [TugasController::class, 'destroy'])->name('destroy');
-            Route::patch('/{tugas}/toggle-status', [TugasController::class, 'toggleStatus'])->name('toggle-status');
+            Route::get('/',                          [TugasController::class, 'index'])->name('index');
+            Route::get('/create',                    [TugasController::class, 'create'])->name('create');
+            Route::post('/',                         [TugasController::class, 'store'])->name('store');
+            Route::get('/{tugas}',                   [TugasController::class, 'show'])->name('show');
+            Route::get('/{tugas}/edit',              [TugasController::class, 'edit'])->name('edit');
+            Route::put('/{tugas}',                   [TugasController::class, 'update'])->name('update');
+            Route::delete('/{tugas}',                [TugasController::class, 'destroy'])->name('destroy');
+            Route::patch('/{tugas}/toggle-status',   [TugasController::class, 'toggleStatus'])->name('toggle-status');
         });
 
-        // Pengumpulan Tugas
+        // ──────────────────────────────────────────────────────────────────────
+        // PENGUMPULAN TUGAS
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('pengumpulan-tugas')->name('pengumpulan-tugas.')->group(function () {
-            Route::get('/', [PengumpulanTugasController::class, 'index'])->name('index');
-            Route::get('/{pengumpulan}', [PengumpulanTugasController::class, 'show'])->name('show');
-            Route::patch('/{pengumpulan}/beri-nilai', [PengumpulanTugasController::class, 'beriNilai'])->name('beri-nilai');
-            Route::patch('/{pengumpulan}/kembalikan', [PengumpulanTugasController::class, 'kembalikan'])->name('kembalikan');
+            Route::get('/',                               [PengumpulanTugasController::class, 'index'])->name('index');
+            Route::get('/{pengumpulan}',                  [PengumpulanTugasController::class, 'show'])->name('show');
+            Route::patch('/{pengumpulan}/beri-nilai',     [PengumpulanTugasController::class, 'beriNilai'])->name('beri-nilai');
+            Route::patch('/{pengumpulan}/kembalikan',     [PengumpulanTugasController::class, 'kembalikan'])->name('kembalikan');
         });
 
-        // Ujian
+        // ──────────────────────────────────────────────────────────────────────
+        // UJIAN
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('ujian')->name('ujian.')->group(function () {
-            Route::get('/', [UjianController::class, 'index'])->name('index');
-            Route::get('/create', [UjianController::class, 'create'])->name('create');
-            Route::post('/', [UjianController::class, 'store'])->name('store');
-            Route::get('/{ujian}', [UjianController::class, 'show'])->name('show');
-            Route::get('/{ujian}/edit', [UjianController::class, 'edit'])->name('edit');
-            Route::put('/{ujian}', [UjianController::class, 'update'])->name('update');
-            Route::delete('/{ujian}', [UjianController::class, 'destroy'])->name('destroy');
-            Route::patch('/{ujian}/toggle-status', [UjianController::class, 'toggleStatus'])->name('toggle-status');
-            Route::get('/{ujian}/hasil', [UjianController::class, 'hasil'])->name('hasil');
+            Route::get('/',                          [UjianController::class, 'index'])->name('index');
+            Route::get('/create',                    [UjianController::class, 'create'])->name('create');
+            Route::post('/',                         [UjianController::class, 'store'])->name('store');
+            Route::get('/{ujian}',                   [UjianController::class, 'show'])->name('show');
+            Route::get('/{ujian}/edit',              [UjianController::class, 'edit'])->name('edit');
+            Route::put('/{ujian}',                   [UjianController::class, 'update'])->name('update');
+            Route::delete('/{ujian}',                [UjianController::class, 'destroy'])->name('destroy');
+            Route::patch('/{ujian}/toggle-status',   [UjianController::class, 'toggleStatus'])->name('toggle-status');
+            Route::get('/{ujian}/hasil',             [UjianController::class, 'hasil'])->name('hasil');
         });
 
-        // Nilai
+        // ──────────────────────────────────────────────────────────────────────
+        // NILAI SISWA
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('nilai')->name('nilai.')->group(function () {
-            Route::get('/', [NilaiController::class, 'index'])->name('index');
-            Route::get('/create', [NilaiController::class, 'create'])->name('create');
-            Route::post('/', [NilaiController::class, 'store'])->name('store');
-            Route::get('/{nilai}', [NilaiController::class, 'show'])->name('show');
-            Route::get('/{nilai}/edit', [NilaiController::class, 'edit'])->name('edit');
-            Route::put('/{nilai}', [NilaiController::class, 'update'])->name('update');
-            Route::delete('/{nilai}', [NilaiController::class, 'destroy'])->name('destroy');
+            Route::get('/',              [NilaiController::class, 'index'])->name('index');
+            Route::get('/create',        [NilaiController::class, 'create'])->name('create');
+            Route::post('/',             [NilaiController::class, 'store'])->name('store');
+            Route::get('/{nilai}',       [NilaiController::class, 'show'])->name('show');
+            Route::get('/{nilai}/edit',  [NilaiController::class, 'edit'])->name('edit');
+            Route::put('/{nilai}',       [NilaiController::class, 'update'])->name('update');
+            Route::delete('/{nilai}',    [NilaiController::class, 'destroy'])->name('destroy');
         });
 
-        // Jurnal Mengajar
+        // ──────────────────────────────────────────────────────────────────────
+        // JURNAL MENGAJAR
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('jurnal-mengajar')->name('jurnal-mengajar.')->group(function () {
-            Route::get('/', [JurnalMengajarController::class, 'index'])->name('index');
-            Route::get('/create', [JurnalMengajarController::class, 'create'])->name('create');
-            Route::post('/', [JurnalMengajarController::class, 'store'])->name('store');
-            Route::get('/{jurnal}', [JurnalMengajarController::class, 'show'])->name('show');
+            Route::get('/',              [JurnalMengajarController::class, 'index'])->name('index');
+            Route::get('/create',        [JurnalMengajarController::class, 'create'])->name('create');
+            Route::post('/',             [JurnalMengajarController::class, 'store'])->name('store');
+            Route::get('/{jurnal}',      [JurnalMengajarController::class, 'show'])->name('show');
             Route::get('/{jurnal}/edit', [JurnalMengajarController::class, 'edit'])->name('edit');
-            Route::put('/{jurnal}', [JurnalMengajarController::class, 'update'])->name('update');
-            Route::delete('/{jurnal}', [JurnalMengajarController::class, 'destroy'])->name('destroy');
+            Route::put('/{jurnal}',      [JurnalMengajarController::class, 'update'])->name('update');
+            Route::delete('/{jurnal}',   [JurnalMengajarController::class, 'destroy'])->name('destroy');
         });
 
-        // Absensi Kelas
+        // ──────────────────────────────────────────────────────────────────────
+        // ABSENSI KELAS
+        // Sidebar: Catat Absensi, Rekap Kehadiran, Sesi QR Absensi, Barcode Kelas
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('absensi')->name('absensi.')->group(function () {
-            // ── Static routes (harus di atas wildcard /{absensi}) ──
-            Route::get('/',        [AbsensiController::class, 'index'])->name('index');
-            Route::get('/rekap',   [AbsensiController::class, 'rekap'])->name('rekap');
-            Route::get('/create',  [AbsensiController::class, 'create'])->name('create');
-            Route::post('/massal', [AbsensiController::class, 'storeMassal'])->name('storeMassal'); // ← dipindah ke sini
-            Route::post('/',       [AbsensiController::class, 'store'])->name('store');
-        
-            // ── Wildcard routes (harus di bawah static routes) ──
+            // ── Static routes (harus di atas wildcard /{absensi}) ─────────────
+            Route::get('/',         [AbsensiController::class, 'index'])->name('index');
+            Route::get('/rekap',    [AbsensiController::class, 'rekap'])->name('rekap');
+            Route::get('/create',   [AbsensiController::class, 'create'])->name('create');
+
+            // [BARU] QR Per Pelajaran — sidebar "QR Per Pelajaran"
+            // Menampilkan daftar jadwal aktif beserta tombol tampilkan QR per sesi
+            Route::get('/jadwal',   [AbsensiController::class, 'jadwal'])->name('jadwal');
+
+            // [BARU] Scan QR — sidebar "Scan QR Pelajaran"
+            // Guru membuka kamera / input token untuk verifikasi QR siswa
+            Route::get('/scan',     [AbsensiController::class, 'scan'])->name('scan');
+            Route::post('/scan',    [AbsensiController::class, 'prosesScan'])->name('proses-scan');
+
+            Route::post('/massal',  [AbsensiController::class, 'storeMassal'])->name('storeMassal');
+            Route::post('/',        [AbsensiController::class, 'store'])->name('store');
+
+            // ── Wildcard routes (harus di bawah static routes) ───────────────
             Route::get('/{absensi}',       [AbsensiController::class, 'show'])->name('show');
             Route::get('/{absensi}/edit',  [AbsensiController::class, 'edit'])->name('edit');
             Route::put('/{absensi}',       [AbsensiController::class, 'update'])->name('update');
             Route::delete('/{absensi}',    [AbsensiController::class, 'destroy'])->name('destroy');
         });
 
-        // Sesi QR
+        // ──────────────────────────────────────────────────────────────────────
+        // SESI QR KELAS
+        // Sidebar: "Sesi QR Absensi"
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('sesi-qr')->name('sesi-qr.')->group(function () {
-            Route::get('/', [SesiQrController::class, 'index'])->name('index');
-            Route::get('/create', [SesiQrController::class, 'create'])->name('create');
-            Route::post('/', [SesiQrController::class, 'store'])->name('store');
-            Route::get('/{sesiQr}', [SesiQrController::class, 'show'])->name('show');
-            Route::delete('/{sesiQr}', [SesiQrController::class, 'destroy'])->name('destroy');
-            Route::patch('/{sesiQr}/nonaktifkan', [SesiQrController::class, 'nonaktifkan'])->name('nonaktifkan');
-            Route::get('/{sesiQr}/cetak-qr', [SesiQrController::class, 'cetakQr'])->name('cetak-qr');
+            Route::get('/',                              [SesiQrController::class, 'index'])->name('index');
+            Route::get('/create',                        [SesiQrController::class, 'create'])->name('create');
+            Route::post('/',                             [SesiQrController::class, 'store'])->name('store');
+            Route::get('/{sesiQr}',                      [SesiQrController::class, 'show'])->name('show');
+            Route::delete('/{sesiQr}',                   [SesiQrController::class, 'destroy'])->name('destroy');
+            Route::patch('/{sesiQr}/nonaktifkan',        [SesiQrController::class, 'nonaktifkan'])->name('nonaktifkan');
+            Route::get('/{sesiQr}/cetak-qr',             [SesiQrController::class, 'cetakQr'])->name('cetak-qr');
         });
 
-        // Notifikasi
-        Route::prefix('notifikasi')->name('notifikasi.')->group(function () {
-            Route::get('/', [NotifikasiController::class, 'index'])->name('index');
-            Route::get('/{notifikasi}', [NotifikasiController::class, 'show'])->name('show');
-            Route::patch('/mark-all-read', [NotifikasiController::class, 'markAllRead'])->name('mark-all-read');
-            Route::patch('/{notifikasi}/mark-read', [NotifikasiController::class, 'markRead'])->name('mark-read');
-            Route::delete('/{notifikasi}', [NotifikasiController::class, 'destroy'])->name('destroy');
+        // ──────────────────────────────────────────────────────────────────────
+        // [BARU] BARCODE KELAS
+        // Sidebar: "Barcode Kelas" — barcode tetap per kelas untuk alat piket
+        // ──────────────────────────────────────────────────────────────────────
+        Route::prefix('barcode-kelas')->name('barcode-kelas.')->group(function () {
+            // Daftar kelas yang diajar beserta barcode tetapnya
+            Route::get('/',                         [BarcodeKelasController::class, 'index'])->name('index');
+
+            // Tampilkan barcode tetap satu kelas (fullscreen / print-friendly)
+            Route::get('/{kelas}',                  [BarcodeKelasController::class, 'show'])->name('show');
+
+            // Download barcode sebagai gambar (PNG/SVG)
+            Route::get('/{kelas}/download',         [BarcodeKelasController::class, 'download'])->name('download');
+
+            // Print — view khusus cetak tanpa layout
+            Route::get('/{kelas}/cetak',            [BarcodeKelasController::class, 'cetak'])->name('cetak');
         });
 
-        // Pengumuman (read-only)
-        Route::prefix('pengumuman')->name('pengumuman.')->group(function () {
-            Route::get('/', [PengumumanController::class, 'index'])->name('index');
-            Route::get('/{pengumuman}', [PengumumanController::class, 'show'])->name('show');
+        // ──────────────────────────────────────────────────────────────────────
+        // [BARU] RIWAYAT SCAN
+        // Sidebar admin: "Riwayat Scan" — guru juga bisa melihat riwayat scan
+        // kelasnya sendiri (scoped by guru yang login)
+        // ──────────────────────────────────────────────────────────────────────
+        Route::prefix('riwayat-scan')->name('riwayat-scan.')->group(function () {
+            Route::get('/',              [RiwayatScanController::class, 'index'])->name('index');
+            Route::get('/{riwayat}',     [RiwayatScanController::class, 'show'])->name('show');
         });
 
-        // Izin Keluar Siswa — HANYA READ (guru melihat izin siswa di kelasnya)
+        // ──────────────────────────────────────────────────────────────────────
+        // IZIN KELUAR SISWA
+        // Sidebar: Menunggu Proses, Sedang Keluar, Semua Riwayat
+        // Guru hanya melihat izin siswa di kelas yang diajarnya (read-only)
+        // ──────────────────────────────────────────────────────────────────────
         Route::prefix('izin-keluar-siswa')->name('izin-keluar-siswa.')->group(function () {
-            Route::get('/',              [GuruIzinController::class, 'index'])->name('index');
-            Route::get('/{izin}',        [GuruIzinController::class, 'show'])->name('show');
+            Route::get('/',         [GuruIzinController::class, 'index'])->name('index');
+            Route::get('/{izin}',   [GuruIzinController::class, 'show'])->name('show');
         });
 
+        // ──────────────────────────────────────────────────────────────────────
+        // NOTIFIKASI
+        // ──────────────────────────────────────────────────────────────────────
+        Route::prefix('notifikasi')->name('notifikasi.')->group(function () {
+            // mark-all-read harus di atas /{notifikasi} agar tidak di-match sebagai wildcard
+            Route::patch('/mark-all-read',           [NotifikasiController::class, 'markAllRead'])->name('mark-all-read');
+            Route::get('/',                          [NotifikasiController::class, 'index'])->name('index');
+            Route::get('/{notifikasi}',              [NotifikasiController::class, 'show'])->name('show');
+            Route::patch('/{notifikasi}/mark-read',  [NotifikasiController::class, 'markRead'])->name('mark-read');
+            Route::delete('/{notifikasi}',           [NotifikasiController::class, 'destroy'])->name('destroy');
+        });
 
+        // ──────────────────────────────────────────────────────────────────────
+        // PENGUMUMAN (read-only)
+        // ──────────────────────────────────────────────────────────────────────
+        Route::prefix('pengumuman')->name('pengumuman.')->group(function () {
+            Route::get('/',              [PengumumanController::class, 'index'])->name('index');
+            Route::get('/{pengumuman}',  [PengumumanController::class, 'show'])->name('show');
+        });
     });

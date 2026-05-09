@@ -54,6 +54,8 @@ use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\KenaikanKelasController;
 use App\Http\Controllers\Admin\PilihanJawabanController;
+use App\Http\Controllers\Admin\AbsensiGerbangController;
+use App\Http\Controllers\Admin\SesiGerbangController;
 
 
 Route::prefix('admin')
@@ -625,6 +627,9 @@ Route::prefix('admin')
             Route::get('/izin-keluar', [ReportController::class, 'izinKeluar'])->name('izin-keluar');
             Route::get('/izin-keluar/export/pdf', [ReportController::class, 'exportIzinKeluarPdf'])->name('izin-keluar.export.pdf');
             Route::get('/izin-keluar/export/excel', [ReportController::class, 'exportIzinKeluarExcel'])->name('izin-keluar.export.excel');
+            Route::get('/absensi-gerbang',                  [ReportController::class, 'attendanceGateway'])->name('absensi-gerbang');
+            Route::get('/absensi-gerbang/export/pdf',       [ReportController::class, 'exportAttendanceGatewayPdf'])->name('absensi-gerbang.export.pdf');
+            Route::get('/absensi-gerbang/export/excel',     [ReportController::class, 'exportAttendanceGatewayExcel'])->name('absensi-gerbang.export.excel');
         });
 
         // ─── Absensi Guru (Admin penuh) ───────────────────────────────────────────
@@ -903,6 +908,46 @@ Route::prefix('admin')
             Route::post('/',                                   [KenaikanKelasController::class, 'store'])->name('store');
             Route::get('/{kenaikanKelas}',                     [KenaikanKelasController::class, 'show'])->name('show');
             Route::post('/{kenaikanKelas}/batalkan',           [KenaikanKelasController::class, 'batalkan'])->name('batalkan');
+        });
+
+        // ─── Sesi Gerbang ─────────────────────────────────────────────────────────────
+        Route::prefix('sesi-gerbang')->name('sesi-gerbang.')->group(function () {
+        
+            Route::get('/',                               [SesiGerbangController::class, 'index'])->name('index');
+            Route::get('/create',                         [SesiGerbangController::class, 'create'])->name('create');
+            Route::post('/',                              [SesiGerbangController::class, 'store'])->name('store');
+            Route::get('/export/pdf',                     [SesiGerbangController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',                   [SesiGerbangController::class, 'exportExcel'])->name('export.excel');
+            Route::get('/ajax/aktif',                     [SesiGerbangController::class, 'ajaxSesiAktif'])->name('ajax.aktif');
+        
+            Route::get('/{sesiGerbang}',                  [SesiGerbangController::class, 'show'])->name('show');
+            Route::delete('/{sesiGerbang}',               [SesiGerbangController::class, 'destroy'])->name('destroy');
+            Route::patch('/{sesiGerbang}/tutup',          [SesiGerbangController::class, 'tutup'])->name('tutup');
+            Route::patch('/{sesiGerbang}/toggle-tipe',    [SesiGerbangController::class, 'toggleTipe'])->name('toggle-tipe');
+        });
+        
+        // ─── Absensi Gerbang ──────────────────────────────────────────────────────────
+        Route::prefix('absensi-gerbang')->name('absensi-gerbang.')->group(function () {
+        
+            Route::get('/',                                    [AbsensiGerbangController::class, 'index'])->name('index');
+            Route::get('/export/pdf',                          [AbsensiGerbangController::class, 'exportPdf'])->name('export.pdf');
+            Route::get('/export/excel',                        [AbsensiGerbangController::class, 'exportExcel'])->name('export.excel');
+        
+            Route::get('/rekap',                               [AbsensiGerbangController::class, 'rekap'])->name('rekap');
+            Route::get('/rekap/export/pdf',                    [AbsensiGerbangController::class, 'exportRekapPdf'])->name('rekap.export.pdf');
+            Route::get('/rekap/export/excel',                  [AbsensiGerbangController::class, 'exportRekapExcel'])->name('rekap.export.excel');
+        
+            Route::get('/belum-hadir',                         [AbsensiGerbangController::class, 'belumHadir'])->name('belum-hadir');
+            Route::get('/belum-hadir/export/pdf',              [AbsensiGerbangController::class, 'exportBelumHadirPdf'])->name('belum-hadir.export.pdf');
+        
+            Route::get('/input-manual',                        [AbsensiGerbangController::class, 'inputManual'])->name('input-manual');
+            Route::post('/input-manual',                       [AbsensiGerbangController::class, 'storeManual'])->name('store-manual');
+        
+            Route::get('/ajax/live',                           [AbsensiGerbangController::class, 'ajaxLive'])->name('ajax.live');
+        
+            Route::get('/{absensiGerbang}',                    [AbsensiGerbangController::class, 'show'])->name('show');
+            Route::delete('/{absensiGerbang}',                 [AbsensiGerbangController::class, 'destroy'])->name('destroy');
+            Route::patch('/{absensiGerbang}/koreksi',          [AbsensiGerbangController::class, 'koreksi'])->name('koreksi');
         });
 
     });

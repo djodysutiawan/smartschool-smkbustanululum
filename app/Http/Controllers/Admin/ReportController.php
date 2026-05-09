@@ -24,6 +24,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Models\AbsensiGerbang;
+use App\Models\SesiGerbang;
+use Illuminate\Support\Facades\Auth; 
+use App\Exports\AbsensiGerbangReportExport;
 
 class ReportController extends Controller
 {
@@ -930,6 +934,169 @@ class ReportController extends Controller
                 ->whereHas('siswa', fn($s2) => $s2->where('nama_lengkap', 'like', "%{$s}%"))
                 ->orWhere('nomor_surat', 'like', "%{$s}%")
                 ->orWhere('tujuan',      'like', "%{$s}%"));
+        }
+    }
+
+     // ─── ABSENSI GERBANG ─────────────────────────────────────────────────────
+ 
+    /**
+     * Laporan absensi gerbang (log scan RFID).
+     * Filter: tanggal_dari, tanggal_sampai, tipe (masuk|pulang),
+     *         status, kelas_id, sesi_gerbang_id, search.
+     */
+    public function attendanceGateway(Request $request)
+    {
+        // Default: filter hari ini
+        if (! $request->hasAny(['tanggal_dari', 'tanggal_sampai'])) {
+            $request->merge([
+                'tanggal_dari'   => now()->toDateString(),
+                'tanggal_sampai' => now()->toDateString(),
+            ]);
+        }
+ 
+        $query = AbsensiGerbang::with([
+                'siswa.kelas',
+                'sesiGerbang',
+                'inputOleh:id,name',
+            ])
+            ->orderByDesc('waktu_scan');
+ 
+        $this->applyAbsensiGerbangFilters($query, $request);
+ 
+        $scanList  = $query->paginate(25)->withQueryString();
+        $kelasList = Kelas::aktif()->orderBy('tingkat')->orderBy('nama_kelas')->get();
+ 
+        // Daftar sesi untuk filter dropdown (30 hari terakhir)
+        $sesiList = SesiGerbang::orderByDesc('tanggal')
+            ->orderByDesc('dibuka_pada')
+            ->where('tanggal', '>=', now()->subDays(30)->toDateString())
+            ->get();
+ 
+        // ── Rekap (mengikuti filter aktif, sama seperti attendance()) ────────
+        $rekapQ = AbsensiGerbang::query();
+        $this->applyAbsensiGerbangFilters($rekapQ, $request);
+ 
+        $rekap = [
+            'total'         => (clone $rekapQ)->count(),
+            'scan_masuk'    => (clone $rekapQ)->where('tipe', 'masuk')
+                                               ->whereIn('status', ['normal', 'manual', 'koreksi'])->count(),
+            'scan_pulang'   => (clone $rekapQ)->where('tipe', 'pulang')
+                                               ->whereIn('status', ['normal', 'manual', 'koreksi'])->count(),
+            'duplikat'      => (clone $rekapQ)->where('status', 'duplikat')->count(),
+            'tidak_dikenal' => (clone $rekapQ)->whereNull('siswa_id')->count(),
+            'manual'        => (clone $rekapQ)->where('is_manual', true)->count(),
+        ];
+ 
+        // ── Tren 14 hari — satu GROUP BY, bukan 28 query ─────────────────────
+        $tren14Hari = AbsensiGerbang::select(
+                DB::raw('DATE(tanggal_scan) as tgl'),
+                DB::raw("SUM(CASE WHEN tipe='masuk'  AND status IN ('normal','manual','koreksi') THEN 1 ELSE 0 END) as masuk"),
+                DB::raw("SUM(CASE WHEN tipe='pulang' AND status IN ('normal','manual','koreksi') THEN 1 ELSE 0 END) as pulang")
+            )
+            ->whereDate('tanggal_scan', '>=', now()->subDays(13)->toDateString())
+            ->groupBy(DB::raw('DATE(tanggal_scan)'))
+            ->orderBy('tgl')
+            ->get()
+            ->keyBy('tgl');
+ 
+        $trendLabels = [];
+        $trendMasuk  = [];
+        $trendPulang = [];
+        for ($i = 13; $i >= 0; $i--) {
+            $date          = now()->subDays($i)->toDateString();
+            $trendLabels[] = now()->subDays($i)->format('d/m');
+            $trendMasuk[]  = $tren14Hari->get($date)?->masuk  ?? 0;
+            $trendPulang[] = $tren14Hari->get($date)?->pulang ?? 0;
+        }
+ 
+        // ── Distribusi status (global, untuk chart komposisi) ─────────────────
+        $statusCount = AbsensiGerbang::select('status', DB::raw('COUNT(*) as jumlah'))
+            ->groupBy('status')
+            ->pluck('jumlah', 'status')
+            ->toArray();
+ 
+        foreach (['normal', 'duplikat', 'manual', 'koreksi', 'error'] as $s) {
+            $statusCount[$s] = $statusCount[$s] ?? 0;
+        }
+ 
+        return view('admin.laporan.absensi-gerbang', compact(
+            'scanList',
+            'kelasList',
+            'sesiList',
+            'rekap',
+            'trendLabels',
+            'trendMasuk',
+            'trendPulang',
+            'statusCount',
+        ));
+    }
+ 
+    public function exportAttendanceGatewayPdf(Request $request)
+    {
+        $query = AbsensiGerbang::with(['siswa.kelas', 'sesiGerbang', 'inputOleh:id,name'])
+            ->orderByDesc('waktu_scan');
+ 
+        $this->applyAbsensiGerbangFilters($query, $request);
+        $data = $query->get();
+ 
+        /** @var \App\Models\User $authUser */
+        $authUser = Auth::user();
+ 
+        $filter = [
+            'tanggal_dari'   => $request->tanggal_dari,
+            'tanggal_sampai' => $request->tanggal_sampai,
+            'tipe'           => $request->tipe,
+            'status'         => $request->status,
+            'dicetak_pada'   => now()->isoFormat('D MMMM Y, HH:mm'),
+            'dicetak_oleh'   => $authUser->name,
+        ];
+ 
+        // Rekap untuk header PDF
+        $rekap = [
+            'total'         => $data->count(),
+            'scan_masuk'    => $data->where('tipe', 'masuk')->whereIn('status', ['normal', 'manual', 'koreksi'])->count(),
+            'scan_pulang'   => $data->where('tipe', 'pulang')->whereIn('status', ['normal', 'manual', 'koreksi'])->count(),
+            'duplikat'      => $data->where('status', 'duplikat')->count(),
+            'tidak_dikenal' => $data->whereNull('siswa_id')->count(),
+        ];
+ 
+        $generated_at = now()->format('d M Y, H:i');
+ 
+        $pdf = Pdf::loadView('admin.laporan.exports.absensi-gerbang-pdf', compact('data', 'filter', 'rekap', 'generated_at'))
+            ->setPaper('a4', 'landscape');
+ 
+        return $pdf->download('laporan-absensi-gerbang-' . now()->format('Ymd') . '.pdf');
+    }
+ 
+    public function exportAttendanceGatewayExcel(Request $request)
+    {
+        return Excel::download(
+            new AbsensiGerbangReportExport($request->all()),
+            'laporan-absensi-gerbang-' . now()->format('Ymd') . '.xlsx'
+        );
+    }
+ 
+    // ─── HELPER: applyAbsensiGerbangFilters ──────────────────────────────────
+ 
+    private function applyAbsensiGerbangFilters($q, Request $r): void
+    {
+        if ($r->filled('tanggal_dari'))    $q->whereDate('tanggal_scan', '>=', $r->tanggal_dari);
+        if ($r->filled('tanggal_sampai'))  $q->whereDate('tanggal_scan', '<=', $r->tanggal_sampai);
+        if ($r->filled('tipe'))            $q->where('tipe', $r->tipe);
+        if ($r->filled('status'))          $q->where('status', $r->status);
+        if ($r->filled('sesi_gerbang_id')) $q->where('sesi_gerbang_id', $r->sesi_gerbang_id);
+        if ($r->filled('kelas_id')) {
+            $q->whereHas('siswa', fn ($sq) => $sq->where('kelas_id', $r->kelas_id));
+        }
+        if ($r->filled('search')) {
+            $s = $r->search;
+            $q->where(function ($q2) use ($s) {
+                $q2->where('kode_scan', 'like', "%{$s}%")
+                   ->orWhereHas('siswa', fn ($sq) =>
+                       $sq->where('nama_lengkap', 'like', "%{$s}%")
+                          ->orWhere('nis', 'like', "%{$s}%")
+                   );
+            });
         }
     }
 
