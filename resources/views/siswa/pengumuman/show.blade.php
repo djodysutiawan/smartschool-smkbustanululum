@@ -15,7 +15,9 @@
     .breadcrumb a{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--brand-600);text-decoration:none}
     .breadcrumb a:hover{text-decoration:underline}
     .breadcrumb-sep{color:var(--text3);font-size:12px}
-    .breadcrumb-cur{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3)}
+    .breadcrumb-cur{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);
+        /* Truncate judul panjang di breadcrumb */
+        max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;vertical-align:middle}
 
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
     .btn:hover{filter:brightness(.93)}
@@ -31,8 +33,8 @@
     .pg-date{font-size:12.5px;color:var(--text3);display:flex;align-items:center;gap:4px}
     .pg-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.35}
 
+    /* Prose body */
     .pg-body{padding:28px 32px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text2);line-height:1.8}
-    /* Prose styling jika isi adalah HTML */
     .pg-body h1,.pg-body h2,.pg-body h3{font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;color:var(--text);margin:20px 0 10px}
     .pg-body h1{font-size:20px}
     .pg-body h2{font-size:17px}
@@ -43,6 +45,12 @@
     .pg-body strong{font-weight:700;color:var(--text)}
     .pg-body a{color:var(--brand-600);text-decoration:underline}
     .pg-body blockquote{border-left:3px solid var(--brand-100);padding:10px 16px;background:var(--brand-50);border-radius:0 6px 6px 0;margin:14px 0;color:var(--text2)}
+    /* Pastikan gambar dalam konten tidak overflow */
+    .pg-body img{max-width:100%;height:auto;border-radius:var(--radius-sm)}
+    /* Tabel dari rich text editor */
+    .pg-body table{width:100%;border-collapse:collapse;margin-bottom:14px;font-size:14px}
+    .pg-body th,.pg-body td{border:1px solid var(--border);padding:8px 12px;text-align:left}
+    .pg-body th{background:var(--surface2);font-weight:700;color:var(--text)}
 
     .pg-footer{padding:16px 32px;border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
     .pg-footer-meta{font-size:12px;color:var(--text3)}
@@ -52,6 +60,7 @@
         .page{padding:16px}
         .pg-header,.pg-body,.pg-footer{padding-left:18px;padding-right:18px}
         .pg-title{font-size:18px}
+        .breadcrumb-cur{max-width:160px}
     }
 </style>
 
@@ -60,12 +69,24 @@
     <div class="breadcrumb">
         <a href="{{ route('siswa.pengumuman.index') }}">Pengumuman</a>
         <span class="breadcrumb-sep">›</span>
-        <span class="breadcrumb-cur">Detail</span>
+        {{-- Tampilkan judul di breadcrumb, bukan teks statis "Detail" --}}
+        <span class="breadcrumb-cur" title="{{ $pengumuman->judul }}">{{ $pengumuman->judul }}</span>
     </div>
 
     <div class="pg-card">
 
         <div class="pg-header">
+            @php
+                // Gunakan dipublikasikan_pada jika tersedia, fallback ke created_at
+                $tanggal = $pengumuman->dipublikasikan_pada ?? $pengumuman->created_at;
+                $isNew   = $tanggal && \Carbon\Carbon::parse($tanggal)->gte(now()->subDays(3));
+
+                // Tentukan apakah konten adalah HTML (dari rich text editor) atau plain text.
+                // Heuristik: cek apakah ada tag HTML di dalam string.
+                $isiRaw   = $pengumuman->isi ?? $pengumuman->konten ?? '';
+                $isHtml   = $isiRaw !== strip_tags($isiRaw);
+            @endphp
+
             <div class="pg-meta-top">
                 <span class="pg-badge">
                     <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -73,7 +94,7 @@
                     </svg>
                     Pengumuman
                 </span>
-                @if(\Carbon\Carbon::parse($pengumuman->created_at)->gte(now()->subDays(3)))
+                @if($isNew)
                     <span class="pg-badge pg-new">Baru</span>
                 @endif
                 <span class="pg-date">
@@ -83,19 +104,29 @@
                         <line x1="8" y1="2" x2="8" y2="6"/>
                         <line x1="3" y1="10" x2="21" y2="10"/>
                     </svg>
-                    {{ \Carbon\Carbon::parse($pengumuman->created_at)->translatedFormat('l, d F Y') }}
+                    {{ $tanggal ? \Carbon\Carbon::parse($tanggal)->translatedFormat('l, d F Y') : '—' }}
                 </span>
             </div>
             <h1 class="pg-title">{{ $pengumuman->judul }}</h1>
         </div>
 
         <div class="pg-body">
-            {{--
-                Jika kolom isi/konten berisi HTML (dari rich text editor), gunakan {!! !!}
-                Jika plain text, gunakan {{ }} dengan nl2br
-            --}}
-            @if($pengumuman->isi)
-                {!! nl2br(e($pengumuman->isi)) !!}
+            @if($isiRaw)
+                @if($isHtml)
+                    {{--
+                        Konten dari rich text editor (Quill, TinyMCE, dll) — render HTML.
+                        PASTIKAN konten sudah di-sanitize di sisi server sebelum disimpan
+                        (misalnya dengan HTMLPurifier atau paket purifier Laravel)
+                        agar aman dari XSS.
+                    --}}
+                    {!! $isiRaw !!}
+                @else
+                    {{--
+                        Plain text — escape dulu, lalu konversi newline ke <br>
+                        agar paragraf tampil dengan benar.
+                    --}}
+                    {!! nl2br(e($isiRaw)) !!}
+                @endif
             @else
                 <p style="color:var(--text3);font-style:italic">Tidak ada isi pengumuman.</p>
             @endif
@@ -104,9 +135,11 @@
         <div class="pg-footer">
             <div class="pg-footer-meta">
                 Diterbitkan
-                <strong>{{ \Carbon\Carbon::parse($pengumuman->created_at)->translatedFormat('d F Y, H:i') }}</strong>
-                &middot;
-                {{ \Carbon\Carbon::parse($pengumuman->created_at)->diffForHumans() }}
+                <strong>{{ $tanggal ? \Carbon\Carbon::parse($tanggal)->translatedFormat('d F Y, H:i') : '—' }}</strong>
+                @if($tanggal)
+                    &middot;
+                    {{ \Carbon\Carbon::parse($tanggal)->diffForHumans() }}
+                @endif
             </div>
             <a href="{{ route('siswa.pengumuman.index') }}" class="btn btn-secondary">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

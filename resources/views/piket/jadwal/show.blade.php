@@ -78,11 +78,23 @@
 
 <div class="page">
 
-    {{-- Header --}}
+    @php
+        // Deteksi hari ini via model (aman dari locale mismatch).
+        $isToday = $jadwal->hari === \App\Models\JadwalPiketGuru::getNamaHari(now());
+        // Durasi jadwal dalam menit.
+        $durMnt = \Carbon\Carbon::parse($jadwal->jam_mulai)
+                      ->diffInMinutes(\Carbon\Carbon::parse($jadwal->jam_selesai));
+    @endphp
+
+    {{-- ── Header ── --}}
     <div class="page-header">
         <div>
             <h1 class="page-title">Detail Jadwal Piket</h1>
-            <p class="page-sub">{{ ucfirst($jadwal->hari) }} · {{ \Carbon\Carbon::parse($jadwal->jam_mulai)->format('H:i') }}–{{ \Carbon\Carbon::parse($jadwal->jam_selesai)->format('H:i') }}</p>
+            <p class="page-sub">
+                {{ ucfirst($jadwal->hari) }}
+                · {{ \Carbon\Carbon::parse($jadwal->jam_mulai)->format('H:i') }}
+                – {{ \Carbon\Carbon::parse($jadwal->jam_selesai)->format('H:i') }}
+            </p>
         </div>
         <div class="header-actions">
             <a href="{{ route('piket.jadwal.index') }}" class="btn btn-secondary">
@@ -96,8 +108,7 @@
         </div>
     </div>
 
-    {{-- Big time hero --}}
-    @php $isToday = $jadwal->hari === strtolower(\Carbon\Carbon::now()->locale('id')->isoFormat('dddd')); @endphp
+    {{-- ── Big time hero ── --}}
     <div class="time-hero">
         <div>
             <p class="time-hero-hari">{{ ucfirst($jadwal->hari) }}</p>
@@ -119,13 +130,16 @@
             </span>
             @if($jadwal->tahunAjaran)
             <span class="time-chip">
-                TA {{ $jadwal->tahunAjaran->tahun ?? '—' }}
+                TA {{ $jadwal->tahunAjaran->tahun }}
+                @if($jadwal->tahunAjaran->semester)
+                    / {{ $jadwal->tahunAjaran->semester }}
+                @endif
             </span>
             @endif
         </div>
     </div>
 
-    {{-- Info grid --}}
+    {{-- ── Info grid ── --}}
     <div class="info-grid">
         <div class="info-item">
             <p class="info-label">Hari</p>
@@ -150,20 +164,19 @@
         <div class="info-item">
             <p class="info-label">Tahun Ajaran</p>
             <p class="info-val muted">
-                {{ $jadwal->tahunAjaran->tahun ?? '—' }}
-                {{ $jadwal->tahunAjaran ? '/ '.$jadwal->tahunAjaran->semester : '' }}
+                {{ $jadwal->tahunAjaran?->tahun ?? '—' }}
+                @if($jadwal->tahunAjaran?->semester)
+                    / {{ $jadwal->tahunAjaran->semester }}
+                @endif
             </p>
         </div>
         <div class="info-item">
             <p class="info-label">Durasi</p>
-            @php
-                $durMnt = \Carbon\Carbon::parse($jadwal->jam_mulai)->diffInMinutes(\Carbon\Carbon::parse($jadwal->jam_selesai));
-            @endphp
-            <p class="info-val">{{ intdiv($durMnt,60) }}j {{ $durMnt%60 }}m</p>
+            <p class="info-val">{{ intdiv($durMnt, 60) }}j {{ $durMnt % 60 }}m</p>
         </div>
     </div>
 
-    {{-- Catatan --}}
+    {{-- ── Catatan ── --}}
     @if($jadwal->catatan)
     <div class="panel">
         <div class="panel-header">
@@ -178,17 +191,18 @@
     </div>
     @endif
 
-    {{-- Riwayat Log --}}
+    {{-- ── Riwayat Log ── --}}
     {{--
-        Controller memuat riwayat log 3 bulan terakhir milik guru yang sedang aktif
-        (bukan difilter per jadwal/hari), sehingga kolom "Hari" ditampilkan
-        agar konteks tanggal tetap jelas bagi pengguna.
+        Controller memfilter log hanya di hari yang sama dengan jadwal ini
+        (via DAYOFWEEK MySQL), sehingga semua baris riwayat pasti relevan.
+        $riwayatLog adalah LengthAwarePaginator dengan page key 'log_page'
+        (bukan 'page') agar tidak konflik dengan parameter jadwal index.
     --}}
     <div class="panel">
         <div class="panel-header">
             <p class="panel-title">
                 <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Riwayat Check-In (3 Bulan Terakhir)
+                Riwayat Check-In – Hari {{ ucfirst($jadwal->hari) }} (3 Bulan Terakhir)
             </p>
             <span style="font-size:12px;color:var(--text3)">{{ $riwayatLog->total() }} log</span>
         </div>
@@ -208,34 +222,43 @@
                 <tbody>
                     @forelse($riwayatLog as $index => $log)
                     @php
-                        $durMnt = ($log->masuk_pada && $log->keluar_pada)
-                            ? \Carbon\Carbon::parse($log->masuk_pada)->diffInMinutes(\Carbon\Carbon::parse($log->keluar_pada))
-                            : null;
+                        $masukCarbon  = $log->masuk_pada  ? \Carbon\Carbon::parse($log->masuk_pada)  : null;
+                        $keluarCarbon = $log->keluar_pada ? \Carbon\Carbon::parse($log->keluar_pada) : null;
+                        $durMntLog    = ($masukCarbon && $keluarCarbon) ? $masukCarbon->diffInMinutes($keluarCarbon) : null;
+                        $tglCarbon    = \Carbon\Carbon::parse($log->tanggal);
                     @endphp
                     <tr>
                         <td style="color:var(--text3);font-size:12.5px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">
+                            {{--
+                                FIX: firstItem() + $index memberi nomor urut yang benar
+                                bahkan saat pindah halaman (misal hal.2: mulai dari 11).
+                            --}}
                             {{ $riwayatLog->firstItem() + $index }}
                         </td>
                         <td>
                             <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;color:var(--text)">
-                                {{ \Carbon\Carbon::parse($log->tanggal)->locale('id')->isoFormat('D MMM Y') }}
+                                {{ $tglCarbon->locale('id')->isoFormat('D MMM Y') }}
                             </p>
                             <p style="font-size:11.5px;color:var(--text3)">
-                                {{ \Carbon\Carbon::parse($log->tanggal)->locale('id')->isoFormat('dddd') }}
+                                {{--
+                                    FIX: isoFormat('dddd') untuk nama hari panjang.
+                                    Locale 'id' di Carbon bawaan Laravel sudah tersedia.
+                                --}}
+                                {{ $tglCarbon->locale('id')->isoFormat('dddd') }}
                             </p>
                         </td>
                         <td class="log-masuk-td">
-                            {{ $log->masuk_pada ? \Carbon\Carbon::parse($log->masuk_pada)->format('H:i') : '—' }}
+                            {{ $masukCarbon ? $masukCarbon->format('H:i') : '—' }}
                         </td>
                         <td class="log-keluar-td">
-                            @if($log->keluar_pada)
-                                {{ \Carbon\Carbon::parse($log->keluar_pada)->format('H:i') }}
+                            @if($keluarCarbon)
+                                {{ $keluarCarbon->format('H:i') }}
                             @else
                                 <span class="checkout-warn">Belum checkout</span>
                             @endif
                         </td>
                         <td class="log-dur-td">
-                            {{ $durMnt ? intdiv($durMnt,60).'j '.($durMnt%60).'m' : '—' }}
+                            {{ $durMntLog !== null ? intdiv($durMntLog, 60).'j '.($durMntLog % 60).'m' : '—' }}
                         </td>
                         <td>
                             <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2)">
@@ -250,7 +273,9 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="7" class="empty-inline">Belum ada riwayat log dalam 3 bulan terakhir</td>
+                        <td colspan="7" class="empty-inline">
+                            Belum ada riwayat log di hari {{ ucfirst($jadwal->hari) }} dalam 3 bulan terakhir
+                        </td>
                     </tr>
                     @endforelse
                 </tbody>
@@ -259,14 +284,27 @@
 
         @if($riwayatLog->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">Menampilkan {{ $riwayatLog->firstItem() }}–{{ $riwayatLog->lastItem() }} dari {{ $riwayatLog->total() }}</p>
+            <p class="pag-info">
+                Menampilkan {{ $riwayatLog->firstItem() }}–{{ $riwayatLog->lastItem() }} dari {{ $riwayatLog->total() }}
+            </p>
             <div class="pag-btns">
+                {{--
+                    FIX: $riwayatLog menggunakan page key 'log_page' (didefinisikan
+                    di controller via paginate(10, ['*'], 'log_page')).
+                    withQueryString() sudah dipanggil di controller sehingga semua
+                    query string ikut terbawa otomatis di setiap URL pagination.
+                --}}
                 @if($riwayatLog->onFirstPage())
-                    <span class="pag-btn disabled"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                    <span class="pag-btn disabled">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </span>
                 @else
-                    <a href="{{ $riwayatLog->previousPageUrl() }}" class="pag-btn"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                    <a href="{{ $riwayatLog->previousPageUrl() }}" class="pag-btn">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                    </a>
                 @endif
-                @foreach($riwayatLog->getUrlRange(1,$riwayatLog->lastPage()) as $page => $url)
+
+                @foreach($riwayatLog->getUrlRange(1, $riwayatLog->lastPage()) as $page => $url)
                     @if($page == $riwayatLog->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
                     @elseif($page == 1 || $page == $riwayatLog->lastPage() || abs($page - $riwayatLog->currentPage()) <= 1)
@@ -275,10 +313,15 @@
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
+
                 @if($riwayatLog->hasMorePages())
-                    <a href="{{ $riwayatLog->nextPageUrl() }}" class="pag-btn"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                    <a href="{{ $riwayatLog->nextPageUrl() }}" class="pag-btn">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </a>
                 @else
-                    <span class="pag-btn disabled"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                    <span class="pag-btn disabled">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                    </span>
                 @endif
             </div>
         </div>

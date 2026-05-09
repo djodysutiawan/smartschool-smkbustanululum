@@ -20,7 +20,9 @@ class LogPiketController extends Controller
 
     public function checkin()
     {
-        $hariIni = strtolower(Carbon::now()->locale('id')->isoFormat('dddd'));
+        // FIX: gunakan getNamaHari() dari model — mapping statis yang tidak
+        // bergantung locale sistem, konsisten dengan JadwalController.
+        $hariIni = JadwalPiketGuru::getNamaHari(now());
 
         // Guru yang terjadwal hari ini — ditampilkan pertama di dropdown
         $guruTerjadwal = JadwalPiketGuru::with('guru')
@@ -46,7 +48,7 @@ class LogPiketController extends Controller
 
         // Riwayat 7 hari terakhir — semua guru (bukan hanya yang login)
         $riwayatTerakhir = LogPiket::with('guru')
-            ->whereDate('tanggal', '>=', now()->subDays(7))
+            ->whereDate('tanggal', '>=', now()->subDays(7)->startOfDay())
             ->orderByDesc('tanggal')
             ->orderByDesc('masuk_pada')
             ->get();
@@ -74,11 +76,13 @@ class LogPiketController extends Controller
             'guru_id.exists'   => 'Guru tidak ditemukan.',
         ]);
 
-        $guruId  = $validated['guru_id'];
-        $hariIni = strtolower(Carbon::now()->locale('id')->isoFormat('dddd'));
+        $guruId  = (int) $validated['guru_id'];
+
+        // FIX: konsisten dengan checkin() — pakai getNamaHari()
+        $hariIni = JadwalPiketGuru::getNamaHari(now());
 
         // Cek apakah guru ini MASIH aktif piket (belum checkout) hari ini.
-        // Guru yang sama bisa check-in lagi setelah checkout (misalnya shift berbeda).
+        // Guru yang sama bisa check-in lagi setelah checkout (misal shift berbeda).
         $sudahAktif = LogPiket::where('guru_id', $guruId)
             ->whereDate('tanggal', today())
             ->whereNull('keluar_pada')
@@ -94,12 +98,13 @@ class LogPiketController extends Controller
             ->where('is_active', true)
             ->first();
 
+        // FIX: null-safe pada jam_mulai sebelum diteruskan ke tentukanShift()
         $shift = $validated['shift'] ?? $this->tentukanShift($jadwal?->jam_mulai);
 
         LogPiket::create([
             'guru_id'              => $guruId,
             'jadwal_piket_guru_id' => $jadwal?->id,
-            // pengguna_id = akun yang login (akun bersama guru_piket)
+            // pengguna_id = akun yang login (akun bersama / petugas piket)
             'pengguna_id'          => Auth::id(),
             'tanggal'              => today(),
             'masuk_pada'           => now(),
@@ -126,8 +131,10 @@ class LogPiketController extends Controller
             return back()->with('warning', 'Log ini sudah melakukan check-out sebelumnya.');
         }
 
-        // Pastikan log ini memang dari hari ini
-        if (! $log->tanggal->isToday()) {
+        // FIX: $log->tanggal bisa berupa string jika model belum men-cast kolom ini.
+        // Carbon::parse() aman untuk keduanya (Carbon object maupun string date).
+        // Hindari memanggil ->isToday() langsung pada string.
+        if (! Carbon::parse($log->tanggal)->isToday()) {
             return back()->with('error', 'Hanya log hari ini yang bisa di-checkout.');
         }
 
@@ -135,8 +142,10 @@ class LogPiketController extends Controller
             'catatan_keluar' => ['nullable', 'string', 'max:500'],
         ]);
 
+        // Panggil accessor checkOut() dari model LogPiket
         $log->checkOut();
 
+        // Append catatan keluar ke catatan yang sudah ada (jika diisi)
         if (! empty($validated['catatan_keluar'])) {
             $log->update([
                 'catatan' => ($log->catatan ? $log->catatan . ' | ' : '') . $validated['catatan_keluar'],
@@ -151,13 +160,23 @@ class LogPiketController extends Controller
 
     // ─── Helper ───────────────────────────────────────────────────────────────
 
+    /**
+     * Tentukan shift berdasarkan jam mulai jadwal.
+     * FIX: gunakan Carbon::parse() bukan createFromFormat('H:i', ...)
+     * agar aman untuk format 'H:i:s' yang dikembalikan DB maupun 'H:i'.
+     */
     private function tentukanShift(?string $jamMulai): string
     {
-        if (! $jamMulai) return 'pagi';
-        $jam = (int) Carbon::createFromFormat('H:i', $jamMulai)->format('H');
+        if (! $jamMulai) {
+            return 'pagi';
+        }
+
+        $jam = (int) Carbon::parse($jamMulai)->format('H');
+
         return match (true) {
-            $jam < 12 => 'pagi',
-            default   => 'siang',
+            $jam < 12  => 'pagi',
+            $jam < 15  => 'siang',
+            default    => 'sore',
         };
     }
 }

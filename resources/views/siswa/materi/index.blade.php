@@ -34,10 +34,12 @@
     .materi-card:hover{box-shadow:0 6px 24px rgba(0,0,0,.08);transform:translateY(-2px)}
 
     .card-thumb{height:10px;width:100%}
+    /* FIX: default fallback jika jenis tidak dikenal */
     .ct-file{background:linear-gradient(90deg,#3b82f6,#1d4ed8)}
     .ct-video{background:linear-gradient(90deg,#ef4444,#b91c1c)}
     .ct-link{background:linear-gradient(90deg,#8b5cf6,#6d28d9)}
     .ct-teks{background:linear-gradient(90deg,#10b981,#047857)}
+    .ct-default{background:linear-gradient(90deg,#94a3b8,#64748b)}
 
     .card-body{padding:16px;flex:1;display:flex;flex-direction:column}
     .card-mapel{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:700;color:var(--sk-600);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px}
@@ -53,6 +55,8 @@
     .bj-video{background:#fff0f0;color:#b91c1c}
     .bj-link{background:#f5f3ff;color:#6d28d9}
     .bj-teks{background:#f0fdf4;color:#047857}
+    /* FIX: fallback badge jika jenis tidak dikenal */
+    .bj-default{background:#f1f5f9;color:#475569}
 
     .card-footer{padding:11px 16px;border-top:1px solid var(--border);background:var(--surface2)}
     .btn-lihat{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;height:34px;background:var(--sk-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:none;transition:background .15s}
@@ -101,10 +105,11 @@
                     @endforeach
                 </select>
 
+                {{-- FIX: Whitelist jenis dari konstanta model via $jenisList yang dipass controller --}}
                 <select name="jenis">
                     <option value="">Semua Jenis</option>
                     @foreach($jenisList as $j)
-                        <option value="{{ $j }}" {{ request('jenis') == $j ? 'selected' : '' }}>
+                        <option value="{{ $j }}" {{ request('jenis') === $j ? 'selected' : '' }}>
                             {{ ucfirst($j) }}
                         </option>
                     @endforeach
@@ -121,26 +126,40 @@
     @if($materi->count() > 0)
     <div class="materi-grid">
         @foreach($materi as $m)
+        {{--
+            FIX: Gunakan in_array guard untuk CSS class agar tidak ada class
+            tidak terdefinisi jika jenis di-DB berisi nilai yang tidak dikenali.
+            Fallback ke 'default' untuk ct- dan bj- prefix.
+        --}}
+        @php
+            $jenisValid = \App\Models\Materi::JENIS_VALID;
+            $jenisCss   = in_array($m->jenis, $jenisValid) ? $m->jenis : 'default';
+        @endphp
         <div class="materi-card">
-            <div class="card-thumb ct-{{ $m->jenis }}"></div>
+            <div class="card-thumb ct-{{ $jenisCss }}"></div>
             <div class="card-body">
-                <p class="card-mapel">{{ $m->mataPelajaran->nama_mapel ?? '—' }}</p>
+                {{-- FIX: optional() untuk mencegah error jika relasi null --}}
+                <p class="card-mapel">{{ optional($m->mataPelajaran)->nama_mapel ?? '—' }}</p>
                 <h3 class="card-judul">{{ $m->judul }}</h3>
                 <p class="card-deskripsi">{{ $m->deskripsi ?? 'Tidak ada deskripsi.' }}</p>
                 <div class="card-meta">
-                    <span class="badge-jenis bj-{{ $m->jenis }}">
-                        @if($m->jenis === 'file') 📄
-                        @elseif($m->jenis === 'video') 🎬
-                        @elseif($m->jenis === 'link') 🔗
-                        @else 📝
-                        @endif
+                    <span class="badge-jenis bj-{{ $jenisCss }}">
+                        @switch($m->jenis)
+                            @case('file')  📄 @break
+                            @case('video') 🎬 @break
+                            @case('link')  🔗 @break
+                            @case('teks')  📝 @break
+                            @default       📁
+                        @endswitch
                         {{ ucfirst($m->jenis) }}
                     </span>
-                    <span class="card-tgl">{{ $m->dipublikasikan_pada?->format('d M Y') ?? $m->created_at->format('d M Y') }}</span>
+                    <span class="card-tgl">
+                        {{ ($m->dipublikasikan_pada ?? $m->created_at)?->format('d M Y') ?? '—' }}
+                    </span>
                 </div>
                 <p class="card-guru" style="margin-top:8px">
                     <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;vertical-align:middle;margin-right:3px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                    {{ $m->guru->nama_lengkap ?? '—' }}
+                    {{ optional($m->guru)->nama_lengkap ?? '—' }}
                 </p>
             </div>
             <div class="card-footer">

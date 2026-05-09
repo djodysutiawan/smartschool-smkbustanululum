@@ -518,7 +518,7 @@
         [BARU] Absensi Gerbang (Piket) — sistem barcode tetap siswa.
         Dipisah dari Absensi Kelas agar admin bisa memantau kedua jalur secara terpisah.
     --}}
-    <details class="sb-group" {{ request()->routeIs('admin.absensi-gerbang.*','admin.sesi-gerbang.*') ? 'open' : '' }}>
+    <details class="sb-group" {{ request()->routeIs('admin.absensi-gerbang.*','admin.sesi-gerbang.*','admin.barcode-gerbang.*') ? 'open' : '' }}>
         <summary class="sb-group-header">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
@@ -531,6 +531,7 @@
         <div class="sb-sub">
             <a href="{{ route('admin.absensi-gerbang.index') }}"  class="sb-item {{ request()->routeIs('admin.absensi-gerbang.index') ? 'active' : '' }}">Log Masuk & Pulang</a>
             <a href="{{ route('admin.absensi-gerbang.rekap') }}"  class="sb-item {{ request()->routeIs('admin.absensi-gerbang.rekap') ? 'active' : '' }}">Rekap Kehadiran</a>
+            <a href="{{ route('admin.barcode-gerbang.index') }}" class="sb-item {{ request()->routeIs('admin.barcode-gerbang.*') ? 'active' : '' }}">Barcode Gerbang</a>
             <a href="{{ route('admin.sesi-gerbang.index') }}"     class="sb-item {{ request()->routeIs('admin.sesi-gerbang.*') ? 'active' : '' }}">Sesi Buka/Tutup Gerbang</a>
         </div>
     </details>
@@ -1334,6 +1335,7 @@
             <a href="{{ route('siswa.absensi.scan') }}"    class="sb-item {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">Scan QR Pelajaran</a>
             <a href="{{ route('siswa.absensi.jadwal') }}"  class="sb-item {{ request()->routeIs('siswa.absensi.jadwal') ? 'active' : '' }}">QR Per Pelajaran</a>
             <a href="{{ route('siswa.absensi.riwayat') }}" class="sb-item {{ request()->routeIs('siswa.absensi.riwayat') ? 'active' : '' }}">Riwayat Absensi Kelas</a>
+            <a href="{{ route('siswa.absensi.status-hari-ini') }}" class="sb-item {{ request()->routeIs('siswa.absensi.status-hari-ini') ? 'active' : '' }}">Riwayat Absensi Kelas</a>
         </div>
     </details>
 

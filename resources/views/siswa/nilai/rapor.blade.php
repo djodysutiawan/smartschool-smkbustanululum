@@ -71,6 +71,8 @@
     .pred-C{background:#fef9c3;color:#a16207}
     .pred-D{background:#fed7aa;color:#c2410c}
     .pred-E{background:#fee2e2;color:#dc2626}
+    /* FIX #25: class pred- untuk predikat null agar tidak broken style */
+    .pred-{background:var(--surface3);color:var(--text3)}
 
     /* Tfoot rata-rata */
     tfoot tr{background:var(--surface2);border-top:2px solid var(--border)}
@@ -84,6 +86,29 @@
 
     @media(max-width:768px){.page{padding:16px}}
 </style>
+
+{{--
+    FIX #26: Definisikan $nilaiClass dan $formatNilai satu kali di luar loop.
+    - $nilaiClass  : mengembalikan CSS class berdasarkan nilai numerik.
+    - $formatNilai : memformat nilai numerik untuk tampilan (null → '—').
+--}}
+@php
+    $nilaiClass = function(?float $v): string {
+        if ($v === null) return 'nilai-null';
+        return match(true) {
+            $v >= 90 => 'nilai-a',
+            $v >= 80 => 'nilai-b',
+            $v >= 70 => 'nilai-c',
+            $v >= 60 => 'nilai-d',
+            default  => 'nilai-e',
+        };
+    };
+
+    // Format nilai dengan 1 desimal, null → '—'
+    $formatNilai = function(?float $v, int $dec = 1): string {
+        return $v !== null ? number_format($v, $dec) : '—';
+    };
+@endphp
 
 <div class="page">
 
@@ -109,6 +134,8 @@
     {{-- ── Rapor header card ── --}}
     <div class="rapor-header">
         <div class="rapor-header-left">
+            {{-- FIX #27: Gunakan null-safe operator (?->) untuk relasi bertingkat
+                 agar tidak error jika $siswa->kelas null. --}}
             <p class="siswa-name">{{ $siswa->nama ?? Auth::user()->name }}</p>
             <div class="siswa-meta">
                 @if($siswa->nis ?? false)
@@ -120,7 +147,7 @@
                         NIS: {{ $siswa->nis }}
                     </span>
                 @endif
-                @if($siswa->kelas->nama_kelas ?? false)
+                @if($siswa->kelas?->nama_kelas)
                     <span>
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
@@ -139,11 +166,15 @@
                 @endif
             </div>
         </div>
-        @if($rataRata)
+
+        {{-- FIX #28: Guard $rataRata null — blok score hanya tampil jika ada data. --}}
+        @if(! is_null($rataRata))
         <div class="rapor-score">
-            <div class="score-val">{{ number_format($rataRata, 1) }}</div>
+            <div class="score-val">{{ number_format((float) $rataRata, 1) }}</div>
             <div class="score-label">Rata-rata Nilai Akhir</div>
-            <div class="score-pred">{{ $predikatUmum }}</div>
+            {{-- FIX #29: $predikatUmum bisa null jika rataRata null.
+                 Sudah di-guard oleh @if di atas, tapi tambah fallback '—'. --}}
+            <div class="score-pred">{{ $predikatUmum ?? '—' }}</div>
         </div>
         @endif
     </div>
@@ -155,7 +186,8 @@
                 <select name="tahun_ajaran_id">
                     <option value="">Pilih Tahun Ajaran</option>
                     @foreach($tahunList as $t)
-                        <option value="{{ $t->id }}" {{ $tahunAjaranId == $t->id ? 'selected' : '' }}>
+                        {{-- FIX #30: Cast ke string untuk perbandingan konsisten. --}}
+                        <option value="{{ $t->id }}" {{ (string) $tahunAjaranId === (string) $t->id ? 'selected' : '' }}>
                             {{ $t->label }}
                         </option>
                     @endforeach
@@ -189,18 +221,6 @@
                 </thead>
                 <tbody>
                     @forelse($raporData as $i => $r)
-                    @php
-                        $pc = function($v) {
-                            if ($v === null) return 'nilai-null';
-                            return match(true) {
-                                $v >= 90 => 'nilai-a',
-                                $v >= 80 => 'nilai-b',
-                                $v >= 70 => 'nilai-c',
-                                $v >= 60 => 'nilai-d',
-                                default  => 'nilai-e',
-                            };
-                        };
-                    @endphp
                     <tr>
                         <td class="left" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)">
                             {{ $i + 1 }}
@@ -209,24 +229,51 @@
                             <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)">
                                 {{ $r['mapel']->nama_mapel ?? '—' }}
                             </p>
-                            @if($r['mapel']->kode_mapel ?? false)
+                            @if($r['mapel']?->kode_mapel)
                                 <p style="font-size:11px;color:var(--text3);margin-top:1px">{{ $r['mapel']->kode_mapel }}</p>
                             @endif
                         </td>
 
-                        <td><span class="nilai-pill {{ $pc($r['nilai_tugas']) }}">{{ $r['nilai_tugas'] ?? '—' }}</span></td>
-                        <td><span class="nilai-pill {{ $pc($r['nilai_harian']) }}">{{ $r['nilai_harian'] ?? '—' }}</span></td>
-                        <td><span class="nilai-pill {{ $pc($r['nilai_uts']) }}">{{ $r['nilai_uts'] ?? '—' }}</span></td>
-                        <td><span class="nilai-pill {{ $pc($r['nilai_uas']) }}">{{ $r['nilai_uas'] ?? '—' }}</span></td>
-
+                        {{--
+                            FIX #31: Semua nilai di $raporData sudah berupa float|null dari controller.
+                            Gunakan $formatNilai closure untuk tampilan konsisten.
+                            FIX #32: Nilai komponen (tugas/harian/uts/uas) tampil tanpa desimal (round 0)
+                            karena umumnya nilai komponen adalah bilangan bulat,
+                            tapi nilai_akhir tampil 1 desimal untuk presisi.
+                        --}}
                         <td>
-                            <span class="nilai-pill {{ $pc($r['nilai_akhir']) }}" style="font-size:14px;font-weight:800;min-width:50px">
-                                {{ number_format($r['nilai_akhir'], 1) }}
+                            <span class="nilai-pill {{ $nilaiClass($r['nilai_tugas']) }}">
+                                {{ $formatNilai($r['nilai_tugas'], 0) }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="nilai-pill {{ $nilaiClass($r['nilai_harian']) }}">
+                                {{ $formatNilai($r['nilai_harian'], 0) }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="nilai-pill {{ $nilaiClass($r['nilai_uts']) }}">
+                                {{ $formatNilai($r['nilai_uts'], 0) }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="nilai-pill {{ $nilaiClass($r['nilai_uas']) }}">
+                                {{ $formatNilai($r['nilai_uas'], 0) }}
                             </span>
                         </td>
 
                         <td>
-                            <span class="pred-badge pred-{{ $r['predikat'] }}">{{ $r['predikat'] }}</span>
+                            <span class="nilai-pill {{ $nilaiClass($r['nilai_akhir']) }}" style="font-size:14px;font-weight:800;min-width:50px">
+                                {{ $formatNilai($r['nilai_akhir'], 1) }}
+                            </span>
+                        </td>
+
+                        {{-- FIX #33: $r['predikat'] bisa null — fallback ke string kosong
+                             agar class "pred-" (abu-abu) digunakan, dan teks "—". --}}
+                        <td>
+                            <span class="pred-badge pred-{{ $r['predikat'] ?? '' }}">
+                                {{ $r['predikat'] ?? '—' }}
+                            </span>
                         </td>
 
                         <td class="left" style="font-size:12px;color:var(--text3);max-width:160px">
@@ -253,7 +300,8 @@
                     @endforelse
                 </tbody>
 
-                @if($raporData->count() > 0)
+                {{-- FIX #34: tfoot hanya ditampilkan jika ada data DAN rataRata tidak null. --}}
+                @if($raporData->count() > 0 && ! is_null($rataRata))
                 <tfoot>
                     <tr>
                         <td colspan="6" class="left" style="color:var(--text2)">
@@ -270,11 +318,13 @@
                                 };
                             @endphp
                             <span class="nilai-pill {{ $rtClass }}" style="font-size:14px;font-weight:800;min-width:50px">
-                                {{ number_format($rataRata, 1) }}
+                                {{ number_format((float) $rataRata, 1) }}
                             </span>
                         </td>
                         <td>
-                            <span class="pred-badge pred-{{ $predikatUmum }}">{{ $predikatUmum }}</span>
+                            <span class="pred-badge pred-{{ $predikatUmum ?? '' }}">
+                                {{ $predikatUmum ?? '—' }}
+                            </span>
                         </td>
                         <td></td>
                     </tr>

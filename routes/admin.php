@@ -56,6 +56,7 @@ use App\Http\Controllers\Admin\KenaikanKelasController;
 use App\Http\Controllers\Admin\PilihanJawabanController;
 use App\Http\Controllers\Admin\AbsensiGerbangController;
 use App\Http\Controllers\Admin\SesiGerbangController;
+use App\Http\Controllers\Admin\BarcodeGerbangController;
 
 
 Route::prefix('admin')
@@ -948,6 +949,19 @@ Route::prefix('admin')
             Route::get('/{absensiGerbang}',                    [AbsensiGerbangController::class, 'show'])->name('show');
             Route::delete('/{absensiGerbang}',                 [AbsensiGerbangController::class, 'destroy'])->name('destroy');
             Route::patch('/{absensiGerbang}/koreksi',          [AbsensiGerbangController::class, 'koreksi'])->name('koreksi');
+        });
+
+        // Routes Barkode gerbang 
+        Route::prefix('barcode-gerbang')->name('barcode-gerbang.')->group(function () {
+            Route::get('/',                                [BarcodeGerbangController::class, 'index'])->name('index');
+            Route::get('/create',                          [BarcodeGerbangController::class, 'create'])->name('create');
+            Route::post('/',                               [BarcodeGerbangController::class, 'store'])->name('store');
+            Route::post('/generate-massal',                [BarcodeGerbangController::class, 'generateMassal'])->name('generate-massal');
+            Route::get('/print-kelas/{kelas}',             [BarcodeGerbangController::class, 'printKelas'])->name('print-kelas');
+            Route::get('/{barcodeGerbang}/print',          [BarcodeGerbangController::class, 'printSatu'])->name('print-satu');
+            Route::get('/{barcodeGerbang}',                [BarcodeGerbangController::class, 'show'])->name('show');
+            Route::patch('/{barcodeGerbang}/nonaktifkan',  [BarcodeGerbangController::class, 'nonaktifkan'])->name('nonaktifkan');
+            Route::delete('/{barcodeGerbang}',             [BarcodeGerbangController::class, 'destroy'])->name('destroy');
         });
 
     });

@@ -130,7 +130,6 @@
     .empty-day p { font-size:13px; color:var(--text4); font-family:'Instrument Sans',sans-serif; }
 
     /* ── Mapel color palette ── */
-    /* Warna stripe per mata pelajaran (pakai index % 8) */
     .stripe-0{background:#2563eb}
     .stripe-1{background:#10b981}
     .stripe-2{background:#f59e0b}
@@ -152,27 +151,6 @@
     .stat-pill-val { font-family:'Outfit',sans-serif; font-size:18px; font-weight:800; color:var(--text); line-height:1; }
     .stat-pill-label { font-size:11.5px; color:var(--text4); margin-top:1px; }
 
-    /* ── Filter bar ── */
-    .filter-bar { display:flex; align-items:center; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
-    .filter-bar select {
-        height:36px; padding:0 12px; border:1px solid var(--border); border-radius:var(--radius-xs);
-        font-family:'Instrument Sans',sans-serif; font-size:13px; color:var(--text);
-        background:var(--surface); outline:none; transition:border-color .15s;
-    }
-    .filter-bar select:focus { border-color:var(--s-400); }
-    .btn-filter {
-        height:36px; padding:0 16px; background:var(--s-600); color:#fff; border:none;
-        border-radius:var(--radius-xs); font-family:'Outfit',sans-serif; font-size:13px; font-weight:700;
-        cursor:pointer; transition:background .15s;
-    }
-    .btn-filter:hover { background:var(--s-700); }
-    .btn-reset {
-        height:36px; padding:0 14px; background:var(--surface2); color:var(--text3);
-        border:1px solid var(--border); border-radius:var(--radius-xs);
-        font-family:'Outfit',sans-serif; font-size:13px; font-weight:600;
-        cursor:pointer; text-decoration:none; display:inline-flex; align-items:center;
-    }
-
     /* ── View mode toggle ── */
     .view-toggle { display:flex; gap:2px; background:var(--surface3); border-radius:var(--radius-xs); padding:3px; }
     .view-btn {
@@ -185,7 +163,6 @@
     /* ── Weekly grid view ── */
     .week-grid { display:none; }
     .week-grid.show { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; }
-    .week-col { }
     .week-col-hd {
         font-family:'Outfit',sans-serif; font-size:12px; font-weight:800; text-align:center;
         padding:8px; border-radius:var(--radius-xs); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;
@@ -222,11 +199,34 @@
 
 <div class="page">
 
+    {{-- ── PHP helpers ─────────────────────────────────────────────────────── --}}
+    @php
+        // Hitung stats dari SEMUA jadwal (tidak terpengaruh filter hari)
+        $allJadwalForStats = $jadwalPerHari->flatten();
+
+        $totalMapel = $allJadwalForStats->pluck('mata_pelajaran_id')->unique()->count();
+        $totalSesi  = $allJadwalForStats->count();
+        $totalJam   = $allJadwalForStats->sum(fn($j) =>
+            \Carbon\Carbon::parse($j->jam_mulai)->diffInMinutes(\Carbon\Carbon::parse($j->jam_selesai))
+        );
+
+        // Bangun peta warna mapel (konsisten antar render)
+        $mapelColors = [];
+        $colorIdx    = 0;
+        foreach ($allJadwalForStats->pluck('mata_pelajaran_id')->unique() as $id) {
+            $mapelColors[$id] = $colorIdx++ % 8;
+        }
+    @endphp
+
     {{-- Header --}}
     <div class="page-header">
         <div>
             <h1 class="page-title">Jadwal Pelajaran</h1>
-            <p class="page-sub">{{ $siswa->kelas->nama_kelas ?? 'Kelas -' }} &nbsp;·&nbsp; Semester {{ now()->month <= 6 ? 'Genap' : 'Ganjil' }} {{ now()->year }}</p>
+            <p class="page-sub">
+                {{ $siswa->kelas->nama_kelas ?? 'Kelas -' }}
+                &nbsp;·&nbsp;
+                Semester {{ now()->month <= 6 ? 'Genap' : 'Ganjil' }} {{ now()->year }}
+            </p>
         </div>
         <div class="view-toggle">
             <button class="view-btn active" id="btnList" onclick="setView('list')">
@@ -240,17 +240,7 @@
         </div>
     </div>
 
-    {{-- Stats bar --}}
-    @php
-        $totalMapel  = $jadwal->pluck('mata_pelajaran_id')->unique()->count();
-        $totalSesi   = $jadwal->count();
-        $totalJam    = $jadwal->sum(fn($j) => \Carbon\Carbon::parse($j->jam_mulai)->diffInMinutes(\Carbon\Carbon::parse($j->jam_selesai)));
-        $mapelColors = [];
-        $colorIdx    = 0;
-        foreach($jadwal->pluck('mataPelajaran.nama','mata_pelajaran_id')->unique() as $id => $nama) {
-            $mapelColors[$id] = $colorIdx++ % 8;
-        }
-    @endphp
+    {{-- Stats bar -- selalu berdasarkan data penuh --}}
     <div class="stats-bar">
         <div class="stat-pill">
             <div class="stat-pill-icon" style="background:var(--s-50)">
@@ -284,14 +274,21 @@
                 <svg width="16" height="16" fill="none" stroke="var(--v-500)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
             </div>
             <div>
-                <p class="stat-pill-val">{{ $jadwal->pluck('guru_id')->unique()->count() }}</p>
+                <p class="stat-pill-val">{{ $allJadwalForStats->pluck('guru_id')->unique()->count() }}</p>
                 <p class="stat-pill-label">Guru Pengajar</p>
             </div>
         </div>
     </div>
 
-    {{-- Today banner --}}
+    {{-- Today banner -- selalu tampil berdasarkan $jadwalHariIni (tidak difilter) --}}
     @if($jadwalHariIni->count() > 0)
+    @php
+        // Pelajaran yang sedang berlangsung (perbandingan H:i:s konsisten)
+        $sedangBerlangsung = $jadwalHariIni->first(fn($j) =>
+            $jamSekarang >= \Carbon\Carbon::parse($j->jam_mulai)->format('H:i:s')
+            && $jamSekarang <= \Carbon\Carbon::parse($j->jam_selesai)->format('H:i:s')
+        );
+    @endphp
     <div class="today-banner">
         <div class="today-banner-icon">
             <svg width="18" height="18" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -301,11 +298,6 @@
             <p class="today-banner-sub">{{ ucfirst($hariIni) }}, {{ \Carbon\Carbon::now()->locale('id')->isoFormat('D MMMM Y') }}</p>
         </div>
         <div class="today-banner-right">
-            @php
-                $sedangBerlangsung = $jadwalHariIni->first(fn($j) =>
-                    $jamSekarang >= $j->jam_mulai && $jamSekarang <= $j->jam_selesai
-                );
-            @endphp
             @if($sedangBerlangsung)
                 <span style="display:flex;align-items:center;gap:6px">
                     <span class="now-dot"></span>
@@ -333,20 +325,25 @@
             <a href="{{ route('siswa.jadwal.index', ['hari' => $hari]) }}"
                class="day-tab {{ request('hari') === $hari ? 'active' : '' }} {{ $hari === $hariIni ? 'today' : '' }}">
                 {{ ucfirst($hari) }}
-                @if($hari === $hariIni) <svg width="8" height="8" fill="var(--g-500)" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg> @endif
+                @if($hari === $hariIni)
+                    <svg width="8" height="8" fill="var(--g-500)" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>
+                @endif
                 <span class="count">{{ $count }}</span>
             </a>
             @endforeach
         </div>
 
         {{-- Per-day sections --}}
-        @if(request('hari'))
-            {{-- Single day --}}
-            @php $list = $jadwalPerHari->get(request('hari'), collect()); @endphp
+        @if(request()->filled('hari'))
+            {{-- Single day view --}}
+            @php
+                $hariFilter = request('hari');
+                $list = $jadwalPerHari->get($hariFilter, collect());
+            @endphp
             <div class="section-hd">
                 <span class="section-day-label">
-                    {{ ucfirst(request('hari')) }}
-                    @if(request('hari') === $hariIni) <span class="today-chip">Hari Ini</span> @endif
+                    {{ ucfirst($hariFilter) }}
+                    @if($hariFilter === $hariIni) <span class="today-chip">Hari Ini</span> @endif
                 </span>
             </div>
             <div class="sch-card">
@@ -355,7 +352,10 @@
                     $mulai   = \Carbon\Carbon::parse($j->jam_mulai);
                     $selesai = \Carbon\Carbon::parse($j->jam_selesai);
                     $durasi  = $mulai->diffInMinutes($selesai);
-                    $isNow   = $hariIni === request('hari') && $jamSekarang >= $j->jam_mulai && $jamSekarang <= $j->jam_selesai;
+                    // Perbandingan format H:i:s agar konsisten dengan $jamSekarang
+                    $isNow   = $hariIni === $hariFilter
+                               && $jamSekarang >= $mulai->format('H:i:s')
+                               && $jamSekarang <= $selesai->format('H:i:s');
                     $ci      = $mapelColors[$j->mata_pelajaran_id] ?? 0;
                 @endphp
                 <a href="{{ route('siswa.jadwal.show', $j->id) }}" class="sch-row {{ $isNow ? 'now' : '' }}">
@@ -390,13 +390,13 @@
                 @empty
                 <div class="empty-day">
                     <svg width="36" height="36" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 10px;display:block"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                    <p>Tidak ada jadwal hari {{ ucfirst(request('hari')) }}</p>
+                    <p>Tidak ada jadwal hari {{ ucfirst($hariFilter) }}</p>
                 </div>
                 @endforelse
             </div>
 
         @else
-            {{-- All days --}}
+            {{-- All days view --}}
             @foreach($hariList as $hari)
             @php $list = $jadwalPerHari->get($hari, collect()); @endphp
             @if($list->count() > 0)
@@ -413,7 +413,9 @@
                     $mulai   = \Carbon\Carbon::parse($j->jam_mulai);
                     $selesai = \Carbon\Carbon::parse($j->jam_selesai);
                     $durasi  = $mulai->diffInMinutes($selesai);
-                    $isNow   = $hari === $hariIni && $jamSekarang >= $j->jam_mulai && $jamSekarang <= $j->jam_selesai;
+                    $isNow   = $hari === $hariIni
+                               && $jamSekarang >= $mulai->format('H:i:s')
+                               && $jamSekarang <= $selesai->format('H:i:s');
                     $ci      = $mapelColors[$j->mata_pelajaran_id] ?? 0;
                 @endphp
                 <a href="{{ route('siswa.jadwal.show', $j->id) }}" class="sch-row {{ $isNow ? 'now' : '' }}">
@@ -449,7 +451,7 @@
             @endif
             @endforeach
 
-            @if($jadwal->isEmpty())
+            @if($jadwalPerHari->flatten()->isEmpty())
             <div style="text-align:center;padding:60px 20px">
                 <svg width="48" height="48" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                 <p style="font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px">Jadwal belum tersedia</p>
@@ -460,12 +462,13 @@
     </div>
 
     {{-- ══ WEEKLY GRID VIEW ══ --}}
+    {{-- Selalu tampilkan data penuh (dari $jadwalPerHari), tidak terpengaruh filter tab --}}
     <div class="week-grid" id="weekView">
         @foreach($hariList as $hari)
         @php $list = $jadwalPerHari->get($hari, collect()); @endphp
         <div class="week-col">
             <div class="week-col-hd {{ $hari === $hariIni ? 'is-today' : '' }}">
-                {{ strtoupper(substr($hari,0,3)) }}
+                {{ strtoupper(substr($hari, 0, 3)) }}
                 @if($hari === $hariIni)
                     <br><span style="font-size:9px;font-weight:600;opacity:.8">Hari Ini</span>
                 @endif
@@ -499,27 +502,32 @@ function setView(mode) {
         weekView.classList.remove('show');
         btnList.classList.add('active');
         btnWeek.classList.remove('active');
-        localStorage.setItem('jadwal_view', 'list');
+        try { localStorage.setItem('jadwal_view', 'list'); } catch(e) {}
     } else {
         listView.classList.add('hide');
         weekView.classList.add('show');
         btnList.classList.remove('active');
         btnWeek.classList.add('active');
-        localStorage.setItem('jadwal_view', 'week');
+        try { localStorage.setItem('jadwal_view', 'week'); } catch(e) {}
     }
 }
 
 // Restore last view preference
-const savedView = localStorage.getItem('jadwal_view');
-if (savedView === 'week') setView('week');
+try {
+    const savedView = localStorage.getItem('jadwal_view');
+    if (savedView === 'week') setView('week');
+} catch(e) {}
 
-// Auto-scroll to today's section on load
+// Auto-scroll to today's section on load (only on "all days" view)
 document.addEventListener('DOMContentLoaded', () => {
-    const todayChip = document.querySelector('.today-chip');
-    if (todayChip && !@json(request()->filled('hari'))) {
-        setTimeout(() => {
-            todayChip.closest('.section-hd')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+    const isFiltered = @json(request()->filled('hari'));
+    if (!isFiltered) {
+        const todayChip = document.querySelector('.today-chip');
+        if (todayChip) {
+            setTimeout(() => {
+                todayChip.closest('.section-hd')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 300);
+        }
     }
 });
 </script>

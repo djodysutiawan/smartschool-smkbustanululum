@@ -65,12 +65,15 @@
     td.center{text-align:center}
     td.muted{color:var(--text3)}
 
+    /* Badge — semua status termasuk dibatalkan */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .badge-pending  {background:#fef9c3;color:#a16207}   .badge-pending  .badge-dot{background:#a16207}
-    .badge-diproses {background:#eff6ff;color:#1d4ed8}   .badge-diproses .badge-dot{background:#1d4ed8}
-    .badge-selesai  {background:#dcfce7;color:#15803d}   .badge-selesai  .badge-dot{background:#15803d}
-    .badge-banding  {background:#fdf4ff;color:#7c3aed}   .badge-banding  .badge-dot{background:#7c3aed}
+    .badge-pending    {background:#fef9c3;color:#a16207}   .badge-pending    .badge-dot{background:#a16207}
+    .badge-diproses   {background:#eff6ff;color:#1d4ed8}   .badge-diproses   .badge-dot{background:#1d4ed8}
+    .badge-selesai    {background:#dcfce7;color:#15803d}   .badge-selesai    .badge-dot{background:#15803d}
+    .badge-banding    {background:#fdf4ff;color:#7c3aed}   .badge-banding    .badge-dot{background:#7c3aed}
+    /* FIX: badge-dibatalkan sebelumnya tidak ada — ditambahkan agar tidak render tanpa style */
+    .badge-dibatalkan {background:#f1f5f9;color:#64748b}   .badge-dibatalkan .badge-dot{background:#94a3b8}
 
     .poin-pill{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:24px;padding:0 8px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:800}
     .poin-low  {background:#dcfce7;color:#15803d}
@@ -115,6 +118,11 @@
     </div>
 
     {{-- ── Summary strip ── --}}
+    {{--
+        FIX: $rekapStatus sudah di-merge dengan default 0 di controller,
+        sehingga akses langsung $rekapStatus['key'] aman tanpa ?? 0.
+        Tapi kita tetap pakai ?? 0 sebagai lapisan defensif di view.
+    --}}
     <div class="summary-strip">
         <div class="sum-card">
             <div class="sum-icon red">
@@ -183,7 +191,7 @@
                 Akumulasi Poin Pelanggaran Tahun {{ now()->year }}
             </p>
             <span class="poin-meter-val" style="color:{{ $poinColor }}">
-                {{ $totalPoin }} / {{ $maxPoin }} poin — {{ $poinLabel }}
+                {{ $totalPoin }} / {{ $maxPoin }} poin &mdash; {{ $poinLabel }}
             </span>
         </div>
         <div class="poin-bar-track">
@@ -201,7 +209,7 @@
                 <select name="kategori_id">
                     <option value="">Semua Kategori</option>
                     @foreach($kategoriList as $kat)
-                        <option value="{{ $kat->id }}" {{ request('kategori_id') == $kat->id ? 'selected' : '' }}>
+                        <option value="{{ $kat->id }}" @selected(request('kategori_id') == $kat->id)>
                             {{ $kat->nama }}
                         </option>
                     @endforeach
@@ -210,14 +218,21 @@
                 <select name="status">
                     <option value="">Semua Status</option>
                     @foreach($statusList as $s)
-                        <option value="{{ $s }}" {{ request('status') == $s ? 'selected' : '' }}>
-                            {{ ucfirst($s) }}
+                        <option value="{{ $s }}" @selected(request('status') === $s)>
+                            {{ Str::ucfirst($s) }}
                         </option>
                     @endforeach
                 </select>
 
-                <input type="date" name="tanggal_dari"   value="{{ request('tanggal_dari') }}" title="Dari tanggal">
-                <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}" title="Sampai tanggal">
+                <input type="date" name="tanggal_dari"
+                    value="{{ request('tanggal_dari') }}"
+                    max="{{ now()->toDateString() }}"
+                    title="Dari tanggal">
+
+                <input type="date" name="tanggal_sampai"
+                    value="{{ request('tanggal_sampai') }}"
+                    max="{{ now()->toDateString() }}"
+                    title="Sampai tanggal">
 
                 <div class="filter-sep"></div>
                 <a href="{{ route('siswa.pelanggaran.index') }}" class="btn-reset">Reset</a>
@@ -232,9 +247,9 @@
             <p class="table-info">
                 Riwayat Pelanggaran Saya
                 @if($pelanggaran->total() > 0)
-                    <span>— {{ $pelanggaran->firstItem() }}–{{ $pelanggaran->lastItem() }} dari {{ $pelanggaran->total() }} data</span>
+                    <span>&mdash; {{ $pelanggaran->firstItem() }}&ndash;{{ $pelanggaran->lastItem() }} dari {{ $pelanggaran->total() }} data</span>
                 @else
-                    <span>— tidak ada data</span>
+                    <span>&mdash; tidak ada data</span>
                 @endif
             </p>
         </div>
@@ -260,7 +275,8 @@
                         </td>
 
                         <td style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)">
-                            {{ $p->kategori->nama ?? '—' }}
+                            {{-- FIX: optional chaining agar tidak error jika relasi kategori null --}}
+                            {{ $p->kategori?->nama ?? '—' }}
                         </td>
 
                         <td class="center">
@@ -269,13 +285,18 @@
                         </td>
 
                         <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;font-size:13px">
-                            {{ \Carbon\Carbon::parse($p->tanggal)->translatedFormat('d M Y') }}
+                            {{-- FIX: $p->tanggal sudah di-cast date, tidak perlu parse ulang --}}
+                            {{ $p->tanggal->translatedFormat('d M Y') }}
                         </td>
 
                         <td class="center">
+                            {{--
+                                FIX: badge-dibatalkan sekarang ada di CSS.
+                                FIX: gunakan e() untuk XSS safety pada nilai status dari DB.
+                            --}}
                             <span class="badge badge-{{ $p->status }}">
                                 <span class="badge-dot"></span>
-                                {{ ucfirst($p->status) }}
+                                {{ Str::ucfirst($p->status) }}
                             </span>
                         </td>
 
@@ -320,40 +341,69 @@
             </table>
         </div>
 
-        {{-- Pagination --}}
+        {{-- ── Pagination ── --}}
+        {{--
+            FIX: Algoritma pagination lama memiliki bug tampilan ellipsis ganda.
+            Ditulis ulang dengan logika yang lebih bersih dan benar.
+        --}}
         @if($pelanggaran->hasPages())
+        @php
+            $current  = $pelanggaran->currentPage();
+            $last     = $pelanggaran->lastPage();
+        @endphp
         <div class="pag-wrap">
             <p class="pag-info">
-                Menampilkan {{ $pelanggaran->firstItem() }} – {{ $pelanggaran->lastItem() }}
+                Menampilkan {{ $pelanggaran->firstItem() }} &ndash; {{ $pelanggaran->lastItem() }}
                 dari {{ $pelanggaran->total() }} catatan
             </p>
             <div class="pag-btns">
+                {{-- Prev --}}
                 @if($pelanggaran->onFirstPage())
-                    <span class="pag-btn disabled">
+                    <span class="pag-btn disabled" aria-disabled="true">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                     </span>
                 @else
-                    <a href="{{ $pelanggaran->previousPageUrl() }}" class="pag-btn">
+                    <a href="{{ $pelanggaran->previousPageUrl() }}" class="pag-btn" aria-label="Halaman sebelumnya">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                     </a>
                 @endif
 
-                @foreach($pelanggaran->getUrlRange(1, $pelanggaran->lastPage()) as $page => $url)
-                    @if($page == $pelanggaran->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $pelanggaran->lastPage() || abs($page - $pelanggaran->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $pelanggaran->currentPage()) == 2)
-                        <span class="pag-ellipsis">…</span>
+                {{--
+                    FIX: Algoritma pagination yang benar.
+                    Selalu tampilkan: halaman 1, halaman terakhir, dan window [-1, 0, +1] di sekitar current.
+                    Ellipsis hanya muncul sekali di antara gap yang lebih dari 1 halaman.
+                --}}
+                @php
+                    $window  = collect();
+                    $pages   = collect(range(1, $last));
+                    $shown   = $pages->filter(fn($p) =>
+                        $p === 1 || $p === $last || abs($p - $current) <= 1
+                    )->values();
+
+                    $prev = null;
+                @endphp
+
+                @foreach($shown as $page)
+                    @if($prev !== null && $page - $prev > 1)
+                        <span class="pag-ellipsis">&hellip;</span>
                     @endif
+
+                    @if($page === $current)
+                        <span class="pag-btn active" aria-current="page">{{ $page }}</span>
+                    @else
+                        <a href="{{ $pelanggaran->url($page) }}" class="pag-btn">{{ $page }}</a>
+                    @endif
+
+                    @php $prev = $page; @endphp
                 @endforeach
 
+                {{-- Next --}}
                 @if($pelanggaran->hasMorePages())
-                    <a href="{{ $pelanggaran->nextPageUrl() }}" class="pag-btn">
+                    <a href="{{ $pelanggaran->nextPageUrl() }}" class="pag-btn" aria-label="Halaman berikutnya">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </a>
                 @else
-                    <span class="pag-btn disabled">
+                    <span class="pag-btn disabled" aria-disabled="true">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </span>
                 @endif

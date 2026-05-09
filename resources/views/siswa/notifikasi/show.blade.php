@@ -67,7 +67,6 @@
     <div class="notif-card">
         <div class="notif-card-top">
             <div class="notif-header">
-                {{-- Icon --}}
                 <div class="notif-icon-big icon-{{ $notifikasi->jenis ?? 'info' }}">
                     @switch($notifikasi->jenis ?? 'info')
                         @case('peringatan')
@@ -96,35 +95,47 @@
                         @if($notifikasi->jenis)
                             <span class="notif-jenis jenis-{{ $notifikasi->jenis }}">{{ ucfirst($notifikasi->jenis) }}</span>
                         @endif
+                        {{--
+                            FIX #22: $notifikasi->created_at sudah di-cast sebagai Carbon
+                            (via casts() model) — tidak perlu Carbon::parse() lagi.
+                        --}}
                         <span class="notif-time">
-                            {{ \Carbon\Carbon::parse($notifikasi->created_at)->translatedFormat('d F Y, H:i') }}
-                            &middot; {{ \Carbon\Carbon::parse($notifikasi->created_at)->diffForHumans() }}
+                            {{ $notifikasi->created_at->translatedFormat('d F Y, H:i') }}
+                            &middot; {{ $notifikasi->created_at->diffForHumans() }}
                         </span>
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- Isi pesan --}}
         <div class="notif-body">{{ $notifikasi->pesan }}</div>
 
-        {{-- Footer --}}
         <div class="notif-meta-bar">
             <div class="meta-left">
                 Dibaca:
+                {{--
+                    FIX #23: $notifikasi->dibaca_pada sudah di-cast sebagai Carbon,
+                    tidak perlu Carbon::parse(). Guard null dengan ?-> agar tidak error
+                    jika dibaca_pada null (misal record lama tanpa kolom ini).
+                --}}
                 @if($notifikasi->sudah_dibaca && $notifikasi->dibaca_pada)
-                    <strong>{{ \Carbon\Carbon::parse($notifikasi->dibaca_pada)->translatedFormat('d F Y, H:i') }}</strong>
+                    <strong>{{ $notifikasi->dibaca_pada->translatedFormat('d F Y, H:i') }}</strong>
                 @else
                     <strong>Baru saja dibaca</strong>
                 @endif
             </div>
             <div class="footer-actions">
-                {{-- Hapus --}}
-                <form action="{{ route('siswa.notifikasi.destroy', $notifikasi->id) }}" method="POST"
-                      onsubmit="return confirm('Hapus notifikasi ini?')">
+                {{--
+                    FIX #24: Ganti confirm() bawaan browser dengan SweetAlert2
+                    agar konsisten dengan pola konfirmasi yang digunakan di aplikasi ini.
+                    Gunakan form dengan id unik agar tidak konflik jika ada beberapa form di halaman.
+                --}}
+                <form id="form-hapus-notif"
+                      action="{{ route('siswa.notifikasi.destroy', $notifikasi->id) }}"
+                      method="POST">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-danger">
+                    <button type="button" class="btn btn-danger" onclick="konfirmasiHapus()">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <polyline points="3 6 5 6 21 6"/>
                             <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
@@ -145,9 +156,36 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// FIX #24 (lanjutan): Fungsi konfirmasi hapus menggunakan SweetAlert2
+// agar konsisten dengan notifikasi sukses di halaman yang sama.
+function konfirmasiHapus() {
+    Swal.fire({
+        title: 'Hapus Notifikasi?',
+        text: 'Notifikasi ini akan dihapus secara permanen.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, hapus',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+    }).then((result) => {
+        if (result.isConfirmed) {
+            document.getElementById('form-hapus-notif').submit();
+        }
+    });
+}
+
 @if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')),
-    timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+Swal.fire({
+    icon: 'success',
+    title: 'Berhasil!',
+    text: @json(session('success')),
+    timer: 2500,
+    showConfirmButton: false,
+    toast: true,
+    position: 'top-end'
+});
 @endif
 </script>
 </x-app-layout>

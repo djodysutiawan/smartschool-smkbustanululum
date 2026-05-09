@@ -12,18 +12,11 @@ class Absensi extends Model
 
     protected $table = 'absensi';
 
-    /**
-     * PERBAIKAN: Tambah sesi_qr_id dan mata_pelajaran_id ke fillable
-     * setelah kolom-kolom ini ditambahkan via migrasi fix.
-     *
-     * CATATAN: tahun_ajaran_id TIDAK ditambahkan ke fillable karena
-     * tidak ada di tabel. Filter per tahun ajaran dilakukan via kelas_id.
-     */
     protected $fillable = [
         'siswa_id',
         'kelas_id',
-        'sesi_qr_id',           // BARU: FK ke sesi_qr
-        'mata_pelajaran_id',    // BARU: FK ke mata_pelajaran
+        'sesi_qr_id',
+        'mata_pelajaran_id',
         'jadwal_pelajaran_id',
         'dicatat_oleh',
         'tanggal',
@@ -52,24 +45,15 @@ class Absensi extends Model
     public const STATUS_SAKIT = 'sakit';
     public const STATUS_ALFA  = 'alfa';
 
-    /**
-     * PERBAIKAN: Seragamkan konstanta metode dengan enum DB.
-     * DB ENUM setelah migrasi fix: ('manual','qr','qr_scan','wajah','rfid','import')
-     *
-     * Gunakan METODE_QR untuk scan QR siswa (AbsensiSiswaController).
-     * Gunakan METODE_QR_SCAN sebagai alias untuk backward compat.
-     */
     public const METODE_MANUAL  = 'manual';
-    public const METODE_QR      = 'qr';        // Default untuk scan QR
-    public const METODE_QR_SCAN = 'qr_scan';   // Alias (setelah migrasi fix diterima)
+    public const METODE_QR      = 'qr';
+    public const METODE_QR_SCAN = 'qr_scan';
     public const METODE_WAJAH   = 'wajah';
     public const METODE_RFID    = 'rfid';
     public const METODE_IMPORT  = 'import';
 
-    // Semua nilai metode yang valid di DB
     public const METODE_ALL = ['manual', 'qr', 'qr_scan', 'wajah', 'rfid', 'import'];
 
-    // Status yang dihitung sebagai "hadir" dalam perhitungan kehadiran
     public const STATUS_DIHITUNG_HADIR = ['hadir', 'telat'];
 
     // ── Scopes ────────────────────────────────────────────────────────────────
@@ -106,13 +90,14 @@ class Absensi extends Model
 
     /**
      * Filter berdasarkan tahun ajaran via join ke kelas.
-     * Digunakan karena absensi tidak punya kolom tahun_ajaran_id langsung.
+     * PERBAIKAN: Gunakan fully-qualified class name agar tidak butuh use statement
+     * di setiap tempat scope ini dipanggil. Tetap aman jika model Kelas ada di namespace App\Models.
      */
     public function scopeTahunAjaran($query, int $tahunAjaranId)
     {
         return $query->whereIn(
             'kelas_id',
-            Kelas::where('tahun_ajaran_id', $tahunAjaranId)->pluck('id')
+            \App\Models\Kelas::where('tahun_ajaran_id', $tahunAjaranId)->pluck('id')
         );
     }
 
@@ -159,7 +144,7 @@ class Absensi extends Model
             self::METODE_WAJAH   => 'Pengenalan Wajah',
             self::METODE_RFID    => 'RFID',
             self::METODE_IMPORT  => 'Import',
-            default              => ucfirst($this->metode),
+            default              => ucfirst($this->metode ?? 'manual'),
         };
     }
 
@@ -192,9 +177,6 @@ class Absensi extends Model
         return $this->belongsTo(JadwalPelajaran::class);
     }
 
-    /**
-     * Sesi QR yang menghasilkan absensi ini (jika via scan QR).
-     */
     public function sesiQr(): BelongsTo
     {
         return $this->belongsTo(SesiQr::class);

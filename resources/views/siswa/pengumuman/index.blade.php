@@ -5,7 +5,7 @@
         --brand-700:#1750c0;--brand-600:#1f63db;--brand-500:#3582f0;
         --brand-100:#d9ebff;--brand-50:#eef6ff;
         --surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;
-        --border:#e2e8f0;
+        --border:#e2e8f0;--border2:#cbd5e1;
         --text:#0f172a;--text2:#475569;--text3:#94a3b8;
         --radius:10px;--radius-sm:7px;
     }
@@ -40,6 +40,7 @@
 
     /* Empty state */
     .empty-state{padding:64px 20px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)}
+    .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:margin:0 auto 14px}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
     .empty-sub{font-size:13px;color:var(--text3)}
@@ -47,7 +48,7 @@
     /* Pagination */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 0;flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
-    .pag-btns{display:flex;gap:4px}
+    .pag-btns{display:flex;gap:4px;flex-wrap:wrap}
     .pag-btn{height:32px;min-width:32px;padding:0 8px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;text-decoration:none;transition:all .15s}
     .pag-btn:hover{background:var(--surface2);border-color:var(--border2)}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
@@ -71,10 +72,20 @@
 
     {{-- Search --}}
     <div class="search-bar">
+        {{--
+            Gunakan GET agar URL bisa di-bookmark/share.
+            maxlength membatasi input sebelum sampai ke server.
+        --}}
         <form method="GET" action="{{ route('siswa.pengumuman.index') }}" class="search-form">
-            <input type="text" name="cari" class="search-input"
-                value="{{ request('cari') }}"
-                placeholder="Cari judul pengumuman…">
+            <input
+                type="text"
+                name="cari"
+                class="search-input"
+                value="{{ e(request('cari')) }}"
+                placeholder="Cari judul pengumuman…"
+                maxlength="100"
+                autocomplete="off"
+            >
             <button type="submit" class="btn-search">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
@@ -91,10 +102,18 @@
     @if($pengumuman->count() > 0)
     <div class="pg-grid">
         @foreach($pengumuman as $p)
+        @php
+            // Gunakan dipublikasikan_pada jika tersedia, fallback ke created_at
+            $tanggal = $p->dipublikasikan_pada ?? $p->created_at;
+            $isNew   = $tanggal && \Carbon\Carbon::parse($tanggal)->gte(now()->subDays(3));
+
+            // Ambil plain-text untuk preview (strip HTML tags terlebih dahulu)
+            $isiPreview = strip_tags($p->isi ?? $p->konten ?? '');
+        @endphp
         <a href="{{ route('siswa.pengumuman.show', $p->id) }}" class="pg-card">
             <div class="pg-card-body">
                 <h2 class="pg-judul">{{ $p->judul }}</h2>
-                <p class="pg-isi">{{ strip_tags($p->isi ?? $p->konten ?? '') }}</p>
+                <p class="pg-isi">{{ $isiPreview }}</p>
                 <div class="pg-meta">
                     <span class="pg-date">
                         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -103,9 +122,9 @@
                             <line x1="8" y1="2" x2="8" y2="6"/>
                             <line x1="3" y1="10" x2="21" y2="10"/>
                         </svg>
-                        {{ \Carbon\Carbon::parse($p->created_at)->translatedFormat('d F Y') }}
+                        {{ $tanggal ? \Carbon\Carbon::parse($tanggal)->translatedFormat('d F Y') : '—' }}
                     </span>
-                    @if(\Carbon\Carbon::parse($p->created_at)->gte(now()->subDays(3)))
+                    @if($isNew)
                         <span class="pg-new">Baru</span>
                     @endif
                 </div>
@@ -116,7 +135,7 @@
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 </span>
                 <span style="font-size:11.5px;color:var(--text3)">
-                    {{ \Carbon\Carbon::parse($p->created_at)->diffForHumans() }}
+                    {{ $tanggal ? \Carbon\Carbon::parse($tanggal)->diffForHumans() : '' }}
                 </span>
             </div>
         </a>
@@ -127,35 +146,66 @@
     @if($pengumuman->hasPages())
     <div class="pag-wrap">
         <p class="pag-info">
-            Menampilkan {{ $pengumuman->firstItem() }}–{{ $pengumuman->lastItem() }} dari {{ $pengumuman->total() }} pengumuman
+            Menampilkan {{ $pengumuman->firstItem() }}–{{ $pengumuman->lastItem() }}
+            dari {{ $pengumuman->total() }} pengumuman
         </p>
         <div class="pag-btns">
+            {{-- Prev --}}
             @if($pengumuman->onFirstPage())
-                <span class="pag-btn disabled">
+                <span class="pag-btn disabled" aria-disabled="true">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 </span>
             @else
-                <a href="{{ $pengumuman->previousPageUrl() }}" class="pag-btn">
+                <a href="{{ $pengumuman->previousPageUrl() }}" class="pag-btn" aria-label="Halaman sebelumnya">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                 </a>
             @endif
 
-            @foreach($pengumuman->getUrlRange(1, $pengumuman->lastPage()) as $page => $url)
-                @if($page == $pengumuman->currentPage())
-                    <span class="pag-btn active">{{ $page }}</span>
-                @elseif($page == 1 || $page == $pengumuman->lastPage() || abs($page - $pengumuman->currentPage()) <= 1)
-                    <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                @elseif(abs($page - $pengumuman->currentPage()) == 2)
-                    <span class="pag-ellipsis">…</span>
+            {{--
+                Nomor halaman: tampilkan halaman pertama, terakhir,
+                dan ±1 dari halaman saat ini. Elipsis muncul di antara gap.
+                Bug asal: elipsis bisa muncul ganda jika gap > 2 di kedua sisi.
+                Perbaikan: lacak kapan elipsis sudah ditampilkan di setiap sisi.
+            --}}
+            @php
+                $current  = $pengumuman->currentPage();
+                $last     = $pengumuman->lastPage();
+                $leftDone  = false; // elipsis kiri sudah cetak?
+                $rightDone = false; // elipsis kanan sudah cetak?
+            @endphp
+
+            @foreach($pengumuman->getUrlRange(1, $last) as $page => $url)
+                @php
+                    $isFirst   = $page === 1;
+                    $isLast    = $page === $last;
+                    $isNear    = abs($page - $current) <= 1;
+                    $showPage  = $isFirst || $isLast || $isNear;
+                    $needLeft  = !$isFirst && !$isNear && $page < $current && !$leftDone;
+                    $needRight = !$isLast  && !$isNear && $page > $current && !$rightDone;
+                @endphp
+
+                @if($showPage)
+                    @if($page === $current)
+                        <span class="pag-btn active" aria-current="page">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
+                    @endif
+                @elseif($needLeft)
+                    <span class="pag-ellipsis" aria-hidden="true">…</span>
+                    @php $leftDone = true; @endphp
+                @elseif($needRight)
+                    <span class="pag-ellipsis" aria-hidden="true">…</span>
+                    @php $rightDone = true; @endphp
                 @endif
             @endforeach
 
+            {{-- Next --}}
             @if($pengumuman->hasMorePages())
-                <a href="{{ $pengumuman->nextPageUrl() }}" class="pag-btn">
+                <a href="{{ $pengumuman->nextPageUrl() }}" class="pag-btn" aria-label="Halaman berikutnya">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 </a>
             @else
-                <span class="pag-btn disabled">
+                <span class="pag-btn disabled" aria-disabled="true">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                 </span>
             @endif
@@ -164,6 +214,7 @@
     @endif
 
     @else
+    {{-- Empty state --}}
     <div class="empty-state">
         <div class="empty-icon">
             <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24">
@@ -172,7 +223,7 @@
         </div>
         <p class="empty-title">
             @if(request('cari'))
-                Tidak ada pengumuman untuk "{{ request('cari') }}"
+                Tidak ada pengumuman untuk "{{ e(request('cari')) }}"
             @else
                 Belum ada pengumuman
             @endif

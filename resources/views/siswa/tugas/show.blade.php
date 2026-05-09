@@ -14,8 +14,6 @@
     .btn-secondary:hover{background:var(--surface3)}
     .btn-primary{background:var(--sk-600);color:#fff}
     .btn-primary:hover{background:var(--sk-700)}
-    .btn-success{background:#15803d;color:#fff}
-    .btn-success:hover{background:#166534}
 
     .layout{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
 
@@ -34,7 +32,7 @@
     .content-area{padding:24px}
 
     /* Deskripsi */
-    .desc-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:20px;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text2);line-height:1.6}
+    .desc-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:20px;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text2);line-height:1.6;white-space:pre-wrap}
 
     /* File soal */
     .file-soal{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:var(--sk-50);border:1px solid var(--sk-100);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--sk-700);text-decoration:none;margin-bottom:20px;transition:background .15s}
@@ -65,15 +63,16 @@
 
     .btn-submit{width:100%;height:42px;background:var(--sk-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s}
     .btn-submit:hover{background:var(--sk-700)}
+    .btn-submit:disabled{opacity:.6;cursor:not-allowed}
 
     /* Hasil pengumpulan */
     .hasil-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius);padding:18px 20px}
     .hasil-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;color:#15803d;margin-bottom:12px;display:flex;align-items:center;gap:7px}
     .hasil-list{list-style:none;padding:0;margin:0}
-    .hasil-list li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #bbf7d0;font-size:12.5px}
+    .hasil-list li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid #bbf7d0;font-size:12.5px;flex-wrap:wrap}
     .hasil-list li:last-child{border-bottom:none}
     .hl-key{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:#166534}
-    .hl-val{font-family:'DM Sans',sans-serif;color:#15803d}
+    .hl-val{font-family:'DM Sans',sans-serif;color:#15803d;word-break:break-all}
 
     /* Sidebar */
     .sidebar-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
@@ -101,7 +100,7 @@
 
 <div class="page">
 
-    {{-- Flash --}}
+    {{-- Flash success --}}
     @if(session('success'))
     <div class="alert a-success" style="margin-bottom:16px">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -126,12 +125,15 @@
                             Kembali
                         </a>
                     </div>
-                    <p class="mapel-label">{{ $tugas->mataPelajaran->nama_mapel ?? '—' }}</p>
+
+                    {{-- FIX: optional() untuk semua relasi --}}
+                    <p class="mapel-label">{{ optional($tugas->mataPelajaran)->nama_mapel ?? '—' }}</p>
                     <h1 class="tugas-title">{{ $tugas->judul }}</h1>
+
                     <div class="meta-row">
                         <span class="meta-item">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            {{ $tugas->guru->nama_lengkap ?? '—' }}
+                            {{ optional($tugas->guru)->nama_lengkap ?? '—' }}
                         </span>
                         <span class="meta-item">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -139,7 +141,7 @@
                         </span>
                         <span class="meta-item">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                            Nilai maks: {{ $tugas->nilai_maksimal ?? 100 }}
+                            Nilai maks: {{ rtrim(rtrim(number_format($tugas->nilai_maksimal ?? 100, 2), '0'), '.') }}
                         </span>
                     </div>
                 </div>
@@ -153,14 +155,14 @@
 
                     {{-- File soal --}}
                     @if($tugas->path_file_soal)
-                    <a href="{{ asset('storage/'.$tugas->path_file_soal) }}" target="_blank" download class="file-soal">
+                    <a href="{{ asset('storage/' . $tugas->path_file_soal) }}" target="_blank" download class="file-soal">
                         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         Unduh File Soal
                     </a>
                     @endif
 
-                    {{-- Status pengumpulan --}}
-                    @if($sudahDikumpulkan)
+                    {{-- Status: sudah dikumpulkan --}}
+                    @if($sudahDikumpulkan && $pengumpulan)
                         <div class="hasil-card">
                             <p class="hasil-title">
                                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -169,15 +171,18 @@
                             <ul class="hasil-list">
                                 <li>
                                     <span class="hl-key">Waktu Pengumpulan</span>
+                                    {{-- FIX: dikumpulkan_pada sudah ada di fillable & casts --}}
                                     <span class="hl-val">{{ $pengumpulan->dikumpulkan_pada?->format('d M Y, H:i') ?? '—' }}</span>
                                 </li>
                                 <li>
                                     <span class="hl-key">Jenis</span>
-                                    <span class="hl-val">{{ ucfirst($pengumpulan->jenis_pengumpulan) }}</span>
+                                    {{-- FIX: pakai accessor label_jenis dari model --}}
+                                    <span class="hl-val">{{ $pengumpulan->label_jenis }}</span>
                                 </li>
                                 <li>
                                     <span class="hl-key">Status</span>
-                                    <span class="hl-val">{{ ucfirst(str_replace('_', ' ', $pengumpulan->status)) }}</span>
+                                    {{-- FIX: pakai accessor label_status dari model --}}
+                                    <span class="hl-val">{{ $pengumpulan->label_status }}</span>
                                 </li>
                                 @if($pengumpulan->catatan)
                                 <li>
@@ -185,39 +190,77 @@
                                     <span class="hl-val">{{ $pengumpulan->catatan }}</span>
                                 </li>
                                 @endif
-                                @if($pengumpulan->jenis_pengumpulan === 'link')
+
+                                {{-- FIX: Nama kolom sekarang link_pengumpulan, file_pengumpulan, konten_teks --}}
+                                @if($pengumpulan->jenis_pengumpulan === 'link' && $pengumpulan->link_pengumpulan)
                                 <li>
                                     <span class="hl-key">Link</span>
-                                    <span class="hl-val"><a href="{{ $pengumpulan->link_pengumpulan }}" target="_blank" style="color:var(--sk-600)">Buka Link</a></span>
+                                    <span class="hl-val">
+                                        <a href="{{ $pengumpulan->link_pengumpulan }}" target="_blank" rel="noopener noreferrer" style="color:var(--sk-600)">
+                                            Buka Link
+                                        </a>
+                                    </span>
                                 </li>
-                                @elseif($pengumpulan->file_pengumpulan)
+                                @elseif(in_array($pengumpulan->jenis_pengumpulan, ['file', 'foto']) && $pengumpulan->file_pengumpulan)
                                 <li>
                                     <span class="hl-key">File</span>
-                                    <span class="hl-val"><a href="{{ asset('storage/'.$pengumpulan->file_pengumpulan) }}" target="_blank" style="color:var(--sk-600)">Lihat File</a></span>
+                                    <span class="hl-val">
+                                        <a href="{{ asset('storage/' . $pengumpulan->file_pengumpulan) }}" target="_blank" style="color:var(--sk-600)">
+                                            Lihat File
+                                        </a>
+                                    </span>
                                 </li>
+                                @elseif($pengumpulan->jenis_pengumpulan === 'teks' && $pengumpulan->konten_teks)
+                                <li style="flex-direction:column;align-items:flex-start;gap:6px">
+                                    <span class="hl-key">Jawaban Teks</span>
+                                    <span class="hl-val" style="text-align:left;white-space:pre-wrap;background:#dcfce7;padding:8px 10px;border-radius:6px;width:100%;box-sizing:border-box">{{ $pengumpulan->konten_teks }}</span>
+                                </li>
+                                @endif
+
+                                {{-- Nilai (jika sudah dinilai) --}}
+                                @if($pengumpulan->sudahDinilai())
+                                <li>
+                                    <span class="hl-key">Nilai</span>
+                                    <span class="hl-val" style="font-weight:700;font-size:14px">
+                                        {{ rtrim(rtrim(number_format($pengumpulan->nilai, 2), '0'), '.') }}
+                                        / {{ rtrim(rtrim(number_format($tugas->nilai_maksimal ?? 100, 2), '0'), '.') }}
+                                    </span>
+                                </li>
+                                @if($pengumpulan->umpan_balik)
+                                <li style="flex-direction:column;align-items:flex-start;gap:6px">
+                                    <span class="hl-key">Umpan Balik Guru</span>
+                                    <span class="hl-val" style="text-align:left;white-space:pre-wrap">{{ $pengumpulan->umpan_balik }}</span>
+                                </li>
+                                @endif
                                 @endif
                             </ul>
                         </div>
 
-                    @elseif(!$masihBisaKumpul)
+                    {{-- Status: waktu habis, tidak bisa kumpul --}}
+                    @elseif(! $masihBisaKumpul)
                         <div class="alert a-error">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             Batas waktu pengumpulan sudah habis dan pengumpulan terlambat tidak diizinkan.
                         </div>
 
+                    {{-- Status: bisa kumpul (tepat waktu atau terlambat diizinkan) --}}
                     @else
-                        {{-- Form pengumpulan --}}
+
                         @if($terlambat)
-                        <div class="alert a-warning" style="margin-bottom:16px">
+                        <div class="alert a-warning">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
                             Batas waktu sudah lewat. Pengumpulan akan ditandai sebagai <strong>terlambat</strong>.
                         </div>
                         @endif
 
                         @if($errors->any())
-                        <div class="alert a-error" style="margin-bottom:16px">
+                        <div class="alert a-error">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg>
-                            <div>@foreach($errors->all() as $e)<div>{{ $e }}</div>@endforeach</div>
+                            <div>
+                                @foreach($errors->all() as $e)
+                                    <div>{{ $e }}</div>
+                                @endforeach
+                            </div>
                         </div>
                         @endif
 
@@ -232,17 +275,17 @@
 
                                     <div class="field">
                                         <label>Jenis Pengumpulan <span class="req">*</span></label>
-                                        <select name="jenis_pengumpulan" id="jenisSel" onchange="toggleJenis(this.value)" required>
+                                        <select name="jenis_pengumpulan" id="jenisSel" required>
                                             <option value="">— Pilih jenis —</option>
-                                            <option value="file"  {{ old('jenis_pengumpulan') === 'file'  ? 'selected' : '' }}>📄 Upload File (PDF, Word, ZIP)</option>
-                                            <option value="foto"  {{ old('jenis_pengumpulan') === 'foto'  ? 'selected' : '' }}>📷 Upload Foto</option>
-                                            <option value="teks"  {{ old('jenis_pengumpulan') === 'teks'  ? 'selected' : '' }}>📝 Ketik Jawaban</option>
-                                            <option value="link"  {{ old('jenis_pengumpulan') === 'link'  ? 'selected' : '' }}>🔗 Link / URL</option>
+                                            <option value="file" {{ old('jenis_pengumpulan') === 'file' ? 'selected' : '' }}>📄 Upload File (PDF, Word, ZIP)</option>
+                                            <option value="foto" {{ old('jenis_pengumpulan') === 'foto' ? 'selected' : '' }}>📷 Upload Foto</option>
+                                            <option value="teks" {{ old('jenis_pengumpulan') === 'teks' ? 'selected' : '' }}>📝 Ketik Jawaban</option>
+                                            <option value="link" {{ old('jenis_pengumpulan') === 'link' ? 'selected' : '' }}>🔗 Link / URL</option>
                                         </select>
                                         @error('jenis_pengumpulan')<p class="field-err">{{ $message }}</p>@enderror
                                     </div>
 
-                                    {{-- File --}}
+                                    {{-- File dokumen --}}
                                     <div class="field" id="wrap-file" style="display:none">
                                         <label>File Tugas <span class="req">*</span></label>
                                         <input type="file" name="file_pengumpulan" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip">
@@ -255,6 +298,7 @@
                                         <label>Foto Tugas <span class="req">*</span></label>
                                         <input type="file" name="file_pengumpulan" accept=".jpg,.jpeg,.png">
                                         <p class="field-hint">Format: JPG, PNG · Maks 10MB</p>
+                                        @error('file_pengumpulan')<p class="field-err">{{ $message }}</p>@enderror
                                     </div>
 
                                     {{-- Teks --}}
@@ -278,13 +322,14 @@
                                         @error('catatan')<p class="field-err">{{ $message }}</p>@enderror
                                     </div>
 
-                                    <button type="submit" class="btn-submit">
+                                    <button type="submit" class="btn-submit" id="btnSubmit">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                                         Kumpulkan Tugas
                                     </button>
                                 </form>
                             </div>
                         </div>
+
                     @endif
 
                 </div>
@@ -295,8 +340,11 @@
         <div>
             {{-- Deadline box --}}
             @php
-                $dbClass = $terlambat ? 'db-late' : (now()->diffInHours($tugas->batas_waktu) < 24 ? 'db-warn' : 'db-ok');
-                $dbText  = $terlambat ? 'Sudah Berakhir' : now()->diffForHumans($tugas->batas_waktu, ['parts' => 2]);
+                $jamSisa = (int) now()->diffInHours($tugas->batas_waktu, false);
+                $dbClass = $terlambat ? 'db-late' : ($jamSisa < 24 ? 'db-warn' : 'db-ok');
+                $dbText  = $terlambat
+                    ? 'Sudah Berakhir'
+                    : now()->diffForHumans($tugas->batas_waktu, ['parts' => 2]);
             @endphp
             <div class="deadline-box {{ $dbClass }}">
                 <p class="db-label">Sisa Waktu</p>
@@ -311,27 +359,28 @@
                     <ul class="info-list">
                         <li>
                             <span class="info-key">Mata Pelajaran</span>
-                            <span class="info-val">{{ $tugas->mataPelajaran->nama_mapel ?? '—' }}</span>
+                            <span class="info-val">{{ optional($tugas->mataPelajaran)->nama_mapel ?? '—' }}</span>
                         </li>
                         <li>
                             <span class="info-key">Guru</span>
-                            <span class="info-val">{{ $tugas->guru->nama_lengkap ?? '—' }}</span>
+                            <span class="info-val">{{ optional($tugas->guru)->nama_lengkap ?? '—' }}</span>
                         </li>
                         <li>
                             <span class="info-key">Kelas</span>
+                            {{-- FIX: kelas pakai withDefault() di model — nama bisa null jika default kosong --}}
                             <span class="info-val">{{ $tugas->kelas->nama ?? '—' }}</span>
                         </li>
                         <li>
                             <span class="info-key">Nilai Maks</span>
-                            <span class="info-val">{{ $tugas->nilai_maksimal ?? 100 }}</span>
+                            <span class="info-val">{{ rtrim(rtrim(number_format($tugas->nilai_maksimal ?? 100, 2), '0'), '.') }}</span>
                         </li>
                         <li>
-                            <span class="info-key">Terlambat</span>
+                            <span class="info-key">Pengumpulan Terlambat</span>
                             <span class="info-val">{{ $tugas->izinkan_terlambat ? 'Diizinkan' : 'Tidak' }}</span>
                         </li>
                         <li>
                             <span class="info-key">Status Saya</span>
-                            <span class="info-val" style="color:{{ $sudahDikumpulkan ? '#15803d' : ($terlambat ? '#dc2626' : '#1d4ed8') }};font-weight:700">
+                            <span class="info-val" style="font-weight:700;color:{{ $sudahDikumpulkan ? '#15803d' : ($terlambat ? '#dc2626' : '#1d4ed8') }}">
                                 {{ $sudahDikumpulkan ? 'Sudah Dikumpulkan' : ($terlambat ? 'Terlambat' : 'Belum') }}
                             </span>
                         </li>
@@ -339,17 +388,39 @@
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
 <script>
 function toggleJenis(val) {
-    ['file','foto','teks','link'].forEach(j => {
-        document.getElementById('wrap-' + j).style.display = (j === val) ? 'block' : 'none';
+    ['file', 'foto', 'teks', 'link'].forEach(function(j) {
+        var el = document.getElementById('wrap-' + j);
+        if (el) el.style.display = (j === val) ? 'block' : 'none';
     });
 }
-// Init jika ada old value
-const oldJenis = '{{ old('jenis_pengumpulan') }}';
-if (oldJenis) toggleJenis(oldJenis);
+
+// FIX: Render old value dari PHP agar aman (tidak ada interpolasi JS langsung)
+// Gunakan data attribute pada elemen select untuk menghindari potensi XSS
+var jenisSel = document.getElementById('jenisSel');
+if (jenisSel) {
+    // Ambil old value dari value attribute option yang selected
+    var oldVal = jenisSel.value;
+    if (oldVal) toggleJenis(oldVal);
+
+    jenisSel.addEventListener('change', function() {
+        toggleJenis(this.value);
+    });
+}
+
+// FIX: Disable tombol submit saat form sedang dikirim untuk mencegah double-submit
+var formKumpul = document.getElementById('formKumpul');
+var btnSubmit  = document.getElementById('btnSubmit');
+if (formKumpul && btnSubmit) {
+    formKumpul.addEventListener('submit', function() {
+        btnSubmit.disabled = true;
+        btnSubmit.textContent = 'Mengirim…';
+    });
+}
 </script>
 </x-app-layout>

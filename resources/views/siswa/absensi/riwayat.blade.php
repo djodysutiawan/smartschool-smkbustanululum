@@ -14,8 +14,7 @@
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px;margin-bottom:20px}
 
-    /* Tab nav */
-    .tab-nav{display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content}
+    .tab-nav{display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content;flex-wrap:wrap}
     .tab-link{padding:7px 18px;border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text3);text-decoration:none;transition:all .15s}
     .tab-link.active{background:var(--surface);color:var(--brand-600);box-shadow:0 1px 3px rgba(0,0,0,.08)}
     .tab-link:hover:not(.active){color:var(--text2)}
@@ -26,8 +25,6 @@
     .sum-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
     .sum-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1}
     .sum-sub{font-size:11px;color:var(--text3);margin-top:2px}
-
-    /* Kehadiran meter */
     .persen-bar-wrap{margin-top:8px}
     .persen-bar-track{height:5px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-top:4px}
     .persen-bar-fill{height:100%;border-radius:99px}
@@ -60,16 +57,15 @@
     td{padding:10px 14px;color:var(--text);vertical-align:middle}
     td.center{text-align:center}
 
-    /* Badge status */
+    /* Badge */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .badge-hadir {background:#dcfce7;color:#15803d} .badge-hadir  .badge-dot{background:#15803d}
-    .badge-telat {background:#fef9c3;color:#a16207} .badge-telat  .badge-dot{background:#a16207}
-    .badge-izin  {background:#eff6ff;color:#1d4ed8} .badge-izin   .badge-dot{background:#1d4ed8}
-    .badge-sakit {background:#fdf4ff;color:#7c3aed} .badge-sakit  .badge-dot{background:#7c3aed}
-    .badge-alfa  {background:#fee2e2;color:#dc2626} .badge-alfa   .badge-dot{background:#dc2626}
+    .badge-hadir{background:#dcfce7;color:#15803d}.badge-hadir .badge-dot{background:#15803d}
+    .badge-telat{background:#fef9c3;color:#a16207}.badge-telat .badge-dot{background:#a16207}
+    .badge-izin{background:#eff6ff;color:#1d4ed8}.badge-izin .badge-dot{background:#1d4ed8}
+    .badge-sakit{background:#fdf4ff;color:#7c3aed}.badge-sakit .badge-dot{background:#7c3aed}
+    .badge-alfa{background:#fee2e2;color:#dc2626}.badge-alfa .badge-dot{background:#dc2626}
 
-    /* Metode pill */
     .metode-pill{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;background:var(--surface3);color:var(--text3)}
 
     /* Empty */
@@ -81,7 +77,7 @@
     /* Pagination */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
-    .pag-btns{display:flex;gap:4px}
+    .pag-btns{display:flex;gap:4px;flex-wrap:wrap}
     .pag-btn{height:32px;min-width:32px;padding:0 8px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;text-decoration:none;transition:all .15s}
     .pag-btn:hover{background:var(--surface2)}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
@@ -89,7 +85,7 @@
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px;display:flex;align-items:center}
 
     @media(max-width:900px){.summary-strip{grid-template-columns:repeat(3,1fr)}}
-    @media(max-width:600px){.summary-strip{grid-template-columns:1fr 1fr};.page{padding:16px}}
+    @media(max-width:600px){.summary-strip{grid-template-columns:1fr 1fr};.page{padding:16px};.tab-nav{width:100%};.tab-link{flex:1;text-align:center;padding:7px 10px}}
 </style>
 
 <div class="page">
@@ -99,19 +95,27 @@
     <div class="tab-nav">
         <a href="{{ route('siswa.absensi.scan') }}"
            class="tab-link {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">
-            Scan QR Hadir
+            Scan QR
+        </a>
+        <a href="{{ route('siswa.absensi.jadwal') }}"
+           class="tab-link {{ request()->routeIs('siswa.absensi.jadwal') ? 'active' : '' }}">
+            QR Per Pelajaran
         </a>
         <a href="{{ route('siswa.absensi.riwayat') }}"
            class="tab-link {{ request()->routeIs('siswa.absensi.riwayat') ? 'active' : '' }}">
-            Riwayat Kehadiran
+            Riwayat
+        </a>
+        <a href="{{ route('siswa.absensi.rekap') }}"
+           class="tab-link {{ request()->routeIs('siswa.absensi.rekap') ? 'active' : '' }}">
+            Rekap
         </a>
     </div>
 
-    {{-- Summary strip --}}
     @php
-        $pct = $rekap['persen_hadir'];
+        $pct      = $rekap['persen_hadir'];
         $pctColor = $pct >= 80 ? '#15803d' : ($pct >= 60 ? '#a16207' : '#dc2626');
     @endphp
+
     <div class="summary-strip">
         <div class="sum-card">
             <p class="sum-label">Total</p>
@@ -145,7 +149,6 @@
         </div>
     </div>
 
-    {{-- Filter --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('siswa.absensi.riwayat') }}">
             <div class="filter-row">
@@ -184,7 +187,6 @@
         </form>
     </div>
 
-    {{-- Table --}}
     <div class="table-card">
         <div class="table-topbar">
             <p class="table-info">
@@ -203,6 +205,7 @@
                     <tr>
                         <th style="width:44px">#</th>
                         <th>Tanggal</th>
+                        <th>Mata Pelajaran</th>
                         <th class="center">Status</th>
                         <th class="center">Jam Masuk</th>
                         <th>Metode</th>
@@ -215,7 +218,6 @@
                         <td style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)">
                             {{ $absensi->firstItem() + $i }}
                         </td>
-
                         <td>
                             <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)">
                                 {{ $a->tanggal->translatedFormat('d F Y') }}
@@ -224,24 +226,21 @@
                                 {{ $a->tanggal->translatedFormat('l') }}
                             </p>
                         </td>
-
+                        <td style="font-size:13px;color:var(--text)">
+                            {{ $a->jadwalPelajaran?->mataPelajaran?->nama_mapel ?? '—' }}
+                        </td>
                         <td class="center">
                             <span class="badge badge-{{ $a->status }}">
                                 <span class="badge-dot"></span>
                                 {{ ucfirst($a->status) }}
                             </span>
                         </td>
-
                         <td class="center" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">
                             {{ $a->jam_masuk ? \Carbon\Carbon::parse($a->jam_masuk)->format('H:i') : '—' }}
                         </td>
-
                         <td>
-                            <span class="metode-pill">
-                                {{ strtoupper($a->metode ?? 'manual') }}
-                            </span>
+                            <span class="metode-pill">{{ strtoupper($a->metode ?? 'manual') }}</span>
                         </td>
-
                         <td style="font-size:12.5px;color:var(--text2);max-width:200px">
                             <p style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
                                 {{ $a->keterangan ?? '—' }}
@@ -250,7 +249,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="6">
+                        <td colspan="7">
                             <div class="empty-state">
                                 <div class="empty-icon">
                                     <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24">
@@ -275,7 +274,10 @@
             </table>
         </div>
 
-        {{-- Pagination --}}
+        {{--
+            PERBAIKAN PAGINATION: Tracking lastEllipsis mencegah dua ellipsis
+            muncul berturutan ketika ada gap di tengah range halaman.
+        --}}
         @if($absensi->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">
@@ -293,13 +295,29 @@
                     </a>
                 @endif
 
-                @foreach($absensi->getUrlRange(1, $absensi->lastPage()) as $page => $url)
-                    @if($page == $absensi->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $absensi->lastPage() || abs($page - $absensi->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $absensi->currentPage()) == 2)
-                        <span class="pag-ellipsis">…</span>
+                @php
+                    $current      = $absensi->currentPage();
+                    $last         = $absensi->lastPage();
+                    $lastEllipsis = false;
+                @endphp
+                @foreach($absensi->getUrlRange(1, $last) as $page => $url)
+                    @php
+                        $showPage = ($page == 1)
+                            || ($page == $last)
+                            || (abs($page - $current) <= 1);
+                    @endphp
+                    @if($showPage)
+                        @php $lastEllipsis = false; @endphp
+                        @if($page == $current)
+                            <span class="pag-btn active">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
+                        @endif
+                    @else
+                        @if(!$lastEllipsis)
+                            <span class="pag-ellipsis">…</span>
+                            @php $lastEllipsis = true; @endphp
+                        @endif
                     @endif
                 @endforeach
 

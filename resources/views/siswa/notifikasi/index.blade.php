@@ -79,7 +79,7 @@
     /* Pagination */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
-    .pag-btns{display:flex;gap:4px}
+    .pag-btns{display:flex;gap:4px;flex-wrap:wrap}
     .pag-btn{height:32px;min-width:32px;padding:0 8px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;text-decoration:none;transition:all .15s}
     .pag-btn:hover{background:var(--surface2);border-color:var(--border2)}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
@@ -118,17 +118,35 @@
         </div>
     </div>
 
-    {{-- Filter tabs --}}
+    {{--
+        FIX #19: Tab "Semua" sebelumnya menampilkan $notifikasis->total() yang
+        merupakan total FILTERED (bukan total keseluruhan notifikasi user).
+        Jika filter 'belum_dibaca' aktif, $notifikasis->total() hanya
+        menghitung yang belum dibaca — bukan semua notifikasi.
+
+        Solusi: Hitung total keseluruhan di controller dan pass sebagai $totalAll,
+        ATAU gunakan $unread + ($notifikasis->total() - ...) yang kompleks.
+
+        Pendekatan paling bersih: controller sudah pass $unread (belum dibaca).
+        Untuk tab "Semua", tampilkan label tanpa count atau tambahkan $totalAll
+        dari controller. Di sini kita tampilkan count hanya untuk tab yang
+        relevan, dan tab "Semua" tanpa count (akurat, tidak menyesatkan).
+
+        Jika ingin menampilkan total di tab "Semua", tambahkan di controller:
+        $totalAll = Notifikasi::where('pengguna_id', $user->id)->count();
+        lalu pass ke view dan gunakan $totalAll di sini.
+    --}}
     <div class="filter-tabs">
         <a href="{{ route('siswa.notifikasi.index') }}"
-           class="tab {{ !request('status') ? 'active' : '' }}">
+           class="tab {{ ! request('status') ? 'active' : '' }}">
             Semua
-            <span class="tab-count">{{ $notifikasis->total() }}</span>
         </a>
         <a href="{{ route('siswa.notifikasi.index', ['status' => 'belum_dibaca']) }}"
            class="tab {{ request('status') === 'belum_dibaca' ? 'active' : '' }}">
             Belum dibaca
-            @if($unread > 0)<span class="tab-count">{{ $unread }}</span>@endif
+            @if($unread > 0)
+                <span class="tab-count">{{ $unread }}</span>
+            @endif
         </a>
         <a href="{{ route('siswa.notifikasi.index', ['status' => 'dibaca']) }}"
            class="tab {{ request('status') === 'dibaca' ? 'active' : '' }}">
@@ -150,7 +168,7 @@
 
         @forelse($notifikasis as $n)
         <a href="{{ route('siswa.notifikasi.show', $n->id) }}"
-           class="notif-item {{ !$n->sudah_dibaca ? 'unread' : '' }}">
+           class="notif-item {{ ! $n->sudah_dibaca ? 'unread' : '' }}">
 
             {{-- Icon berdasarkan jenis --}}
             <div class="notif-icon icon-{{ $n->jenis ?? 'info' }}">
@@ -179,16 +197,18 @@
                 <p class="notif-judul">{{ $n->judul }}</p>
                 <p class="notif-pesan">{{ $n->pesan }}</p>
                 <div class="notif-meta">
-                    <span class="notif-time">
-                        {{ \Carbon\Carbon::parse($n->created_at)->diffForHumans() }}
-                    </span>
+                    {{--
+                        FIX #20: $n->created_at sudah di-cast sebagai Carbon (via casts() model),
+                        tidak perlu Carbon::parse() lagi — menghindari overhead instantiasi Carbon ganda.
+                    --}}
+                    <span class="notif-time">{{ $n->created_at->diffForHumans() }}</span>
                     @if($n->jenis)
                         <span class="notif-jenis jenis-{{ $n->jenis }}">{{ ucfirst($n->jenis) }}</span>
                     @endif
                 </div>
             </div>
 
-            @if(!$n->sudah_dibaca)
+            @if(! $n->sudah_dibaca)
                 <div class="unread-dot"></div>
             @endif
         </a>
@@ -201,17 +221,49 @@
                 </svg>
             </div>
             <p class="empty-title">Tidak ada notifikasi</p>
-            <p class="empty-sub">Semua notifikasi akan muncul di sini</p>
+            <p class="empty-sub">
+                @if(request('status') === 'belum_dibaca')
+                    Semua notifikasi sudah dibaca
+                @elseif(request('status') === 'dibaca')
+                    Belum ada notifikasi yang dibaca
+                @else
+                    Semua notifikasi akan muncul di sini
+                @endif
+            </p>
         </div>
         @endforelse
 
-        {{-- Pagination --}}
+        {{--
+            FIX #21: Logika ellipsis pagination sebelumnya berpotensi menampilkan
+            ellipsis bersebelahan dengan link halaman, atau ellipsis duplikat.
+            Contoh bug: currentPage=5, lastPage=10
+              - page 3: abs(3-5)=2 → ellipsis
+              - page 4: abs(4-5)=1 → link
+              - page 6: abs(6-5)=1 → link
+              - page 7: abs(7-5)=2 → ellipsis
+            Ini menghasilkan: 1 … 3 4 5 6 7 … 10 (benar di case ini)
+            Tapi bug muncul jika currentPage dekat tepi:
+            - currentPage=3: page 1 tampil (==1), page 2 tampil (abs=1), page 3 active,
+              page 4 tampil (abs=1), page 5 ellipsis (abs=2), page 6 tidak tampil,
+              TAPI page 5 harusnya tampil sebagai link (karena lastPage bisa 5).
+            Perbaikan: tracking variabel $showEllipsisLeft dan $showEllipsisRight
+            untuk memastikan ellipsis hanya tampil SEKALI per sisi dan tidak
+            bersebelahan langsung dengan nomor page.
+        --}}
         @if($notifikasis->hasPages())
+        @php
+            $currentPage = $notifikasis->currentPage();
+            $lastPage    = $notifikasis->lastPage();
+            // Window: tampilkan halaman dalam jangkauan ini di sekitar currentPage
+            $windowStart = max(2, $currentPage - 1);
+            $windowEnd   = min($lastPage - 1, $currentPage + 1);
+        @endphp
         <div class="pag-wrap">
             <p class="pag-info">
-                Halaman {{ $notifikasis->currentPage() }} dari {{ $notifikasis->lastPage() }}
+                Halaman {{ $currentPage }} dari {{ $lastPage }}
             </p>
             <div class="pag-btns">
+                {{-- Prev button --}}
                 @if($notifikasis->onFirstPage())
                     <span class="pag-btn disabled">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -222,16 +274,42 @@
                     </a>
                 @endif
 
-                @foreach($notifikasis->getUrlRange(1, $notifikasis->lastPage()) as $page => $url)
-                    @if($page == $notifikasis->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $notifikasis->lastPage() || abs($page - $notifikasis->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $notifikasis->currentPage()) == 2)
-                        <span class="pag-ellipsis">…</span>
-                    @endif
-                @endforeach
+                {{-- Halaman pertama selalu tampil --}}
+                @if($currentPage === 1)
+                    <span class="pag-btn active">1</span>
+                @else
+                    <a href="{{ $notifikasis->url(1) }}" class="pag-btn">1</a>
+                @endif
 
+                {{-- Ellipsis kiri: tampil jika window tidak menyentuh halaman 2 --}}
+                @if($windowStart > 2)
+                    <span class="pag-ellipsis">…</span>
+                @endif
+
+                {{-- Window halaman tengah (tidak termasuk halaman 1 dan lastPage) --}}
+                @for($page = $windowStart; $page <= $windowEnd; $page++)
+                    @if($page === $currentPage)
+                        <span class="pag-btn active">{{ $page }}</span>
+                    @else
+                        <a href="{{ $notifikasis->url($page) }}" class="pag-btn">{{ $page }}</a>
+                    @endif
+                @endfor
+
+                {{-- Ellipsis kanan: tampil jika window tidak menyentuh halaman terakhir-1 --}}
+                @if($windowEnd < $lastPage - 1)
+                    <span class="pag-ellipsis">…</span>
+                @endif
+
+                {{-- Halaman terakhir selalu tampil (jika lastPage > 1) --}}
+                @if($lastPage > 1)
+                    @if($currentPage === $lastPage)
+                        <span class="pag-btn active">{{ $lastPage }}</span>
+                    @else
+                        <a href="{{ $notifikasis->url($lastPage) }}" class="pag-btn">{{ $lastPage }}</a>
+                    @endif
+                @endif
+
+                {{-- Next button --}}
                 @if($notifikasis->hasMorePages())
                     <a href="{{ $notifikasis->nextPageUrl() }}" class="pag-btn">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
@@ -250,8 +328,15 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 @if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')),
-    timer:2500, showConfirmButton:false, toast:true, position:'top-end' });
+Swal.fire({
+    icon: 'success',
+    title: 'Berhasil!',
+    text: @json(session('success')),
+    timer: 2500,
+    showConfirmButton: false,
+    toast: true,
+    position: 'top-end'
+});
 @endif
 </script>
 </x-app-layout>

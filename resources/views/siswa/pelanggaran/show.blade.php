@@ -26,12 +26,15 @@
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
 
+    /* Badge — semua status */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:4px 12px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;white-space:nowrap}
     .badge-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
-    .badge-pending  {background:#fef9c3;color:#a16207}   .badge-pending  .badge-dot{background:#a16207}
-    .badge-diproses {background:#eff6ff;color:#1d4ed8}   .badge-diproses .badge-dot{background:#1d4ed8}
-    .badge-selesai  {background:#dcfce7;color:#15803d}   .badge-selesai  .badge-dot{background:#15803d}
-    .badge-banding  {background:#fdf4ff;color:#7c3aed}   .badge-banding  .badge-dot{background:#7c3aed}
+    .badge-pending    {background:#fef9c3;color:#a16207}   .badge-pending    .badge-dot{background:#a16207}
+    .badge-diproses   {background:#eff6ff;color:#1d4ed8}   .badge-diproses   .badge-dot{background:#1d4ed8}
+    .badge-selesai    {background:#dcfce7;color:#15803d}   .badge-selesai    .badge-dot{background:#15803d}
+    .badge-banding    {background:#fdf4ff;color:#7c3aed}   .badge-banding    .badge-dot{background:#7c3aed}
+    /* FIX: badge-dibatalkan ditambahkan */
+    .badge-dibatalkan {background:#f1f5f9;color:#64748b}   .badge-dibatalkan .badge-dot{background:#94a3b8}
 
     .poin-big{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border-radius:12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800}
     .poin-low  {background:#dcfce7;color:#15803d}
@@ -73,6 +76,7 @@
     .tl-dot.yellow{background:#fefce8;border-color:#fde68a}
     .tl-dot.green {background:#dcfce7;border-color:#bbf7d0}
     .tl-dot.purple{background:#fdf4ff;border-color:#e9d5ff}
+    .tl-dot.gray  {background:#f1f5f9;border-color:#cbd5e1}
     .tl-content{flex:1;padding-top:4px}
     .tl-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
     .tl-time{font-size:11.5px;color:var(--text3);margin-top:1px}
@@ -99,7 +103,8 @@
         <div>
             <h1 class="page-title">Detail Pelanggaran</h1>
             <p class="page-sub">
-                Kejadian pada {{ \Carbon\Carbon::parse($pelanggaran->tanggal)->translatedFormat('l, d F Y') }}
+                {{-- FIX: $pelanggaran->tanggal sudah di-cast date, tidak perlu Carbon::parse() --}}
+                Kejadian pada {{ $pelanggaran->tanggal->translatedFormat('l, d F Y') }}
             </p>
         </div>
         <a href="{{ route('siswa.pelanggaran.index') }}" class="btn btn-secondary">
@@ -145,7 +150,7 @@
             <div style="margin-left:auto">
                 <span class="badge badge-{{ $pelanggaran->status }}">
                     <span class="badge-dot"></span>
-                    {{ ucfirst($pelanggaran->status) }}
+                    {{ Str::ucfirst($pelanggaran->status) }}
                 </span>
             </div>
         </div>
@@ -154,7 +159,8 @@
 
                 <div class="detail-item">
                     <p class="detail-label">Kategori</p>
-                    <p class="detail-value bold">{{ $pelanggaran->kategori->nama ?? '—' }}</p>
+                    {{-- FIX: optional chaining untuk null-safety --}}
+                    <p class="detail-value bold">{{ $pelanggaran->kategori?->nama ?? '—' }}</p>
                 </div>
 
                 <div class="detail-item">
@@ -172,14 +178,14 @@
 
                 <div class="detail-item">
                     <p class="detail-label">Tanggal Kejadian</p>
-                    <p class="detail-value">
-                        {{ \Carbon\Carbon::parse($pelanggaran->tanggal)->translatedFormat('d F Y') }}
-                    </p>
+                    {{-- FIX: cast date sudah diterapkan, cukup panggil langsung --}}
+                    <p class="detail-value">{{ $pelanggaran->tanggal->translatedFormat('d F Y') }}</p>
                 </div>
 
                 <div class="detail-item">
                     <p class="detail-label">Dicatat Oleh</p>
-                    <p class="detail-value bold">{{ $pelanggaran->dicatatOleh->name ?? '—' }}</p>
+                    {{-- FIX: optional chaining --}}
+                    <p class="detail-value bold">{{ $pelanggaran->dicatatOleh?->name ?? '—' }}</p>
                 </div>
 
                 <div class="detail-item col-span-2">
@@ -189,7 +195,7 @@
                     </p>
                 </div>
 
-                @if($pelanggaran->tindakan)
+                @if(! empty($pelanggaran->tindakan))
                 <div class="detail-item col-span-2" style="border-bottom:none">
                     <p class="detail-label">Tindakan yang Diambil</p>
                     <div class="tindakan-box">{{ $pelanggaran->tindakan }}</div>
@@ -212,6 +218,7 @@
         <div class="card-body">
             <div class="timeline">
 
+                {{-- Step 1: selalu tampil — pelanggaran dicatat --}}
                 <div class="tl-item">
                     <div class="tl-dot blue">
                         <svg width="13" height="13" fill="none" stroke="#1d4ed8" stroke-width="2.5" viewBox="0 0 24 24">
@@ -221,12 +228,13 @@
                     <div class="tl-content">
                         <p class="tl-title">Pelanggaran Dicatat</p>
                         <p class="tl-time">
-                            {{ \Carbon\Carbon::parse($pelanggaran->created_at)->translatedFormat('d F Y, H:i') }}
-                            &middot; oleh <strong>{{ $pelanggaran->dicatatOleh->name ?? '—' }}</strong>
+                            {{ $pelanggaran->created_at->translatedFormat('d F Y, H:i') }}
+                            &middot; oleh <strong>{{ $pelanggaran->dicatatOleh?->name ?? '—' }}</strong>
                         </p>
                     </div>
                 </div>
 
+                {{-- Step 2: diproses (tampil jika sudah melewati status pending) --}}
                 @if(in_array($pelanggaran->status, ['diproses', 'selesai', 'banding']))
                 <div class="tl-item">
                     <div class="tl-dot yellow">
@@ -241,6 +249,7 @@
                 </div>
                 @endif
 
+                {{-- Step 3: banding --}}
                 @if($pelanggaran->status === 'banding')
                 <div class="tl-item">
                     <div class="tl-dot purple">
@@ -256,6 +265,7 @@
                 </div>
                 @endif
 
+                {{-- Step selesai --}}
                 @if($pelanggaran->status === 'selesai')
                 <div class="tl-item">
                     <div class="tl-dot green">
@@ -265,16 +275,39 @@
                     </div>
                     <div class="tl-content">
                         <p class="tl-title">Pelanggaran Diselesaikan</p>
+                        {{--
+                            FIX: Gunakan `diselesaikan_pada` (kolom eksplisit dari model baru)
+                            agar timestamp akurat. Fallback ke updated_at jika kolom belum ada
+                            (migrasi belum dijalankan / data lama).
+                        --}}
                         <p class="tl-time">
-                            {{ \Carbon\Carbon::parse($pelanggaran->updated_at)->translatedFormat('d F Y, H:i') }}
+                            {{ ($pelanggaran->diselesaikan_pada ?? $pelanggaran->updated_at)->translatedFormat('d F Y, H:i') }}
                         </p>
-                        @if($pelanggaran->tindakan)
+                        @if(! empty($pelanggaran->tindakan))
                             <div class="tl-desc">{{ $pelanggaran->tindakan }}</div>
                         @endif
                     </div>
                 </div>
                 @endif
 
+                {{-- Step dibatalkan --}}
+                @if($pelanggaran->status === 'dibatalkan')
+                <div class="tl-item">
+                    <div class="tl-dot gray">
+                        <svg width="13" height="13" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </div>
+                    <div class="tl-content">
+                        <p class="tl-title" style="color:var(--text3)">Pelanggaran Dibatalkan</p>
+                        <p class="tl-time">
+                            {{ $pelanggaran->updated_at->translatedFormat('d F Y, H:i') }}
+                        </p>
+                    </div>
+                </div>
+                @endif
+
+                {{-- Step menunggu (hanya jika masih pending) --}}
                 @if($pelanggaran->status === 'pending')
                 <div class="tl-item">
                     <div class="tl-dot yellow">
@@ -284,7 +317,7 @@
                         </svg>
                     </div>
                     <div class="tl-content">
-                        <p class="tl-title" style="color:var(--text3)">Menunggu tindak lanjut…</p>
+                        <p class="tl-title" style="color:var(--text3)">Menunggu tindak lanjut&hellip;</p>
                         <p class="tl-time">Pihak sekolah akan segera menindaklanjuti pelanggaran ini</p>
                     </div>
                 </div>

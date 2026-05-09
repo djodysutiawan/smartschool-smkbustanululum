@@ -10,7 +10,7 @@
         --radius:10px;--radius-sm:7px;
     }
 
-    .page{padding:28px 28px 40px;max-width:860px}
+    .page{padding:28px 28px 40px;max-width:2000px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:28px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}

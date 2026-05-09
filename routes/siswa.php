@@ -44,17 +44,11 @@ Route::prefix('siswa')
         //   2. QR Kelas       → absensi per pelajaran (berganti tiap sesi, dibuat guru)
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('barcode')->name('barcode.')->group(function () {
-            // Halaman utama — tampilkan kedua barcode sekaligus
-            Route::get('/',                  [BarcodeController::class, 'index'])->name('index');
-
-            // Tampilkan barcode tetap saja (fullscreen, cocok untuk scan langsung)
-            Route::get('/tetap',             [BarcodeController::class, 'tetap'])->name('tetap');
-
-            // Download barcode tetap sebagai gambar (PNG/SVG)
-            Route::get('/tetap/download',    [BarcodeController::class, 'download'])->name('download');
-
-            // QR kelas aktif saat ini (berganti per sesi, real-time)
-            Route::get('/qr-kelas',          [BarcodeController::class, 'qrKelas'])->name('qr-kelas');
+            Route::get('/',                [BarcodeController::class, 'index'])->name('index');
+            Route::get('/gerbang',         [BarcodeController::class, 'gerbang'])->name('gerbang');
+            Route::get('/gerbang/download',[BarcodeController::class, 'downloadGerbang'])->name('downloadGerbang');
+            Route::get('/mapel',           [BarcodeController::class, 'mapel'])->name('mapel');
+            Route::get('/mapel/download',  [BarcodeController::class, 'downloadMapel'])->name('downloadMapel');
         });
 
         // ──────────────────────────────────────────────────────────────────────

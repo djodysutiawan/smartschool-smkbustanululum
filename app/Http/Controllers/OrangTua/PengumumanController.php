@@ -9,15 +9,17 @@ use Illuminate\Http\Request;
 class PengumumanController extends Controller
 {
     /**
+     * GET /ortu/pengumuman
+     *
      * Daftar pengumuman untuk orang_tua atau semua role.
-     * Hanya yang sudah dipublikasikan (dipublikasikan_pada tidak null).
+     * Sudah dipublikasikan = dipublikasikan_pada IS NOT NULL (scope di model).
+     * Belum kadaluarsa = kadaluarsa_pada null atau >= sekarang.
      */
     public function index(Request $request)
     {
         $query = Pengumuman::dipublikasikan()
             ->untukRole('orang_tua')
             ->where(function ($q) {
-                // Belum kadaluarsa atau tidak ada batas kadaluarsa
                 $q->whereNull('kadaluarsa_pada')
                   ->orWhere('kadaluarsa_pada', '>=', now());
             });
@@ -37,21 +39,28 @@ class PengumumanController extends Controller
     }
 
     /**
+     * GET /ortu/pengumuman/{pengumuman}
+     *
      * Detail pengumuman.
+     * Accessor `dipublikasikan` di model mengembalikan bool dari dipublikasikan_pada.
      */
     public function show(Pengumuman $pengumuman)
     {
         abort_if(
-            ! in_array($pengumuman->target_role, ['orang_tua', 'semua'])
-            || ! $pengumuman->dipublikasikan,
+            ! $pengumuman->dipublikasikan
+            || ! in_array($pengumuman->target_role, ['orang_tua', 'semua']),
             403,
             'Pengumuman ini tidak tersedia untuk Anda.'
         );
 
-        // Pengumuman terkait / terbaru
+        // Pengumuman terbaru lainnya untuk sidebar/related
         $terkait = Pengumuman::dipublikasikan()
             ->untukRole('orang_tua')
             ->where('id', '!=', $pengumuman->id)
+            ->where(function ($q) {
+                $q->whereNull('kadaluarsa_pada')
+                  ->orWhere('kadaluarsa_pada', '>=', now());
+            })
             ->orderByDesc('dipublikasikan_pada')
             ->limit(5)
             ->get();

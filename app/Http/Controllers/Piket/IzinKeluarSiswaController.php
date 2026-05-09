@@ -3,212 +3,277 @@
 namespace App\Http\Controllers\Piket;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Piket\Concerns\PiketActiveGuru;
 use App\Models\IzinKeluarSiswa;
+use App\Models\LogPiket;
 use App\Models\Siswa;
 use App\Models\TahunAjaran;
-use Illuminate\Http\Request;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
-use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class IzinKeluarSiswaController extends Controller
 {
-    use PiketActiveGuru;
-
-    // ─── Index ────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // INDEX
+    // =========================================================================
 
     public function index(Request $request): View
     {
         $query = IzinKeluarSiswa::with(['siswa.kelas', 'diprosesOleh'])
-            ->latest('tanggal')->latest('id');
+            ->orderByDesc('tanggal')
+            ->orderByDesc('id');
 
-        if ($request->filled('status'))        $query->where('status', $request->status);
-        if ($request->filled('kategori'))       $query->where('kategori', $request->kategori);
-        if ($request->filled('tanggal_dari'))   $query->whereDate('tanggal', '>=', $request->tanggal_dari);
-        if ($request->filled('tanggal_sampai')) $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
         if ($request->filled('search')) {
-            $s = $request->search;
-            $query->where(fn ($q) => $q
-                ->whereHas('siswa', fn ($sq) => $sq->where('nama_lengkap', 'like', "%{$s}%"))
-                ->orWhere('nomor_surat', 'like', "%{$s}%")
-                ->orWhere('tujuan', 'like', "%{$s}%"));
+            $s = trim($request->search);
+            $query->where(function ($q) use ($s) {
+                $q->whereHas('siswa', fn ($q2) => $q2->where('nama_lengkap', 'like', "%{$s}%"))
+                  ->orWhere('nomor_surat', 'like', "%{$s}%")
+                  ->orWhere('tujuan', 'like', "%{$s}%");
+            });
         }
 
-        $izins = $query->paginate(20)->withQueryString();
+        if ($request->filled('status') && array_key_exists($request->status, IzinKeluarSiswa::STATUS_LIST)) {
+            $query->where('status', $request->status);
+        }
 
-        $stats = [
-            'menunggu'      => IzinKeluarSiswa::hariIni()->where('status', IzinKeluarSiswa::STATUS_MENUNGGU)->count(),
-            'sedang_keluar' => IzinKeluarSiswa::hariIni()->belumKembali()->count(),
-            'sudah_kembali' => IzinKeluarSiswa::hariIni()->where('status', IzinKeluarSiswa::STATUS_SUDAH_KEMBALI)->count(),
-        ];
+        if ($request->filled('kategori') && array_key_exists($request->kategori, IzinKeluarSiswa::KATEGORI_LIST)) {
+            $query->where('kategori', $request->kategori);
+        }
 
-        return view('piket.izin-keluar-siswa.index', [
-            'izins'        => $izins,
-            'stats'        => $stats,
-            'statusList'   => IzinKeluarSiswa::STATUS_LIST,
-            'kategoriList' => IzinKeluarSiswa::KATEGORI_LIST,
-            'guruAktifId'  => $this->resolveActiveGuruId(),
-        ]);
+        if ($request->filled('tanggal_dari')) {
+            $query->whereDate('tanggal', '>=', $request->tanggal_dari);
+        }
+
+        if ($request->filled('tanggal_sampai')) {
+            $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
+        }
+
+        // Stats hari ini — sama persis dengan Admin, selalu dihitung tanpa filter aktif
+        $hariIniTotal    = IzinKeluarSiswa::whereDate('tanggal', today())->count();
+        $hariIniMenunggu = IzinKeluarSiswa::whereDate('tanggal', today())
+                            ->where('status', IzinKeluarSiswa::STATUS_MENUNGGU)->count();
+        $hariIniKeluar   = IzinKeluarSiswa::whereDate('tanggal', today())
+                            ->where('status', IzinKeluarSiswa::STATUS_DISETUJUI)->count();
+
+        $izins        = $query->paginate(15)->withQueryString();
+        $statusList   = IzinKeluarSiswa::STATUS_LIST;
+        $kategoriList = IzinKeluarSiswa::KATEGORI_LIST;
+        $guruAktifId  = $this->getLogAktif(Auth::id()) ? Auth::id() : null;
+
+        return view('piket.izin-keluar-siswa.index', compact(
+            'izins',
+            'statusList',
+            'kategoriList',
+            'hariIniTotal',
+            'hariIniMenunggu',
+            'hariIniKeluar',
+            'guruAktifId',
+        ));
     }
 
-    // ─── Create ───────────────────────────────────────────────────────────────
+    // =========================================================================
+    // CREATE
+    // =========================================================================
 
-    public function create(): View|RedirectResponse
+    public function create(): View
     {
-        if (! $this->resolveActiveGuruId()) {
-            return $this->redirectBelumCheckin('Check-in terlebih dahulu untuk membuat izin keluar siswa.');
-        }
+        $guruAktifId      = $this->getLogAktif(Auth::id()) ? Auth::id() : null;
+        $siswas           = Siswa::with('kelas')->aktif()->orderBy('nama_lengkap')->get();
+        $tahunAjarans     = TahunAjaran::orderByDesc('tahun')->orderByDesc('semester')->get();
+        $kategoriList     = IzinKeluarSiswa::KATEGORI_LIST;
+        $tahunAjaranAktif = TahunAjaran::where('status', 'aktif')->first();
 
-        return view('piket.izin-keluar-siswa.create', [
-            'siswas'       => Siswa::with('kelas')->aktif()->orderBy('nama_lengkap')->get(),
-            'tahunAjarans' => TahunAjaran::orderByDesc('tanggal_mulai')->get(),
-            'kategoriList' => IzinKeluarSiswa::KATEGORI_LIST,
-        ]);
+        return view('piket.izin-keluar-siswa.create', compact(
+            'siswas',
+            'tahunAjarans',
+            'kategoriList',
+            'tahunAjaranAktif',
+            'guruAktifId', // null = belum check-in → view tampilkan banner peringatan
+        ));
     }
 
-    // ─── Store ────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // STORE
+    // =========================================================================
 
     public function store(Request $request): RedirectResponse
     {
-        $guruAktifId = $this->resolveActiveGuruId();
-
-        if (! $guruAktifId) {
-            return $this->redirectBelumCheckin('Check-in terlebih dahulu untuk membuat izin keluar siswa.');
-        }
-
         $validated = $request->validate([
             'siswa_id'        => 'required|exists:siswa,id',
             'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
             'tanggal'         => 'required|date',
             'jam_keluar'      => 'required|date_format:H:i',
-            'jam_kembali'     => 'nullable|date_format:H:i|after:jam_keluar',
+            'jam_kembali'     => [
+                'nullable',
+                'date_format:H:i',
+                // Selaras dengan Admin: gunakan closure, bukan 'after:jam_keluar'
+                // karena 'after' tidak akurat untuk format H:i tanpa konteks tanggal
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value && $request->jam_keluar && $value <= $request->jam_keluar) {
+                        $fail('Rencana jam kembali harus setelah jam keluar.');
+                    }
+                },
+            ],
+            'kategori'        => ['required', Rule::in(array_keys(IzinKeluarSiswa::KATEGORI_LIST))],
             'tujuan'          => 'required|string|max:255',
-            'kategori'        => 'required|in:' . implode(',', array_keys(IzinKeluarSiswa::KATEGORI_LIST)),
             'keterangan'      => 'nullable|string|max:1000',
         ]);
 
-        $izin = IzinKeluarSiswa::create($validated);
+        IzinKeluarSiswa::create(array_merge($validated, [
+            'status' => IzinKeluarSiswa::STATUS_MENUNGGU,
+        ]));
 
         return redirect()
-            ->route('piket.izin-keluar-siswa.show', $izin)
+            ->route('piket.izin-keluar-siswa.index')
             ->with('success', 'Izin keluar siswa berhasil dibuat.');
     }
 
-    // ─── Show ─────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // SHOW
+    // =========================================================================
 
     public function show(IzinKeluarSiswa $izinKeluarSiswa): View
     {
-        $izinKeluarSiswa->load(['siswa.kelas', 'tahunAjaran', 'diprosesOleh', 'dicatatKembaliOleh']);
-
-        return view('piket.izin-keluar-siswa.show', [
-            'izin'        => $izinKeluarSiswa,
-            'guruAktifId' => $this->resolveActiveGuruId(),
+        $izin = $izinKeluarSiswa->load([
+            'siswa.kelas',
+            'tahunAjaran',
+            'diprosesOleh',
+            'dicatatKembaliOleh',
         ]);
+
+        $guruAktifId = $this->getLogAktif(Auth::id()) ? Auth::id() : null;
+
+        return view('piket.izin-keluar-siswa.show', compact('izin', 'guruAktifId'));
     }
 
-    // ─── Edit ─────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // EDIT
+    // =========================================================================
 
     public function edit(IzinKeluarSiswa $izinKeluarSiswa): View|RedirectResponse
     {
-        if (! $this->resolveActiveGuruId()) {
-            return $this->redirectBelumCheckin('Check-in terlebih dahulu untuk mengedit izin.');
+        // Selaras dengan Admin: redirect dengan pesan error, bukan abort 403
+        if (! $izinKeluarSiswa->isMenunggu()) {
+            return redirect()
+                ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa->id)
+                ->with('error', 'Hanya izin berstatus Menunggu yang dapat diedit.');
         }
 
-        abort_if(! $izinKeluarSiswa->isMenunggu(), 403, 'Hanya izin berstatus Menunggu yang dapat diedit.');
+        $izin         = $izinKeluarSiswa;
+        $siswas       = Siswa::with('kelas')->aktif()->orderBy('nama_lengkap')->get();
+        $tahunAjarans = TahunAjaran::orderByDesc('tahun')->orderByDesc('semester')->get();
+        $kategoriList = IzinKeluarSiswa::KATEGORI_LIST;
 
-        return view('piket.izin-keluar-siswa.edit', [
-            'izin'         => $izinKeluarSiswa,
-            'siswas'       => Siswa::with('kelas')->aktif()->orderBy('nama_lengkap')->get(),
-            'tahunAjarans' => TahunAjaran::orderByDesc('tanggal_mulai')->get(),
-            'kategoriList' => IzinKeluarSiswa::KATEGORI_LIST,
-        ]);
+        return view('piket.izin-keluar-siswa.edit', compact(
+            'izin',
+            'siswas',
+            'tahunAjarans',
+            'kategoriList',
+        ));
     }
 
-    // ─── Update ───────────────────────────────────────────────────────────────
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
 
     public function update(Request $request, IzinKeluarSiswa $izinKeluarSiswa): RedirectResponse
     {
-        if (! $this->resolveActiveGuruId()) {
-            return $this->redirectBelumCheckin('Check-in terlebih dahulu untuk mengedit izin.');
+        if (! $izinKeluarSiswa->isMenunggu()) {
+            return redirect()
+                ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa->id)
+                ->with('error', 'Hanya izin berstatus Menunggu yang dapat diedit.');
         }
-
-        abort_if(! $izinKeluarSiswa->isMenunggu(), 403, 'Hanya izin berstatus Menunggu yang dapat diedit.');
 
         $validated = $request->validate([
             'siswa_id'        => 'required|exists:siswa,id',
             'tahun_ajaran_id' => 'required|exists:tahun_ajaran,id',
             'tanggal'         => 'required|date',
             'jam_keluar'      => 'required|date_format:H:i',
-            'jam_kembali'     => 'nullable|date_format:H:i|after:jam_keluar',
+            'jam_kembali'     => [
+                'nullable',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($value && $request->jam_keluar && $value <= $request->jam_keluar) {
+                        $fail('Rencana jam kembali harus setelah jam keluar.');
+                    }
+                },
+            ],
+            'kategori'        => ['required', Rule::in(array_keys(IzinKeluarSiswa::KATEGORI_LIST))],
             'tujuan'          => 'required|string|max:255',
-            'kategori'        => 'required|in:' . implode(',', array_keys(IzinKeluarSiswa::KATEGORI_LIST)),
             'keterangan'      => 'nullable|string|max:1000',
         ]);
 
         $izinKeluarSiswa->update($validated);
 
         return redirect()
-            ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa)
-            ->with('success', 'Izin keluar siswa berhasil diperbarui.');
+            ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa->id)
+            ->with('success', 'Izin keluar berhasil diperbarui.');
     }
 
-    // ─── Destroy ──────────────────────────────────────────────────────────────
+    // =========================================================================
+    // DESTROY
+    // =========================================================================
 
     public function destroy(IzinKeluarSiswa $izinKeluarSiswa): RedirectResponse
     {
-        if (! $this->resolveActiveGuruId()) {
-            return $this->redirectBelumCheckin('Check-in terlebih dahulu untuk menghapus izin.');
+        // Selaras dengan Admin: blokir hapus jika siswa masih di luar (status disetujui)
+        if ($izinKeluarSiswa->isDisetujui()) {
+            return redirect()
+                ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa->id)
+                ->with('error', 'Izin yang sedang aktif (siswa masih di luar) tidak dapat dihapus.');
         }
 
         $izinKeluarSiswa->delete();
 
         return redirect()
             ->route('piket.izin-keluar-siswa.index')
-            ->with('success', 'Data izin keluar berhasil dihapus.');
+            ->with('success', 'Izin keluar berhasil dihapus.');
     }
 
-    // ─── Approve ──────────────────────────────────────────────────────────────
+    // =========================================================================
+    // APPROVE (setujui)
+    // Nama method 'approve' sesuai route: piket.izin-keluar-siswa.approve
+    // Logic selaras dengan Admin::setujui() — pakai DB::transaction + lockForUpdate
+    // =========================================================================
 
     public function approve(Request $request, IzinKeluarSiswa $izinKeluarSiswa): RedirectResponse
     {
-        $guruAktifId = $this->resolveActiveGuruId();
-
-        if (! $guruAktifId) {
-            return $this->redirectBelumCheckin('Check-in terlebih dahulu untuk menyetujui izin.');
+        if (! $izinKeluarSiswa->isMenunggu()) {
+            return back()->with('error', 'Izin ini sudah diproses sebelumnya.');
         }
-
-        abort_if(! $izinKeluarSiswa->isMenunggu(), 422, 'Status tidak valid untuk disetujui.');
 
         $request->validate([
             'catatan_piket' => 'nullable|string|max:500',
         ]);
 
-        $izinKeluarSiswa->update([
-            'status'        => IzinKeluarSiswa::STATUS_DISETUJUI,
-            'nomor_surat'   => IzinKeluarSiswa::generateNomorSurat(),
-            'diproses_oleh' => Auth::id(),
-            'diproses_pada' => now(),
-            'catatan_piket' => $request->catatan_piket,
-        ]);
+        // Selaras dengan Admin: gunakan DB::transaction agar nomor surat tidak dobel
+        // saat ada request bersamaan (lockForUpdate ada di generateNomorSurat())
+        DB::transaction(function () use ($request, $izinKeluarSiswa) {
+            $izinKeluarSiswa->update([
+                'status'        => IzinKeluarSiswa::STATUS_DISETUJUI,
+                'diproses_oleh' => Auth::id(),
+                'diproses_pada' => now(),
+                'catatan_piket' => $request->catatan_piket,
+                'nomor_surat'   => IzinKeluarSiswa::generateNomorSurat(),
+            ]);
+        });
 
-        return redirect()
-            ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa)
-            ->with('success', 'Izin disetujui. Surat izin siap dicetak.');
+        return back()->with('success', 'Izin keluar berhasil disetujui dan nomor surat telah dibuat.');
     }
 
-    // ─── Tolak ────────────────────────────────────────────────────────────────
+    // =========================================================================
+    // TOLAK
+    // =========================================================================
 
     public function tolak(Request $request, IzinKeluarSiswa $izinKeluarSiswa): RedirectResponse
     {
-        $guruAktifId = $this->resolveActiveGuruId();
-
-        if (! $guruAktifId) {
-            return $this->redirectBelumCheckin('Check-in terlebih dahulu untuk menolak izin.');
+        if (! $izinKeluarSiswa->isMenunggu()) {
+            return back()->with('error', 'Izin ini sudah diproses sebelumnya.');
         }
-
-        abort_if(! $izinKeluarSiswa->isMenunggu(), 422, 'Status tidak valid untuk ditolak.');
 
         $request->validate([
             'catatan_piket' => 'required|string|max:500',
@@ -221,26 +286,33 @@ class IzinKeluarSiswaController extends Controller
             'catatan_piket' => $request->catatan_piket,
         ]);
 
-        return redirect()
-            ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa)
-            ->with('success', 'Izin keluar siswa ditolak.');
+        return back()->with('success', 'Izin keluar berhasil ditolak.');
     }
 
-    // ─── Konfirmasi Kembali ───────────────────────────────────────────────────
+    // =========================================================================
+    // KONFIRMASI KEMBALI (catatKembali di Admin)
+    // Nama method 'konfirmasiKembali' sesuai route: piket.izin-keluar-siswa.konfirmasi-kembali
+    // Logic selaras dengan Admin::catatKembali()
+    // =========================================================================
 
     public function konfirmasiKembali(Request $request, IzinKeluarSiswa $izinKeluarSiswa): RedirectResponse
     {
-        $guruAktifId = $this->resolveActiveGuruId();
-
-        if (! $guruAktifId) {
-            return $this->redirectBelumCheckin('Check-in terlebih dahulu untuk konfirmasi kepulangan siswa.');
+        if (! $izinKeluarSiswa->isDisetujui()) {
+            return back()->with('error', 'Hanya izin berstatus Disetujui yang dapat dicatat kembali.');
         }
 
-        abort_if(! $izinKeluarSiswa->isDisetujui(), 422, 'Hanya izin berstatus Disetujui yang bisa dikonfirmasi kembali.');
-
         $request->validate([
-            'jam_kembali_aktual' => 'required|date_format:H:i',
-            'catatan_piket'      => 'nullable|string|max:500',
+            'jam_kembali_aktual' => [
+                'required',
+                'date_format:H:i',
+                // Selaras dengan Admin: validasi menggunakan closure
+                function ($attribute, $value, $fail) use ($izinKeluarSiswa) {
+                    if ($izinKeluarSiswa->jam_keluar && $value <= $izinKeluarSiswa->jam_keluar) {
+                        $fail('Jam kembali aktual harus setelah jam keluar (' . $izinKeluarSiswa->jam_keluar . ').');
+                    }
+                },
+            ],
+            'catatan_piket' => 'nullable|string|max:500',
         ]);
 
         $izinKeluarSiswa->update([
@@ -248,49 +320,68 @@ class IzinKeluarSiswaController extends Controller
             'jam_kembali_aktual'   => $request->jam_kembali_aktual,
             'dicatat_kembali_oleh' => Auth::id(),
             'dicatat_kembali_pada' => now(),
-            'catatan_piket'        => $request->catatan_piket ?? $izinKeluarSiswa->catatan_piket,
+            // Selaras dengan Admin: pertahankan catatan piket lama jika tidak diisi ulang
+            'catatan_piket'        => $request->filled('catatan_piket')
+                                        ? $request->catatan_piket
+                                        : $izinKeluarSiswa->catatan_piket,
         ]);
 
-        return redirect()
-            ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa)
-            ->with('success', 'Siswa telah dicatat kembali ke sekolah.');
+        return back()->with('success', 'Siswa berhasil dicatat kembali.');
     }
 
-    // ─── Cetak Surat ──────────────────────────────────────────────────────────
+    // =========================================================================
+    // CETAK SURAT
+    // Selaras dengan Admin: load relasi yang sama, ambil profil sekolah
+    // =========================================================================
 
     public function cetakSurat(IzinKeluarSiswa $izinKeluarSiswa)
     {
-        abort_if(
-            ! $izinKeluarSiswa->isDisetujui() && ! $izinKeluarSiswa->isSudahKembali(),
-            403,
-            'Surat hanya bisa dicetak untuk izin yang sudah disetujui.'
-        );
-
-        $izinKeluarSiswa->load(['siswa.kelas', 'tahunAjaran', 'diprosesOleh']);
-
-        $logPiketAktif = \App\Models\LogPiket::with('guru')
-            ->whereDate('tanggal', $izinKeluarSiswa->tanggal)
-            ->whereNotNull('masuk_pada')
-            ->whereNull('keluar_pada')
-            ->orderByDesc('masuk_pada')
-            ->first();
-
-        if (! $logPiketAktif) {
-            $logPiketAktif = \App\Models\LogPiket::with('guru')
-                ->whereDate('tanggal', $izinKeluarSiswa->tanggal)
-                ->whereNotNull('masuk_pada')
-                ->orderByDesc('masuk_pada')
-                ->first();
+        if (! in_array($izinKeluarSiswa->status, [
+            IzinKeluarSiswa::STATUS_DISETUJUI,
+            IzinKeluarSiswa::STATUS_SUDAH_KEMBALI,
+        ])) {
+            return redirect()
+                ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa->id)
+                ->with('error', 'Surat hanya dapat dicetak untuk izin yang sudah disetujui.');
         }
 
-        $guruPiketAktif = $logPiketAktif?->guru;
-        $namaFile       = 'surat-izin-' . str_replace('/', '-', $izinKeluarSiswa->nomor_surat) . '.pdf';
+        $izin = $izinKeluarSiswa->load([
+            'siswa.kelas',
+            'tahunAjaran',
+            'diprosesOleh',
+        ]);
 
-        $pdf = Pdf::loadView('piket.izin-keluar-siswa.surat-pdf', [
-            'izin'           => $izinKeluarSiswa,
-            'guruPiketAktif' => $guruPiketAktif,
-        ])->setPaper('a5', 'portrait');
+        // Selaras dengan Admin: ambil profil sekolah via singleton
+        $profil = \App\Models\ProfilSekolah::instance();
 
-        return $pdf->stream($namaFile);
+        // Bersihkan karakter / dan \ dari nomor surat agar aman sebagai nama file
+        $nomorSurat = $izin->nomor_surat
+            ? str_replace(['/', '\\', ' '], ['-', '-', ''], $izin->nomor_surat)
+            : $izin->id;
+
+        $pdf = Pdf::loadView(
+            'piket.izin-keluar-siswa.cetak-surat',
+            compact('izin', 'profil')
+        )->setPaper('a5', 'portrait');
+
+        return $pdf->stream('surat-izin-' . $nomorSurat . '.pdf');
+    }
+
+    // =========================================================================
+    // PRIVATE HELPERS
+    // =========================================================================
+
+    /**
+     * Cek log piket aktif hari ini (sudah check-in, belum checkout).
+     * Dipakai untuk konteks tampilan — bukan hard-block akses.
+     * Sama dengan helper di PelanggaranController.
+     */
+    private function getLogAktif(int $userId): ?object
+    {
+        return LogPiket::where('pengguna_id', $userId)
+            ->whereDate('tanggal', today())
+            ->whereNotNull('masuk_pada')
+            ->whereNull('keluar_pada')
+            ->first();
     }
 }

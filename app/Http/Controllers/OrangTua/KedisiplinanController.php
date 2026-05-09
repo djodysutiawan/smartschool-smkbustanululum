@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Auth;
 
 class KedisiplinanController extends Controller
 {
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     private function getOrangTua()
     {
         $orangTua = Auth::user()->orangTua;
@@ -31,8 +33,16 @@ class KedisiplinanController extends Controller
         return $anakList->first();
     }
 
+    // ── RIWAYAT ───────────────────────────────────────────────────────────────
+
     /**
-     * Riwayat pelanggaran / kedisiplinan anak (read-only).
+     * GET /ortu/kedisiplinan/riwayat
+     *
+     * Riwayat pelanggaran anak (read-only).
+     * Orang tua tidak bisa mengubah data apapun.
+     *
+     * Poin dihitung dari semua status KECUALI 'dibatalkan'
+     * karena dibatalkan berarti pelanggaran tidak jadi dihitung.
      */
     public function riwayat(Request $request)
     {
@@ -58,30 +68,32 @@ class KedisiplinanController extends Controller
         $pelanggaran  = $query->orderByDesc('tanggal')->paginate(15)->withQueryString();
         $kategoriList = KategoriPelanggaran::orderBy('nama')->get();
 
-        // Total poin: poin tersimpan langsung di kolom pelanggaran.poin
+        // Total poin aktif tahun ini (kecuali yang dibatalkan)
         $totalPoin = Pelanggaran::where('siswa_id', $anak->id)
             ->whereYear('tanggal', now()->year)
+            ->where('status', '!=', 'dibatalkan')
             ->sum('poin');
 
-        // Rekap per kategori — ambil semua data tahun ini lalu group di PHP
+        // Ambil semua pelanggaran tahun ini dengan kategori untuk rekap
         $semuaTahunIni = Pelanggaran::with('kategori')
             ->where('siswa_id', $anak->id)
+            ->where('status', '!=', 'dibatalkan')
             ->whereYear('tanggal', now()->year)
             ->get();
 
-        // Rekap per kategori (nama + jumlah)
+        // Rekap per kategori (nama + jumlah) — group di PHP tanpa query tambahan
         $rekapKategori = $semuaTahunIni
             ->groupBy('kategori_pelanggaran_id')
             ->map(fn ($g) => [
-                'nama'   => $g->first()->kategori->nama ?? '-',
-                'total'  => $g->count(),
-                'tingkat'=> $g->first()->kategori->tingkat ?? 'ringan',
+                'nama'    => $g->first()->kategori->nama ?? '-',
+                'total'   => $g->count(),
+                'tingkat' => $g->first()->kategori->tingkat ?? 'ringan',
             ]);
 
-        // Rekap per tingkat — hitung dari koleksi yang sudah diambil, tanpa query tambahan
-        $totalBerat  = $semuaTahunIni->filter(fn ($p) => $p->kategori?->tingkat === 'berat')->count();
-        $totalSedang = $semuaTahunIni->filter(fn ($p) => $p->kategori?->tingkat === 'sedang')->count();
-        $totalRingan = $semuaTahunIni->filter(fn ($p) => $p->kategori?->tingkat === 'ringan')->count();
+        // Rekap per tingkat — kolom `tingkat` ada di KategoriPelanggaran (verified)
+        $totalBerat  = $semuaTahunIni->filter(fn ($p) => ($p->kategori->tingkat ?? '') === 'berat')->count();
+        $totalSedang = $semuaTahunIni->filter(fn ($p) => ($p->kategori->tingkat ?? '') === 'sedang')->count();
+        $totalRingan = $semuaTahunIni->filter(fn ($p) => ($p->kategori->tingkat ?? '') === 'ringan')->count();
 
         return view('orangtua.kedisiplinan.riwayat', compact(
             'anak',
@@ -93,6 +105,88 @@ class KedisiplinanController extends Controller
             'totalBerat',
             'totalSedang',
             'totalRingan',
+        ));
+    }
+
+    // ── TOTAL POIN ────────────────────────────────────────────────────────────
+
+    /**
+     * GET /ortu/kedisiplinan/total-poin
+     *
+     * Ringkasan poin kedisiplinan anak lintas tahun.
+     */
+    public function totalPoin(Request $request)
+    {
+        $orangTua = $this->getOrangTua();
+        $anak     = $this->resolveAnak($request, $orangTua);
+        $anakList = $orangTua->siswa()->with('kelas')->get();
+
+        $tahun = $request->filled('tahun') ? (int) $request->tahun : now()->year;
+
+        $totalPoin = Pelanggaran::where('siswa_id', $anak->id)
+            ->where('status', '!=', 'dibatalkan')
+            ->whereYear('tanggal', $tahun)
+            ->sum('poin');
+
+        $totalKasus = Pelanggaran::where('siswa_id', $anak->id)
+            ->where('status', '!=', 'dibatalkan')
+            ->whereYear('tanggal', $tahun)
+            ->count();
+
+        // Tren per bulan
+        $trenBulanan = collect(range(1, 12))->map(fn ($b) => [
+            'bulan' => $b,
+            'poin'  => Pelanggaran::where('siswa_id', $anak->id)
+                ->where('status', '!=', 'dibatalkan')
+                ->whereYear('tanggal', $tahun)
+                ->whereMonth('tanggal', $b)
+                ->sum('poin'),
+        ]);
+
+        $tahunList = collect(range(now()->year - 2, now()->year));
+
+        return view('orangtua.kedisiplinan.total-poin', compact(
+            'anak',
+            'anakList',
+            'totalPoin',
+            'totalKasus',
+            'trenBulanan',
+            'tahun',
+            'tahunList',
+        ));
+    }
+
+    // ── STATUS ────────────────────────────────────────────────────────────────
+
+    /**
+     * GET /ortu/kedisiplinan/status
+     *
+     * Status kedisiplinan terkini anak — pelanggaran pending/diproses.
+     */
+    public function status(Request $request)
+    {
+        $orangTua = $this->getOrangTua();
+        $anak     = $this->resolveAnak($request, $orangTua);
+        $anakList = $orangTua->siswa()->with('kelas')->get();
+
+        // Pelanggaran yang masih aktif diproses
+        $pelanggaranAktif = Pelanggaran::with('kategori')
+            ->where('siswa_id', $anak->id)
+            ->whereIn('status', ['pending', 'diproses', 'banding'])
+            ->orderByDesc('tanggal')
+            ->get();
+
+        // Total poin aktif tahun ini
+        $totalPoinTahunIni = Pelanggaran::where('siswa_id', $anak->id)
+            ->where('status', '!=', 'dibatalkan')
+            ->whereYear('tanggal', now()->year)
+            ->sum('poin');
+
+        return view('orangtua.kedisiplinan.status', compact(
+            'anak',
+            'anakList',
+            'pelanggaranAktif',
+            'totalPoinTahunIni',
         ));
     }
 }

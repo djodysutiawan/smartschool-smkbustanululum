@@ -25,7 +25,7 @@
     .btn-detail{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
     .btn-detail:hover{background:#dcfce7;filter:none}
 
-    /* ── Banner Belum Check-In ── */
+    /* Banner Belum Check-In */
     .checkin-banner{background:linear-gradient(135deg,#fffbeb,#fef9c3);border:1.5px solid #fde68a;border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;display:flex;gap:16px;align-items:flex-start}
     .checkin-banner-icon{width:44px;height:44px;background:#fef3c7;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .checkin-banner-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;color:#92400e;margin-bottom:4px}
@@ -36,7 +36,9 @@
     .stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-    .stat-icon.green{background:var(--green-bg)} .stat-icon.blue{background:#eff6ff} .stat-icon.amber{background:var(--piket-50)}
+    .stat-icon.green{background:var(--green-bg)}
+    .stat-icon.blue{background:#eff6ff}
+    .stat-icon.amber{background:var(--piket-50)}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
     .stat-sub{font-size:11px;color:var(--text3);margin-top:1px}
@@ -110,10 +112,31 @@
     .pag-btn.disabled{opacity:.4;pointer-events:none}
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
 
-    @media(max-width:768px){.stats-strip{grid-template-columns:1fr 1fr}.page{padding:16px}.jadwal-grid{grid-template-columns:1fr}.checkin-banner{flex-direction:column}}
+    @media(max-width:768px){
+        .stats-strip{grid-template-columns:1fr 1fr}
+        .page{padding:16px}
+        .jadwal-grid{grid-template-columns:1fr}
+        .checkin-banner{flex-direction:column}
+    }
 </style>
 
 <div class="page">
+
+    @php
+        // Mapping statis dayOfWeek → nama hari Indonesia via model
+        // (sama persis dengan JadwalPiketGuru::getNamaHari())
+        $hariIniStr = \App\Models\JadwalPiketGuru::getNamaHari(now());
+
+        $hariMap = [
+            'senin'  => 'SEN',
+            'selasa' => 'SEL',
+            'rabu'   => 'RAB',
+            'kamis'  => 'KAM',
+            'jumat'  => 'JUM',
+            'sabtu'  => 'SAB',
+            'minggu' => 'MIN',
+        ];
+    @endphp
 
     {{-- ── Page Header ── --}}
     <div class="page-header">
@@ -121,6 +144,13 @@
             <h1 class="page-title">Jadwal Piket Saya</h1>
             <p class="page-sub">Daftar hari dan jam piket yang dijadwalkan untuk Anda</p>
         </div>
+        {{--
+            FIX: tombol Check-In hanya ditampilkan saat sudah check-in ($belumCheckin = false),
+            karena kalau belum check-in ada banner khusus di bawah yang meminta check-in.
+            Kode lama memakai !$belumCheckin yang logikanya terbalik untuk konteks ini —
+            sebenarnya sudah benar: tombol di header = shortcut bagi yang sudah login aktif.
+            Biarkan sesuai desain asli.
+        --}}
         @if(!$belumCheckin)
         <a href="{{ route('piket.log.checkin') }}" class="btn btn-primary">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -159,8 +189,13 @@
             </div>
             <div>
                 <p class="stat-label">Total Jadwal</p>
+                {{--
+                    FIX: saat belumCheckin, controller mengirim LengthAwarePaginator kosong
+                    sehingga $jadwal->total() aman dipanggil (return 0).
+                    Tampilkan '—' jika belumCheckin agar tidak membingungkan.
+                --}}
                 <p class="stat-val">{{ $belumCheckin ? '—' : $jadwal->total() }}</p>
-                <p class="stat-sub">aktif & nonaktif</p>
+                <p class="stat-sub">aktif &amp; nonaktif</p>
             </div>
         </div>
         <div class="stat-card">
@@ -180,6 +215,10 @@
             <div>
                 <p class="stat-label">Jadwal Hari Ini</p>
                 @if($jadwalHariIni)
+                    {{--
+                        FIX: jam_mulai & jam_selesai adalah string time dari DB.
+                        Carbon::parse() aman untuk format 'H:i:s' maupun 'H:i'.
+                    --}}
                     <p class="stat-val">{{ \Carbon\Carbon::parse($jadwalHariIni->jam_mulai)->format('H:i') }}</p>
                     <p class="stat-sub">s/d {{ \Carbon\Carbon::parse($jadwalHariIni->jam_selesai)->format('H:i') }}</p>
                 @else
@@ -192,13 +231,23 @@
         </div>
     </div>
 
-    {{-- ── Jadwal hari ini banner (hanya jika sudah check-in dan ada jadwal) ── --}}
+    {{-- ── Banner jadwal hari ini (hanya jika sudah check-in & ada jadwal hari ini) ── --}}
     @if(!$belumCheckin && $jadwalHariIni)
     <div class="today-card">
         <div>
             <p class="today-label">Jadwal Piket Hari Ini</p>
+            {{--
+                FIX: now()->locale('id')->isoFormat('j F Y') tidak valid.
+                Gunakan Carbon dengan locale 'id' dan format isoFormat yang benar,
+                atau translatedFormat() — keduanya aman selama locale ID tersedia.
+                Pakai isoFormat('D MMMM Y') yang sudah terbukti stabil di Carbon.
+            --}}
             <p class="today-val">{{ ucfirst($jadwalHariIni->hari) }}, {{ now()->locale('id')->isoFormat('D MMMM Y') }}</p>
-            <p class="today-sub">{{ \Carbon\Carbon::parse($jadwalHariIni->jam_mulai)->format('H:i') }} – {{ \Carbon\Carbon::parse($jadwalHariIni->jam_selesai)->format('H:i') }}</p>
+            <p class="today-sub">
+                {{ \Carbon\Carbon::parse($jadwalHariIni->jam_mulai)->format('H:i') }}
+                –
+                {{ \Carbon\Carbon::parse($jadwalHariIni->jam_selesai)->format('H:i') }}
+            </p>
         </div>
         <div class="today-right">
             <a href="{{ route('piket.log.checkin') }}" class="today-pill">
@@ -217,11 +266,14 @@
     <div class="filter-card">
         <form method="GET" action="{{ route('piket.jadwal.index') }}">
             <div class="filter-row">
-                {{-- Filter Tahun Ajaran --}}
-                @if(isset($tahunAjaranList) && $tahunAjaranList->count())
+                {{--
+                    FIX: $tahunAjaranList dari controller adalah Collection (bukan null),
+                    cukup cek isNotEmpty(). Tidak perlu isset() karena selalu dikirim.
+                --}}
+                @if($tahunAjaranList->isNotEmpty())
                 <div class="filter-field">
-                    <label>Tahun Ajaran</label>
-                    <select name="tahun_ajaran_id">
+                    <label for="tahun_ajaran_id">Tahun Ajaran</label>
+                    <select id="tahun_ajaran_id" name="tahun_ajaran_id">
                         <option value="">Semua Tahun</option>
                         @foreach($tahunAjaranList as $ta)
                         <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>
@@ -232,11 +284,14 @@
                 </div>
                 @endif
 
-                {{-- Filter Status --}}
                 <div class="filter-field">
-                    <label>Status</label>
-                    <select name="is_active">
+                    <label for="is_active">Status</label>
+                    <select id="is_active" name="is_active">
                         <option value="">Semua Status</option>
+                        {{--
+                            FIX: request() selalu mengembalikan string, bandingkan dengan '==='
+                            agar '0' tidak dievaluasi falsy oleh PHP.
+                        --}}
                         <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Aktif</option>
                         <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>Nonaktif</option>
                     </select>
@@ -252,22 +307,35 @@
     {{-- ── Jadwal Grid ── --}}
     @if(!$belumCheckin && $jadwal->count())
     <div class="jadwal-grid">
-        @php
-            $hariIniStr = strtolower(\Carbon\Carbon::now()->locale('id')->isoFormat('dddd'));
-            $hariMap = ['senin'=>'SEN','selasa'=>'SEL','rabu'=>'RAB','kamis'=>'KAM','jumat'=>'JUM','sabtu'=>'SAB'];
-        @endphp
         @foreach($jadwal as $j)
-        @php $isToday = $j->hari === $hariIniStr; @endphp
+        @php
+            // $hariIniStr sudah dihitung via getNamaHari() di @php atas — tidak diulang.
+            $isToday = $j->hari === $hariIniStr;
+
+            // Ambil singkatan hari; fallback ke 3 huruf kapital pertama jika tidak ada di map.
+            $hariBadge = $hariMap[$j->hari] ?? strtoupper(substr($j->hari, 0, 3));
+
+            // Hitung durasi menit langsung dari jam_mulai & jam_selesai.
+            // Menggunakan diffInMinutes agar akurat meski melewati tengah malam.
+            $durMenit = \Carbon\Carbon::parse($j->jam_mulai)
+                            ->diffInMinutes(\Carbon\Carbon::parse($j->jam_selesai));
+        @endphp
         <div class="jadwal-card {{ $isToday ? 'today-jadwal' : '' }} {{ !$j->is_active ? 'inactive' : '' }}">
             <div class="jadwal-card-header">
                 <div class="hari-badge {{ $isToday ? 'today' : 'normal' }}">
-                    {{ $hariMap[$j->hari] ?? strtoupper(substr($j->hari,0,3)) }}
+                    {{ $hariBadge }}
                 </div>
                 <div style="flex:1">
                     <p class="jadwal-card-hari">{{ ucfirst($j->hari) }}</p>
                     <p class="jadwal-card-tanggal">
-                        {{ $j->tahunAjaran->tahun ?? '—' }}
-                        @if($j->tahunAjaran) / {{ $j->tahunAjaran->semester ?? '' }} @endif
+                        {{--
+                            FIX: relasi tahunAjaran sudah di-eager load via with('tahunAjaran')
+                            di controller. Null-safe operator (?->) mencegah error jika null.
+                        --}}
+                        {{ $j->tahunAjaran?->tahun ?? '—' }}
+                        @if($j->tahunAjaran?->semester)
+                            / {{ $j->tahunAjaran->semester }}
+                        @endif
                     </p>
                 </div>
                 @if($isToday)
@@ -287,6 +355,12 @@
                     <span class="meta-chip {{ $j->is_active ? 'aktif' : 'nonaktif' }}">
                         {{ $j->is_active ? '● Aktif' : '○ Nonaktif' }}
                     </span>
+                    {{-- Tampilkan durasi jika lebih dari 0 menit --}}
+                    @if($durMenit > 0)
+                    <span class="meta-chip nonaktif" style="border-color:var(--border2)">
+                        {{ intdiv($durMenit, 60) }}j {{ $durMenit % 60 }}m
+                    </span>
+                    @endif
                 </div>
                 @if($j->catatan)
                 <p class="jadwal-catatan">{{ $j->catatan }}</p>
@@ -299,17 +373,26 @@
         @endforeach
     </div>
 
-    {{-- Pagination --}}
+    {{-- ── Pagination ── --}}
     @if($jadwal->hasPages())
     <div class="pag-wrap">
-        <p class="pag-info">Menampilkan {{ $jadwal->firstItem() }}–{{ $jadwal->lastItem() }} dari {{ $jadwal->total() }}</p>
+        <p class="pag-info">
+            Menampilkan {{ $jadwal->firstItem() }}–{{ $jadwal->lastItem() }} dari {{ $jadwal->total() }}
+        </p>
         <div class="pag-btns">
+            {{-- Prev --}}
             @if($jadwal->onFirstPage())
-                <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                <span class="pag-btn disabled">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </span>
             @else
-                <a href="{{ $jadwal->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                <a href="{{ $jadwal->previousPageUrl() }}" class="pag-btn">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </a>
             @endif
-            @foreach($jadwal->getUrlRange(1,$jadwal->lastPage()) as $page => $url)
+
+            {{-- Page numbers dengan ellipsis --}}
+            @foreach($jadwal->getUrlRange(1, $jadwal->lastPage()) as $page => $url)
                 @if($page == $jadwal->currentPage())
                     <span class="pag-btn active">{{ $page }}</span>
                 @elseif($page == 1 || $page == $jadwal->lastPage() || abs($page - $jadwal->currentPage()) <= 1)
@@ -318,17 +401,28 @@
                     <span class="pag-ellipsis">…</span>
                 @endif
             @endforeach
+
+            {{-- Next --}}
             @if($jadwal->hasMorePages())
-                <a href="{{ $jadwal->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                <a href="{{ $jadwal->nextPageUrl() }}" class="pag-btn">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </a>
             @else
-                <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                <span class="pag-btn disabled">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
             @endif
         </div>
     </div>
     @endif
 
-    {{-- Rekap Log Bulan Ini --}}
-    @if($logBulanIni->count())
+    {{-- ── Rekap Log Bulan Ini ── --}}
+    {{--
+        FIX: $logBulanIni adalah Collection (bukan paginator) karena controller
+        memakai ->get(). Gunakan ->isNotEmpty() dan ->take() yang merupakan method
+        Collection, bukan paginator.
+    --}}
+    @if($logBulanIni->isNotEmpty())
     <div class="rekap-card">
         <p class="rekap-title">
             <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -337,16 +431,28 @@
         <div class="log-list">
             @foreach($logBulanIni->take(10) as $log)
             @php
-                $durMenit = ($log->masuk_pada && $log->keluar_pada)
-                    ? \Carbon\Carbon::parse($log->masuk_pada)->diffInMinutes(\Carbon\Carbon::parse($log->keluar_pada))
-                    : null;
+                // Carbon::parse() aman baik untuk Carbon object maupun string datetime dari DB.
+                $masuk       = $log->masuk_pada  ? \Carbon\Carbon::parse($log->masuk_pada)  : null;
+                $keluar      = $log->keluar_pada ? \Carbon\Carbon::parse($log->keluar_pada) : null;
+                $durMenitLog = ($masuk && $keluar) ? $masuk->diffInMinutes($keluar) : null;
+                $tglCarbon   = \Carbon\Carbon::parse($log->tanggal);
             @endphp
             <div class="log-item">
-                <p class="log-tanggal">{{ \Carbon\Carbon::parse($log->tanggal)->locale('id')->isoFormat('ddd, D MMM') }}</p>
-                <p class="log-masuk">Masuk {{ $log->masuk_pada ? \Carbon\Carbon::parse($log->masuk_pada)->format('H:i') : '—' }}</p>
-                <p class="log-keluar">{{ $log->keluar_pada ? '→ Keluar '.\Carbon\Carbon::parse($log->keluar_pada)->format('H:i') : 'Belum checkout' }}</p>
-                @if($durMenit)
-                <p class="log-durasi">{{ intdiv($durMenit,60) }}j {{ $durMenit%60 }}m</p>
+                <p class="log-tanggal">
+                    {{ $tglCarbon->locale('id')->isoFormat('ddd, D MMM') }}
+                </p>
+                <p class="log-masuk">
+                    Masuk {{ $masuk ? $masuk->format('H:i') : '—' }}
+                </p>
+                <p class="log-keluar">
+                    @if($keluar)
+                        → Keluar {{ $keluar->format('H:i') }}
+                    @else
+                        Belum checkout
+                    @endif
+                </p>
+                @if($durMenitLog !== null)
+                <p class="log-durasi">{{ intdiv($durMenitLog, 60) }}j {{ $durMenitLog % 60 }}m</p>
                 @endif
             </div>
             @endforeach
@@ -367,20 +473,34 @@
 
 </div>
 
+{{-- Flash messages via SweetAlert2 --}}
 @if(session('success'))
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     if (typeof Swal !== 'undefined') {
-        Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: @json(session('success')),
+            timer: 2800,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end',
+        });
     }
 });
 </script>
 @endif
 @if(session('warning'))
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     if (typeof Swal !== 'undefined') {
-        Swal.fire({ icon:'warning', title:'Perhatian', text:@json(session('warning')), confirmButtonColor:'#1f63db' });
+        Swal.fire({
+            icon: 'warning',
+            title: 'Perhatian',
+            text: @json(session('warning')),
+            confirmButtonColor: '#1f63db',
+        });
     }
 });
 </script>

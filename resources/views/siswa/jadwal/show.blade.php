@@ -157,25 +157,47 @@
     </div>
 
     @php
+        // ── Konstanta hari ──────────────────────────────────────────────────────
+        $hariMap = [
+            'Sunday'    => 'minggu',
+            'Monday'    => 'senin',
+            'Tuesday'   => 'selasa',
+            'Wednesday' => 'rabu',
+            'Thursday'  => 'kamis',
+            'Friday'    => 'jumat',
+            'Saturday'  => 'sabtu',
+        ];
+
         $mulai   = \Carbon\Carbon::parse($jadwal->jam_mulai);
         $selesai = \Carbon\Carbon::parse($jadwal->jam_selesai);
         $durasi  = $mulai->diffInMinutes($selesai);
-        $hariIniStr = strtolower(\Carbon\Carbon::now()->locale('id')->isoFormat('dddd'));
-        $jamSkrg    = \Carbon\Carbon::now()->format('H:i:s');
-        $isNow  = $jadwal->hari === $hariIniStr
-                  && $jamSkrg >= $jadwal->jam_mulai
-                  && $jamSkrg <= $jadwal->jam_selesai;
 
-        // Progress untuk time bar (hanya kalau sedang berlangsung)
+        // Hari ini — pakai map PHP agar tidak bergantung locale server
+        $hariIniStr = $hariMap[\Carbon\Carbon::now()->format('l')] ?? '';
+
+        // Format H:i:s untuk perbandingan string yang konsisten
+        $jamSkrg       = \Carbon\Carbon::now()->format('H:i:s');
+        $jamMulaiStr   = $mulai->format('H:i:s');
+        $jamSelesaiStr = $selesai->format('H:i:s');
+
+        $isNow = $jadwal->hari === $hariIniStr
+                 && $jamSkrg >= $jamMulaiStr
+                 && $jamSkrg <= $jamSelesaiStr;
+
+        // Progress bar — clamp 0..100, hanya dihitung saat berlangsung
         $pct = 0;
-        if ($isNow) {
+        if ($isNow && $durasi > 0) {
             $elapsed = $mulai->diffInMinutes(\Carbon\Carbon::now());
-            $pct     = min(100, round(($elapsed / $durasi) * 100));
+            $pct     = (int) min(100, max(0, round(($elapsed / $durasi) * 100)));
         }
 
-        // Warna mapel
+        // Warna mapel — konsisten dengan index.blade.php
         $colors = ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#0891b2','#65a30d'];
         $color  = $colors[$jadwal->mata_pelajaran_id % 8];
+
+        // Inisial guru untuk avatar — null-safe
+        $guruNama    = $jadwal->guru->nama_lengkap ?? 'GU';
+        $guruInisial = mb_strtoupper(mb_substr($guruNama, 0, 2));
     @endphp
 
     {{-- Hero card --}}
@@ -320,9 +342,7 @@
 
     {{-- Guru card --}}
     <div class="guru-card">
-        <div class="guru-avatar">
-            {{ mb_strtoupper(mb_substr($jadwal->guru->nama_lengkap ?? 'G', 0, 2)) }}
-        </div>
+        <div class="guru-avatar">{{ $guruInisial }}</div>
         <div>
             <p class="guru-name">{{ $jadwal->guru->nama_lengkap ?? '—' }}</p>
             <p class="guru-nip">NIP: {{ $jadwal->guru->nip ?? 'Tidak tersedia' }}</p>

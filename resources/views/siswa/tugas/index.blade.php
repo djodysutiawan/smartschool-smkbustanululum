@@ -50,7 +50,7 @@
     .two-line .sec{font-size:11.5px;color:var(--text3);margin-top:2px;font-family:'DM Sans',sans-serif}
 
     /* Countdown */
-    .countdown{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700}
+    .countdown{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;display:block;margin-top:3px}
     .cd-ok{color:#15803d}
     .cd-warn{color:#a16207}
     .cd-late{color:#dc2626}
@@ -63,8 +63,6 @@
     .b-terlambat{background:#fee2e2;color:#dc2626} .b-terlambat .bd{background:#dc2626}
 
     .btn-sm{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;text-decoration:none;transition:all .15s;white-space:nowrap}
-    .bs-primary{background:var(--sk-600);color:#fff}
-    .bs-primary:hover{background:var(--sk-700)}
     .bs-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .bs-secondary:hover{background:var(--surface3)}
 
@@ -98,16 +96,23 @@
 
     {{-- Status tabs --}}
     <div class="status-tabs">
-        <a href="{{ route('siswa.tugas.index') }}" class="stab {{ !request('status') ? 'active' : '' }}">Semua</a>
-        <a href="{{ route('siswa.tugas.index', ['status' => 'belum']) }}" class="stab {{ request('status') === 'belum' ? 'active' : '' }}">
+        <a href="{{ route('siswa.tugas.index') }}"
+           class="stab {{ ! request('status') ? 'active' : '' }}">Semua</a>
+
+        <a href="{{ route('siswa.tugas.index', ['status' => 'belum']) }}"
+           class="stab {{ request('status') === 'belum' ? 'active' : '' }}">
             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Belum Dikumpulkan
         </a>
-        <a href="{{ route('siswa.tugas.index', ['status' => 'sudah']) }}" class="stab {{ request('status') === 'sudah' ? 'active' : '' }}">
+
+        <a href="{{ route('siswa.tugas.index', ['status' => 'sudah']) }}"
+           class="stab {{ request('status') === 'sudah' ? 'active' : '' }}">
             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             Sudah Dikumpulkan
         </a>
-        <a href="{{ route('siswa.tugas.index', ['status' => 'terlambat']) }}" class="stab {{ request('status') === 'terlambat' ? 'active' : '' }}">
+
+        <a href="{{ route('siswa.tugas.index', ['status' => 'terlambat']) }}"
+           class="stab {{ request('status') === 'terlambat' ? 'active' : '' }}">
             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             Terlambat
         </a>
@@ -116,6 +121,7 @@
     {{-- Filter --}}
     <div class="filter-card">
         <form method="GET" action="{{ route('siswa.tugas.index') }}">
+            {{-- FIX: Pertahankan filter status saat submit filter mapel --}}
             @if(request('status'))
                 <input type="hidden" name="status" value="{{ request('status') }}">
             @endif
@@ -129,7 +135,9 @@
                     @endforeach
                 </select>
                 <div class="filter-sep"></div>
-                <a href="{{ route('siswa.tugas.index', request('status') ? ['status' => request('status')] : []) }}" class="btn-reset">Reset</a>
+                {{-- FIX: Reset mempertahankan filter status yang sedang aktif --}}
+                <a href="{{ route('siswa.tugas.index', request('status') ? ['status' => request('status')] : []) }}"
+                   class="btn-reset">Reset</a>
                 <button type="submit" class="btn-filter">Terapkan</button>
             </div>
         </form>
@@ -159,9 +167,12 @@
                 <tbody>
                     @forelse($tugas as $i => $t)
                     @php
-                        $dikumpulkan = in_array($t->id, $sudahDikumpulkan);
-                        $terlambat   = now()->gt($t->batas_waktu);
-                        $sisaSaat    = now()->diffForHumans($t->batas_waktu, ['parts' => 2]);
+                        $dikumpulkan  = in_array($t->id, $sudahDikumpulkan);
+                        $terlambat    = $t->isTelahBerakhir();
+                        // FIX: diffInHours argumen harus now() sebagai pembanding ke batas_waktu
+                        // Gunakan abs() agar tidak negatif saat sudah lewat
+                        $jamSisa      = (int) now()->diffInHours($t->batas_waktu, false);
+                        $sisaDisplay  = now()->diffForHumans($t->batas_waktu, ['parts' => 2]);
                     @endphp
                     <tr>
                         <td style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3)">
@@ -170,31 +181,34 @@
                         <td>
                             <div class="two-line">
                                 <p class="prim">{{ $t->judul }}</p>
-                                <p class="sec">Nilai maks: {{ $t->nilai_maksimal ?? 100 }}</p>
+                                {{-- FIX: nilai_maksimal di-cast decimal:2, tampilkan tanpa desimal jika bulat --}}
+                                <p class="sec">Nilai maks: {{ rtrim(rtrim(number_format($t->nilai_maksimal ?? 100, 2), '0'), '.') }}</p>
                             </div>
                         </td>
                         <td style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2)">
-                            {{ $t->mataPelajaran->nama_mapel ?? '—' }}
+                            {{-- FIX: optional() untuk hindari error jika relasi null --}}
+                            {{ optional($t->mataPelajaran)->nama_mapel ?? '—' }}
                         </td>
                         <td>
                             <div class="two-line">
                                 <p class="prim" style="font-size:12.5px">{{ $t->batas_waktu->format('d M Y') }}</p>
                                 <p class="sec">{{ $t->batas_waktu->format('H:i') }} WIB</p>
                             </div>
-                            @if(!$dikumpulkan)
+                            {{-- FIX: hanya tampilkan countdown jika belum dikumpulkan --}}
+                            @if(! $dikumpulkan)
                                 @if($terlambat)
                                     <span class="countdown cd-late">Sudah berakhir</span>
-                                @elseif($t->batas_waktu->diffInHours(now()) < 24)
-                                    <span class="countdown cd-warn">⚠ {{ $sisaSaat }}</span>
+                                @elseif($jamSisa < 24)
+                                    <span class="countdown cd-warn">⚠ {{ $sisaDisplay }}</span>
                                 @else
-                                    <span class="countdown cd-ok">{{ $sisaSaat }}</span>
+                                    <span class="countdown cd-ok">{{ $sisaDisplay }}</span>
                                 @endif
                             @endif
                         </td>
                         <td class="c">
                             @if($dikumpulkan)
                                 <span class="badge b-sudah"><span class="bd"></span>Dikumpulkan</span>
-                            @elseif($terlambat && !$t->izinkan_terlambat)
+                            @elseif($terlambat && ! $t->izinkan_terlambat)
                                 <span class="badge b-terlambat"><span class="bd"></span>Terlambat</span>
                             @elseif($terlambat)
                                 <span class="badge b-terlambat"><span class="bd"></span>Terlambat (boleh)</span>
@@ -203,9 +217,7 @@
                             @endif
                         </td>
                         <td class="c">
-                            <a href="{{ route('siswa.tugas.show', $t) }}" class="btn-sm bs-secondary">
-                                Lihat
-                            </a>
+                            <a href="{{ route('siswa.tugas.show', $t) }}" class="btn-sm bs-secondary">Lihat</a>
                         </td>
                     </tr>
                     @empty

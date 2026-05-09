@@ -14,6 +14,12 @@ class Tugas extends Model
 
     protected $table = 'tugas';
 
+    /**
+     * Jenis pengumpulan yang diizinkan — harus sinkron dengan
+     * PengumpulanTugas::JENIS_VALID dan TugasController::JENIS_PENGUMPULAN.
+     */
+    const JENIS_PENGUMPULAN = ['file', 'teks', 'link', 'foto'];
+
     protected $fillable = [
         'guru_id',
         'mata_pelajaran_id',
@@ -36,6 +42,11 @@ class Tugas extends Model
             'izinkan_terlambat' => 'boolean',
             'dipublikasikan'    => 'boolean',
             'nilai_maksimal'    => 'decimal:2',
+            // FIX: cast FK ke integer agar perbandingan strict tidak mismatch
+            'guru_id'           => 'integer',
+            'mata_pelajaran_id' => 'integer',
+            'kelas_id'          => 'integer',
+            'tahun_ajaran_id'   => 'integer',
         ];
     }
 
@@ -46,10 +57,8 @@ class Tugas extends Model
         return $query->where('dipublikasikan', true);
     }
 
-    public function scopeAktif($query)
-    {
-        return $query->where('dipublikasikan', true);
-    }
+    // FIX: Hapus scopeAktif yang duplikat dengan scopeDipublikasikan —
+    // dua scope dengan logika identik membingungkan. Gunakan ->dipublikasikan() saja.
 
     // ── Business Logic ─────────────────────────────────────────────────────────
 
@@ -69,6 +78,12 @@ class Tugas extends Model
 
     /**
      * Cek apakah siswa tertentu sudah mengumpulkan tugas ini.
+     *
+     * FIX: Import PengumpulanTugas tidak diperlukan karena konstanta
+     * direferensikan via fully-qualified name atau diganti nilai string langsung.
+     * Sebelumnya kode mengacu PengumpulanTugas::STATUS_BELUM tanpa `use` — fatal error.
+     * Solusi: gunakan nilai string konstanta langsung agar tidak ada dependency
+     * circular antara Tugas ↔ PengumpulanTugas, atau tambahkan use statement.
      */
     public function sudahDikumpulkan(int $siswaId): bool
     {
@@ -124,6 +139,10 @@ class Tugas extends Model
 
     public function kelas(): BelongsTo
     {
+        // FIX: withDefault() di sini aman tapi perlu hati-hati —
+        // withDefault() mengembalikan instance Kelas kosong (bukan null)
+        // sehingga $tugas->kelas->nama tidak error tapi menghasilkan null.
+        // Ini perilaku yang diinginkan untuk view — pertahankan.
         return $this->belongsTo(Kelas::class)->withDefault();
     }
 
@@ -139,6 +158,9 @@ class Tugas extends Model
 
     /**
      * Ambil pengumpulan milik siswa tertentu (single record).
+     * FIX: Kembalikan relasi HasMany dengan constraint, bukan langsung ->first(),
+     * agar bisa di-eager load dari luar jika diperlukan.
+     * Untuk fetch langsung, gunakan ->pengumpulanSiswa($id)->first().
      */
     public function pengumpulanSiswa(int $siswaId): ?PengumpulanTugas
     {

@@ -14,67 +14,59 @@
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px;margin-bottom:20px}
 
-    /* Tab nav */
     .tab-nav{display:flex;gap:4px;margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:4px;width:fit-content;flex-wrap:wrap}
     .tab-link{padding:7px 18px;border-radius:7px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text3);text-decoration:none;transition:all .15s}
     .tab-link.active{background:var(--surface);color:var(--brand-600);box-shadow:0 1px 3px rgba(0,0,0,.08)}
     .tab-link:hover:not(.active){color:var(--text2)}
 
-    /* Info bar */
     .info-bar{background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius-sm);padding:11px 16px;display:flex;align-items:center;gap:8px;margin-bottom:20px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:#1d4ed8}
     .info-bar svg{flex-shrink:0}
 
-    /* Grid jadwal */
     .jadwal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
 
-    /* Card pelajaran */
     .mapel-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .mapel-card-top{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:10px}
     .mapel-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:5px}
     .mapel-name{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text);margin:0 0 4px}
     .mapel-meta{font-size:12px;color:var(--text3);display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-    .mapel-meta svg{vertical-align:middle}
     .mapel-card-body{padding:20px 16px;display:flex;flex-direction:column;align-items:center;gap:12px}
 
-    /* Badge */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-aktif{background:#dcfce7;color:#15803d}
     .badge-akan{background:#f1f5f9;color:#64748b}
     .badge-sudah{background:#dcfce7;color:#15803d}
     .badge-telat{background:#fef9c3;color:#a16207}
+    .badge-kadaluarsa{background:#fee2e2;color:#dc2626}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;animation:pulse 1.5s infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
 
-    /* QR container */
     .qr-box{width:130px;height:130px;background:#fff;border:1px solid var(--border);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:6px}
     .qr-empty{width:130px;height:130px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
-    .qr-done {width:130px;height:130px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+    .qr-done{width:130px;height:130px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
 
     .countdown{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text3);display:flex;align-items:center;gap:5px}
     .live-dot{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:pulse 1.5s infinite}
 
-    /* Tombol */
     .btn-primary{width:100%;padding:10px 0;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;text-align:center;display:block;text-decoration:none}
     .btn-primary:hover{background:var(--brand-700)}
     .btn-disabled{width:100%;padding:10px 0;background:var(--surface2);color:var(--text3);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:not-allowed;text-align:center;display:block}
 
-    /* Empty state */
     .empty-state{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:60px 20px;text-align:center}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
     .empty-sub{font-size:13px;color:var(--text3)}
 
-    @media(max-width:600px){.page{padding:16px}.jadwal-grid{grid-template-columns:1fr}}
+    @media(max-width:600px){.page{padding:16px}.jadwal-grid{grid-template-columns:1fr}.tab-nav{width:100%}.tab-link{flex:1;text-align:center;padding:7px 10px}}
 </style>
 
 <div class="page">
     <h1 class="page-title">Absensi Pelajaran</h1>
-    <p class="page-sub">Scan QR tiap pelajaran ke alat IoT</p>
+    <p class="page-sub">QR Code per pelajaran — tunjukkan ke alat IoT di kelas</p>
 
     <div class="tab-nav">
         <a href="{{ route('siswa.absensi.scan') }}"
            class="tab-link {{ request()->routeIs('siswa.absensi.scan') ? 'active' : '' }}">
-            Scan QR Hadir
+            Scan QR
         </a>
         <a href="{{ route('siswa.absensi.jadwal') }}"
            class="tab-link {{ request()->routeIs('siswa.absensi.jadwal') ? 'active' : '' }}">
@@ -82,7 +74,11 @@
         </a>
         <a href="{{ route('siswa.absensi.riwayat') }}"
            class="tab-link {{ request()->routeIs('siswa.absensi.riwayat') ? 'active' : '' }}">
-            Riwayat Kehadiran
+            Riwayat
+        </a>
+        <a href="{{ route('siswa.absensi.rekap') }}"
+           class="tab-link {{ request()->routeIs('siswa.absensi.rekap') ? 'active' : '' }}">
+            Rekap
         </a>
     </div>
 
@@ -115,27 +111,24 @@
                 $sesi        = $jadwal->sesiQrAktif;
                 $absenRecord = $jadwal->sudahAbsen;
                 $sudahAbsen  = $absenRecord !== null;
-                $warna       = match($loop->index % 5) {
-                    0 => '#3582f0', 1 => '#8b5cf6', 2 => '#22c55e',
-                    3 => '#f59e0b', default => '#ef4444'
-                };
+                $colors      = ['#3582f0','#8b5cf6','#22c55e','#f59e0b','#ef4444'];
+                $warna       = $colors[$loop->index % count($colors)];
             @endphp
-            <div class="mapel-card">
-                {{-- Header kartu --}}
+            <div class="mapel-card" id="card-{{ $jadwal->id }}">
                 <div class="mapel-card-top">
                     <div class="mapel-dot" style="background:{{ $warna }}"></div>
                     <div style="flex:1;min-width:0">
                         <p class="mapel-name">{{ $jadwal->mataPelajaran->nama_mapel ?? 'Mata Pelajaran' }}</p>
                         <div class="mapel-meta">
                             <span>
-                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:2px">
+                                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:2px;vertical-align:middle">
                                     <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
                                 </svg>
                                 {{ \Carbon\Carbon::parse($jadwal->jam_mulai)->format('H:i') }}
                                 – {{ \Carbon\Carbon::parse($jadwal->jam_selesai)->format('H:i') }}
                             </span>
                             @if($jadwal->guru)
-                            <span>{{ $jadwal->guru->nama_lengkap }}</span>
+                                <span>{{ $jadwal->guru->nama_lengkap }}</span>
                             @endif
                         </div>
                     </div>
@@ -149,7 +142,7 @@
                             {{ $absenRecord->status === 'telat' ? 'Telat' : 'Hadir' }}
                         </span>
                     @elseif($sesi)
-                        <span class="badge badge-aktif">
+                        <span class="badge badge-aktif" id="badge-{{ $sesi->id }}">
                             <span class="badge-dot" style="background:#15803d"></span>
                             Aktif
                         </span>
@@ -158,11 +151,10 @@
                     @endif
                 </div>
 
-                {{-- Body kartu --}}
                 <div class="mapel-card-body">
 
-                    {{-- State 1: Sudah absen --}}
                     @if($sudahAbsen)
+                        {{-- State: Sudah absen --}}
                         <div class="qr-done">
                             <svg width="32" height="32" fill="none" stroke="#15803d" stroke-width="2" viewBox="0 0 24 24">
                                 <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
@@ -172,34 +164,36 @@
                                 {{ ucfirst($absenRecord->status) }}
                             </span>
                             @if($absenRecord->jam_masuk)
-                            <span style="font-size:11.5px;color:#16a34a">
-                                {{ \Carbon\Carbon::parse($absenRecord->jam_masuk)->format('H:i') }}
-                            </span>
+                                <span style="font-size:11.5px;color:#16a34a">
+                                    {{ \Carbon\Carbon::parse($absenRecord->jam_masuk)->format('H:i') }}
+                                </span>
                             @endif
                         </div>
                         <span class="btn-disabled">Sudah tercatat</span>
 
-                    {{-- State 2: Sesi QR aktif → tampilkan QR --}}
                     @elseif($sesi)
+                        {{-- State: Sesi QR aktif → tampilkan QR --}}
                         <div class="qr-box" id="qr-{{ $sesi->id }}"></div>
 
                         <div class="countdown" id="countdown-{{ $sesi->id }}"
                              data-expire="{{ $sesi->kadaluarsa_pada->toISOString() }}">
-                            <span class="live-dot"></span>
-                            Kadaluarsa dalam <strong id="timer-{{ $sesi->id }}" style="color:var(--text);margin:0 3px">--:--</strong>
+                            <span class="live-dot" id="live-dot-{{ $sesi->id }}"></span>
+                            Kadaluarsa dalam
+                            <strong id="timer-{{ $sesi->id }}" style="color:var(--text);margin:0 3px">--:--</strong>
                         </div>
 
                         <p style="font-size:11.5px;color:var(--text3);text-align:center;margin:0">
-                            Arahkan QR ini ke alat IoT di kelas
+                            Tunjukkan QR ini ke alat IoT di kelas
                         </p>
 
                         <button class="btn-primary"
-                                onclick="perbesar('{{ $sesi->id }}','{{ $sesi->kode_qr }}','{{ $jadwal->mataPelajaran->nama_mapel ?? '' }}')">
+                                id="btn-perbesar-{{ $sesi->id }}"
+                                onclick="perbesar('{{ $sesi->id }}','{{ $sesi->kode_qr }}','{{ addslashes($jadwal->mataPelajaran->nama_mapel ?? '') }}')">
                             Tampilkan Layar Penuh
                         </button>
 
-                    {{-- State 3: Belum ada sesi --}}
                     @else
+                        {{-- State: Belum ada sesi --}}
                         <div class="qr-empty">
                             <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24">
                                 <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
@@ -223,7 +217,7 @@
 <div id="qr-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:20px">
     <div style="background:#fff;border-radius:16px;padding:32px;text-align:center;max-width:340px;width:90%">
         <p id="modal-mapel" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:#0f172a;margin:0 0 4px"></p>
-        <p style="font-size:12px;color:#94a3b8;margin:0 0 20px">Arahkan ke alat IoT absensi</p>
+        <p style="font-size:12px;color:#94a3b8;margin:0 0 20px">Tunjukkan ke alat IoT absensi</p>
         <div id="modal-qr" style="display:flex;justify-content:center;margin-bottom:16px"></div>
         <p id="modal-timer" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:#1f63db;margin:0 0 20px"></p>
         <button onclick="tutupModal()"
@@ -233,39 +227,39 @@
     </div>
 </div>
 
-{{-- Library QR --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
 (function() {
-    // ── Generate QR tiap sesi aktif ────────────────────────────────────────
     var sesiData = {{ Js::from(
         $jadwalList
             ->filter(function($j) { return $j->sesiQrAktif !== null && $j->sudahAbsen === null; })
             ->map(function($j) {
                 return [
-                    'id'     => $j->sesiQrAktif->id,
-                    'kode'   => $j->sesiQrAktif->kode_qr,
-                    'expire' => $j->sesiQrAktif->kadaluarsa_pada->toISOString(),
+                    'id'       => $j->sesiQrAktif->id,
+                    'kode'     => $j->sesiQrAktif->kode_qr,
+                    'expire'   => $j->sesiQrAktif->kadaluarsa_pada->toISOString(),
+                    'jadwalId' => $j->id,
                 ];
             })
             ->values()
     ) }};
 
+    // Generate QR tiap sesi aktif
     sesiData.forEach(function(s) {
         var el = document.getElementById('qr-' + s.id);
         if (el && typeof QRCode !== 'undefined') {
             new QRCode(el, {
-                text           : 'SESI-' + s.kode,
-                width          : 118,
-                height         : 118,
-                colorDark      : '#0f172a',
-                colorLight     : '#ffffff',
-                correctLevel   : QRCode.CorrectLevel.H,
+                text         : 'SESI-' + s.kode,
+                width        : 118,
+                height       : 118,
+                colorDark    : '#0f172a',
+                colorLight   : '#ffffff',
+                correctLevel : QRCode.CorrectLevel.H,
             });
         }
     });
 
-    // ── Countdown timer ────────────────────────────────────────────────────
+    // Format sisa waktu mm:ss
     function formatSisa(ms) {
         if (ms <= 0) return '00:00';
         var total = Math.floor(ms / 1000);
@@ -274,39 +268,65 @@
         return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
     }
 
+    var kadaluarsaIds = {};
+
     function tick() {
         var now = Date.now();
         sesiData.forEach(function(s) {
-            var timerEl = document.getElementById('timer-' + s.id);
+            var timerEl  = document.getElementById('timer-' + s.id);
+            var liveDot  = document.getElementById('live-dot-' + s.id);
+            var badge    = document.getElementById('badge-' + s.id);
+            var btnEl    = document.getElementById('btn-perbesar-' + s.id);
             if (!timerEl) return;
+
             var sisa = new Date(s.expire).getTime() - now;
-            timerEl.textContent = formatSisa(sisa);
+
             if (sisa <= 0) {
-                timerEl.style.color = '#dc2626';
-                timerEl.closest('.countdown').querySelector('.live-dot').style.background = '#dc2626';
-            } else if (sisa < 60000) {
-                timerEl.style.color = '#dc2626';
+                // Sesi kadaluarsa — update UI tanpa reload
+                if (!kadaluarsaIds[s.id]) {
+                    kadaluarsaIds[s.id] = true;
+                    timerEl.textContent = 'Kadaluarsa';
+                    timerEl.style.color = '#dc2626';
+                    if (liveDot) { liveDot.style.background = '#dc2626'; liveDot.style.animation = 'none'; }
+                    if (badge)   { badge.className = 'badge badge-kadaluarsa'; badge.innerHTML = 'Kadaluarsa'; }
+                    if (btnEl)   { btnEl.disabled = true; btnEl.className = 'btn-disabled'; btnEl.textContent = 'Sesi Berakhir'; }
+                    // Tutup modal jika sedang menampilkan sesi yang sama
+                    if (window._modalSesiId && String(window._modalSesiId) === String(s.id)) {
+                        tutupModal();
+                    }
+                }
+            } else {
+                timerEl.textContent = formatSisa(sisa);
+                if (sisa < 60000) timerEl.style.color = '#dc2626';
             }
         });
-        // Update modal timer juga
+
+        // Update modal timer
         var mt = document.getElementById('modal-timer');
         if (mt && window._modalExpire) {
             var sisa = new Date(window._modalExpire).getTime() - now;
-            mt.textContent = 'Kadaluarsa dalam ' + formatSisa(sisa);
-            if (sisa <= 0) mt.style.color = '#dc2626';
+            if (sisa <= 0) {
+                mt.textContent = 'Sesi kadaluarsa';
+                mt.style.color = '#dc2626';
+            } else {
+                mt.textContent = 'Kadaluarsa dalam ' + formatSisa(sisa);
+                if (sisa < 60000) mt.style.color = '#dc2626';
+            }
         }
     }
+
     setInterval(tick, 1000);
     tick();
 
-    // ── Modal layar penuh ──────────────────────────────────────────────────
+    // Modal layar penuh
     window.perbesar = function(sesiId, kode, namaMapel) {
-        var modal    = document.getElementById('qr-modal');
-        var modalQr  = document.getElementById('modal-qr');
+        var modal      = document.getElementById('qr-modal');
+        var modalQr    = document.getElementById('modal-qr');
         var modalMapel = document.getElementById('modal-mapel');
 
         modalQr.innerHTML = '';
         modalMapel.textContent = namaMapel;
+        window._modalSesiId = sesiId;
 
         var s = sesiData.find(function(x){ return String(x.id) === String(sesiId); });
         if (s) window._modalExpire = s.expire;
@@ -330,9 +350,9 @@
         document.getElementById('qr-modal').style.display = 'none';
         document.body.style.overflow = '';
         window._modalExpire = null;
+        window._modalSesiId = null;
     };
 
-    // Tutup modal klik luar
     document.getElementById('qr-modal').addEventListener('click', function(e) {
         if (e.target === this) window.tutupModal();
     });

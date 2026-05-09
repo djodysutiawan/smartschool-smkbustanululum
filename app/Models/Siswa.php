@@ -44,6 +44,7 @@ class Siswa extends Model
         'status',
         'tanggal_masuk',
         'tanggal_keluar',
+        'barcode_mapel',
         // CATATAN: tanggal_lulus tidak ada di tabel siswa berdasarkan migrasi.
         // Jika ingin menambahkan, tambahkan migrasi:
         // $table->date('tanggal_lulus')->nullable()->after('tanggal_keluar');

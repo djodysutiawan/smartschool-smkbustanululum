@@ -36,6 +36,7 @@
     .bj-video{background:#fff0f0;color:#b91c1c}
     .bj-link{background:#f5f3ff;color:#6d28d9}
     .bj-teks{background:#f0fdf4;color:#047857}
+    .bj-default{background:#f1f5f9;color:#475569}
 
     /* Content area */
     .content-area{padding:24px}
@@ -52,7 +53,7 @@
     /* File/Link button */
     .aksi-file{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;background:var(--sk-600);color:#fff;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;text-decoration:none;transition:background .15s}
     .aksi-file:hover{background:var(--sk-700)}
-    .aksi-note{margin-top:10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text3)}
+    .aksi-note{margin-top:10px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text3);word-break:break-all}
 
     /* Video embed */
     .video-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:var(--radius-sm)}
@@ -78,6 +79,8 @@
     .terkait-judul{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text);line-height:1.4;transition:color .15s}
     .terkait-mapel{font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:2px}
 
+    .konten-kosong{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text3);font-style:italic}
+
     @media(max-width:800px){.layout{grid-template-columns:1fr}.page{padding:16px}}
 </style>
 
@@ -93,6 +96,7 @@
                         <div class="breadcrumb">
                             <a href="{{ route('siswa.materi.index') }}">Materi</a>
                             <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                            {{-- FIX: Str::limit aman dari null karena judul required di fillable --}}
                             <span>{{ Str::limit($materi->judul, 40) }}</span>
                         </div>
                         <a href="{{ route('siswa.materi.index') }}" class="btn btn-secondary">
@@ -100,24 +104,34 @@
                             Kembali
                         </a>
                     </div>
-                    <p class="mapel-label">{{ $materi->mataPelajaran->nama_mapel ?? '—' }}</p>
+
+                    {{-- FIX: optional() untuk semua relasi agar tidak error jika null --}}
+                    <p class="mapel-label">{{ optional($materi->mataPelajaran)->nama_mapel ?? '—' }}</p>
                     <h1 class="materi-title">{{ $materi->judul }}</h1>
+
+                    @php
+                        $jenisValid = \App\Models\Materi::JENIS_VALID;
+                        $jenisCss   = in_array($materi->jenis, $jenisValid) ? $materi->jenis : 'default';
+                    @endphp
+
                     <div class="meta-row">
-                        <span class="badge-jenis bj-{{ $materi->jenis }}">
-                            @if($materi->jenis === 'file') 📄
-                            @elseif($materi->jenis === 'video') 🎬
-                            @elseif($materi->jenis === 'link') 🔗
-                            @else 📝
-                            @endif
+                        <span class="badge-jenis bj-{{ $jenisCss }}">
+                            @switch($materi->jenis)
+                                @case('file')  📄 @break
+                                @case('video') 🎬 @break
+                                @case('link')  🔗 @break
+                                @case('teks')  📝 @break
+                                @default       📁
+                            @endswitch
                             {{ ucfirst($materi->jenis) }}
                         </span>
                         <span class="meta-item">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                            {{ $materi->guru->nama_lengkap ?? '—' }}
+                            {{ optional($materi->guru)->nama_lengkap ?? '—' }}
                         </span>
                         <span class="meta-item">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            {{ $materi->dipublikasikan_pada?->format('d M Y') ?? $materi->created_at->format('d M Y') }}
+                            {{ ($materi->dipublikasikan_pada ?? $materi->created_at)?->format('d M Y') ?? '—' }}
                         </span>
                     </div>
                 </div>
@@ -134,52 +148,80 @@
                         </div>
                         <div class="konten-body">
 
-                            @if($materi->jenis === 'teks')
-                                <div class="konten-teks">{{ $materi->url_eksternal ?? 'Tidak ada konten teks.' }}</div>
+                            @switch($materi->jenis)
 
-                            @elseif($materi->jenis === 'link')
-                                <a href="{{ $materi->url_eksternal }}" target="_blank" rel="noopener" class="aksi-file">
-                                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                                    Buka Link Materi
-                                </a>
-                                <p class="aksi-note">{{ $materi->url_eksternal }}</p>
+                                @case('teks')
+                                    {{--
+                                        FIX: Gunakan accessor kontenTeksDisplay yang sudah handle
+                                        fallback konten_teks → url_eksternal → null.
+                                        Jangan langsung pakai url_eksternal di view.
+                                    --}}
+                                    @if($materi->konten_teks_display)
+                                        <div class="konten-teks">{{ $materi->konten_teks_display }}</div>
+                                    @else
+                                        <p class="konten-kosong">Tidak ada konten teks.</p>
+                                    @endif
+                                @break
 
-                            @elseif($materi->jenis === 'video')
-                                @php
-                                    $url = $materi->url_eksternal ?? $materi->path_file;
-                                    // Coba embed YouTube
-                                    preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/', $url ?? '', $yt);
-                                @endphp
-                                @if(!empty($yt[1]))
-                                    <div class="video-wrap">
-                                        <iframe src="https://www.youtube.com/embed/{{ $yt[1] }}"
-                                            frameborder="0" allowfullscreen
-                                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
-                                        </iframe>
-                                    </div>
-                                @elseif($materi->path_file)
-                                    <video controls style="width:100%;border-radius:8px">
-                                        <source src="{{ asset('storage/'.$materi->path_file) }}">
-                                        Browser Anda tidak mendukung pemutaran video.
-                                    </video>
-                                @else
-                                    <a href="{{ $url }}" target="_blank" class="aksi-file">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
-                                        Buka Video
-                                    </a>
-                                @endif
+                                @case('link')
+                                    @if($materi->url_eksternal)
+                                        <a href="{{ $materi->url_eksternal }}" target="_blank" rel="noopener noreferrer" class="aksi-file">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                            Buka Link Materi
+                                        </a>
+                                        <p class="aksi-note">{{ $materi->url_eksternal }}</p>
+                                    @else
+                                        <p class="konten-kosong">Link tidak tersedia.</p>
+                                    @endif
+                                @break
 
-                            @elseif($materi->jenis === 'file')
-                                @if($materi->path_file)
-                                    <a href="{{ asset('storage/'.$materi->path_file) }}" target="_blank" download class="aksi-file">
-                                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                                        Unduh File Materi
-                                    </a>
-                                    <p class="aksi-note">Klik tombol di atas untuk mengunduh file materi</p>
-                                @else
-                                    <p style="color:var(--text3);font-family:'DM Sans',sans-serif">File tidak tersedia.</p>
-                                @endif
-                            @endif
+                                @case('video')
+                                    {{--
+                                        FIX: Gunakan accessor youtube_id dari model — mendukung
+                                        format watch?v=, youtu.be/, /shorts/, /embed/, /live/.
+                                        Lebih aman daripada regex inline di blade.
+                                    --}}
+                                    @if($materi->youtube_id)
+                                        <div class="video-wrap">
+                                            <iframe
+                                                src="https://www.youtube-nocookie.com/embed/{{ $materi->youtube_id }}"
+                                                frameborder="0"
+                                                allowfullscreen
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                loading="lazy"
+                                            ></iframe>
+                                        </div>
+                                    @elseif($materi->path_file)
+                                        <video controls style="width:100%;border-radius:8px" preload="metadata">
+                                            <source src="{{ asset('storage/' . $materi->path_file) }}">
+                                            Browser Anda tidak mendukung pemutaran video.
+                                        </video>
+                                    @elseif($materi->url_eksternal)
+                                        <a href="{{ $materi->url_eksternal }}" target="_blank" rel="noopener noreferrer" class="aksi-file">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+                                            Buka Video
+                                        </a>
+                                    @else
+                                        <p class="konten-kosong">Video tidak tersedia.</p>
+                                    @endif
+                                @break
+
+                                @case('file')
+                                    @if($materi->path_file)
+                                        <a href="{{ asset('storage/' . $materi->path_file) }}" target="_blank" download class="aksi-file">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                            Unduh File Materi
+                                        </a>
+                                        <p class="aksi-note">Klik tombol di atas untuk mengunduh file materi</p>
+                                    @else
+                                        <p class="konten-kosong">File tidak tersedia.</p>
+                                    @endif
+                                @break
+
+                                @default
+                                    <p class="konten-kosong">Jenis materi tidak dikenal.</p>
+
+                            @endswitch
 
                         </div>
                     </div>
@@ -196,24 +238,29 @@
                     <ul class="info-list">
                         <li>
                             <span class="info-key">Mata Pelajaran</span>
-                            <span class="info-val">{{ $materi->mataPelajaran->nama_mapel ?? '—' }}</span>
+                            {{-- FIX: optional() untuk semua relasi di sidebar --}}
+                            <span class="info-val">{{ optional($materi->mataPelajaran)->nama_mapel ?? '—' }}</span>
                         </li>
                         <li>
                             <span class="info-key">Guru</span>
-                            <span class="info-val">{{ $materi->guru->nama_lengkap ?? '—' }}</span>
+                            <span class="info-val">{{ optional($materi->guru)->nama_lengkap ?? '—' }}</span>
                         </li>
                         <li>
                             <span class="info-key">Kelas</span>
-                            <span class="info-val">{{ $materi->kelas->nama ?? '—' }}</span>
+                            <span class="info-val">{{ optional($materi->kelas)->nama ?? '—' }}</span>
                         </li>
                         <li>
                             <span class="info-key">Jenis</span>
-                            <span class="info-val">{{ ucfirst($materi->jenis) }}</span>
+                            {{-- FIX: pakai accessor label_jenis dari model --}}
+                            <span class="info-val">{{ $materi->label_jenis }}</span>
                         </li>
                         <li>
                             <span class="info-key">Dipublikasikan</span>
-                            <span class="info-val">{{ $materi->dipublikasikan_pada?->format('d M Y') ?? $materi->created_at->format('d M Y') }}</span>
+                            <span class="info-val">
+                                {{ ($materi->dipublikasikan_pada ?? $materi->created_at)?->format('d M Y') ?? '—' }}
+                            </span>
                         </li>
+                        {{-- FIX: cek relasi tahunAjaran ada dan tidak null sebelum render --}}
                         @if($materi->tahunAjaran)
                         <li>
                             <span class="info-key">Tahun Ajaran</span>
@@ -234,7 +281,12 @@
                         <div class="terkait-dot"></div>
                         <div>
                             <p class="terkait-judul">{{ $mt->judul }}</p>
-                            <p class="terkait-mapel">{{ ucfirst($mt->jenis) }} · {{ $mt->created_at->format('d M Y') }}</p>
+                            {{-- FIX: pakai accessor label_jenis yang konsisten --}}
+                            <p class="terkait-mapel">
+                                {{ $mt->label_jenis }}
+                                ·
+                                {{ ($mt->dipublikasikan_pada ?? $mt->created_at)?->format('d M Y') ?? '—' }}
+                            </p>
                         </div>
                     </a>
                     @endforeach
@@ -242,6 +294,7 @@
             </div>
             @endif
         </div>
+
     </div>
 </div>
 </x-app-layout>

@@ -81,7 +81,7 @@
     .riwayat-sub{font-size:11.5px;color:var(--text3);margin-top:1px}
     .riwayat-masuk{font-size:12.5px;color:var(--green);font-family:'Plus Jakarta Sans',sans-serif;font-weight:700}
     .riwayat-keluar{font-size:12.5px;color:var(--text3)}
-    .riwayat-dur{margin-left:auto;font-size:12px;color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600}
+    .riwayat-dur{margin-left:auto;font-size:12px;color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;white-space:nowrap}
     .checkout-warn{display:inline-flex;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;background:var(--piket-50);color:var(--piket-700);border:1px solid var(--piket-100)}
 
     /* Empty state */
@@ -91,7 +91,7 @@
     /* Section title */
     .section-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:7px}
 
-    /* Shift badge chips inside option hint */
+    /* Shift chips */
     .shift-hint{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
     .shift-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:700;border:1px solid var(--border);color:var(--text2);background:var(--surface3)}
     .shift-chip.pagi{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
@@ -109,6 +109,7 @@
         <div>
             <h1 class="page-title">Log Piket</h1>
             <p class="page-sub">
+                {{-- FIX: gunakan isoFormat yang sudah terbukti stabil dengan locale Carbon --}}
                 {{ now()->locale('id')->isoFormat('dddd, D MMMM Y') }} ·
                 <span id="live-clock">--:--:--</span>
             </p>
@@ -141,7 +142,7 @@
     </div>
     @endif
 
-    {{-- ── Validation errors (dari $errors bag Laravel) ── --}}
+    {{-- ── Validation errors ── --}}
     @if($errors->any())
     <div class="alert alert-error" style="flex-direction:column;align-items:flex-start;gap:4px">
         <div style="display:flex;align-items:center;gap:8px;font-weight:700">
@@ -164,6 +165,10 @@
     </p>
     <div class="aktif-grid">
         @foreach($logAktif as $log)
+        @php
+            // FIX: Carbon::parse() aman untuk string maupun Carbon object dari model.
+            $masukCarbon = \Carbon\Carbon::parse($log->masuk_pada);
+        @endphp
         <div class="aktif-card">
             <div class="aktif-card-top">
                 <div class="aktif-avatar">
@@ -177,18 +182,36 @@
                     </p>
                 </div>
             </div>
+            {{--
+                data-masuk menggunakan ISO 8601 agar JavaScript new Date() parse
+                dengan benar di semua browser dan timezone.
+            --}}
             <p class="aktif-timer"
-               data-masuk="{{ \Carbon\Carbon::parse($log->masuk_pada)->toIso8601String() }}"
+               data-masuk="{{ $masukCarbon->toIso8601String() }}"
                id="timer-{{ $log->id }}">—</p>
-            <p class="aktif-masuk">Masuk pukul <strong>{{ \Carbon\Carbon::parse($log->masuk_pada)->format('H:i') }}</strong></p>
+            <p class="aktif-masuk">
+                Masuk pukul <strong>{{ $masukCarbon->format('H:i') }}</strong>
+            </p>
 
             {{-- Form Checkout --}}
             <div class="checkout-form" id="checkout-form-{{ $log->id }}" style="display:none">
+                {{--
+                    FIX: route checkout menggunakan PATCH sesuai controller.
+                    Pastikan routes/web.php mendefinisikan Route::patch(...).
+                    @method('PATCH') + @csrf wajib ada bersama.
+                --}}
                 <form method="POST" action="{{ route('piket.log.checkout', $log->id) }}">
-                    @csrf @method('PATCH')
-                    <textarea name="catatan_keluar" placeholder="Catatan keluar (opsional)…"></textarea>
+                    @csrf
+                    @method('PATCH')
+                    <textarea name="catatan_keluar"
+                              placeholder="Catatan keluar (opsional)…"
+                              maxlength="500"></textarea>
                     <div class="checkout-actions">
-                        <button type="button" class="btn btn-secondary btn-sm" onclick="hideCheckout({{ $log->id }})">Batal</button>
+                        <button type="button"
+                                class="btn btn-secondary btn-sm"
+                                onclick="hideCheckout({{ $log->id }})">
+                            Batal
+                        </button>
                         <button type="submit" class="btn btn-red btn-sm">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/></svg>
                             Check-Out
@@ -197,7 +220,8 @@
                 </form>
             </div>
             <div id="checkout-btn-{{ $log->id }}">
-                <button type="button" class="btn btn-red btn-sm"
+                <button type="button"
+                        class="btn btn-red btn-sm"
                         style="width:100%;justify-content:center;margin-top:4px"
                         onclick="showCheckout({{ $log->id }})">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/></svg>
@@ -238,48 +262,60 @@
                             </span>
                         @endif
                     </label>
-                    <select name="guru_id" id="sel-guru" required
+                    <select name="guru_id"
+                            id="sel-guru"
+                            required
                             class="{{ $errors->has('guru_id') ? 'is-invalid' : '' }}"
                             onchange="cekStatusGuru(this.value)">
                         <option value="">— Pilih guru yang akan bertugas —</option>
 
                         @if($guruTerjadwal->count())
-                            <optgroup label="✓ Terjadwal Hari Ini">
+                            <optgroup label="✓ Terjadwal Hari Ini ({{ ucfirst($hariIni) }})">
                                 @foreach($guruTerjadwal as $guru)
-                                    @php
-                                        $sudahAktif   = $logAktif->where('guru_id', $guru->id)->count() > 0;
-                                        $sudahSelesai = $logHariIni->where('guru_id', $guru->id)->whereNotNull('keluar_pada')->count() > 0;
-                                    @endphp
-                                    <option value="{{ $guru->id }}"
-                                        {{ old('guru_id') == $guru->id ? 'selected' : '' }}
-                                        data-aktif="{{ $sudahAktif ? '1' : '0' }}"
-                                        data-selesai="{{ $sudahSelesai ? '1' : '0' }}">
-                                        {{ $guru->nama_lengkap }}
-                                        @if($sudahAktif) (Sedang Piket)
-                                        @elseif($sudahSelesai) (Sudah Selesai)
-                                        @endif
-                                    </option>
+                                @php
+                                    // FIX: gunakan Collection method yang benar.
+                                    // $logAktif dan $logHariIni adalah Illuminate\Support\Collection
+                                    // (dari ->get() di controller), bukan array.
+                                    // ->where() pada Collection aman dan mengembalikan Collection.
+                                    $sudahAktif   = $logAktif->where('guru_id', $guru->id)->isNotEmpty();
+                                    $sudahSelesai = $logHariIni
+                                        ->where('guru_id', $guru->id)
+                                        ->whereNotNull('keluar_pada')
+                                        ->isNotEmpty();
+                                @endphp
+                                <option value="{{ $guru->id }}"
+                                    {{ old('guru_id') == $guru->id ? 'selected' : '' }}
+                                    data-aktif="{{ $sudahAktif ? '1' : '0' }}"
+                                    data-selesai="{{ $sudahSelesai ? '1' : '0' }}">
+                                    {{ $guru->nama_lengkap }}
+                                    @if($sudahAktif) (Sedang Piket)
+                                    @elseif($sudahSelesai) (Sudah Selesai)
+                                    @endif
+                                </option>
                                 @endforeach
                             </optgroup>
                         @endif
 
-                        <optgroup label="Semua Guru">
+                        <optgroup label="Semua Guru Aktif">
                             @foreach($semuaGuru as $guru)
+                                {{-- Tampilkan semua guru di sini kecuali yang sudah ada di optgroup terjadwal --}}
                                 @if(!$guruTerjadwal->contains('id', $guru->id))
-                                    @php $sudahAktif = $logAktif->where('guru_id', $guru->id)->count() > 0; @endphp
-                                    <option value="{{ $guru->id }}"
-                                        {{ old('guru_id') == $guru->id ? 'selected' : '' }}
-                                        data-aktif="{{ $sudahAktif ? '1' : '0' }}"
-                                        data-selesai="0">
-                                        {{ $guru->nama_lengkap }}
-                                        @if($sudahAktif) (Sedang Piket) @endif
-                                    </option>
+                                @php
+                                    $sudahAktif = $logAktif->where('guru_id', $guru->id)->isNotEmpty();
+                                @endphp
+                                <option value="{{ $guru->id }}"
+                                    {{ old('guru_id') == $guru->id ? 'selected' : '' }}
+                                    data-aktif="{{ $sudahAktif ? '1' : '0' }}"
+                                    data-selesai="0">
+                                    {{ $guru->nama_lengkap }}
+                                    @if($sudahAktif) (Sedang Piket) @endif
+                                </option>
                                 @endif
                             @endforeach
                         </optgroup>
                     </select>
 
-                    {{-- Warning: guru masih aktif piket --}}
+                    {{-- Warning: guru masih aktif piket (ditampilkan via JS) --}}
                     <div id="guru-warning" style="display:none;margin-top:6px">
                         <span style="font-size:12px;font-weight:700;color:var(--piket-700);background:var(--piket-50);border:1px solid var(--piket-100);border-radius:6px;padding:5px 10px;display:inline-block">
                             ⚠️ Guru ini masih aktif piket. Lakukan check-out terlebih dahulu.
@@ -292,12 +328,13 @@
                 </div>
 
                 {{-- ── Shift ── --}}
-                {{--
-                    Controller: 'shift' => ['nullable', 'string', 'in:pagi,siang,sore']
-                    Tiga pilihan: pagi, siang, sore. Jika kosong → otomatis dari jadwal.
-                --}}
+                {{-- Controller: 'shift' => ['nullable', 'in:pagi,siang,sore'] --}}
+                {{-- Jika kosong → tentukanShift() otomatis dari jam_mulai jadwal --}}
                 <div class="field">
-                    <label>Shift <span style="font-weight:400;color:var(--text3)">(opsional — otomatis dari jadwal)</span></label>
+                    <label>
+                        Shift
+                        <span style="font-weight:400;color:var(--text3)">(opsional — otomatis dari jadwal)</span>
+                    </label>
                     <select name="shift" class="{{ $errors->has('shift') ? 'is-invalid' : '' }}">
                         <option value="">— Otomatis dari jadwal —</option>
                         <option value="pagi"  {{ old('shift') === 'pagi'  ? 'selected' : '' }}>Shift Pagi</option>
@@ -305,11 +342,11 @@
                         <option value="sore"  {{ old('shift') === 'sore'  ? 'selected' : '' }}>Shift Sore</option>
                     </select>
                     <div class="shift-hint">
-                        <span class="shift-chip pagi">Pagi · 07:00–11:00</span>
-                        <span class="shift-chip siang">Siang · 12:00–16:00</span>
-                        <span class="shift-chip sore">Sore · 15:00–17:00</span>
+                        <span class="shift-chip pagi">Pagi · sebelum 12:00</span>
+                        <span class="shift-chip siang">Siang · 12:00–14:59</span>
+                        <span class="shift-chip sore">Sore · ab 15:00</span>
                     </div>
-                    <span class="hint">Jika tidak dipilih, shift akan ditentukan otomatis berdasarkan jadwal</span>
+                    <span class="hint">Jika tidak dipilih, shift ditentukan otomatis berdasarkan jam mulai jadwal</span>
                     @error('shift')
                         <span class="field-error">{{ $message }}</span>
                     @enderror
@@ -317,7 +354,10 @@
 
                 {{-- ── Catatan ── --}}
                 <div class="field">
-                    <label>Catatan <span style="font-weight:400;color:var(--text3)">(opsional)</span></label>
+                    <label>
+                        Catatan
+                        <span style="font-weight:400;color:var(--text3)">(opsional)</span>
+                    </label>
                     <textarea name="catatan"
                               class="{{ $errors->has('catatan') ? 'is-invalid' : '' }}"
                               placeholder="Kondisi awal, hal yang perlu diperhatikan, dll…"
@@ -350,25 +390,33 @@
         </div>
         @foreach($logHariIni as $log)
         @php
-            $dur = ($log->masuk_pada && $log->keluar_pada)
-                ? \Carbon\Carbon::parse($log->masuk_pada)->diffInMinutes(\Carbon\Carbon::parse($log->keluar_pada))
-                : null;
+            // FIX: masuk_pada tidak boleh null di log hari ini (sudah check-in),
+            // tapi guard tetap dipasang untuk keamanan.
+            $masukLog  = $log->masuk_pada  ? \Carbon\Carbon::parse($log->masuk_pada)  : null;
+            $keluarLog = $log->keluar_pada ? \Carbon\Carbon::parse($log->keluar_pada) : null;
+            $durLog    = ($masukLog && $keluarLog) ? $masukLog->diffInMinutes($keluarLog) : null;
         @endphp
         <div class="riwayat-item">
-            <div class="riwayat-avatar">{{ strtoupper(substr($log->guru?->nama_lengkap ?? 'G', 0, 2)) }}</div>
+            <div class="riwayat-avatar">
+                {{ strtoupper(substr($log->guru?->nama_lengkap ?? 'G', 0, 2)) }}
+            </div>
             <div style="flex:1;min-width:0">
                 <p class="riwayat-nama">{{ $log->guru?->nama_lengkap ?? '—' }}</p>
                 <p class="riwayat-sub">Shift {{ ucfirst($log->shift ?? '—') }}</p>
             </div>
-            <p class="riwayat-masuk">{{ \Carbon\Carbon::parse($log->masuk_pada)->format('H:i') }}</p>
+            <p class="riwayat-masuk">
+                {{ $masukLog ? $masukLog->format('H:i') : '—' }}
+            </p>
             <p class="riwayat-keluar">
-                @if($log->keluar_pada)
-                    → {{ \Carbon\Carbon::parse($log->keluar_pada)->format('H:i') }}
+                @if($keluarLog)
+                    → {{ $keluarLog->format('H:i') }}
                 @else
                     <span class="checkout-warn">Aktif</span>
                 @endif
             </p>
-            <p class="riwayat-dur">{{ $dur ? intdiv($dur,60).'j '.($dur%60).'m' : '—' }}</p>
+            <p class="riwayat-dur">
+                {{ $durLog !== null ? intdiv($durLog, 60).'j '.($durLog % 60).'m' : '—' }}
+            </p>
         </div>
         @endforeach
     </div>
@@ -385,30 +433,36 @@
         </div>
         @forelse($riwayatTerakhir as $log)
         @php
-            $dur = ($log->masuk_pada && $log->keluar_pada)
-                ? \Carbon\Carbon::parse($log->masuk_pada)->diffInMinutes(\Carbon\Carbon::parse($log->keluar_pada))
-                : null;
+            $masukR  = $log->masuk_pada  ? \Carbon\Carbon::parse($log->masuk_pada)  : null;
+            $keluarR = $log->keluar_pada ? \Carbon\Carbon::parse($log->keluar_pada) : null;
+            $durR    = ($masukR && $keluarR) ? $masukR->diffInMinutes($keluarR) : null;
+            // FIX: parse tanggal aman untuk string maupun Carbon object
+            $tglR    = \Carbon\Carbon::parse($log->tanggal);
         @endphp
         <div class="riwayat-item">
-            <div class="riwayat-avatar">{{ strtoupper(substr($log->guru?->nama_lengkap ?? 'G', 0, 2)) }}</div>
+            <div class="riwayat-avatar">
+                {{ strtoupper(substr($log->guru?->nama_lengkap ?? 'G', 0, 2)) }}
+            </div>
             <div style="flex:1;min-width:0">
                 <p class="riwayat-nama">{{ $log->guru?->nama_lengkap ?? '—' }}</p>
                 <p class="riwayat-sub">
-                    {{ \Carbon\Carbon::parse($log->tanggal)->locale('id')->isoFormat('ddd, D MMM Y') }}
+                    {{ $tglR->locale('id')->isoFormat('ddd, D MMM Y') }}
                     · Shift {{ ucfirst($log->shift ?? '—') }}
                 </p>
             </div>
             <p class="riwayat-masuk">
-                {{ $log->masuk_pada ? \Carbon\Carbon::parse($log->masuk_pada)->format('H:i') : '—' }}
+                {{ $masukR ? $masukR->format('H:i') : '—' }}
             </p>
             <p class="riwayat-keluar">
-                @if($log->keluar_pada)
-                    → {{ \Carbon\Carbon::parse($log->keluar_pada)->format('H:i') }}
+                @if($keluarR)
+                    → {{ $keluarR->format('H:i') }}
                 @else
                     <span class="checkout-warn">Belum checkout</span>
                 @endif
             </p>
-            <p class="riwayat-dur">{{ $dur ? intdiv($dur,60).'j '.($dur%60).'m' : '—' }}</p>
+            <p class="riwayat-dur">
+                {{ $durR !== null ? intdiv($durR, 60).'j '.($durR % 60).'m' : '—' }}
+            </p>
         </div>
         @empty
         <p class="empty-inline">Belum ada riwayat 7 hari terakhir</p>
@@ -418,23 +472,27 @@
 </div>
 
 <script>
-// ── Live clock ──────────────────────────────────────────────────────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 function pad(n) { return String(n).padStart(2, '0'); }
 
+// ── Live clock ───────────────────────────────────────────────────────────────
 function updateClock() {
-    const now = new Date();
-    const hms = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+    var now = new Date();
+    var hms = pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
     document.getElementById('live-clock').textContent = hms;
 
-    // Update jam di tombol check-in (HH:mm saja)
-    const hm = pad(now.getHours()) + ':' + pad(now.getMinutes());
-    const btnJam = document.getElementById('btn-jam');
-    if (btnJam) btnJam.textContent = hm;
+    // Sinkronkan jam di label tombol check-in (HH:mm)
+    var btnJam = document.getElementById('btn-jam');
+    if (btnJam) {
+        btnJam.textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    }
 }
 updateClock();
 setInterval(updateClock, 1000);
 
-// ── Timer durasi per guru aktif ─────────────────────────────────────────────
+// ── Timer durasi per guru aktif ──────────────────────────────────────────────
+// data-masuk berisi ISO 8601 string (dari ->toIso8601String() di Blade).
+// new Date(isoString) aman di semua browser modern.
 document.querySelectorAll('[data-masuk]').forEach(function(el) {
     var masukAt = new Date(el.dataset.masuk);
     function update() {
@@ -448,37 +506,36 @@ document.querySelectorAll('[data-masuk]').forEach(function(el) {
     setInterval(update, 1000);
 });
 
-// ── Toggle form checkout ────────────────────────────────────────────────────
+// ── Toggle form checkout ─────────────────────────────────────────────────────
 function showCheckout(id) {
     document.getElementById('checkout-form-' + id).style.display = 'block';
-    document.getElementById('checkout-btn-' + id).style.display  = 'none';
+    document.getElementById('checkout-btn-'  + id).style.display = 'none';
 }
 function hideCheckout(id) {
     document.getElementById('checkout-form-' + id).style.display = 'none';
-    document.getElementById('checkout-btn-' + id).style.display  = 'block';
+    document.getElementById('checkout-btn-'  + id).style.display = 'block';
 }
 
-// ── Warning & disable tombol jika guru masih aktif ─────────────────────────
-// Controller menolak checkin jika guru masih aktif (whereNull keluar_pada).
-// View menonaktifkan tombol submit secara proaktif agar UX lebih baik.
+// ── Warning & disable tombol jika guru masih aktif ───────────────────────────
+// Controller sudah menolak di server-side, ini hanya UX proaktif di client-side.
 function cekStatusGuru(guruId) {
-    var warn   = document.getElementById('guru-warning');
-    var btnCi  = document.getElementById('btn-checkin');
+    var warn  = document.getElementById('guru-warning');
+    var btnCi = document.getElementById('btn-checkin');
 
     if (!guruId) {
-        warn.style.display   = 'none';
-        btnCi.disabled       = false;
+        warn.style.display = 'none';
+        btnCi.disabled     = false;
         return;
     }
 
-    var opt    = document.querySelector('select[name="guru_id"] option[value="' + guruId + '"]');
-    var aktif  = opt && opt.dataset.aktif === '1';
+    var opt   = document.querySelector('select[name="guru_id"] option[value="' + guruId + '"]');
+    var aktif = opt && opt.dataset.aktif === '1';
 
     warn.style.display = aktif ? 'block' : 'none';
     btnCi.disabled     = aktif;
 }
 
-// Jalankan saat halaman load jika ada old('guru_id') yang terisi
+// Jalankan saat load jika ada old('guru_id') dari failed validation
 (function() {
     var sel = document.getElementById('sel-guru');
     if (sel && sel.value) cekStatusGuru(sel.value);
