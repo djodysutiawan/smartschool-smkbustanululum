@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\BarcodeGerbang;
 use App\Models\Siswa;
+use App\Models\Guru;
 use App\Models\Kelas;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -16,24 +17,36 @@ class BarcodeGerbangController extends Controller
     // ── INDEX ─────────────────────────────────────────────────────────────────
 
     /**
-     * Daftar semua barcode gerbang.
-     * Filter: kelas, status aktif, search.
+     * Daftar semua barcode gerbang (siswa + guru).
+     * Filter: kelas (siswa), tipe_pemilik, status aktif, search.
      */
     public function index(Request $request): View
     {
-        $query = BarcodeGerbang::with(['siswa.kelas'])
+        $query = BarcodeGerbang::with(['siswa.kelas', 'guru'])
             ->withTrashed();
 
+        // Filter tipe pemilik
+        if ($request->filled('tipe_pemilik')) {
+            if ($request->tipe_pemilik === 'siswa') {
+                $query->untukSiswa();
+            } elseif ($request->tipe_pemilik === 'guru') {
+                $query->untukGuru();
+            }
+        }
+
+        // Filter kelas (hanya berlaku untuk siswa)
         if ($request->filled('kelas_id')) {
             $query->whereHas('siswa', fn ($q) =>
                 $q->where('kelas_id', $request->kelas_id)
             );
         }
 
+        // Filter status aktif
         if ($request->filled('is_aktif')) {
             $query->where('is_aktif', $request->boolean('is_aktif'));
         }
 
+        // Pencarian: kode, nama siswa/guru, NIS, NIP
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -41,6 +54,10 @@ class BarcodeGerbangController extends Controller
                   ->orWhereHas('siswa', fn ($sq) =>
                       $sq->where('nama_lengkap', 'like', "%{$search}%")
                          ->orWhere('nis', 'like', "%{$search}%")
+                  )
+                  ->orWhereHas('guru', fn ($sq) =>
+                      $sq->where('nama_lengkap', 'like', "%{$search}%")
+                         ->orWhere('nip', 'like', "%{$search}%")
                   );
             });
         }
@@ -48,12 +65,14 @@ class BarcodeGerbangController extends Controller
         $barcodeList = $query->latest()->paginate(20)->withQueryString();
         $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
 
-        // Stats dihitung dari seluruh data, bukan dari hasil paginasi
+        // Stats dari seluruh data (bukan dari hasil paginasi/filter)
         $stats = [
-            'total'    => BarcodeGerbang::withTrashed()->count(),
-            'aktif'    => BarcodeGerbang::where('is_aktif', true)->count(),
-            'nonaktif' => BarcodeGerbang::where('is_aktif', false)->count(),
-            'hari_ini' => BarcodeGerbang::masihBerlaku()->count(),
+            'total'         => BarcodeGerbang::withTrashed()->count(),
+            'aktif'         => BarcodeGerbang::where('is_aktif', true)->count(),
+            'nonaktif'      => BarcodeGerbang::where('is_aktif', false)->count(),
+            'hari_ini'      => BarcodeGerbang::masihBerlaku()->count(),
+            'total_siswa'   => BarcodeGerbang::withTrashed()->untukSiswa()->count(),
+            'total_guru'    => BarcodeGerbang::withTrashed()->untukGuru()->count(),
         ];
 
         return view('admin.barcode-gerbang.index', compact('barcodeList', 'kelasList', 'stats'));
@@ -61,6 +80,10 @@ class BarcodeGerbangController extends Controller
 
     // ── CREATE ────────────────────────────────────────────────────────────────
 
+    /**
+     * Form buat barcode baru.
+     * Query param: siswa_id atau guru_id untuk pre-select pemilik.
+     */
     public function create(Request $request): View
     {
         $kelasList = Kelas::aktif()->orderBy('nama_kelas')->get();
@@ -69,45 +92,60 @@ class BarcodeGerbangController extends Controller
             ? Siswa::findOrFail($request->siswa_id)
             : null;
 
-        return view('admin.barcode-gerbang.create', compact('kelasList', 'siswa'));
+        $guru = $request->filled('guru_id')
+            ? Guru::findOrFail($request->guru_id)
+            : null;
+
+        return view('admin.barcode-gerbang.create', compact('kelasList', 'siswa', 'guru'));
     }
 
     // ── STORE ─────────────────────────────────────────────────────────────────
 
+    /**
+     * Simpan barcode baru (siswa ATAU guru).
+     * Validasi: tepat salah satu dari siswa_id / guru_id harus terisi.
+     */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'siswa_id'       => ['required', 'exists:siswa,id'],
+            'tipe_pemilik'   => ['required', 'in:siswa,guru'],
+            'siswa_id'       => ['required_if:tipe_pemilik,siswa', 'nullable', 'exists:siswa,id'],
+            'guru_id'        => ['required_if:tipe_pemilik,guru',  'nullable', 'exists:guru,id'],
             'berlaku_mulai'  => ['required', 'date'],
             'berlaku_sampai' => ['nullable', 'date', 'after_or_equal:berlaku_mulai'],
             'keterangan'     => ['nullable', 'string', 'max:255'],
         ]);
 
-        $siswa   = Siswa::findOrFail($request->siswa_id);
-        $barcode = BarcodeGerbang::buatUntukSiswa($siswa, [
+        $data = [
             'berlaku_mulai'  => $request->berlaku_mulai,
             'berlaku_sampai' => $request->berlaku_sampai,
             'keterangan'     => $request->keterangan,
-        ]);
+        ];
+
+        if ($request->tipe_pemilik === 'siswa') {
+            $pemilik = Siswa::findOrFail($request->siswa_id);
+            $barcode = BarcodeGerbang::buatUntukSiswa($pemilik, $data);
+            $namaPemilik = $pemilik->nama_lengkap;
+        } else {
+            $pemilik = Guru::findOrFail($request->guru_id);
+            $barcode = BarcodeGerbang::buatUntukGuru($pemilik, $data);
+            $namaPemilik = $pemilik->nama_lengkap;
+        }
 
         if ($request->boolean('langsung_cetak')) {
             return redirect()->route('admin.barcode-gerbang.print-satu', $barcode)
-                ->with('success', "Barcode untuk {$siswa->nama_lengkap} berhasil dibuat.");
+                ->with('success', "Barcode untuk {$namaPemilik} berhasil dibuat.");
         }
 
         return redirect()->route('admin.barcode-gerbang.index')
-            ->with('success', "Barcode gerbang untuk {$siswa->nama_lengkap} berhasil dibuat.");
+            ->with('success', "Barcode gerbang untuk {$namaPemilik} berhasil dibuat.");
     }
 
-    // ── GENERATE MASSAL ───────────────────────────────────────────────────────
+    // ── GENERATE MASSAL SISWA ─────────────────────────────────────────────────
 
     /**
      * Generate barcode untuk semua siswa aktif sekaligus (per kelas opsional).
-     *
-     * BUG FIX #2: generateMassal() sebelumnya tidak menggunakan DB::transaction(),
-     * sehingga bila terjadi error di tengah loop (misal unique constraint race condition),
-     * sebagian siswa sudah tergenerate dan sebagian belum — data inkonsisten tanpa
-     * pesan error yang jelas. Dibungkus transaction agar atomik.
+     * Dibungkus transaction agar atomik.
      */
     public function generateMassal(Request $request): RedirectResponse
     {
@@ -120,7 +158,6 @@ class BarcodeGerbangController extends Controller
         ]);
 
         $query = Siswa::where('status', 'aktif');
-
         if ($request->filled('kelas_id')) {
             $query->where('kelas_id', $request->kelas_id);
         }
@@ -150,7 +187,7 @@ class BarcodeGerbangController extends Controller
             }
         });
 
-        $msg = "Selesai. {$dibuat} barcode dibuat, {$dilewati} siswa dilewati (sudah punya barcode aktif).";
+        $msg = "Selesai. {$dibuat} barcode siswa dibuat, {$dilewati} dilewati (sudah punya barcode aktif).";
 
         if ($request->filled('kelas_id') && $request->boolean('langsung_cetak')) {
             return redirect()
@@ -158,41 +195,81 @@ class BarcodeGerbangController extends Controller
                 ->with('success', $msg);
         }
 
-        return redirect()
-            ->route('admin.barcode-gerbang.index')
-            ->with('success', $msg);
+        return redirect()->route('admin.barcode-gerbang.index')->with('success', $msg);
+    }
+
+    // ── GENERATE MASSAL GURU ──────────────────────────────────────────────────
+
+    /**
+     * Generate barcode untuk semua guru aktif sekaligus.
+     * Dibungkus transaction agar atomik.
+     */
+    public function generateMassalGuru(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'berlaku_mulai'  => ['required', 'date'],
+            'berlaku_sampai' => ['nullable', 'date', 'after_or_equal:berlaku_mulai'],
+            'overwrite'      => ['nullable', 'boolean'],
+        ]);
+
+        $guruList = Guru::where('status', 'aktif')->get();
+        $dibuat   = 0;
+        $dilewati = 0;
+
+        DB::transaction(function () use ($guruList, $request, &$dibuat, &$dilewati) {
+            foreach ($guruList as $guru) {
+                $sudahAda = BarcodeGerbang::where('guru_id', $guru->id)
+                    ->aktif()
+                    ->berlakuHariIni()
+                    ->exists();
+
+                if ($sudahAda && ! $request->boolean('overwrite')) {
+                    $dilewati++;
+                    continue;
+                }
+
+                BarcodeGerbang::buatUntukGuru($guru, [
+                    'berlaku_mulai'  => $request->berlaku_mulai,
+                    'berlaku_sampai' => $request->berlaku_sampai,
+                ]);
+
+                $dibuat++;
+            }
+        });
+
+        $msg = "Selesai. {$dibuat} barcode guru dibuat, {$dilewati} dilewati (sudah punya barcode aktif).";
+
+        return redirect()->route('admin.barcode-gerbang.index')->with('success', $msg);
     }
 
     // ── SHOW ──────────────────────────────────────────────────────────────────
 
     public function show(BarcodeGerbang $barcodeGerbang): View
     {
-        $barcodeGerbang->load(['siswa.kelas', 'absensiGerbang' => function ($q) {
+        $barcodeGerbang->load(['siswa.kelas', 'guru', 'absensiGerbang' => function ($q) {
             $q->latest('waktu_scan')->limit(50);
         }]);
 
-        $riwayatBarcode = BarcodeGerbang::withTrashed()
-            ->where('siswa_id', $barcodeGerbang->siswa_id)
-            ->latest()
-            ->get();
+        // Riwayat barcode milik pemilik yang sama
+        if ($barcodeGerbang->tipe_pemilik === 'guru') {
+            $riwayatBarcode = BarcodeGerbang::withTrashed()
+                ->where('guru_id', $barcodeGerbang->guru_id)
+                ->latest()
+                ->get();
+        } else {
+            $riwayatBarcode = BarcodeGerbang::withTrashed()
+                ->where('siswa_id', $barcodeGerbang->siswa_id)
+                ->latest()
+                ->get();
+        }
 
         return view('admin.barcode-gerbang.show', compact('barcodeGerbang', 'riwayatBarcode'));
     }
 
-    // ── PRINT KELAS ───────────────────────────────────────────────────────────
+    // ── PRINT KELAS (siswa) ───────────────────────────────────────────────────
 
     /**
-     * Tampilkan halaman print semua barcode aktif dalam satu kelas.
-     *
-     * BUG FIX #1 (root cause error): orderByHas() BUKAN method bawaan Eloquent
-     * dan tidak terdaftar di Builder manapun — method ini tidak ada, sehingga
-     * muncul "Call to undefined method ...::orderByHas()".
-     *
-     * Solusi: gunakan join ke tabel siswa untuk bisa ORDER BY nama_lengkap
-     * langsung di level SQL, tanpa package tambahan.
-     * Alternatif lain yang juga valid (lebih sederhana tapi sorting di PHP):
-     *   ->get()->sortBy('siswa.nama_lengkap')
-     * Namun join lebih efisien untuk data besar karena sorting dilakukan DB.
+     * Tampilkan halaman print semua barcode aktif siswa dalam satu kelas.
      */
     public function printKelas(Kelas $kelas): View
     {
@@ -201,20 +278,38 @@ class BarcodeGerbangController extends Controller
             ->where('siswa.kelas_id', $kelas->id)
             ->masihBerlaku()
             ->orderBy('siswa.nama_lengkap')
-            ->select('barcode_gerbang.*')   // hindari kolom ambigu (id, created_at, dll.)
+            ->select('barcode_gerbang.*')
             ->get();
 
         return view('admin.barcode-gerbang.print-kelas', compact('barcodes', 'kelas'));
     }
 
+    // ── PRINT SEMUA GURU ──────────────────────────────────────────────────────
+
+    /**
+     * Tampilkan halaman print semua barcode aktif guru.
+     */
+    public function printGuru(): View
+    {
+        $barcodes = BarcodeGerbang::with('guru')
+            ->join('guru', 'guru.id', '=', 'barcode_gerbang.guru_id')
+            ->whereNotNull('barcode_gerbang.guru_id')
+            ->masihBerlaku()
+            ->orderBy('guru.nama_lengkap')
+            ->select('barcode_gerbang.*')
+            ->get();
+
+        return view('admin.barcode-gerbang.print-guru', compact('barcodes'));
+    }
+
     // ── PRINT SATU ────────────────────────────────────────────────────────────
 
     /**
-     * Tampilkan halaman print satu barcode siswa.
+     * Tampilkan halaman print satu barcode (siswa atau guru).
      */
     public function printSatu(BarcodeGerbang $barcodeGerbang): View
     {
-        $barcodeGerbang->load('siswa.kelas');
+        $barcodeGerbang->load(['siswa.kelas', 'guru']);
 
         return view('admin.barcode-gerbang.print-satu', compact('barcodeGerbang'));
     }
@@ -236,12 +331,6 @@ class BarcodeGerbangController extends Controller
 
     /**
      * Soft-delete. Hanya boleh jika belum pernah digunakan untuk scan.
-     *
-     * BUG FIX #3: route redirect setelah destroy mengirim $barcodeGerbang
-     * yang sudah soft-deleted sebagai route parameter. Pada beberapa versi
-     * Laravel, model binding akan gagal resolve model yang sudah deleted
-     * (tergantung apakah route model binding pakai withTrashed atau tidak).
-     * Aman-nya: redirect ke index tanpa membawa model.
      */
     public function destroy(BarcodeGerbang $barcodeGerbang): RedirectResponse
     {
@@ -256,5 +345,28 @@ class BarcodeGerbangController extends Controller
         return redirect()
             ->route('admin.barcode-gerbang.index')
             ->with('success', 'Barcode berhasil dihapus.');
+    }
+
+    // ── SEARCH GURU (AJAX) ────────────────────────────────────────────────────
+
+    /**
+     * Endpoint pencarian guru untuk typeahead di form create.
+     * GET /admin/barcode-gerbang/search-guru?q=...&per_page=8
+     */
+    public function searchGuru(Request $request)
+    {
+        $q       = $request->input('q', '');
+        $perPage = (int) $request->input('per_page', 8);
+
+        $guru = Guru::where('status', 'aktif')
+            ->where(function ($query) use ($q) {
+                $query->where('nama_lengkap', 'like', "%{$q}%")
+                      ->orWhere('nip', 'like', "%{$q}%");
+            })
+            ->orderBy('nama_lengkap')
+            ->limit($perPage)
+            ->get(['id', 'nama_lengkap', 'nip', 'status_kepegawaian']);
+
+        return response()->json($guru);
     }
 }

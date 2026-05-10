@@ -12,12 +12,18 @@ use Illuminate\Support\Str;
 /**
  * Model BarcodeGerbang
  * ─────────────────────────────────────────────────────────────────────────────
- * Barcode TETAP per siswa untuk sistem absensi gerbang.
- * Satu siswa hanya boleh punya satu barcode aktif (is_aktif = true).
+ * Barcode TETAP per siswa atau per guru untuk sistem absensi gerbang.
+ * Satu siswa/guru hanya boleh punya satu barcode aktif (is_aktif = true).
  * Barcode lama dinonaktifkan, bukan dihapus, agar riwayat scan tetap valid.
  *
+ * Constraint pemilik:
+ *   - siswa_id terisi, guru_id null  → barcode milik siswa
+ *   - guru_id terisi, siswa_id null  → barcode milik guru
+ *   - keduanya null                  → TIDAK VALID (dicegah di buatUntukSiswa/buatUntukGuru)
+ *
  * @property int                  $id
- * @property int                  $siswa_id
+ * @property int|null             $siswa_id
+ * @property int|null             $guru_id
  * @property string               $kode
  * @property bool                 $is_aktif
  * @property \Carbon\Carbon       $berlaku_mulai
@@ -29,6 +35,8 @@ use Illuminate\Support\Str;
  *
  * @property-read bool    $masih_berlaku
  * @property-read string  $label_status
+ * @property-read string  $tipe_pemilik   'siswa'|'guru'|'unknown'
+ * @property-read string  $nama_pemilik
  */
 class BarcodeGerbang extends Model
 {
@@ -38,6 +46,7 @@ class BarcodeGerbang extends Model
 
     protected $fillable = [
         'siswa_id',
+        'guru_id',
         'kode',
         'is_aktif',
         'berlaku_mulai',
@@ -53,25 +62,19 @@ class BarcodeGerbang extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    /**
-     * Hanya barcode yang is_aktif = true.
-     */
+    /** Hanya barcode yang is_aktif = true. */
     public function scopeAktif($query)
     {
         return $query->where('is_aktif', true);
     }
 
-    /**
-     * Hanya barcode yang is_aktif = false.
-     */
+    /** Hanya barcode yang is_aktif = false. */
     public function scopeNonaktif($query)
     {
         return $query->where('is_aktif', false);
     }
 
-    /**
-     * Barcode yang masa berlakunya mencakup hari ini.
-     */
+    /** Barcode yang masa berlakunya mencakup hari ini. */
     public function scopeBerlakuHariIni($query)
     {
         return $query
@@ -91,21 +94,25 @@ class BarcodeGerbang extends Model
         return $query->aktif()->berlakuHariIni();
     }
 
+    /** Hanya barcode milik siswa. */
+    public function scopeUntukSiswa($query)
+    {
+        return $query->whereNotNull('siswa_id')->whereNull('guru_id');
+    }
+
+    /** Hanya barcode milik guru. */
+    public function scopeUntukGuru($query)
+    {
+        return $query->whereNotNull('guru_id')->whereNull('siswa_id');
+    }
+
     // ── Static Helpers ────────────────────────────────────────────────────────
 
     /**
-     * Generate kode barcode unik.
-     *
-     * Strategi: coba format pendek "SIS-{NIS}-{YYYY}" terlebih dahulu.
-     * Jika sudah terpakai (termasuk yang soft-deleted), tambahkan suffix
-     * random 4 karakter hingga benar-benar unik.
-     *
-     * Contoh output: SIS-202401001-2025  atau  SIS-202401001-2025-A3F9
-     *
-     * @param  Siswa  $siswa
-     * @return string
+     * Generate kode barcode unik untuk SISWA.
+     * Format: SIS-{NIS}-{YYYY}  atau  SIS-{NIS}-{YYYY}-{RAND4}
      */
-    public static function generateKode(Siswa $siswa): string
+    public static function generateKodeSiswa(Siswa $siswa): string
     {
         $base = implode('-', ['SIS', $siswa->nis ?? 'X', now()->year]);
 
@@ -121,15 +128,44 @@ class BarcodeGerbang extends Model
     }
 
     /**
-     * Buat barcode baru untuk satu siswa.
+     * Generate kode barcode unik untuk GURU.
+     * Format: GRU-{NIP}-{YYYY}  atau  GRU-{NIP}-{YYYY}-{RAND4}
+     * Jika NIP kosong, gunakan ID guru sebagai pengganti.
+     */
+    public static function generateKodeGuru(Guru $guru): string
+    {
+        $identifier = $guru->nip ?? ('G' . $guru->id);
+        $base = implode('-', ['GRU', $identifier, now()->year]);
+
+        if (! static::withTrashed()->where('kode', $base)->exists()) {
+            return $base;
+        }
+
+        do {
+            $kode = $base . '-' . strtoupper(Str::random(4));
+        } while (static::withTrashed()->where('kode', $kode)->exists());
+
+        return $kode;
+    }
+
+    /**
+     * Alias generateKode() untuk backward-compatibility (sebelumnya hanya untuk siswa).
+     *
+     * @deprecated  Gunakan generateKodeSiswa() atau generateKodeGuru() secara eksplisit.
+     */
+    public static function generateKode(Siswa $siswa): string
+    {
+        return static::generateKodeSiswa($siswa);
+    }
+
+    /**
+     * Buat barcode baru untuk satu SISWA.
      *
      * Semua barcode aktif milik siswa tersebut otomatis dinonaktifkan terlebih
      * dahulu, kemudian barcode baru dibuat dengan is_aktif = true.
-     * Gunakan method ini alih-alih create() langsung agar invariant
-     * "satu siswa, satu barcode aktif" selalu terjaga.
      *
      * @param  Siswa  $siswa
-     * @param  array  $data   Override nilai default: berlaku_mulai, berlaku_sampai, keterangan
+     * @param  array  $data   berlaku_mulai, berlaku_sampai, keterangan
      * @return static
      */
     public static function buatUntukSiswa(Siswa $siswa, array $data = []): static
@@ -140,7 +176,35 @@ class BarcodeGerbang extends Model
 
         return static::create([
             'siswa_id'       => $siswa->id,
-            'kode'           => static::generateKode($siswa),
+            'guru_id'        => null,
+            'kode'           => static::generateKodeSiswa($siswa),
+            'is_aktif'       => true,
+            'berlaku_mulai'  => $data['berlaku_mulai']  ?? today(),
+            'berlaku_sampai' => $data['berlaku_sampai'] ?? null,
+            'keterangan'     => $data['keterangan']     ?? null,
+        ]);
+    }
+
+    /**
+     * Buat barcode baru untuk satu GURU.
+     *
+     * Semua barcode aktif milik guru tersebut otomatis dinonaktifkan terlebih
+     * dahulu, kemudian barcode baru dibuat dengan is_aktif = true.
+     *
+     * @param  Guru  $guru
+     * @param  array $data  berlaku_mulai, berlaku_sampai, keterangan
+     * @return static
+     */
+    public static function buatUntukGuru(Guru $guru, array $data = []): static
+    {
+        static::where('guru_id', $guru->id)
+            ->where('is_aktif', true)
+            ->update(['is_aktif' => false]);
+
+        return static::create([
+            'siswa_id'       => null,
+            'guru_id'        => $guru->id,
+            'kode'           => static::generateKodeGuru($guru),
             'is_aktif'       => true,
             'berlaku_mulai'  => $data['berlaku_mulai']  ?? today(),
             'berlaku_sampai' => $data['berlaku_sampai'] ?? null,
@@ -150,9 +214,7 @@ class BarcodeGerbang extends Model
 
     // ── Accessors ─────────────────────────────────────────────────────────────
 
-    /**
-     * True jika barcode aktif DAN masa berlakunya mencakup hari ini.
-     */
+    /** True jika barcode aktif DAN masa berlakunya mencakup hari ini. */
     public function getMasihBerlakuAttribute(): bool
     {
         if (! $this->is_aktif) {
@@ -171,9 +233,35 @@ class BarcodeGerbang extends Model
     }
 
     /**
+     * Tipe pemilik barcode: 'siswa', 'guru', atau 'unknown'.
+     */
+    public function getTipePemilikAttribute(): string
+    {
+        if ($this->siswa_id !== null) return 'siswa';
+        if ($this->guru_id  !== null) return 'guru';
+        return 'unknown';
+    }
+
+    /**
+     * Nama pemilik barcode (siswa atau guru).
+     */
+    public function getNamaPemilikAttribute(): string
+    {
+        if ($this->tipe_pemilik === 'siswa') {
+            return $this->siswa?->nama_lengkap ?? '—';
+        }
+
+        if ($this->tipe_pemilik === 'guru') {
+            return $this->guru?->nama_lengkap ?? '—';
+        }
+
+        return '—';
+    }
+
+    /**
      * Label status yang ramah untuk tampilan UI.
      *
-     * Prioritas pengecekan:
+     * Prioritas:
      *   1. Dihapus (soft-deleted)  → "Dihapus"
      *   2. is_aktif = false        → "Nonaktif"
      *   3. Aktif & masa berlaku OK → "Aktif & Berlaku"
@@ -198,17 +286,19 @@ class BarcodeGerbang extends Model
 
     // ── Relations ─────────────────────────────────────────────────────────────
 
-    /**
-     * Siswa pemilik barcode ini.
-     */
+    /** Siswa pemilik barcode (null jika barcode milik guru). */
     public function siswa(): BelongsTo
     {
         return $this->belongsTo(Siswa::class);
     }
 
-    /**
-     * Semua log scan absensi gerbang yang menggunakan barcode ini.
-     */
+    /** Guru pemilik barcode (null jika barcode milik siswa). */
+    public function guru(): BelongsTo
+    {
+        return $this->belongsTo(Guru::class);
+    }
+
+    /** Semua log scan absensi gerbang yang menggunakan barcode ini. */
     public function absensiGerbang(): HasMany
     {
         return $this->hasMany(AbsensiGerbang::class, 'barcode_gerbang_id');

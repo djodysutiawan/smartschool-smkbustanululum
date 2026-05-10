@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Barcode — {{ $kelas->nama_kelas }}</title>
+    <title>Cetak Barcode — Semua Guru</title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
@@ -12,13 +12,13 @@
 
         body {
             font-family: 'Outfit', sans-serif;
-            background: #f1f5f9;
+            background: #f5f3ff;
             color: #0f172a;
         }
 
         /* ── Toolbar (tidak ikut print) ── */
         .toolbar {
-            background: #0f2044;
+            background: #2d1b69;
             padding: 14px 24px;
             display: flex;
             align-items: center;
@@ -73,9 +73,16 @@
             break-inside: avoid;
             page-break-inside: avoid;
         }
-        .card-kelas {
-            font-size: 10px; font-weight: 800; color: #2563eb;
-            text-transform: uppercase; letter-spacing: .08em;
+        .card-accent {
+            height: 3px;
+            border-radius: 99px;
+            background: linear-gradient(90deg,#7c3aed,#a78bfa);
+            margin: 0 auto 10px;
+            width: 40px;
+        }
+        .card-tipe {
+            font-size: 9px; font-weight: 800; color: #7c3aed;
+            text-transform: uppercase; letter-spacing: .1em;
             margin-bottom: 6px;
         }
         .card-nama {
@@ -83,7 +90,7 @@
             margin-bottom: 2px;
             white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .card-nis {
+        .card-nip {
             font-size: 10.5px; color: #94a3b8; margin-bottom: 10px;
         }
         .barcode-box {
@@ -150,12 +157,12 @@
                 Kembali
             </a>
             <div>
-                <p class="toolbar-title">Cetak Barcode — {{ $kelas->nama_kelas }}</p>
+                <p class="toolbar-title">Cetak Barcode — Semua Guru</p>
                 <p class="toolbar-sub">Barcode aktif &amp; berlaku hari ini</p>
             </div>
         </div>
         <div class="toolbar-right">
-            <span class="stat-pill">{{ $barcodes->count() }} siswa</span>
+            <span class="stat-pill">{{ $barcodes->count() }} guru</span>
             <button class="btn-print" onclick="window.print()">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
                 Cetak / Simpan PDF
@@ -168,21 +175,27 @@
             <div class="empty-icon">
                 <svg width="32" height="32" fill="none" stroke="#cbd5e1" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3 9V5a2 2 0 0 1 2-2h4M3 15v4a2 2 0 0 0 2 2h4M21 9V5a2 2 0 0 0-2-2h-4M21 15v4a2 2 0 0 1-2 2h-4"/></svg>
             </div>
-            <p class="empty-title">Tidak ada barcode aktif</p>
+            <p class="empty-title">Tidak ada barcode guru aktif</p>
             <p class="empty-sub">
-                Belum ada siswa di kelas {{ $kelas->nama_kelas }} yang memiliki barcode aktif &amp; berlaku hari ini.<br>
-                Silakan generate barcode terlebih dahulu.
+                Belum ada guru yang memiliki barcode aktif &amp; berlaku hari ini.<br>
+                Silakan generate barcode guru terlebih dahulu dari halaman utama.
             </p>
         </div>
     @else
-        <div class="cards-wrap" id="cardsWrap">
+        <div class="cards-wrap">
             @foreach($barcodes as $barcode)
                 <div class="barcode-card">
-                    <p class="card-kelas">{{ $kelas->nama_kelas }}</p>
-                    <p class="card-nama" title="{{ $barcode->siswa->nama_lengkap ?? '—' }}">
-                        {{ $barcode->siswa->nama_lengkap ?? '—' }}
+                    <div class="card-accent"></div>
+                    <p class="card-tipe">Guru / Staf</p>
+                    <p class="card-nama" title="{{ $barcode->guru->nama_lengkap ?? '—' }}">
+                        {{ $barcode->guru->nama_lengkap ?? '—' }}
                     </p>
-                    <p class="card-nis">NIS {{ $barcode->siswa->nis ?? '—' }}</p>
+                    <p class="card-nip">
+                        NIP {{ $barcode->guru->nip ?? '—' }}
+                        @if($barcode->guru->status_kepegawaian ?? false)
+                            · {{ $barcode->guru->status_kepegawaian }}
+                        @endif
+                    </p>
 
                     <div class="barcode-box">
                         <svg class="barcode-svg" data-kode="{{ $barcode->kode }}"></svg>

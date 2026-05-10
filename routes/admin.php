@@ -952,16 +952,42 @@ Route::prefix('admin')
         });
 
         // Routes Barkode gerbang 
+        // Route::prefix('barcode-gerbang')->name('barcode-gerbang.')->group(function () {
+        //     Route::get('/',                                [BarcodeGerbangController::class, 'index'])->name('index');
+        //     Route::get('/create',                          [BarcodeGerbangController::class, 'create'])->name('create');
+        //     Route::post('/',                               [BarcodeGerbangController::class, 'store'])->name('store');
+        //     Route::post('/generate-massal',                [BarcodeGerbangController::class, 'generateMassal'])->name('generate-massal');
+        //     Route::get('/print-kelas/{kelas}',             [BarcodeGerbangController::class, 'printKelas'])->name('print-kelas');
+        //     Route::get('/{barcodeGerbang}/print',          [BarcodeGerbangController::class, 'printSatu'])->name('print-satu');
+        //     Route::get('/{barcodeGerbang}',                [BarcodeGerbangController::class, 'show'])->name('show');
+        //     Route::patch('/{barcodeGerbang}/nonaktifkan',  [BarcodeGerbangController::class, 'nonaktifkan'])->name('nonaktifkan');
+        //     Route::delete('/{barcodeGerbang}',             [BarcodeGerbangController::class, 'destroy'])->name('destroy');
+        // });
+
+        // Routes Barcode Gerbang
         Route::prefix('barcode-gerbang')->name('barcode-gerbang.')->group(function () {
+        
+            // ── Non-wildcard / static routes — HARUS di atas /{barcodeGerbang} ──
             Route::get('/',                                [BarcodeGerbangController::class, 'index'])->name('index');
             Route::get('/create',                          [BarcodeGerbangController::class, 'create'])->name('create');
             Route::post('/',                               [BarcodeGerbangController::class, 'store'])->name('store');
-            Route::post('/generate-massal',                [BarcodeGerbangController::class, 'generateMassal'])->name('generate-massal');
-            Route::get('/print-kelas/{kelas}',             [BarcodeGerbangController::class, 'printKelas'])->name('print-kelas');
-            Route::get('/{barcodeGerbang}/print',          [BarcodeGerbangController::class, 'printSatu'])->name('print-satu');
-            Route::get('/{barcodeGerbang}',                [BarcodeGerbangController::class, 'show'])->name('show');
-            Route::patch('/{barcodeGerbang}/nonaktifkan',  [BarcodeGerbangController::class, 'nonaktifkan'])->name('nonaktifkan');
-            Route::delete('/{barcodeGerbang}',             [BarcodeGerbangController::class, 'destroy'])->name('destroy');
+        
+            // Generate massal
+            Route::post('/generate-massal',               [BarcodeGerbangController::class, 'generateMassal'])->name('generate-massal');
+            Route::post('/generate-massal-guru',          [BarcodeGerbangController::class, 'generateMassalGuru'])->name('generate-massal-guru');
+        
+            // Print halaman (non-wildcard)
+            Route::get('/print-kelas/{kelas}',            [BarcodeGerbangController::class, 'printKelas'])->name('print-kelas');
+            Route::get('/print-guru',                     [BarcodeGerbangController::class, 'printGuru'])->name('print-guru');
+        
+            // Search AJAX
+            Route::get('/search-guru',                    [BarcodeGerbangController::class, 'searchGuru'])->name('search-guru');
+        
+            // ── Wildcard /{barcodeGerbang} — HARUS paling bawah ──
+            Route::get('/{barcodeGerbang}/print',         [BarcodeGerbangController::class, 'printSatu'])->name('print-satu');
+            Route::get('/{barcodeGerbang}',               [BarcodeGerbangController::class, 'show'])->name('show');
+            Route::patch('/{barcodeGerbang}/nonaktifkan', [BarcodeGerbangController::class, 'nonaktifkan'])->name('nonaktifkan');
+            Route::delete('/{barcodeGerbang}',            [BarcodeGerbangController::class, 'destroy'])->name('destroy');
         });
 
     });

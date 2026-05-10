@@ -11,17 +11,19 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * Model AbsensiGerbang
  * ─────────────────────────────────────────────────────────────────────────────
- * Satu baris = satu event scan barcode siswa di gerbang sekolah.
+ * Satu baris = satu event scan barcode di gerbang sekolah.
+ * Bisa untuk SISWA (siswa_id terisi) atau GURU (guru_id terisi).
  *
  * Status record:
- *   normal   → scan valid, pertama kali siswa scan di sesi ini
- *   duplikat → siswa sudah scan sebelumnya di sesi yang sama (diabaikan sistem)
- *   koreksi  → tipe scan diubah oleh admin/piket (misal: masuk → pulang)
- *   manual   → diinput guru piket secara manual (alat rusak / siswa lupa bawa ID)
+ *   normal   → scan valid, pertama kali di sesi ini
+ *   duplikat → sudah scan sebelumnya di sesi yang sama (diabaikan)
+ *   koreksi  → tipe scan diubah oleh admin/piket
+ *   manual   → diinput guru piket secara manual
  *
  * @property int         $id
  * @property int         $sesi_gerbang_id
  * @property int|null    $siswa_id
+ * @property int|null    $guru_id
  * @property int|null    $barcode_gerbang_id
  * @property string      $kode_scan
  * @property string      $tipe             masuk|pulang
@@ -42,6 +44,7 @@ class AbsensiGerbang extends Model
     protected $fillable = [
         'sesi_gerbang_id',
         'siswa_id',
+        'guru_id',
         'barcode_gerbang_id',
         'kode_scan',
         'tipe',
@@ -65,70 +68,69 @@ class AbsensiGerbang extends Model
 
     // ── Scopes ────────────────────────────────────────────────────────────────
 
-    /** Hanya scan dengan status normal */
     public function scopeNormal($query)
     {
         return $query->where('status', 'normal');
     }
 
-    /** Hanya scan yang valid (dipakai untuk rekap kehadiran) */
     public function scopeValid($query)
     {
         return $query->whereIn('status', ['normal', 'manual', 'koreksi']);
     }
 
-    /** Hanya scan duplikat */
     public function scopeDuplikat($query)
     {
         return $query->where('status', 'duplikat');
     }
 
-    /** Hanya input manual */
     public function scopeManual($query)
     {
         return $query->where('is_manual', true);
     }
 
-    /** Filter tipe masuk */
     public function scopeMasuk($query)
     {
         return $query->where('tipe', 'masuk');
     }
 
-    /** Filter tipe pulang */
     public function scopePulang($query)
     {
         return $query->where('tipe', 'pulang');
     }
 
-    /** Filter berdasarkan tanggal */
     public function scopeTanggal($query, string $tanggal)
     {
         return $query->where('tanggal_scan', $tanggal);
     }
 
-    /** Filter hari ini */
     public function scopeHariIni($query)
     {
         return $query->where('tanggal_scan', now()->toDateString());
     }
 
-    /** Filter rentang tanggal */
     public function scopePeriode($query, string $dari, string $sampai)
     {
         return $query->whereBetween('tanggal_scan', [$dari, $sampai]);
     }
 
-    /** Filter berdasarkan kelas siswa */
+    /** Filter berdasarkan kelas siswa. */
     public function scopeKelas($query, int $kelasId)
     {
         return $query->whereHas('siswa', fn ($q) => $q->where('kelas_id', $kelasId));
     }
 
-    /**
-     * Scan terbaru yang masuk sesi tertentu (untuk live monitor).
-     * Gunakan: AbsensiGerbang::sesiAktif($sesiId)->latest('waktu_scan')->get()
-     */
+    /** Hanya scan milik siswa. */
+    public function scopeUntukSiswa($query)
+    {
+        return $query->whereNotNull('siswa_id')->whereNull('guru_id');
+    }
+
+    /** Hanya scan milik guru. */
+    public function scopeUntukGuru($query)
+    {
+        return $query->whereNotNull('guru_id')->whereNull('siswa_id');
+    }
+
     public function scopeSesiAktif($query, int $sesiGerbangId)
     {
         return $query->where('sesi_gerbang_id', $sesiGerbangId);
@@ -138,10 +140,11 @@ class AbsensiGerbang extends Model
 
     /**
      * Rekam scan dari alat. Otomatis deteksi duplikat.
+     * Support scan barcode siswa DAN guru dalam satu method.
      *
-     * @param  SesiGerbang    $sesi
-     * @param  string         $kodeScan   Nilai mentah dari alat
-     * @param  \Carbon\Carbon|null $waktu Null = gunakan now()
+     * @param  SesiGerbang         $sesi
+     * @param  string              $kodeScan   Nilai mentah dari alat
+     * @param  \Carbon\Carbon|null $waktu      Null = gunakan now()
      * @return static
      */
     public static function rekamScan(
@@ -151,23 +154,41 @@ class AbsensiGerbang extends Model
     ): static {
         $waktu ??= now();
 
-        // Cari barcode yang cocok
+        // Cari barcode yang cocok (aktif, siswa atau guru)
         $barcode = BarcodeGerbang::where('kode', $kodeScan)
                                   ->aktif()
                                   ->first();
 
-        $siswa = $barcode?->siswa;
+        $siswa = null;
+        $guru  = null;
+        $isDuplikat = false;
 
-        // Deteksi duplikat — apakah siswa ini sudah scan valid di sesi yang sama?
-        $isDuplikat = $siswa && static::where('sesi_gerbang_id', $sesi->id)
-                                      ->where('siswa_id', $siswa->id)
-                                      ->where('tipe', $sesi->tipe)
-                                      ->whereIn('status', ['normal', 'manual', 'koreksi'])
-                                      ->exists();
+        if ($barcode) {
+            if ($barcode->tipe_pemilik === 'siswa') {
+                $siswa = $barcode->siswa;
+
+                // Deteksi duplikat untuk siswa
+                $isDuplikat = $siswa && static::where('sesi_gerbang_id', $sesi->id)
+                                              ->where('siswa_id', $siswa->id)
+                                              ->where('tipe', $sesi->tipe)
+                                              ->whereIn('status', ['normal', 'manual', 'koreksi'])
+                                              ->exists();
+            } elseif ($barcode->tipe_pemilik === 'guru') {
+                $guru = $barcode->guru;
+
+                // Deteksi duplikat untuk guru
+                $isDuplikat = $guru && static::where('sesi_gerbang_id', $sesi->id)
+                                             ->where('guru_id', $guru->id)
+                                             ->where('tipe', $sesi->tipe)
+                                             ->whereIn('status', ['normal', 'manual', 'koreksi'])
+                                             ->exists();
+            }
+        }
 
         return static::create([
             'sesi_gerbang_id'    => $sesi->id,
             'siswa_id'           => $siswa?->id,
+            'guru_id'            => $guru?->id,
             'barcode_gerbang_id' => $barcode?->id,
             'kode_scan'          => $kodeScan,
             'tipe'               => $sesi->tipe,
@@ -179,13 +200,7 @@ class AbsensiGerbang extends Model
     }
 
     /**
-     * Input manual oleh guru piket.
-     *
-     * @param  SesiGerbang $sesi
-     * @param  Siswa       $siswa
-     * @param  int         $inputOleh  user_id guru piket
-     * @param  string|null $catatan
-     * @param  string|null $tipe       null = ikuti tipe sesi
+     * Input manual oleh guru piket untuk SISWA.
      */
     public static function inputManual(
         SesiGerbang $sesi,
@@ -201,6 +216,7 @@ class AbsensiGerbang extends Model
         return static::create([
             'sesi_gerbang_id'    => $sesi->id,
             'siswa_id'           => $siswa->id,
+            'guru_id'            => null,
             'barcode_gerbang_id' => $barcode?->id,
             'kode_scan'          => $barcode?->kode ?? 'MANUAL',
             'tipe'               => $tipe ?? $sesi->tipe,
@@ -214,22 +230,46 @@ class AbsensiGerbang extends Model
     }
 
     /**
-     * Koreksi tipe scan (misalnya: salah pilih masuk padahal pulang).
-     * Membuat record baru dengan status 'koreksi' dan menandai record ini.
-     *
-     * @param  int         $inputOleh  user_id yang melakukan koreksi
-     * @param  string      $tipeBaru   masuk|pulang
-     * @param  string|null $catatan
-     * @return static  Record koreksi yang baru dibuat
+     * Input manual oleh guru piket untuk GURU.
+     */
+    public static function inputManualGuru(
+        SesiGerbang $sesi,
+        Guru $guru,
+        int $inputOleh,
+        ?string $catatan = null,
+        ?string $tipe = null,
+    ): static {
+        $barcode = BarcodeGerbang::where('guru_id', $guru->id)
+                                  ->aktif()
+                                  ->first();
+
+        return static::create([
+            'sesi_gerbang_id'    => $sesi->id,
+            'siswa_id'           => null,
+            'guru_id'            => $guru->id,
+            'barcode_gerbang_id' => $barcode?->id,
+            'kode_scan'          => $barcode?->kode ?? 'MANUAL',
+            'tipe'               => $tipe ?? $sesi->tipe,
+            'waktu_scan'         => now(),
+            'tanggal_scan'       => now()->toDateString(),
+            'status'             => 'manual',
+            'is_manual'          => true,
+            'input_oleh'         => $inputOleh,
+            'catatan'            => $catatan,
+        ]);
+    }
+
+    /**
+     * Koreksi tipe scan.
      */
     public function koreksi(int $inputOleh, string $tipeBaru, ?string $catatan = null): static
     {
-        // Soft-delete record lama (tetap tersimpan sebagai riwayat)
         $this->update(['catatan' => '[DIKOREKSI] ' . ($catatan ?? '')]);
 
         return static::create([
             'sesi_gerbang_id'    => $this->sesi_gerbang_id,
             'siswa_id'           => $this->siswa_id,
+            'guru_id'            => $this->guru_id,
             'barcode_gerbang_id' => $this->barcode_gerbang_id,
             'kode_scan'          => $this->kode_scan,
             'tipe'               => $tipeBaru,
@@ -270,7 +310,23 @@ class AbsensiGerbang extends Model
     /** Apakah barcode scan ini dikenali sistem? */
     public function getDikenaliAttribute(): bool
     {
-        return $this->siswa_id !== null;
+        return $this->siswa_id !== null || $this->guru_id !== null;
+    }
+
+    /** Tipe pemilik scan: 'siswa', 'guru', atau 'unknown'. */
+    public function getTipePemilikAttribute(): string
+    {
+        if ($this->siswa_id !== null) return 'siswa';
+        if ($this->guru_id  !== null) return 'guru';
+        return 'unknown';
+    }
+
+    /** Nama pemilik (siswa atau guru). */
+    public function getNamaPemilikAttribute(): string
+    {
+        if ($this->tipe_pemilik === 'siswa') return $this->siswa?->nama_lengkap ?? '—';
+        if ($this->tipe_pemilik === 'guru')  return $this->guru?->nama_lengkap  ?? '—';
+        return '—';
     }
 
     // ── Relations ─────────────────────────────────────────────────────────────
@@ -285,24 +341,30 @@ class AbsensiGerbang extends Model
         return $this->belongsTo(Siswa::class);
     }
 
+    /** Guru yang melakukan scan (bukan guru piket yang input manual). */
+    public function guru(): BelongsTo
+    {
+        return $this->belongsTo(Guru::class);
+    }
+
     public function barcodeGerbang(): BelongsTo
     {
         return $this->belongsTo(BarcodeGerbang::class);
     }
 
-    /** User (guru piket) yang melakukan input manual atau koreksi */
+    /** User (guru piket) yang melakukan input manual atau koreksi. */
     public function inputOleh(): BelongsTo
     {
         return $this->belongsTo(User::class, 'input_oleh');
     }
 
-    /** Record asli yang dikoreksi oleh record ini */
+    /** Record asli yang dikoreksi oleh record ini. */
     public function koreksiDari(): BelongsTo
     {
         return $this->belongsTo(AbsensiGerbang::class, 'koreksi_dari_id');
     }
 
-    /** Record koreksi yang dibuat dari record ini (jika ada) */
+    /** Record koreksi yang dibuat dari record ini (jika ada). */
     public function hasilKoreksi(): HasOne
     {
         return $this->hasOne(AbsensiGerbang::class, 'koreksi_dari_id');

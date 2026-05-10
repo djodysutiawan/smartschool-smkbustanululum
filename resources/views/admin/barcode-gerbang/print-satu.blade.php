@@ -3,7 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Barcode — {{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}</title>
+    <title>
+        Cetak Barcode —
+        @if($barcodeGerbang->tipe_pemilik === 'guru')
+            {{ $barcodeGerbang->guru->nama_lengkap ?? '—' }}
+        @else
+            {{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}
+        @endif
+    </title>
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800;900&display=swap');
@@ -27,6 +34,7 @@
             padding: 0 14px; height: 36px; border-radius: 8px;
             background: rgba(255,255,255,.1); color: rgba(255,255,255,.8);
             text-decoration: none; font-size: 12.5px; font-weight: 700;
+            transition: background .15s;
         }
         .back-link:hover { background: rgba(255,255,255,.2); }
         .btn-print {
@@ -34,7 +42,7 @@
             padding: 0 20px; height: 38px; border-radius: 8px;
             background: #10b981; color: #fff; border: none;
             font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 800;
-            cursor: pointer;
+            cursor: pointer; transition: background .15s;
         }
         .btn-print:hover { background: #059669; }
 
@@ -57,24 +65,48 @@
             text-align: center;
             box-shadow: 0 4px 24px rgba(0,0,0,.08);
         }
+
+        /* ── Header accent ── */
+        .card-accent-bar {
+            height: 4px;
+            border-radius: 99px;
+            margin: 0 auto 16px;
+            width: 48px;
+        }
+        .card-accent-bar.siswa { background: linear-gradient(90deg,#1d4ed8,#3b82f6); }
+        .card-accent-bar.guru  { background: linear-gradient(90deg,#7c3aed,#a78bfa); }
+
         .card-school {
-            font-size: 11px; font-weight: 800; color: #2563eb;
+            font-size: 11px; font-weight: 800;
             text-transform: uppercase; letter-spacing: .1em;
             margin-bottom: 4px;
         }
+        .card-school.siswa { color: #2563eb; }
+        .card-school.guru  { color: #7c3aed; }
+
         .card-title {
             font-size: 11px; font-weight: 600; color: #94a3b8;
             text-transform: uppercase; letter-spacing: .08em;
             margin-bottom: 16px;
         }
+
+        /* ── Tipe badge ── */
+        .tipe-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            font-size: 10px; font-weight: 800; padding: 2px 10px;
+            border-radius: 99px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: .06em;
+        }
+        .tipe-badge.siswa { background: #eff6ff; color: #2563eb; border: 1px solid #dbeafe; }
+        .tipe-badge.guru  { background: #f5f3ff; color: #7c3aed; border: 1px solid #ede9fe; }
+
         .divider {
             height: 1px; background: #f1f5f9; margin: 14px 0;
         }
-        .siswa-nama {
+        .owner-nama {
             font-size: 17px; font-weight: 900; color: #0f172a;
             margin-bottom: 4px;
         }
-        .siswa-meta {
+        .owner-meta {
             font-size: 12px; color: #64748b;
         }
         .barcode-box {
@@ -87,6 +119,7 @@
         .barcode-kode {
             font-size: 9px; font-weight: 700; color: #64748b;
             letter-spacing: .07em; margin-top: 6px;
+            word-break: break-all;
         }
         .validity-row {
             display: flex; justify-content: space-between;
@@ -94,6 +127,7 @@
             margin-top: 6px;
         }
         .validity-row strong { color: #334155; }
+
         .status-pill {
             display: inline-flex; align-items: center; gap: 5px;
             padding: 4px 12px; border-radius: 99px;
@@ -141,7 +175,13 @@
             </a>
             <div>
                 <p class="toolbar-title">Cetak Barcode</p>
-                <p class="toolbar-sub">{{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}</p>
+                <p class="toolbar-sub">
+                    @if($barcodeGerbang->tipe_pemilik === 'guru')
+                        {{ $barcodeGerbang->guru->nama_lengkap ?? '—' }}
+                    @else
+                        {{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}
+                    @endif
+                </p>
             </div>
         </div>
         <button class="btn-print" onclick="window.print()">
@@ -152,15 +192,31 @@
 
     <div class="center-wrap">
         <div class="card">
-            <p class="card-school">Barcode Gerbang Sekolah</p>
+            <div class="card-accent-bar {{ $barcodeGerbang->tipe_pemilik }}"></div>
+
+            <p class="card-school {{ $barcodeGerbang->tipe_pemilik }}">Barcode Gerbang Sekolah</p>
             <p class="card-title">Kartu Scan Masuk &amp; Pulang</p>
 
-            <p class="siswa-nama">{{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}</p>
-            <p class="siswa-meta">
-                NIS {{ $barcodeGerbang->siswa->nis ?? '—' }}
-                &nbsp;·&nbsp;
-                {{ $barcodeGerbang->siswa->kelas->nama_kelas ?? '—' }}
-            </p>
+            <span class="tipe-badge {{ $barcodeGerbang->tipe_pemilik }}">
+                {{ $barcodeGerbang->tipe_pemilik === 'guru' ? 'Guru / Staf' : 'Siswa' }}
+            </span>
+
+            @if($barcodeGerbang->tipe_pemilik === 'guru')
+                <p class="owner-nama">{{ $barcodeGerbang->guru->nama_lengkap ?? '—' }}</p>
+                <p class="owner-meta">
+                    NIP {{ $barcodeGerbang->guru->nip ?? '—' }}
+                    @if($barcodeGerbang->guru->status_kepegawaian ?? false)
+                        &nbsp;·&nbsp; {{ $barcodeGerbang->guru->status_kepegawaian }}
+                    @endif
+                </p>
+            @else
+                <p class="owner-nama">{{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}</p>
+                <p class="owner-meta">
+                    NIS {{ $barcodeGerbang->siswa->nis ?? '—' }}
+                    &nbsp;·&nbsp;
+                    {{ $barcodeGerbang->siswa->kelas->nama_kelas ?? '—' }}
+                </p>
+            @endif
 
             <div class="barcode-box">
                 <svg id="barcodeSvg"></svg>

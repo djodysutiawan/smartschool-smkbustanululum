@@ -806,6 +806,19 @@
         Ketersediaan Saya
     </a>
 
+    <a href="{{ route('guru.barcode-kelas.index') }}"
+    class="sb-item {{ request()->routeIs('guru.barcode-kelas.*') ? 'active' : '' }}">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="5" height="5"/>
+            <rect x="16" y="3" width="5" height="5"/>
+            <rect x="3" y="16" width="5" height="5"/>
+            <path d="M21 16h-3v3"/>
+            <path d="M21 21h-3"/>
+            <path d="M16 21v-3"/>
+        </svg>
+        Barcode Saya
+    </a>
+
     {{-- ── KELAS & PEMBELAJARAN ──────────────────────────── --}}
     <p class="sb-section">Kelas & Pembelajaran</p>
 

@@ -4,9 +4,10 @@
     :root {
         --s-800:#0f2044;--s-700:#1a3a6b;--s-600:#1d4ed8;--s-500:#2563eb;--s-400:#3b82f6;
         --s-100:#dbeafe;--s-50:#eff6ff;
-        --g-500:#10b981;--g-400:#34d399;--g-100:#d1fae5;--g-50:#ecfdf5;
+        --g-500:#10b981;--g-100:#d1fae5;--g-50:#ecfdf5;
         --a-500:#f59e0b;--a-100:#fef3c7;--a-50:#fffbeb;
         --r-500:#ef4444;--r-100:#fee2e2;--r-50:#fff5f5;
+        --p-500:#8b5cf6;--p-100:#ede9fe;--p-50:#f5f3ff;
         --surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;
         --border:#e2e8f0;--text:#0f172a;--text2:#334155;--text3:#64748b;--text4:#94a3b8;
         --radius:12px;--radius-sm:8px;--radius-xs:6px;
@@ -18,13 +19,13 @@
 
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap;}
     .header-left{display:flex;align-items:center;gap:14px;}
-    .back-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3);text-decoration:none;transition:all .15s;}
+    .back-btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);font-family:'Outfit',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3);text-decoration:none;transition:all .15s;flex-shrink:0;}
     .back-btn:hover{background:var(--surface3);color:var(--text);}
     .page-title{font-family:'Outfit',sans-serif;font-size:21px;font-weight:800;color:var(--text);}
-    .page-sub{font-size:12.5px;color:var(--text4);margin-top:3px;}
-    .header-actions{display:flex;gap:8px;flex-wrap:wrap;}
+    .page-sub{font-size:12.5px;color:var(--text4);margin-top:3px;word-break:break-all;}
+    .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
 
-    .btn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:var(--radius-sm);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:all .15s;}
+    .btn{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:var(--radius-sm);font-family:'Outfit',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:all .15s;white-space:nowrap;}
     .btn-outline{background:var(--surface);color:var(--text2);border:1px solid var(--border);}
     .btn-outline:hover{background:var(--surface3);}
     .btn-warning{background:var(--a-50);color:var(--a-500);border:1px solid var(--a-100);}
@@ -46,13 +47,21 @@
     .info-label{font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;color:var(--text4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px;}
     .info-value{font-size:14px;color:var(--text);font-weight:500;}
 
-    .barcode-preview-card{background:linear-gradient(145deg,var(--s-800),var(--s-700));border-radius:var(--radius);padding:24px 20px;text-align:center;position:relative;overflow:hidden;}
+    /* ── Barcode preview card ── */
+    .barcode-preview-card{border-radius:var(--radius);padding:24px 20px;text-align:center;position:relative;overflow:hidden;}
+    .barcode-preview-card.siswa-bg{background:linear-gradient(145deg,var(--s-800),var(--s-700));}
+    .barcode-preview-card.guru-bg{background:linear-gradient(145deg,#2d1b69,var(--p-500));}
     .barcode-preview-card::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04);pointer-events:none;}
     .barcode-wrap-white{background:#fff;border-radius:10px;padding:16px 14px 10px;display:inline-block;width:100%;max-width:260px;}
     .barcode-wrap-white svg{width:100%;height:auto;display:block;}
     .barcode-kode-text{font-family:'Outfit',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);margin-top:8px;letter-spacing:.08em;}
-    .barcode-siswa-nama{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;margin-top:14px;}
-    .barcode-siswa-meta{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;}
+    .barcode-owner-nama{font-family:'Outfit',sans-serif;font-size:15px;font-weight:800;color:#fff;margin-top:14px;}
+    .barcode-owner-meta{font-size:12px;color:rgba(255,255,255,.5);margin-top:4px;}
+
+    /* ── Tipe indicator ── */
+    .tipe-pill{display:inline-flex;align-items:center;gap:5px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;margin-top:10px;}
+    .tipe-pill.siswa{background:rgba(59,130,246,.2);color:#93c5fd;}
+    .tipe-pill.guru{background:rgba(139,92,246,.2);color:#c4b5fd;}
 
     .badge{display:inline-flex;align-items:center;gap:5px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;}
     .badge-dot{width:6px;height:6px;border-radius:50%;}
@@ -67,7 +76,7 @@
     tbody tr{border-bottom:1px solid var(--border);}
     tbody tr:last-child{border-bottom:none;}
     tbody tr:hover{background:var(--s-50);}
-    tbody td{padding:11px 16px;font-size:13px;color:var(--text2);}
+    tbody td{padding:11px 16px;font-size:13px;color:var(--text2);vertical-align:middle;}
 
     .status-scan{display:inline-flex;align-items:center;gap:4px;font-family:'Outfit',sans-serif;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;}
     .status-scan.normal{background:var(--g-50);color:var(--g-500);}
@@ -96,7 +105,7 @@
 
 <div class="page">
 
-    {{-- Header --}}
+    {{-- ── Header ── --}}
     <div class="page-header">
         <div class="header-left">
             <a href="{{ route('admin.barcode-gerbang.index') }}" class="back-btn">
@@ -105,17 +114,26 @@
             </a>
             <div>
                 <h1 class="page-title">Detail Barcode Gerbang</h1>
-                <p class="page-sub">{{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }} · {{ $barcodeGerbang->kode }}</p>
+                <p class="page-sub">
+                    @if($barcodeGerbang->tipe_pemilik === 'guru')
+                        {{ $barcodeGerbang->guru->nama_lengkap ?? '—' }}
+                    @else
+                        {{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}
+                    @endif
+                    · {{ $barcodeGerbang->kode }}
+                </p>
             </div>
         </div>
         <div class="header-actions">
-            {{-- Tombol Cetak (hanya jika aktif) --}}
+            {{-- Cetak (hanya jika berlaku) --}}
             @if($barcodeGerbang->masih_berlaku)
                 <a href="{{ route('admin.barcode-gerbang.print-satu', $barcodeGerbang) }}" target="_blank" class="btn btn-info">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8" rx="1"/></svg>
                     Cetak
                 </a>
             @endif
+
+            {{-- Nonaktifkan (hanya jika aktif) --}}
             @if($barcodeGerbang->is_aktif)
                 <form method="POST" action="{{ route('admin.barcode-gerbang.nonaktifkan', $barcodeGerbang) }}">
                     @csrf @method('PATCH')
@@ -125,8 +143,10 @@
                     </button>
                 </form>
             @endif
+
+            {{-- Hapus --}}
             <form method="POST" action="{{ route('admin.barcode-gerbang.destroy', $barcodeGerbang) }}"
-                  onsubmit="return confirm('Hapus barcode ini? Tindakan ini tidak bisa dibatalkan.')">
+                  onsubmit="return confirm('Hapus barcode ini? Tindakan tidak bisa dibatalkan.')">
                 @csrf @method('DELETE')
                 <button type="submit" class="btn btn-danger">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg>
@@ -136,7 +156,7 @@
         </div>
     </div>
 
-    {{-- Flash --}}
+    {{-- Flash messages --}}
     @if(session('success'))
         <div class="alert alert-success">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
@@ -152,7 +172,7 @@
 
     <div class="detail-grid">
 
-        {{-- Kiri --}}
+        {{-- ── Kiri ── --}}
         <div>
             {{-- Info Barcode --}}
             <div class="card">
@@ -173,11 +193,19 @@
                     <div class="info-grid">
                         <div>
                             <p class="info-label">Kode Barcode</p>
-                            <p class="info-value" style="font-family:'Outfit',sans-serif;font-weight:800;letter-spacing:.06em">{{ $barcodeGerbang->kode }}</p>
+                            <p class="info-value" style="font-family:'Outfit',sans-serif;font-weight:800;letter-spacing:.06em;word-break:break-all">{{ $barcodeGerbang->kode }}</p>
+                        </div>
+                        <div>
+                            <p class="info-label">Tipe Pemilik</p>
+                            <p class="info-value" style="text-transform:capitalize">{{ $barcodeGerbang->tipe_pemilik }}</p>
                         </div>
                         <div>
                             <p class="info-label">Status</p>
-                            <p class="info-value">{{ $barcodeGerbang->label_status }}</p>
+                            <p class="info-value">{{ $barcodeGerbang->label_status ?? ($barcodeGerbang->is_aktif ? 'Aktif' : 'Nonaktif') }}</p>
+                        </div>
+                        <div>
+                            <p class="info-label">Dibuat</p>
+                            <p class="info-value">{{ $barcodeGerbang->created_at->format('d M Y, H:i') }}</p>
                         </div>
                         <div>
                             <p class="info-label">Berlaku Mulai</p>
@@ -187,45 +215,66 @@
                             <p class="info-label">Berlaku Sampai</p>
                             <p class="info-value">{{ $barcodeGerbang->berlaku_sampai?->format('d M Y') ?? 'Selamanya' }}</p>
                         </div>
-                        <div>
-                            <p class="info-label">Dibuat</p>
-                            <p class="info-value">{{ $barcodeGerbang->created_at->format('d M Y, H:i') }}</p>
-                        </div>
-                        <div>
+                        @if($barcodeGerbang->keterangan)
+                        <div style="grid-column:1/-1">
                             <p class="info-label">Keterangan</p>
-                            <p class="info-value">{{ $barcodeGerbang->keterangan ?? '—' }}</p>
+                            <p class="info-value">{{ $barcodeGerbang->keterangan }}</p>
                         </div>
+                        @endif
                     </div>
                 </div>
             </div>
 
-            {{-- Info Siswa --}}
+            {{-- Info Pemilik (Siswa atau Guru) --}}
             <div class="card">
                 <div class="card-header">
                     <span class="card-header-title">
                         <svg width="14" height="14" fill="none" stroke="var(--s-500)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-                        Data Siswa
+                        Data {{ $barcodeGerbang->tipe_pemilik === 'guru' ? 'Guru' : 'Siswa' }}
                     </span>
                 </div>
                 <div class="card-body">
-                    <div class="info-grid">
-                        <div>
-                            <p class="info-label">Nama Lengkap</p>
-                            <p class="info-value">{{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}</p>
+                    @if($barcodeGerbang->tipe_pemilik === 'guru')
+                        {{-- Data Guru --}}
+                        <div class="info-grid">
+                            <div>
+                                <p class="info-label">Nama Lengkap</p>
+                                <p class="info-value">{{ $barcodeGerbang->guru->nama_lengkap ?? '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="info-label">NIP</p>
+                                <p class="info-value">{{ $barcodeGerbang->guru->nip ?? '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="info-label">Status Kepegawaian</p>
+                                <p class="info-value">{{ $barcodeGerbang->guru->status_kepegawaian ?? '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="info-label">Status</p>
+                                <p class="info-value" style="text-transform:capitalize">{{ $barcodeGerbang->guru->status ?? '—' }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="info-label">NIS</p>
-                            <p class="info-value">{{ $barcodeGerbang->siswa->nis ?? '—' }}</p>
+                    @else
+                        {{-- Data Siswa --}}
+                        <div class="info-grid">
+                            <div>
+                                <p class="info-label">Nama Lengkap</p>
+                                <p class="info-value">{{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="info-label">NIS</p>
+                                <p class="info-value">{{ $barcodeGerbang->siswa->nis ?? '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="info-label">NISN</p>
+                                <p class="info-value">{{ $barcodeGerbang->siswa->nisn ?? '—' }}</p>
+                            </div>
+                            <div>
+                                <p class="info-label">Kelas</p>
+                                <p class="info-value">{{ $barcodeGerbang->siswa->kelas->nama_kelas ?? '—' }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <p class="info-label">NISN</p>
-                            <p class="info-value">{{ $barcodeGerbang->siswa->nisn ?? '—' }}</p>
-                        </div>
-                        <div>
-                            <p class="info-label">Kelas</p>
-                            <p class="info-value">{{ $barcodeGerbang->siswa->kelas->nama_kelas ?? '—' }}</p>
-                        </div>
-                    </div>
+                    @endif
                 </div>
             </div>
 
@@ -270,9 +319,9 @@
             </div>
         </div>
 
-        {{-- Kanan --}}
+        {{-- ── Kanan ── --}}
         <div>
-            {{-- Barcode visual --}}
+            {{-- Barcode Visual --}}
             <div class="card">
                 <div class="card-header">
                     <span class="card-header-title">Tampilan Barcode</span>
@@ -285,30 +334,40 @@
                     @endif
                 </div>
                 <div class="card-body" style="padding:0">
-                    <div class="barcode-preview-card">
+                    <div class="barcode-preview-card {{ $barcodeGerbang->tipe_pemilik === 'guru' ? 'guru-bg' : 'siswa-bg' }}">
                         <div class="barcode-wrap-white">
                             <svg id="barcode-detail-svg"></svg>
                             <p class="barcode-kode-text">{{ $barcodeGerbang->kode }}</p>
                         </div>
-                        <p class="barcode-siswa-nama">{{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}</p>
-                        <p class="barcode-siswa-meta">{{ $barcodeGerbang->siswa->kelas->nama_kelas ?? '—' }}</p>
+                        @if($barcodeGerbang->tipe_pemilik === 'guru')
+                            <p class="barcode-owner-nama">{{ $barcodeGerbang->guru->nama_lengkap ?? '—' }}</p>
+                            <p class="barcode-owner-meta">NIP {{ $barcodeGerbang->guru->nip ?? '—' }}</p>
+                        @else
+                            <p class="barcode-owner-nama">{{ $barcodeGerbang->siswa->nama_lengkap ?? '—' }}</p>
+                            <p class="barcode-owner-meta">{{ $barcodeGerbang->siswa->kelas->nama_kelas ?? '—' }}</p>
+                        @endif
+                        <div>
+                            <span class="tipe-pill {{ $barcodeGerbang->tipe_pemilik }}">
+                                {{ $barcodeGerbang->tipe_pemilik === 'guru' ? 'Guru / Staf' : 'Siswa' }}
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Riwayat barcode siswa --}}
+            {{-- Riwayat Barcode Pemilik --}}
             <div class="card">
                 <div class="card-header">
                     <span class="card-header-title">
                         <svg width="14" height="14" fill="none" stroke="var(--s-500)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                        Riwayat Barcode Siswa
+                        Riwayat Barcode {{ $barcodeGerbang->tipe_pemilik === 'guru' ? 'Guru' : 'Siswa' }}
                     </span>
                 </div>
                 <div class="card-body">
-                    @foreach($riwayatBarcode as $rb)
+                    @forelse($riwayatBarcode as $rb)
                         <div class="history-item {{ $rb->id === $barcodeGerbang->id ? 'history-current' : '' }}">
-                            <div style="flex:1">
-                                <p class="history-kode">{{ $rb->kode }}</p>
+                            <div style="flex:1;min-width:0">
+                                <p class="history-kode" style="word-break:break-all">{{ $rb->kode }}</p>
                                 <p class="history-meta">
                                     {{ $rb->created_at->format('d M Y') }}
                                     @if($rb->id === $barcodeGerbang->id)
@@ -322,7 +381,9 @@
                                 <span class="badge nonaktif">Nonaktif</span>
                             @endif
                         </div>
-                    @endforeach
+                    @empty
+                        <p style="font-size:13px;color:var(--text4);text-align:center;padding:20px 0">Belum ada riwayat.</p>
+                    @endforelse
                 </div>
             </div>
         </div>
