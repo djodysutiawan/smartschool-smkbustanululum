@@ -8,7 +8,7 @@
         --radius:10px;--radius-sm:7px;
     }
 
-    .page{padding:28px 28px 48px;max-width:2000px;margin:0 auto}
+    .page{padding:28px 28px 48px;max-width:860px;margin:0 auto}
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:all .15s;white-space:nowrap}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3)}
@@ -36,16 +36,16 @@
     .meta-item{display:flex;align-items:center;gap:5px;font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text3)}
 
     .notif-body{padding:24px}
-    .pesan-box{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text2);line-height:1.8;white-space:pre-wrap}
+    .pesan-box{font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text2);line-height:1.8;white-space:pre-wrap;word-break:break-word}
 
-    .url-box{margin-top:20px;padding:14px 18px;background:var(--or-50);border:1px solid var(--or-100);border-radius:var(--radius-sm);display:flex;align-items:center;gap:10px}
-    .url-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--or-700)}
+    .url-box{margin-top:20px;padding:14px 18px;background:var(--or-50);border:1px solid var(--or-100);border-radius:var(--radius-sm);display:flex;align-items:flex-start;gap:10px}
+    .url-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--or-700);margin-bottom:3px}
     .url-link{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--or-600);text-decoration:none;word-break:break-all}
     .url-link:hover{text-decoration:underline}
 
     .notif-footer{padding:14px 24px;border-top:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
     .read-info{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text3);display:flex;align-items:center;gap:6px}
-    .rd-dot{width:7px;height:7px;border-radius:50%;background:#15803d}
+    .rd-dot{width:7px;height:7px;border-radius:50%;background:#15803d;flex-shrink:0}
 
     @media(max-width:640px){.page{padding:16px}}
 </style>
@@ -65,7 +65,8 @@
             </a>
             <form action="{{ route('ortu.notifikasi.destroy', $notifikasi) }}" method="POST"
                   onsubmit="return confirm('Hapus notifikasi ini?')">
-                @csrf @method('DELETE')
+                @csrf
+                @method('DELETE')
                 <button type="submit" class="btn btn-danger">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
                     Hapus
@@ -76,16 +77,21 @@
 
     <div class="notif-card">
         <div class="notif-header">
-            <span class="badge-jenis bj-{{ $notifikasi->jenis }}">{{ ucfirst($notifikasi->jenis) }}</span>
+            {{-- BUG FIX: jenis bisa di luar list, fallback ke bj-info agar tidak ada class kosong --}}
+            @php
+                $validJenis = ['info','peringatan','nilai','absensi','pelanggaran','pengumuman'];
+                $jenisSafe  = in_array($notifikasi->jenis, $validJenis) ? $notifikasi->jenis : 'info';
+            @endphp
+            <span class="badge-jenis bj-{{ $jenisSafe }}">{{ ucfirst($notifikasi->jenis) }}</span>
             <h1 class="notif-judul">{{ $notifikasi->judul }}</h1>
             <div class="meta-row">
                 <span class="meta-item">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                    {{ $notifikasi->created_at->locale('id')->isoFormat('dddd, D MMMM Y · HH:mm') }}
+                    {{-- BUG FIX: isoFormat butuh locale di-set. Gunakan translatedFormat Laravel
+                         agar tidak error jika package Carbon locale 'id' belum di-set --}}
+                    {{ $notifikasi->created_at->translatedFormat('l, d F Y · H:i') }}
                 </span>
-                <span class="meta-item">
-                    {{ $notifikasi->created_at->diffForHumans() }}
-                </span>
+                <span class="meta-item">{{ $notifikasi->created_at->diffForHumans() }}</span>
             </div>
         </div>
 
@@ -94,21 +100,28 @@
 
             @if($notifikasi->url_tujuan)
             <div class="url-box">
-                <svg width="14" height="14" fill="none" stroke="var(--or-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                <svg width="14" height="14" fill="none" stroke="var(--or-600)" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:2px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                 <div>
                     <p class="url-label">Tautan Terkait</p>
-                    <a href="{{ $notifikasi->url_tujuan }}" target="_blank" class="url-link">{{ $notifikasi->url_tujuan }}</a>
+                    {{-- BUG FIX: rel="noopener noreferrer" untuk keamanan target="_blank" --}}
+                    <a href="{{ $notifikasi->url_tujuan }}" target="_blank" rel="noopener noreferrer" class="url-link">
+                        {{ $notifikasi->url_tujuan }}
+                    </a>
                 </div>
             </div>
             @endif
         </div>
 
         <div class="notif-footer">
+            {{-- BUG FIX: show() controller selalu set sudah_dibaca=true sebelum render,
+                 jadi footer ini selalu menampilkan "sudah dibaca". Tidak perlu kondisi
+                 @if($notifikasi->sudah_dibaca) karena pasti true di halaman ini --}}
             <div class="read-info">
                 <div class="rd-dot"></div>
-                <span>Sudah dibaca
+                <span>
+                    Sudah dibaca
                     @if($notifikasi->dibaca_pada)
-                        · {{ $notifikasi->dibaca_pada->locale('id')->isoFormat('D MMM Y, HH:mm') }}
+                        · {{ $notifikasi->dibaca_pada->translatedFormat('d M Y, H:i') }}
                     @endif
                 </span>
             </div>

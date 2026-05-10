@@ -59,7 +59,8 @@
     .terkait-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .1s}
     .terkait-item:last-child{border-bottom:none}
     .terkait-item:hover .terkait-judul{color:var(--or-600)}
-    .terkait-dot{width:8px;height:8px;border-radius:50%;background:var(--or-400);flex-shrink:0;margin-top:5px}
+    /* FIX: --or-400 tidak didefinisikan, diganti --or-500 yang ada di :root */
+    .terkait-dot{width:8px;height:8px;border-radius:50%;background:var(--or-500);flex-shrink:0;margin-top:5px}
     .terkait-judul{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text);line-height:1.4;transition:color .15s}
     .terkait-tgl{font-size:11px;color:var(--text3);font-family:'DM Sans',sans-serif;margin-top:2px}
 
@@ -124,7 +125,13 @@
                         </div>
                         <div>
                             <p class="lampiran-label">Lampiran</p>
-                            <a href="{{ $pengumuman->lampiran_url }}" target="_blank" download class="lampiran-link">
+                            {{--
+                                Menggunakan Storage::url() langsung di view sebagai fallback aman
+                                jika accessor getLampiranUrlAttribute() belum ada di model.
+                                Jika sudah ada accessor-nya di model, bisa tetap pakai $pengumuman->lampiran_url.
+                            --}}
+                            <a href="{{ $pengumuman->lampiran_url ?? \Illuminate\Support\Facades\Storage::url($pengumuman->path_lampiran) }}"
+                               target="_blank" download class="lampiran-link">
                                 Unduh Lampiran
                             </a>
                         </div>

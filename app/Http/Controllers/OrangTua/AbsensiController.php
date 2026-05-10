@@ -40,15 +40,19 @@ class AbsensiController extends Controller
         $orangTua = $this->getOrangTua();
         $anak     = $this->resolveAnak($request, $orangTua);
         $anakList = $orangTua->siswa()->with('kelas')->get();
- 
-        $absensiHariIni = Absensi::with(['jadwalPelajaran.mataPelajaran', 'dicatatOleh'])
+    
+        // PERBAIKAN: get() bukan first() — siswa bisa punya banyak absensi per hari
+        $absensiHariIni = Absensi::with([
+                'jadwalPelajaran.mataPelajaran',
+                'dicatatOleh',
+            ])
             ->where('siswa_id', $anak->id)
             ->whereDate('tanggal', today())
-            ->first();
- 
-        // Jadwal hari ini anak
+            ->orderBy('jam_masuk')   // urutkan berdasar jam pelajaran
+            ->get();
+    
         $hariIni = strtolower(now()->locale('id')->dayName);
- 
+    
         return view('orangtua.absensi.status-hari-ini', compact(
             'anak',
             'anakList',

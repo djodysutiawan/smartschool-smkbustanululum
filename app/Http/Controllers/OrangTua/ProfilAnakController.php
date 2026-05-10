@@ -25,27 +25,34 @@ class ProfilAnakController extends Controller
     {
         $orangTua = $this->getOrangTua();
 
-        // Gunakan 'pengguna' bukan 'user' — sesuai relasi di model Siswa
         $anakList = $orangTua->siswa()->with(['kelas', 'pengguna'])->orderBy('nama_lengkap')->get();
 
-        // Tambahkan data ringkasan per anak
-        $anakList->each(function ($anak) {
-            $base = Absensi::where('siswa_id', $anak->id)
-                ->whereMonth('tanggal', now()->month)
-                ->whereYear('tanggal', now()->year);
+        $bulan = now()->month;
+        $tahun = now()->year;
 
-            $anak->total_absensi_bulan_ini = (clone $base)
-                ->whereIn('status', ['hadir', 'telat'])
+        $anakList->each(function ($anak) use ($bulan, $tahun) {
+            // Hitung kehadiran bulan ini (hadir + telat)
+            $anak->total_absensi_bulan_ini = Absensi::where('siswa_id', $anak->id)
+                ->whereMonth('tanggal', $bulan)
+                ->whereYear('tanggal', $tahun)
+                ->whereIn('status', Absensi::STATUS_DIHITUNG_HADIR)
                 ->count();
 
             $anak->rata_rata_nilai = Nilai::where('siswa_id', $anak->id)
                 ->whereNotNull('nilai_akhir')
                 ->avg('nilai_akhir');
 
+            // FIX: Gunakan scope aktif() dan konstanta — tidak hard-code string 'dibatalkan'
             $anak->total_pelanggaran_tahun_ini = Pelanggaran::where('siswa_id', $anak->id)
-                ->where('status', '!=', 'dibatalkan')
-                ->whereYear('tanggal', now()->year)
+                ->aktif()
+                ->whereYear('tanggal', $tahun)
                 ->count();
+
+            // FIX: Hitung total poin pelanggaran aktif (bukan hanya 5 terakhir)
+            $anak->total_poin_pelanggaran = Pelanggaran::where('siswa_id', $anak->id)
+                ->aktif()
+                ->whereYear('tanggal', $tahun)
+                ->sum('poin');
         });
 
         return view('orangtua.profil-anak.index', compact('orangTua', 'anakList'));
@@ -59,27 +66,30 @@ class ProfilAnakController extends Controller
         $orangTua = $this->getOrangTua();
 
         // Pastikan anak ini benar milik orang tua yang login
-        // Gunakan 'pengguna' bukan 'user'
         $anak = $orangTua->siswa()
             ->with(['kelas', 'pengguna'])
             ->findOrFail($siswaId);
 
+        $bulan = now()->month;
+        $tahun = now()->year;
+
         // ── Absensi bulan ini ─────────────────────────────────────────
-        $base = Absensi::where('siswa_id', $anak->id)
-            ->whereMonth('tanggal', now()->month)
-            ->whereYear('tanggal', now()->year);
+        $baseAbsensi = Absensi::where('siswa_id', $anak->id)
+            ->whereMonth('tanggal', $bulan)
+            ->whereYear('tanggal', $tahun);
 
         $absensiSummary = [
-            'hadir' => (clone $base)->whereIn('status', ['hadir', 'telat'])->count(),
-            'izin'  => (clone $base)->where('status', 'izin')->count(),
-            'sakit' => (clone $base)->where('status', 'sakit')->count(),
-            'alfa'  => (clone $base)->where('status', 'alfa')->count(),
+            // hadir = hadir + telat (sesuai STATUS_DIHITUNG_HADIR)
+            'hadir' => (clone $baseAbsensi)->whereIn('status', Absensi::STATUS_DIHITUNG_HADIR)->count(),
+            'izin'  => (clone $baseAbsensi)->where('status', Absensi::STATUS_IZIN)->count(),
+            'sakit' => (clone $baseAbsensi)->where('status', Absensi::STATUS_SAKIT)->count(),
+            'alfa'  => (clone $baseAbsensi)->where('status', Absensi::STATUS_ALFA)->count(),
         ];
 
         // ── Riwayat absensi terbaru ───────────────────────────────────
         $absensiTerbaru = Absensi::where('siswa_id', $anak->id)
             ->orderByDesc('tanggal')
-            ->limit(7)
+            ->limit(10)
             ->get();
 
         // ── Nilai per mapel ───────────────────────────────────────────
@@ -91,9 +101,8 @@ class ProfilAnakController extends Controller
         $rataRataNilai = $nilaiList->whereNotNull('nilai_akhir')->avg('nilai_akhir');
 
         // ── Tugas belum dikumpulkan ───────────────────────────────────
-        // Kolom: dipublikasikan (bukan is_active)
         $tugasBelum = Tugas::where('kelas_id', $anak->kelas_id)
-            ->where('dipublikasikan', true)
+            ->dipublikasikan()
             ->whereDoesntHave('pengumpulan', fn ($q) => $q->where('siswa_id', $anak->id))
             ->where('batas_waktu', '>=', now())
             ->with('mataPelajaran')
@@ -101,16 +110,32 @@ class ProfilAnakController extends Controller
             ->limit(5)
             ->get();
 
+        // ── Tugas terlambat (sudah lewat deadline, belum dikumpulkan) ─
+        $tugasTerlambat = Tugas::where('kelas_id', $anak->kelas_id)
+            ->dipublikasikan()
+            ->whereDoesntHave('pengumpulan', fn ($q) => $q->where('siswa_id', $anak->id))
+            ->where('batas_waktu', '<', now())
+            ->where('izinkan_terlambat', false)
+            ->with('mataPelajaran')
+            ->orderByDesc('batas_waktu')
+            ->limit(3)
+            ->get();
+
         // ── Pelanggaran tahun ini ─────────────────────────────────────
         $pelanggaranList = Pelanggaran::where('siswa_id', $anak->id)
             ->with('kategori')
-            ->where('status', '!=', 'dibatalkan')
-            ->whereYear('tanggal', now()->year)
+            ->aktif()
+            ->whereYear('tanggal', $tahun)
             ->orderByDesc('tanggal')
             ->limit(5)
             ->get();
 
-        $totalPoinPelanggaran = $pelanggaranList->sum('poin');
+        // FIX KRITIS: Hitung total poin dari SEMUA pelanggaran aktif tahun ini,
+        // bukan hanya 5 yang di-fetch untuk tampilan (bug di versi sebelumnya)
+        $totalPoinPelanggaran = Pelanggaran::where('siswa_id', $anak->id)
+            ->aktif()
+            ->whereYear('tanggal', $tahun)
+            ->sum('poin');
 
         return view('orangtua.profil-anak.show', compact(
             'anak',
@@ -120,6 +145,7 @@ class ProfilAnakController extends Controller
             'nilaiList',
             'rataRataNilai',
             'tugasBelum',
+            'tugasTerlambat',
             'pelanggaranList',
             'totalPoinPelanggaran',
         ));

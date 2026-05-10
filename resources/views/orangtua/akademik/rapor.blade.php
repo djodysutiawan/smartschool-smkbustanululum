@@ -14,6 +14,7 @@
     .page{padding:28px 28px 60px;max-width:1300px;margin:0 auto}
     .bc{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);margin-bottom:20px}
     .bc a{color:var(--text3);text-decoration:none}.bc a:hover{color:var(--brand)}.bc-sep{color:var(--border)}.bc-cur{color:var(--text2)}
+
     /* ── Anak bar ── */
     .anak-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
     .anak-avatar{width:42px;height:42px;border-radius:50%;background:var(--brand-100);display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:15px;color:var(--brand-700);flex-shrink:0}
@@ -22,6 +23,7 @@
     .anak-switch{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
     .anak-btn{padding:5px 14px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);text-decoration:none;transition:all .15s}
     .anak-btn:hover,.anak-btn.active{background:var(--brand);border-color:var(--brand);color:#fff}
+
     /* ── Filter ── */
     .filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
     .filter-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
@@ -29,29 +31,34 @@
     .filter-select:focus{border-color:var(--brand)}
     .btn-filter{padding:7px 18px;border-radius:var(--radius-sm);background:var(--brand);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:filter .15s}
     .btn-filter:hover{filter:brightness(.92)}
+
     /* ── Hero rapor ── */
     .rapor-hero{background:linear-gradient(135deg,#1e40af 0%,#2563eb 50%,#3b82f6 100%);border-radius:var(--radius);padding:28px 32px;margin-bottom:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap}
-    .rh-score-wrap{text-align:center;background:rgba(255,255,255,.15);border-radius:12px;padding:16px 28px;flex-shrink:0}
+    .rh-score-wrap{text-align:center;background:rgba(255,255,255,.15);border-radius:12px;padding:16px 28px;flex-shrink:0;backdrop-filter:blur(4px)}
     .rh-score-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
     .rh-score{font-family:'Plus Jakarta Sans',sans-serif;font-size:52px;font-weight:800;color:#fff;line-height:1}
     .rh-predikat{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,.85);margin-top:4px}
-    .rh-info{flex:1}
+    .rh-info{flex:1;min-width:200px}
     .rh-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:#fff;margin-bottom:6px}
     .rh-sub{font-family:'DM Sans',sans-serif;font-size:13.5px;color:rgba(255,255,255,.8);line-height:1.6}
     .rh-stats{display:flex;gap:16px;margin-top:14px;flex-wrap:wrap}
-    .rh-stat-item{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 16px;text-align:center}
+    .rh-stat-item{background:rgba(255,255,255,.15);border-radius:8px;padding:8px 16px;text-align:center;backdrop-filter:blur(4px)}
     .rh-stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:#fff}
     .rh-stat-lbl{font-family:'DM Sans',sans-serif;font-size:11px;color:rgba(255,255,255,.75)}
+
     /* ── Sebaran predikat ── */
     .sebaran-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
-    .sebaran-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center}
+    .sebaran-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center;transition:transform .15s}
+    .sebaran-card:hover{transform:translateY(-2px)}
     .sb-predikat{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800}
     .sb-count{font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text3);margin-top:4px}
-    .p-a .sb-predikat{color:var(--green)}
-    .p-b .sb-predikat{color:#0369a1}
-    .p-c .sb-predikat{color:var(--yellow)}
-    .p-d .sb-predikat{color:#c2410c}
-    .p-e .sb-predikat{color:var(--red)}
+    .sb-bar{height:3px;border-radius:2px;margin-top:8px;transition:width .3s}
+    .p-a .sb-predikat{color:var(--green)} .p-a .sb-bar{background:var(--green)}
+    .p-b .sb-predikat{color:#0369a1}     .p-b .sb-bar{background:#0369a1}
+    .p-c .sb-predikat{color:var(--yellow)}.p-c .sb-bar{background:var(--yellow)}
+    .p-d .sb-predikat{color:#c2410c}     .p-d .sb-bar{background:#c2410c}
+    .p-e .sb-predikat{color:var(--red)}  .p-e .sb-bar{background:var(--red)}
+
     /* ── Tabel rapor ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
     .table-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
@@ -70,14 +77,16 @@
     .nilai-na{color:var(--text3);font-weight:400}
     .na-wrap{display:flex;align-items:center;gap:8px;justify-content:center}
     .na-score{font-family:'Plus Jakarta Sans',sans-serif;font-size:16px;font-weight:800}
-    .na-a{color:var(--green)}.na-b{color:#0369a1}.na-c{color:var(--yellow)}.na-d{color:#c2410c}.na-e{color:var(--red)}
+    .na-a{color:var(--green)}.na-b{color:#0369a1}.na-c{color:var(--yellow)}.na-d{color:#c2410c}.na-e{color:var(--red)}.na-null{color:var(--text3)}
     .predikat-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800}
     .pb-a{background:var(--green-bg);color:var(--green)}
     .pb-b{background:#e0f2fe;color:#0369a1}
     .pb-c{background:var(--yellow-bg);color:var(--yellow)}
     .pb-d{background:#ffedd5;color:#c2410c}
     .pb-e{background:var(--red-bg);color:var(--red)}
+    .pb-null{background:var(--surface3);color:var(--text3)}
     .catatan-cell{font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text3);font-style:italic;max-width:200px}
+
     /* ── Highlight mapel ── */
     .highlight-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
     .highlight-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:14px}
@@ -86,7 +95,16 @@
     .hc-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
     .hc-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;color:var(--text);margin-top:2px}
     .hc-score{font-size:13px;color:var(--text3);font-weight:600;margin-top:1px}
-    @media(max-width:768px){.sebaran-grid{grid-template-columns:repeat(5,1fr)}.highlight-row{grid-template-columns:1fr}.rapor-hero{flex-direction:column}.page{padding:16px}}
+
+    @media(max-width:768px){
+        .sebaran-grid{grid-template-columns:repeat(5,1fr)}
+        .highlight-row{grid-template-columns:1fr}
+        .rapor-hero{flex-direction:column}
+        .page{padding:16px 14px 40px}
+    }
+    @media(max-width:480px){
+        .sebaran-grid{grid-template-columns:repeat(3,1fr) repeat(2,1fr)}
+    }
 </style>
 
 <div class="page">
@@ -98,7 +116,12 @@
 
     {{-- ── Anak bar ── --}}
     <div class="anak-bar">
-        @php $initials = collect(explode(' ', $anak->nama_lengkap))->take(2)->map(fn($w)=>strtoupper($w[0]))->join('') @endphp
+        @php
+            $initials = collect(explode(' ', $anak->nama_lengkap))
+                ->take(2)
+                ->map(fn($w) => strtoupper($w[0] ?? ''))
+                ->join('');
+        @endphp
         <div class="anak-avatar">{{ $initials }}</div>
         <div>
             <p class="anak-name">{{ $anak->nama_lengkap }}</p>
@@ -107,7 +130,7 @@
         @if($anakList->count() > 1)
         <div class="anak-switch">
             @foreach($anakList as $a)
-            <a href="{{ route('ortu.akademik.rapor', ['siswa_id' => $a->id, 'tahun_ajaran_id' => $tahunAjaranId]) }}"
+            <a href="{{ route('ortu.akademik.rapor', array_filter(['siswa_id' => $a->id, 'tahun_ajaran_id' => $tahunAjaranId])) }}"
                class="anak-btn {{ $a->id === $anak->id ? 'active' : '' }}">{{ $a->nama_lengkap }}</a>
             @endforeach
         </div>
@@ -122,7 +145,7 @@
             <select name="tahun_ajaran_id" class="filter-select">
                 <option value="">Semua</option>
                 @foreach($tahunList as $ta)
-                <option value="{{ $ta->id }}" {{ $ta->id == $tahunAjaranId ? 'selected' : '' }}>
+                <option value="{{ $ta->id }}" {{ (int)$ta->id === (int)$tahunAjaranId ? 'selected' : '' }}>
                     {{ $ta->label ?? ($ta->tahun . ' — ' . ucfirst($ta->semester)) }}
                 </option>
                 @endforeach
@@ -141,18 +164,30 @@
 
     {{-- ── Hero ── --}}
     @php
+        // FIX: $rataRata bisa null jika semua nilai_akhir null — guard sebelum match
+        $rataRataFloat   = $rataRata !== null ? (float) $rataRata : null;
         $overallPredikat = match(true) {
-            ($rataRata ?? 0) >= 90 => 'A',
-            ($rataRata ?? 0) >= 80 => 'B',
-            ($rataRata ?? 0) >= 70 => 'C',
-            ($rataRata ?? 0) >= 60 => 'D',
-            default => 'E',
+            $rataRataFloat === null      => '—',
+            $rataRataFloat >= 90         => 'A',
+            $rataRataFloat >= 80         => 'B',
+            $rataRataFloat >= 70         => 'C',
+            $rataRataFloat >= 60         => 'D',
+            default                      => 'E',
+        };
+        $pbOverall = match($overallPredikat) {
+            'A' => 'pb-a','B' => 'pb-b','C' => 'pb-c','D' => 'pb-d','E' => 'pb-e',
+            default => 'pb-null'
+        };
+        $naClassOverall = match($overallPredikat) {
+            'A' => 'na-a','B' => 'na-b','C' => 'na-c','D' => 'na-d','E' => 'na-e',
+            default => 'na-null'
         };
     @endphp
     <div class="rapor-hero">
         <div class="rh-score-wrap">
             <p class="rh-score-label">Rata-rata</p>
-            <p class="rh-score">{{ $rataRata ? number_format($rataRata, 1) : '—' }}</p>
+            {{-- FIX: guard null agar tidak number_format(null) --}}
+            <p class="rh-score">{{ $rataRataFloat !== null ? number_format($rataRataFloat, 1) : '—' }}</p>
             <p class="rh-predikat">Predikat {{ $overallPredikat }}</p>
         </div>
         <div class="rh-info">
@@ -167,12 +202,18 @@
                     <p class="rh-stat-lbl">Mata Pelajaran</p>
                 </div>
                 <div class="rh-stat-item">
-                    <p class="rh-stat-val">{{ $raporData->where('predikat','A')->count() + $raporData->where('predikat','B')->count() }}</p>
+                    {{-- FIX: filter predikat A & B dari array Collection dengan where --}}
+                    <p class="rh-stat-val">
+                        {{ $raporData->whereIn('predikat', ['A','B'])->count() }}
+                    </p>
                     <p class="rh-stat-lbl">Nilai A & B</p>
                 </div>
                 @if($nilaiTertinggi)
                 <div class="rh-stat-item">
-                    <p class="rh-stat-val">{{ number_format($nilaiTertinggi['nilai_akhir'],1) }}</p>
+                    {{-- FIX: nilai_akhir bisa null — guard sebelum number_format --}}
+                    <p class="rh-stat-val">
+                        {{ $nilaiTertinggi['nilai_akhir'] !== null ? number_format((float)$nilaiTertinggi['nilai_akhir'], 1) : '—' }}
+                    </p>
                     <p class="rh-stat-lbl">Nilai Tertinggi</p>
                 </div>
                 @endif
@@ -181,12 +222,20 @@
     </div>
 
     {{-- ── Sebaran Predikat ── --}}
+    @php
+        $totalMapel = $raporData->count();
+    @endphp
     <div class="sebaran-grid">
         @foreach(['A','B','C','D','E'] as $p)
-        @php $cls = ['A'=>'p-a','B'=>'p-b','C'=>'p-c','D'=>'p-d','E'=>'p-e'][$p] @endphp
+        @php
+            $cls   = ['A'=>'p-a','B'=>'p-b','C'=>'p-c','D'=>'p-d','E'=>'p-e'][$p];
+            $count = $sebaranPredikat[$p] ?? 0;
+            $barW  = $totalMapel > 0 ? round(($count / $totalMapel) * 100) : 0;
+        @endphp
         <div class="sebaran-card {{ $cls }}">
             <p class="sb-predikat">{{ $p }}</p>
-            <p class="sb-count">{{ $sebaranPredikat[$p] ?? 0 }} mapel</p>
+            <p class="sb-count">{{ $count }} mapel</p>
+            <div class="sb-bar" style="width:{{ $barW }}%"></div>
         </div>
         @endforeach
     </div>
@@ -202,7 +251,11 @@
             <div>
                 <p class="hc-label">Nilai Tertinggi</p>
                 <p class="hc-val">{{ $nilaiTertinggi['mapel']->nama_mapel ?? '—' }}</p>
-                <p class="hc-score">{{ number_format($nilaiTertinggi['nilai_akhir'],1) }} · Predikat {{ $nilaiTertinggi['predikat'] }}</p>
+                {{-- FIX: guard null pada nilai_akhir & predikat --}}
+                <p class="hc-score">
+                    {{ $nilaiTertinggi['nilai_akhir'] !== null ? number_format((float)$nilaiTertinggi['nilai_akhir'], 1) : '—' }}
+                    @if($nilaiTertinggi['predikat']) · Predikat {{ $nilaiTertinggi['predikat'] }} @endif
+                </p>
             </div>
         </div>
         @endif
@@ -214,7 +267,11 @@
             <div>
                 <p class="hc-label">Perlu Perhatian</p>
                 <p class="hc-val">{{ $nilaiTerendah['mapel']->nama_mapel ?? '—' }}</p>
-                <p class="hc-score">{{ number_format($nilaiTerendah['nilai_akhir'],1) }} · Predikat {{ $nilaiTerendah['predikat'] }}</p>
+                {{-- FIX: guard null --}}
+                <p class="hc-score">
+                    {{ $nilaiTerendah['nilai_akhir'] !== null ? number_format((float)$nilaiTerendah['nilai_akhir'], 1) : '—' }}
+                    @if($nilaiTerendah['predikat']) · Predikat {{ $nilaiTerendah['predikat'] }} @endif
+                </p>
             </div>
         </div>
         @endif
@@ -245,8 +302,16 @@
                 <tbody>
                     @foreach($raporData as $idx => $r)
                     @php
-                        $naClass = match($r['predikat'] ?? '') { 'A'=>'na-a','B'=>'na-b','C'=>'na-c','D'=>'na-d','E'=>'na-e', default=>'' };
-                        $pbClass = match($r['predikat'] ?? '') { 'A'=>'pb-a','B'=>'pb-b','C'=>'pb-c','D'=>'pb-d','E'=>'pb-e', default=>'' };
+                        // FIX: $r['nilai_akhir'] bisa null — guard di semua tempat
+                        $naFloat  = $r['nilai_akhir'] !== null ? (float) $r['nilai_akhir'] : null;
+                        $naClass  = match($r['predikat'] ?? '') {
+                            'A' => 'na-a','B' => 'na-b','C' => 'na-c',
+                            'D' => 'na-d','E' => 'na-e', default => 'na-null'
+                        };
+                        $pbClass  = match($r['predikat'] ?? '') {
+                            'A' => 'pb-a','B' => 'pb-b','C' => 'pb-c',
+                            'D' => 'pb-d','E' => 'pb-e', default => 'pb-null'
+                        };
                     @endphp
                     <tr>
                         <td style="color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700">{{ $idx + 1 }}</td>
@@ -254,13 +319,32 @@
                             <p class="mapel-name">{{ $r['mapel']->nama_mapel ?? '—' }}</p>
                             <p class="mapel-guru">{{ $r['guru']->nama_lengkap ?? '—' }}</p>
                         </td>
-                        <td class="center"><span class="nilai-cell {{ is_null($r['nilai_tugas']) ? 'nilai-na' : '' }}">{{ $r['nilai_tugas'] !== null ? number_format($r['nilai_tugas'],0) : '—' }}</span></td>
-                        <td class="center"><span class="nilai-cell {{ is_null($r['nilai_harian']) ? 'nilai-na' : '' }}">{{ $r['nilai_harian'] !== null ? number_format($r['nilai_harian'],0) : '—' }}</span></td>
-                        <td class="center"><span class="nilai-cell {{ is_null($r['nilai_uts']) ? 'nilai-na' : '' }}">{{ $r['nilai_uts'] !== null ? number_format($r['nilai_uts'],0) : '—' }}</span></td>
-                        <td class="center"><span class="nilai-cell {{ is_null($r['nilai_uas']) ? 'nilai-na' : '' }}">{{ $r['nilai_uas'] !== null ? number_format($r['nilai_uas'],0) : '—' }}</span></td>
+                        <td class="center">
+                            <span class="nilai-cell {{ is_null($r['nilai_tugas']) ? 'nilai-na' : '' }}">
+                                {{ $r['nilai_tugas'] !== null ? number_format((float)$r['nilai_tugas'], 0) : '—' }}
+                            </span>
+                        </td>
+                        <td class="center">
+                            <span class="nilai-cell {{ is_null($r['nilai_harian']) ? 'nilai-na' : '' }}">
+                                {{ $r['nilai_harian'] !== null ? number_format((float)$r['nilai_harian'], 0) : '—' }}
+                            </span>
+                        </td>
+                        <td class="center">
+                            <span class="nilai-cell {{ is_null($r['nilai_uts']) ? 'nilai-na' : '' }}">
+                                {{ $r['nilai_uts'] !== null ? number_format((float)$r['nilai_uts'], 0) : '—' }}
+                            </span>
+                        </td>
+                        <td class="center">
+                            <span class="nilai-cell {{ is_null($r['nilai_uas']) ? 'nilai-na' : '' }}">
+                                {{ $r['nilai_uas'] !== null ? number_format((float)$r['nilai_uas'], 0) : '—' }}
+                            </span>
+                        </td>
                         <td class="center">
                             <div class="na-wrap">
-                                <span class="na-score {{ $naClass }}">{{ number_format($r['nilai_akhir'],1) }}</span>
+                                {{-- FIX: guard null — tampilkan '—' bukan '0.0' jika belum ada nilai --}}
+                                <span class="na-score {{ $naClass }}">
+                                    {{ $naFloat !== null ? number_format($naFloat, 1) : '—' }}
+                                </span>
                             </div>
                         </td>
                         <td class="center">
@@ -269,19 +353,17 @@
                         <td><span class="catatan-cell">{{ $r['catatan'] ?? '—' }}</span></td>
                     </tr>
                     @endforeach
-                    {{-- Baris rata-rata ── --}}
-                    @php
-                        $naClassOverall = match($overallPredikat) { 'A'=>'na-a','B'=>'na-b','C'=>'na-c','D'=>'na-d','E'=>'na-e', default=>'' };
-                        $pbOverall      = match($overallPredikat) { 'A'=>'pb-a','B'=>'pb-b','C'=>'pb-c','D'=>'pb-d','E'=>'pb-e', default=>'' };
-                    @endphp
+
+                    {{-- ── Baris rata-rata ── --}}
                     <tr style="background:var(--surface2);border-top:2px solid var(--border)">
                         <td colspan="6" style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);text-align:right;text-transform:uppercase;letter-spacing:.04em;padding-right:16px">
                             Rata-rata Keseluruhan
                         </td>
                         <td class="center">
                             <div class="na-wrap">
+                                {{-- FIX: guard null --}}
                                 <span class="na-score {{ $naClassOverall }}" style="font-size:18px">
-                                    {{ $rataRata ? number_format($rataRata,1) : '—' }}
+                                    {{ $rataRataFloat !== null ? number_format($rataRataFloat, 1) : '—' }}
                                 </span>
                             </div>
                         </td>

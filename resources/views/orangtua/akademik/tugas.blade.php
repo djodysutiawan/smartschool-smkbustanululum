@@ -15,6 +15,7 @@
     .page{padding:28px 28px 60px;max-width:1300px;margin:0 auto}
     .bc{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);margin-bottom:20px}
     .bc a{color:var(--text3);text-decoration:none}.bc a:hover{color:var(--brand)}.bc-sep{color:var(--border)}.bc-cur{color:var(--text2)}
+
     /* ── Anak bar ── */
     .anak-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
     .anak-avatar{width:42px;height:42px;border-radius:50%;background:var(--brand-100);display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:15px;color:var(--brand-700);flex-shrink:0}
@@ -23,6 +24,7 @@
     .anak-switch{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
     .anak-btn{padding:5px 14px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);text-decoration:none;transition:all .15s}
     .anak-btn:hover,.anak-btn.active{background:var(--brand);border-color:var(--brand);color:#fff}
+
     /* ── Stat strip ── */
     .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:14px}
@@ -30,6 +32,7 @@
     .ic-blue{background:var(--brand-50)}.ic-green{background:var(--green-bg)}.ic-yellow{background:var(--yellow-bg)}.ic-purple{background:#faf5ff}
     .stat-lbl{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:3px}
+
     /* ── Progress bar keseluruhan ── */
     .progress-banner{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 24px;margin-bottom:20px}
     .pb-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
@@ -37,10 +40,19 @@
     .pb-pct{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:var(--brand)}
     .prog-bg{width:100%;height:10px;border-radius:5px;background:var(--surface3);overflow:hidden}
     .prog-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#2563eb,#3b82f6);transition:width .4s}
+
+    /* ── Filter status tabs ── */
+    .filter-tabs{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+    .filter-tab{padding:6px 14px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
+    .filter-tab:hover{background:var(--surface3)}
+    .filter-tab.active{background:var(--brand);border-color:var(--brand);color:#fff}
+    .filter-tab-count{background:rgba(0,0,0,.08);border-radius:99px;padding:1px 7px;font-size:11px}
+    .filter-tab.active .filter-tab-count{background:rgba(255,255,255,.25)}
+
     /* ── Tugas list ── */
     .tugas-list{display:flex;flex-direction:column;gap:12px}
-    .tugas-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:box-shadow .2s}
-    .tugas-card:hover{box-shadow:0 4px 16px rgba(37,99,235,.08)}
+    .tugas-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;transition:box-shadow .2s,transform .15s}
+    .tugas-card:hover{box-shadow:0 4px 16px rgba(37,99,235,.08);transform:translateY(-1px)}
     .tugas-card-inner{padding:18px 20px;display:flex;align-items:flex-start;gap:16px}
     .tugas-status-icon{width:42px;height:42px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
     .tsi-selesai{background:var(--green-bg)}
@@ -48,7 +60,7 @@
     .tsi-belum{background:var(--surface3)}
     .tsi-dinilai{background:var(--brand-50)}
     .tugas-content{flex:1;min-width:0}
-    .tugas-judul{font-family:'Plus Jakarta Sans',sans-serif;font-size:14.5px;font-weight:700;color:var(--text);margin-bottom:4px}
+    .tugas-judul{font-family:'Plus Jakarta Sans',sans-serif;font-size:14.5px;font-weight:700;color:var(--text);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .tugas-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
     .tugas-mapel{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:.04em}
     .tugas-guru{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text3)}
@@ -60,18 +72,25 @@
     .tb-dikumpulkan{background:var(--green-bg);color:var(--green)}
     .tb-terlambat{background:var(--orange-bg);color:var(--orange)}
     .tb-dinilai{background:var(--brand-50);color:var(--brand-700)}
-    .tugas-nilai{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800}
-    .tn-good{color:var(--green)}.tn-mid{color:var(--yellow)}.tn-low{color:var(--red)}
     .tugas-right{flex-shrink:0;text-align:right;min-width:100px}
     .tugas-nilai-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;text-align:center}
     .tnb-score{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800}
     .tnb-label{font-family:'DM Sans',sans-serif;font-size:11px;color:var(--text3);margin-top:2px}
+    .tn-good{color:var(--green)}.tn-mid{color:var(--yellow)}.tn-low{color:var(--red)}
     .jenis-pill{display:inline-block;padding:2px 8px;border-radius:5px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700}
     .jp-file{background:#ede9fe;color:#6d28d9}
     .jp-teks{background:#dcfce7;color:#15803d}
     .jp-link{background:#dbeafe;color:#1d4ed8}
+    .jp-foto{background:#fce7f3;color:#9d174d}
+
+    /* ── Umpan balik ── */
+    .umpan-balik-box{margin-top:8px;background:var(--surface2);border-radius:var(--radius-sm);padding:8px 12px;border-left:3px solid var(--brand)}
+    .umpan-balik-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:3px}
+    .umpan-balik-text{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);font-style:italic}
+
     /* ── Empty ── */
     .empty-state{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:80px 20px;text-align:center}
+
     /* ── Pagination ── */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;margin-top:20px;flex-wrap:wrap;gap:10px}
     .pag-info{font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text3)}
@@ -79,7 +98,10 @@
     .pag-btn{height:32px;min-width:32px;padding:0 8px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;text-decoration:none;transition:all .15s}
     .pag-btn:hover{background:var(--surface2)}.pag-btn.active{background:var(--brand);border-color:var(--brand);color:#fff}
     .pag-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
-    @media(max-width:768px){.stat-strip{grid-template-columns:1fr 1fr}.tugas-card-inner{flex-wrap:wrap}.tugas-right{min-width:auto}.page{padding:16px}}
+
+    @media(max-width:900px){.stat-strip{grid-template-columns:1fr 1fr}}
+    @media(max-width:640px){.tugas-card-inner{flex-wrap:wrap}.tugas-right{min-width:auto;width:100%}}
+    @media(max-width:560px){.stat-strip{grid-template-columns:1fr 1fr}.page{padding:16px 14px 40px}}
 </style>
 
 <div class="page">
@@ -91,7 +113,12 @@
 
     {{-- ── Anak bar ── --}}
     <div class="anak-bar">
-        @php $initials = collect(explode(' ', $anak->nama_lengkap))->take(2)->map(fn($w)=>strtoupper($w[0]))->join('') @endphp
+        @php
+            $initials = collect(explode(' ', $anak->nama_lengkap))
+                ->take(2)
+                ->map(fn($w) => strtoupper($w[0] ?? ''))
+                ->join('');
+        @endphp
         <div class="anak-avatar">{{ $initials }}</div>
         <div>
             <p class="anak-name">{{ $anak->nama_lengkap }}</p>
@@ -100,7 +127,7 @@
         @if($anakList->count() > 1)
         <div class="anak-switch">
             @foreach($anakList as $a)
-            <a href="{{ route('ortu.akademik.tugas', ['siswa_id' => $a->id]) }}"
+            <a href="{{ route('ortu.akademik.tugas', array_filter(['siswa_id' => $a->id, 'tahun_ajaran_id' => $tahunAjaranId])) }}"
                class="anak-btn {{ $a->id === $anak->id ? 'active' : '' }}">{{ $a->nama_lengkap }}</a>
             @endforeach
         </div>
@@ -142,7 +169,8 @@
             </div>
             <div>
                 <p class="stat-lbl">Rata-rata Nilai</p>
-                <p class="stat-val">{{ $statTugas['rata_nilai'] ?: '—' }}</p>
+                {{-- FIX: $statTugas['rata_nilai'] sudah di-guard di controller (float 0.0 jika null) --}}
+                <p class="stat-val">{{ $statTugas['rata_nilai'] > 0 ? $statTugas['rata_nilai'] : '—' }}</p>
             </div>
         </div>
     </div>
@@ -152,7 +180,11 @@
     @php $pct = round(($statTugas['dikumpulkan'] / $statTugas['total']) * 100) @endphp
     <div class="progress-banner">
         <div class="pb-header">
-            <p class="pb-title">Tingkat Pengumpulan Tugas</p>
+            <p class="pb-title">Tingkat Pengumpulan Tugas
+                @if($tahunAjaran)
+                <span style="font-weight:400;font-size:12px;color:var(--text3);margin-left:6px">— {{ $tahunAjaran->label ?? $tahunAjaran->tahun }}</span>
+                @endif
+            </p>
             <p class="pb-pct">{{ $pct }}%</p>
         </div>
         <div class="prog-bg">
@@ -160,26 +192,79 @@
         </div>
         <p style="font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text3);margin-top:8px">
             {{ $statTugas['dikumpulkan'] }} dari {{ $statTugas['total'] }} tugas telah dikumpulkan
+            @php $belum = $statTugas['total'] - $statTugas['dikumpulkan'] @endphp
+            @if($belum > 0)
+            · <span style="color:var(--red);font-weight:600">{{ $belum }} belum dikumpulkan</span>
+            @endif
         </p>
     </div>
     @endif
+
+    {{-- ── Filter Tabs Status ── --}}
+    @php
+        // Bangun base URL dengan parameter yang sudah ada (siswa_id, tahun_ajaran_id)
+        $baseParams = array_filter(['siswa_id' => $anak->id, 'tahun_ajaran_id' => $tahunAjaranId]);
+    @endphp
+    <div class="filter-tabs">
+        <a href="{{ route('ortu.akademik.tugas', $baseParams) }}"
+           class="filter-tab {{ !$filterStatus ? 'active' : '' }}">
+            Semua
+            <span class="filter-tab-count">{{ $statTugas['total'] }}</span>
+        </a>
+        <a href="{{ route('ortu.akademik.tugas', array_merge($baseParams, ['status' => 'belum'])) }}"
+           class="filter-tab {{ $filterStatus === 'belum' ? 'active' : '' }}">
+            Belum Dikumpulkan
+            <span class="filter-tab-count">{{ $statTugas['total'] - $statTugas['dikumpulkan'] }}</span>
+        </a>
+        <a href="{{ route('ortu.akademik.tugas', array_merge($baseParams, ['status' => 'sudah'])) }}"
+           class="filter-tab {{ $filterStatus === 'sudah' ? 'active' : '' }}">
+            Dikumpulkan
+            <span class="filter-tab-count">{{ $statTugas['dikumpulkan'] }}</span>
+        </a>
+        <a href="{{ route('ortu.akademik.tugas', array_merge($baseParams, ['status' => 'dinilai'])) }}"
+           class="filter-tab {{ $filterStatus === 'dinilai' ? 'active' : '' }}">
+            Sudah Dinilai
+            <span class="filter-tab-count">{{ $statTugas['dinilai'] }}</span>
+        </a>
+    </div>
 
     {{-- ── Daftar Tugas ── --}}
     @if($tugasAll->isEmpty())
     <div class="empty-state">
         <svg width="48" height="48" fill="none" stroke="#cbd5e1" stroke-width="1.4" viewBox="0 0 24 24" style="margin:0 auto 16px;display:block"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-        <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:var(--text);margin-bottom:6px">Belum ada tugas</p>
-        <p style="font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text3)">Tidak ada tugas yang dipublikasikan untuk kelas ini.</p>
+        <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:var(--text);margin-bottom:6px">
+            {{ $filterStatus ? 'Tidak ada tugas dengan status ini' : 'Belum ada tugas' }}
+        </p>
+        <p style="font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text3)">
+            {{ $filterStatus
+                ? 'Coba pilih filter lain atau tampilkan semua tugas.'
+                : 'Tidak ada tugas yang dipublikasikan untuk kelas ini.' }}
+        </p>
+        @if($filterStatus)
+        <a href="{{ route('ortu.akademik.tugas', $baseParams) }}"
+           style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:7px 16px;border-radius:var(--radius-sm);background:var(--brand-50);color:var(--brand);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;text-decoration:none">
+            Tampilkan semua tugas
+        </a>
+        @endif
     </div>
     @else
     <div class="tugas-list">
         @foreach($tugasAll as $t)
         @php
             $pngmpln     = $pengumpulanMap[$t->id] ?? null;
+
+            // FIX: guard null pada batas_waktu sebelum memanggil method datetime
+            $batasWaktu  = $t->batas_waktu; // sudah di-cast sebagai Carbon oleh model
+
             $dikumpulkan = $pngmpln !== null && $pngmpln->dikumpulkan_pada !== null;
             $dinilai     = $pngmpln?->status === 'sudah_dinilai';
+
+            // FIX: isTerlambat() aman karena relasi 'tugas' sudah di-eager load di controller
             $terlambat   = $dikumpulkan && $pngmpln->isTerlambat();
-            $berakhir    = $t->isTelahBerakhir();
+
+            // FIX: guard null batas_waktu — isTelahBerakhir() sudah menggunakan $this->batas_waktu
+            // tapi kita tambahkan guard di sini juga untuk keamanan view
+            $berakhir    = $batasWaktu ? $t->isTelahBerakhir() : false;
             $nilaiPngmpln = $pngmpln?->nilai;
 
             if ($dinilai)           { $statusKey = 'dinilai'; }
@@ -187,20 +272,43 @@
             elseif ($dikumpulkan)   { $statusKey = 'dikumpulkan'; }
             else                    { $statusKey = 'belum'; }
 
-            $iconClass  = ['dinilai'=>'tsi-dinilai','terlambat'=>'tsi-terlambat','dikumpulkan'=>'tsi-selesai','belum'=>'tsi-belum'][$statusKey];
-            $badgeClass = ['dinilai'=>'tb-dinilai','terlambat'=>'tb-terlambat','dikumpulkan'=>'tb-dikumpulkan','belum'=>'tb-belum'][$statusKey];
-            $badgeLabel = ['dinilai'=>'Sudah Dinilai','terlambat'=>'Terlambat','dikumpulkan'=>'Sudah Dikumpulkan','belum'=>'Belum Dikumpulkan'][$statusKey];
+            $iconClass  = [
+                'dinilai'     => 'tsi-dinilai',
+                'terlambat'   => 'tsi-terlambat',
+                'dikumpulkan' => 'tsi-selesai',
+                'belum'       => 'tsi-belum',
+            ][$statusKey];
+            $badgeClass = [
+                'dinilai'     => 'tb-dinilai',
+                'terlambat'   => 'tb-terlambat',
+                'dikumpulkan' => 'tb-dikumpulkan',
+                'belum'       => 'tb-belum',
+            ][$statusKey];
+            $badgeLabel = [
+                'dinilai'     => 'Sudah Dinilai',
+                'terlambat'   => 'Terlambat',
+                'dikumpulkan' => 'Sudah Dikumpulkan',
+                'belum'       => 'Belum Dikumpulkan',
+            ][$statusKey];
 
-            $deadlineClass = $berakhir ? 'deadline-over' : (now()->diffInHours($t->batas_waktu, false) < 24 ? 'deadline-warn' : 'deadline-ok');
+            // FIX: guard null batas_waktu sebelum diffInHours
+            $deadlineClass = $batasWaktu === null
+                ? 'deadline-over'
+                : ($berakhir
+                    ? 'deadline-over'
+                    : (now()->diffInHours($batasWaktu, false) < 24 ? 'deadline-warn' : 'deadline-ok'));
 
-            $nilaiColor = $nilaiPngmpln === null ? '' : ($nilaiPngmpln >= 80 ? 'tn-good' : ($nilaiPngmpln >= 60 ? 'tn-mid' : 'tn-low'));
+            $nilaiColor = $nilaiPngmpln === null
+                ? ''
+                : ((float)$nilaiPngmpln >= 80 ? 'tn-good' : ((float)$nilaiPngmpln >= 60 ? 'tn-mid' : 'tn-low'));
 
-            $jenisLabel = ['file'=>'File','teks'=>'Teks','link'=>'Link'][$t->jenis_pengumpulan ?? ''] ?? ($t->jenis_pengumpulan ?? '-');
-            $jenisClass = ['file'=>'jp-file','teks'=>'jp-teks','link'=>'jp-link'][$t->jenis_pengumpulan ?? ''] ?? '';
+            $jenisKey   = $t->jenis_pengumpulan ?? '';
+            $jenisLabel = ['file'=>'File','teks'=>'Teks','link'=>'Link','foto'=>'Foto'][$jenisKey] ?? ucfirst($jenisKey);
+            $jenisClass = ['file'=>'jp-file','teks'=>'jp-teks','link'=>'jp-link','foto'=>'jp-foto'][$jenisKey] ?? '';
         @endphp
         <div class="tugas-card">
             <div class="tugas-card-inner">
-                {{-- Status icon ── --}}
+                {{-- ── Status icon ── --}}
                 <div class="tugas-status-icon {{ $iconClass }}">
                     @if($dinilai)
                     <svg width="18" height="18" fill="none" stroke="#2563eb" stroke-width="2" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/><path d="M18 2l4 4-10 10H8v-4L18 2z"/></svg>
@@ -213,42 +321,53 @@
                     @endif
                 </div>
 
-                {{-- Konten ── --}}
+                {{-- ── Konten ── --}}
                 <div class="tugas-content">
-                    <p class="tugas-judul">{{ $t->judul }}</p>
+                    <p class="tugas-judul" title="{{ $t->judul }}">{{ $t->judul }}</p>
                     <div class="tugas-meta">
                         <span class="tugas-mapel">{{ $t->mataPelajaran->nama_mapel ?? '—' }}</span>
                         <span class="tugas-guru">{{ $t->guru->nama_lengkap ?? '—' }}</span>
-                        @if($t->jenis_pengumpulan)
+                        @if($jenisKey)
                         <span class="jenis-pill {{ $jenisClass }}">{{ $jenisLabel }}</span>
                         @endif
                     </div>
                     <div class="tugas-info-row">
                         <span class="tugas-badge {{ $badgeClass }}">{{ $badgeLabel }}</span>
+
+                        {{-- FIX: guard null sebelum translatedFormat --}}
+                        @if($batasWaktu)
                         <span class="tugas-deadline {{ $deadlineClass }}">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            Batas: {{ $t->batas_waktu->translatedFormat('d M Y, H:i') }}
-                            @if($berakhir) <span style="font-weight:700">(Berakhir)</span> @endif
+                            Batas: {{ $batasWaktu->translatedFormat('d M Y, H:i') }}
+                            @if($berakhir)
+                            <span style="font-weight:700">(Berakhir)</span>
+                            @endif
                         </span>
+                        @else
+                        <span class="tugas-deadline deadline-over">Tidak ada batas waktu</span>
+                        @endif
+
                         @if($dikumpulkan && $pngmpln->dikumpulkan_pada)
                         <span style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text3)">
                             Dikumpulkan: {{ $pngmpln->dikumpulkan_pada->translatedFormat('d M Y, H:i') }}
                         </span>
                         @endif
                     </div>
+
                     @if($pngmpln?->umpan_balik)
-                    <div style="margin-top:8px;background:var(--surface2);border-radius:var(--radius-sm);padding:8px 12px;border-left:3px solid var(--brand)">
-                        <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;margin-bottom:3px">Umpan Balik Guru:</p>
-                        <p style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);font-style:italic">{{ $pngmpln->umpan_balik }}</p>
+                    <div class="umpan-balik-box">
+                        <p class="umpan-balik-label">Umpan Balik Guru:</p>
+                        <p class="umpan-balik-text">{{ $pngmpln->umpan_balik }}</p>
                     </div>
                     @endif
                 </div>
 
-                {{-- Nilai ── --}}
+                {{-- ── Nilai box ── --}}
                 <div class="tugas-right">
                     @if($nilaiPngmpln !== null)
                     <div class="tugas-nilai-box">
-                        <p class="tnb-score {{ $nilaiColor }}">{{ number_format($nilaiPngmpln, 0) }}</p>
+                        <p class="tnb-score {{ $nilaiColor }}">{{ number_format((float)$nilaiPngmpln, 0) }}</p>
+                        {{-- FIX: nilai_maksimal bisa null — guard dengan ?? 100 --}}
                         <p class="tnb-label">dari {{ $t->nilai_maksimal ?? 100 }}</p>
                     </div>
                     @elseif($dikumpulkan)
@@ -279,9 +398,13 @@
         <p class="pag-info">Menampilkan {{ $tugasAll->firstItem() }}–{{ $tugasAll->lastItem() }} dari {{ $tugasAll->total() }} tugas</p>
         <div class="pag-btns">
             @if($tugasAll->onFirstPage())
-                <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
+                <span class="pag-btn disabled">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </span>
             @else
-                <a href="{{ $tugasAll->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
+                <a href="{{ $tugasAll->previousPageUrl() }}" class="pag-btn">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                </a>
             @endif
             @foreach($tugasAll->getUrlRange(1, $tugasAll->lastPage()) as $pg => $url)
                 @if($pg == $tugasAll->currentPage())
@@ -293,9 +416,13 @@
                 @endif
             @endforeach
             @if($tugasAll->hasMorePages())
-                <a href="{{ $tugasAll->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
+                <a href="{{ $tugasAll->nextPageUrl() }}" class="pag-btn">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </a>
             @else
-                <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></span>
+                <span class="pag-btn disabled">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                </span>
             @endif
         </div>
     </div>

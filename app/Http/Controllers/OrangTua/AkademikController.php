@@ -32,7 +32,7 @@ class AkademikController extends Controller
         abort_if($anakList->isEmpty(), 404, 'Data anak tidak ditemukan.');
 
         if ($request->filled('siswa_id')) {
-            $anak = $anakList->firstWhere('id', $request->siswa_id);
+            $anak = $anakList->firstWhere('id', (int) $request->siswa_id);
             abort_if(! $anak, 403, 'Siswa ini bukan anak Anda.');
             return $anak;
         }
@@ -80,21 +80,36 @@ class AkademikController extends Controller
         $tahunList = TahunAjaran::orderByDesc('tahun')->get();
 
         // Statistik ringkas per mapel (rata-rata semua komponen)
+        // FIX: avg() pada collection of Eloquent model sudah benar,
+        // tapi guard null agar tidak ada warning pada mapel tanpa nilai.
         $statsPerMapel = $nilaiList->groupBy('mata_pelajaran_id')->map(function ($group) {
             $row = $group->first();
+
+            // FIX: filter null sebelum avg agar tidak terdistorsi
+            $avgField = fn (string $field) => $group->whereNotNull($field)->avg($field);
+
             return [
                 'nama'         => $row->mataPelajaran->nama_mapel ?? '-',
-                'nilai_tugas'  => round($group->avg('nilai_tugas') ?? 0, 1),
-                'nilai_harian' => round($group->avg('nilai_harian') ?? 0, 1),
-                'nilai_uts'    => round($group->avg('nilai_uts') ?? 0, 1),
-                'nilai_uas'    => round($group->avg('nilai_uas') ?? 0, 1),
-                'nilai_akhir'  => round($group->avg('nilai_akhir') ?? 0, 1),
+                'nilai_tugas'  => round((float) ($avgField('nilai_tugas') ?? 0), 1),
+                'nilai_harian' => round((float) ($avgField('nilai_harian') ?? 0), 1),
+                'nilai_uts'    => round((float) ($avgField('nilai_uts') ?? 0), 1),
+                'nilai_uas'    => round((float) ($avgField('nilai_uas') ?? 0), 1),
+                'nilai_akhir'  => round((float) ($avgField('nilai_akhir') ?? 0), 1),
                 'predikat'     => $row->predikat ?? '-',
             ];
         });
 
-        // Rata-rata nilai akhir keseluruhan
-        $rataRataAkhir = $nilaiList->avg('nilai_akhir');
+        // FIX: filter nilai_akhir > 0 / not-null sebelum avg agar tidak salah
+        $rataRataAkhir = $nilaiList->whereNotNull('nilai_akhir')->avg('nilai_akhir');
+
+        // FIX: nilai tertinggi & terendah dari statsPerMapel dengan guard null
+        $nilaiTertinggi = $statsPerMapel->isNotEmpty()
+            ? $statsPerMapel->max('nilai_akhir')
+            : null;
+
+        $nilaiTerendah = $statsPerMapel->isNotEmpty()
+            ? $statsPerMapel->min('nilai_akhir')
+            : null;
 
         return view('orangtua.akademik.nilai', compact(
             'anak',
@@ -106,6 +121,8 @@ class AkademikController extends Controller
             'tahunAjaranId',
             'statsPerMapel',
             'rataRataAkhir',
+            'nilaiTertinggi',
+            'nilaiTerendah',
         ));
     }
 
@@ -128,12 +145,10 @@ class AkademikController extends Controller
             ->get();
 
         // Susun data rapor per mata pelajaran
-        // Model Nilai sudah punya kolom: nilai_tugas, nilai_harian, nilai_uts, nilai_uas, nilai_akhir, predikat
-        // Jika ada beberapa record per mapel (misal update berkala), ambil yang terbaru
+        // Jika ada beberapa record per mapel, ambil yang paling baru (updated_at terbesar)
         $raporData = $nilaiAll
             ->groupBy('mata_pelajaran_id')
             ->map(function ($group) {
-                // Ambil record dengan nilai_akhir tertinggi / terbaru
                 $latest = $group->sortByDesc('updated_at')->first();
                 return [
                     'mapel'        => $latest->mataPelajaran,
@@ -142,23 +157,42 @@ class AkademikController extends Controller
                     'nilai_harian' => $latest->nilai_harian,
                     'nilai_uts'    => $latest->nilai_uts,
                     'nilai_uas'    => $latest->nilai_uas,
+                    // FIX: guard null — nilai_akhir bisa null jika belum ada komponen
                     'nilai_akhir'  => $latest->nilai_akhir,
                     'predikat'     => $latest->predikat,
                     'catatan'      => $latest->catatan,
                 ];
             })
-            ->sortBy('mapel.nama_mapel')
+            ->sortBy(fn ($r) => $r['mapel']->nama_mapel ?? '')
             ->values();
 
-        $rataRata  = $raporData->avg('nilai_akhir');
+        // FIX: avg pada Collection of array — harus pakai arrow function manual
+        // karena ->avg('key') hanya bekerja pada Eloquent collection, bukan array collection.
+        $rataRata = $raporData->isNotEmpty()
+            ? $raporData
+                ->whereNotNull('nilai_akhir')
+                ->pipe(fn ($col) => $col->isNotEmpty()
+                    ? $col->sum(fn ($r) => (float) $r['nilai_akhir']) / $col->count()
+                    : null)
+            : null;
+
         $tahunList = TahunAjaran::orderByDesc('tahun')->get();
 
         // Hitung sebaran predikat
-        $sebaranPredikat = $raporData->groupBy('predikat')->map->count();
+        $sebaranPredikat = $raporData
+            ->whereNotNull('predikat')
+            ->groupBy('predikat')
+            ->map->count();
 
-        // Mapel dengan nilai terendah & tertinggi
-        $nilaiTertinggi = $raporData->sortByDesc('nilai_akhir')->first();
-        $nilaiTerendah  = $raporData->sortBy('nilai_akhir')->first();
+        // Mapel dengan nilai akhir terendah & tertinggi
+        // FIX: filter null agar sortBy tidak salah urutan
+        $raporFiltered  = $raporData->whereNotNull('nilai_akhir');
+        $nilaiTertinggi = $raporFiltered->isNotEmpty()
+            ? $raporFiltered->sortByDesc('nilai_akhir')->first()
+            : null;
+        $nilaiTerendah  = $raporFiltered->isNotEmpty()
+            ? $raporFiltered->sortBy('nilai_akhir')->first()
+            : null;
 
         return view('orangtua.akademik.rapor', compact(
             'anak',
@@ -183,37 +217,74 @@ class AkademikController extends Controller
         $anak     = $this->resolveAnak($request, $orangTua);
         $anakList = $orangTua->siswa()->with('kelas')->get();
 
-        // Filter status
-        $filterStatus = $request->get('status'); // belum | sudah | terlambat
+        // FIX: filter status sekarang benar-benar dipakai di query
+        $filterStatus = $request->get('status'); // belum | sudah | terlambat | dinilai
 
+        // FIX: filter tahun ajaran untuk tugas juga diterapkan konsisten
+        $tahunAjaran   = $this->resolveTahunAjaran($request);
+        $tahunAjaranId = $tahunAjaran?->id;
+
+        // Query dasar tugas untuk kelas anak
         $tugasQuery = Tugas::with(['mataPelajaran', 'guru'])
             ->where('kelas_id', $anak->kelas_id)
             ->where('dipublikasikan', true)
+            ->when($tahunAjaranId, fn ($q) => $q->where('tahun_ajaran_id', $tahunAjaranId))
             ->orderByDesc('batas_waktu');
+
+        // FIX: filter berdasarkan status pengumpulan
+        // Ini dilakukan dengan subquery ke pengumpulan_tugas
+        if ($filterStatus === 'sudah') {
+            $tugasQuery->whereHas('pengumpulan', fn ($q) =>
+                $q->where('siswa_id', $anak->id)
+                  ->whereNotNull('dikumpulkan_pada')
+                  ->where('status', '!=', PengumpulanTugas::STATUS_TERLAMBAT)
+            );
+        } elseif ($filterStatus === 'terlambat') {
+            $tugasQuery->whereHas('pengumpulan', fn ($q) =>
+                $q->where('siswa_id', $anak->id)
+                  ->where('status', PengumpulanTugas::STATUS_TERLAMBAT)
+            );
+        } elseif ($filterStatus === 'dinilai') {
+            $tugasQuery->whereHas('pengumpulan', fn ($q) =>
+                $q->where('siswa_id', $anak->id)
+                  ->where('status', PengumpulanTugas::STATUS_DINILAI)
+            );
+        } elseif ($filterStatus === 'belum') {
+            $tugasQuery->whereDoesntHave('pengumpulan', fn ($q) =>
+                $q->where('siswa_id', $anak->id)
+                  ->whereNotNull('dikumpulkan_pada')
+            );
+        }
 
         $tugasAll = $tugasQuery->paginate(15)->withQueryString();
 
-        // Map pengumpulan siswa per tugas — load relasi tugas agar isTerlambat() tidak N+1
+        // FIX: eager load relasi 'tugas' pada PengumpulanTugas agar isTerlambat()
+        // tidak memicu N+1 query (lihat PengumpulanTugas::isTerlambat()).
         $pengumpulanMap = PengumpulanTugas::with('tugas')
             ->where('siswa_id', $anak->id)
             ->whereIn('tugas_id', $tugasAll->pluck('id'))
             ->get()
             ->keyBy('tugas_id');
 
-        // Statistik cepat (dari semua tugas, tanpa paginasi)
-        $semuaTugas = Tugas::where('kelas_id', $anak->kelas_id)
+        // Statistik cepat (dari semua tugas kelas anak, tanpa paginasi/filter status)
+        $semuaTugasIds = Tugas::where('kelas_id', $anak->kelas_id)
             ->where('dipublikasikan', true)
+            ->when($tahunAjaranId, fn ($q) => $q->where('tahun_ajaran_id', $tahunAjaranId))
             ->pluck('id');
 
         $semuaPengumpulan = PengumpulanTugas::where('siswa_id', $anak->id)
-            ->whereIn('tugas_id', $semuaTugas)
+            ->whereIn('tugas_id', $semuaTugasIds)
             ->get();
 
         $statTugas = [
-            'total'      => $semuaTugas->count(),
-            'dikumpulkan'=> $semuaPengumpulan->whereNotNull('dikumpulkan_pada')->count(),
-            'dinilai'    => $semuaPengumpulan->where('status', 'sudah_dinilai')->count(),
-            'rata_nilai' => round($semuaPengumpulan->whereNotNull('nilai')->avg('nilai') ?? 0, 1),
+            'total'       => $semuaTugasIds->count(),
+            'dikumpulkan' => $semuaPengumpulan->whereNotNull('dikumpulkan_pada')->count(),
+            'dinilai'     => $semuaPengumpulan->where('status', PengumpulanTugas::STATUS_DINILAI)->count(),
+            // FIX: guard avg — jika tidak ada nilai, kembalikan 0 bukan null
+            'rata_nilai'  => round(
+                (float) ($semuaPengumpulan->whereNotNull('nilai')->avg('nilai') ?? 0),
+                1
+            ),
         ];
 
         return view('orangtua.akademik.tugas', compact(
@@ -222,6 +293,9 @@ class AkademikController extends Controller
             'tugasAll',
             'pengumpulanMap',
             'statTugas',
+            'filterStatus',
+            'tahunAjaran',
+            'tahunAjaranId',
         ));
     }
 }

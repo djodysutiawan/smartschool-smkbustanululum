@@ -12,9 +12,11 @@
     }
     *{box-sizing:border-box;margin:0;padding:0}
     .page{padding:28px 28px 60px;max-width:1300px;margin:0 auto}
+
     /* ── Breadcrumb ── */
     .bc{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3);margin-bottom:20px}
     .bc a{color:var(--text3);text-decoration:none}.bc a:hover{color:var(--brand)}.bc-sep{color:var(--border)}.bc-cur{color:var(--text2)}
+
     /* ── Anak switcher ── */
     .anak-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
     .anak-avatar{width:42px;height:42px;border-radius:50%;background:var(--brand-100);display:flex;align-items:center;justify-content:center;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:15px;color:var(--brand-700);flex-shrink:0}
@@ -23,6 +25,7 @@
     .anak-switch{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
     .anak-btn{padding:5px 14px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;border:1.5px solid var(--border);background:var(--surface2);color:var(--text2);text-decoration:none;transition:all .15s}
     .anak-btn:hover,.anak-btn.active{background:var(--brand);border-color:var(--brand);color:#fff}
+
     /* ── Filter bar ── */
     .filter-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap}
     .filter-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap}
@@ -30,8 +33,9 @@
     .filter-select:focus{border-color:var(--brand)}
     .btn-filter{padding:7px 18px;border-radius:var(--radius-sm);background:var(--brand);color:#fff;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:filter .15s}
     .btn-filter:hover{filter:brightness(.92)}
-    .btn-reset{padding:7px 14px;border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;border:1.5px solid var(--border);cursor:pointer;text-decoration:none;transition:all .15s}
+    .btn-reset{padding:7px 14px;border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;border:1.5px solid var(--border);cursor:pointer;text-decoration:none;transition:all .15s;display:inline-flex;align-items:center;gap:5px}
     .btn-reset:hover{background:var(--surface3)}
+
     /* ── Stat cards ── */
     .stat-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:14px}
@@ -39,7 +43,10 @@
     .ic-blue{background:var(--brand-50)}.ic-green{background:var(--green-bg)}.ic-yellow{background:var(--yellow-bg)}.ic-purple{background:#faf5ff}
     .stat-lbl{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:3px}
-    .stat-val .unit{font-size:12px;font-weight:600;color:var(--text3);margin-left:2px}
+
+    /* ── Alert info ── */
+    .alert-info{background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius-sm);padding:10px 16px;display:flex;align-items:center;gap:8px;margin-bottom:16px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--brand-700)}
+
     /* ── Tabel ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
     .table-hdr{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2)}
@@ -54,6 +61,7 @@
     td{padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);vertical-align:middle}
     .mapel-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
     .mapel-guru{font-size:12px;color:var(--text3);margin-top:2px}
+
     .nilai-chip{display:inline-flex;align-items:center;justify-content:center;min-width:50px;padding:4px 10px;border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800}
     .nc-a{background:var(--green-bg);color:var(--green)}
     .nc-b{background:#f0f9ff;color:#0369a1}
@@ -61,13 +69,17 @@
     .nc-d{background:#fff7ed;color:#c2410c}
     .nc-e{background:var(--red-bg);color:var(--red)}
     .nc-na{background:var(--surface3);color:var(--text3)}
+
     .predikat-badge{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800}
     .pb-a{background:var(--green-bg);color:var(--green)}
     .pb-b{background:#e0f2fe;color:#0369a1}
     .pb-c{background:var(--yellow-bg);color:var(--yellow)}
     .pb-d{background:#ffedd5;color:#c2410c}
     .pb-e{background:var(--red-bg);color:var(--red)}
+    .pb-null{background:var(--surface3);color:var(--text3)}
+
     .empty-row td{text-align:center;padding:60px;color:var(--text3);font-family:'DM Sans',sans-serif}
+
     /* ── Progress bar nilai ── */
     .nilai-bar-wrap{display:flex;align-items:center;gap:8px;min-width:120px}
     .nilai-bar-bg{flex:1;height:6px;border-radius:3px;background:var(--surface3);overflow:hidden}
@@ -76,8 +88,15 @@
     .bar-blue{background:#3b82f6}
     .bar-yellow{background:#eab308}
     .bar-red{background:#ef4444}
-    @media(max-width:768px){.stat-strip{grid-template-columns:1fr 1fr}.page{padding:16px}}
-    @media(max-width:480px){.stat-strip{grid-template-columns:1fr}}
+    .bar-empty{background:var(--surface3)}
+
+    /* ── Footer formula ── */
+    .formula-bar{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+    .formula-item{display:flex;align-items:center;gap:6px}
+    .formula-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+    @media(max-width:900px){.stat-strip{grid-template-columns:1fr 1fr}}
+    @media(max-width:560px){.stat-strip{grid-template-columns:1fr}.page{padding:16px 14px 40px}}
 </style>
 
 <div class="page">
@@ -89,7 +108,12 @@
 
     {{-- ── Anak Switcher ── --}}
     <div class="anak-bar">
-        @php $initials = collect(explode(' ', $anak->nama_lengkap))->take(2)->map(fn($w)=>strtoupper($w[0]))->join('') @endphp
+        @php
+            $initials = collect(explode(' ', $anak->nama_lengkap))
+                ->take(2)
+                ->map(fn($w) => strtoupper($w[0] ?? ''))
+                ->join('');
+        @endphp
         <div class="anak-avatar">{{ $initials }}</div>
         <div>
             <p class="anak-name">{{ $anak->nama_lengkap }}</p>
@@ -98,7 +122,7 @@
         @if($anakList->count() > 1)
         <div class="anak-switch">
             @foreach($anakList as $a)
-            <a href="{{ route('ortu.akademik.nilai', ['siswa_id' => $a->id, 'tahun_ajaran_id' => $tahunAjaranId]) }}"
+            <a href="{{ route('ortu.akademik.nilai', array_filter(['siswa_id' => $a->id, 'tahun_ajaran_id' => $tahunAjaranId])) }}"
                class="anak-btn {{ $a->id === $anak->id ? 'active' : '' }}">
                 {{ $a->nama_lengkap }}
             </a>
@@ -115,7 +139,7 @@
             <select name="tahun_ajaran_id" class="filter-select">
                 <option value="">Semua Tahun Ajaran</option>
                 @foreach($tahunList as $ta)
-                <option value="{{ $ta->id }}" {{ $ta->id == $tahunAjaranId ? 'selected' : '' }}>
+                <option value="{{ $ta->id }}" {{ (int)$ta->id === (int)$tahunAjaranId ? 'selected' : '' }}>
                     {{ $ta->label ?? ($ta->tahun . ' — ' . ucfirst($ta->semester)) }}
                 </option>
                 @endforeach
@@ -123,15 +147,27 @@
             <select name="mapel_id" class="filter-select">
                 <option value="">Semua Mata Pelajaran</option>
                 @foreach($mapelList as $mp)
-                <option value="{{ $mp->id }}" {{ request('mapel_id') == $mp->id ? 'selected' : '' }}>
+                <option value="{{ $mp->id }}" {{ (int)request('mapel_id') === (int)$mp->id ? 'selected' : '' }}>
                     {{ $mp->nama_mapel }}
                 </option>
                 @endforeach
             </select>
             <button type="submit" class="btn-filter">Terapkan</button>
-            <a href="{{ route('ortu.akademik.nilai', ['siswa_id' => $anak->id]) }}" class="btn-reset">Reset</a>
+            <a href="{{ route('ortu.akademik.nilai', ['siswa_id' => $anak->id]) }}" class="btn-reset">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                Reset
+            </a>
         </div>
     </form>
+
+    {{-- ── Info filter aktif ── --}}
+    @if(request()->hasAny(['mapel_id']) && $nilaiList->isNotEmpty())
+    <div class="alert-info">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        Filter mapel aktif — menampilkan {{ $nilaiList->count() }} catatan nilai.
+        <a href="{{ route('ortu.akademik.nilai', ['siswa_id' => $anak->id, 'tahun_ajaran_id' => $tahunAjaranId]) }}" style="margin-left:4px;color:var(--brand);font-weight:700">Tampilkan semua</a>
+    </div>
+    @endif
 
     {{-- ── Stat Strip ── --}}
     <div class="stat-strip">
@@ -150,7 +186,8 @@
             </div>
             <div>
                 <p class="stat-lbl">Rata-rata Nilai Akhir</p>
-                <p class="stat-val">{{ $rataRataAkhir ? number_format($rataRataAkhir, 1) : '—' }}</p>
+                {{-- FIX: guard null sebelum number_format --}}
+                <p class="stat-val">{{ $rataRataAkhir !== null ? number_format((float)$rataRataAkhir, 1) : '—' }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -159,7 +196,8 @@
             </div>
             <div>
                 <p class="stat-lbl">Nilai Tertinggi</p>
-                <p class="stat-val">{{ $statsPerMapel->max('nilai_akhir') ?: '—' }}</p>
+                {{-- FIX: $nilaiTertinggi sekarang dari controller, guard null --}}
+                <p class="stat-val">{{ $nilaiTertinggi !== null ? number_format((float)$nilaiTertinggi, 1) : '—' }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -201,11 +239,20 @@
                 <tbody>
                     @forelse($nilaiList as $idx => $n)
                     @php
-                        $na  = (float)($n->nilai_akhir ?? 0);
-                        $pc  = $na; // 0-100
-                        $barColor = $na >= 80 ? 'bar-green' : ($na >= 70 ? 'bar-blue' : ($na >= 60 ? 'bar-yellow' : 'bar-red'));
-                        $ncClass  = match($n->predikat ?? '') { 'A'=>'nc-a','B'=>'nc-b','C'=>'nc-c','D'=>'nc-d','E'=>'nc-e', default=>'nc-na' };
-                        $pbClass  = match($n->predikat ?? '') { 'A'=>'pb-a','B'=>'pb-b','C'=>'pb-c','D'=>'pb-d','E'=>'pb-e', default=>'' };
+                        // FIX: cast ke float dengan guard null di semua tempat
+                        $na       = $n->nilai_akhir !== null ? (float) $n->nilai_akhir : null;
+                        $pc       = $na ?? 0;
+                        $barColor = $na === null
+                            ? 'bar-empty'
+                            : ($na >= 80 ? 'bar-green' : ($na >= 70 ? 'bar-blue' : ($na >= 60 ? 'bar-yellow' : 'bar-red')));
+                        $ncClass  = match($n->predikat ?? '') {
+                            'A' => 'nc-a', 'B' => 'nc-b', 'C' => 'nc-c',
+                            'D' => 'nc-d', 'E' => 'nc-e', default => 'nc-na'
+                        };
+                        $pbClass  = match($n->predikat ?? '') {
+                            'A' => 'pb-a', 'B' => 'pb-b', 'C' => 'pb-c',
+                            'D' => 'pb-d', 'E' => 'pb-e', default => 'pb-null'
+                        };
                     @endphp
                     <tr>
                         <td style="color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700">{{ $idx + 1 }}</td>
@@ -215,27 +262,28 @@
                         </td>
                         <td class="center">
                             <span class="nilai-chip {{ $n->nilai_tugas !== null ? 'nc-b' : 'nc-na' }}">
-                                {{ $n->nilai_tugas !== null ? number_format($n->nilai_tugas, 0) : '—' }}
+                                {{ $n->nilai_tugas !== null ? number_format((float)$n->nilai_tugas, 0) : '—' }}
                             </span>
                         </td>
                         <td class="center">
                             <span class="nilai-chip {{ $n->nilai_harian !== null ? 'nc-b' : 'nc-na' }}">
-                                {{ $n->nilai_harian !== null ? number_format($n->nilai_harian, 0) : '—' }}
+                                {{ $n->nilai_harian !== null ? number_format((float)$n->nilai_harian, 0) : '—' }}
                             </span>
                         </td>
                         <td class="center">
                             <span class="nilai-chip {{ $n->nilai_uts !== null ? 'nc-b' : 'nc-na' }}">
-                                {{ $n->nilai_uts !== null ? number_format($n->nilai_uts, 0) : '—' }}
+                                {{ $n->nilai_uts !== null ? number_format((float)$n->nilai_uts, 0) : '—' }}
                             </span>
                         </td>
                         <td class="center">
                             <span class="nilai-chip {{ $n->nilai_uas !== null ? 'nc-b' : 'nc-na' }}">
-                                {{ $n->nilai_uas !== null ? number_format($n->nilai_uas, 0) : '—' }}
+                                {{ $n->nilai_uas !== null ? number_format((float)$n->nilai_uas, 0) : '—' }}
                             </span>
                         </td>
                         <td class="center">
+                            {{-- FIX: guard null — jika na null tampilkan '—' bukan '0.0' --}}
                             <span class="nilai-chip {{ $ncClass }}" style="font-size:16px;min-width:60px">
-                                {{ $na > 0 ? number_format($na, 1) : '—' }}
+                                {{ $na !== null ? number_format($na, 1) : '—' }}
                             </span>
                         </td>
                         <td class="center">
@@ -246,7 +294,10 @@
                                 <div class="nilai-bar-bg">
                                     <div class="nilai-bar-fill {{ $barColor }}" style="width:{{ $pc }}%"></div>
                                 </div>
-                                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);min-width:32px">{{ $pc > 0 ? number_format($pc,0).'%' : '' }}</span>
+                                {{-- FIX: hanya tampilkan persentase jika ada nilai --}}
+                                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);min-width:32px">
+                                    {{ $na !== null ? number_format($pc, 0).'%' : '' }}
+                                </span>
                             </div>
                         </td>
                     </tr>
@@ -267,11 +318,25 @@
     </div>
 
     {{-- ── Keterangan Bobot Nilai ── --}}
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:20px;flex-wrap:wrap">
+    <div class="formula-bar">
         <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em">Formula Nilai Akhir:</span>
-        @foreach(['Tugas (20%)','Harian (30%)','UTS (20%)','UAS (30%)'] as $f)
-        <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2)">{{ $f }}</span>
+        @foreach([
+            ['Tugas','20%','#3b82f6'],
+            ['Harian','30%','#22c55e'],
+            ['UTS','20%','#a855f7'],
+            ['UAS','30%','#f59e0b'],
+        ] as [$label, $pct, $color])
+        <div class="formula-item">
+            <span class="formula-dot" style="background:{{ $color }}"></span>
+            <span style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2)">{{ $label }} <strong style="color:var(--text)">{{ $pct }}</strong></span>
+        </div>
         @endforeach
+        @if($rataRataAkhir !== null)
+        <span style="margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3)">
+            Rata-rata keseluruhan:
+            <span style="color:var(--brand);font-size:14px">{{ number_format((float)$rataRataAkhir, 1) }}</span>
+        </span>
+        @endif
     </div>
 </div>
 </x-app-layout>

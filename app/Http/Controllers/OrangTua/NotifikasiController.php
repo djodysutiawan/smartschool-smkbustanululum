@@ -18,17 +18,25 @@ class NotifikasiController extends Controller
 
         $query = Notifikasi::where('pengguna_id', $user->id);
 
+        // Filter status baca
         if ($request->filled('status')) {
             $query->where('sudah_dibaca', $request->status === 'dibaca');
         }
 
-        if ($request->filled('jenis')) {
+        // Filter jenis
+        $jenisList = ['info', 'peringatan', 'nilai', 'absensi', 'pelanggaran', 'pengumuman'];
+        if ($request->filled('jenis') && in_array($request->jenis, $jenisList)) {
             $query->where('jenis', $request->jenis);
         }
 
-        $notifikasis = $query->orderByDesc('created_at')->paginate(20)->withQueryString();
-        $unread      = Notifikasi::where('pengguna_id', $user->id)->where('sudah_dibaca', false)->count();
-        $jenisList   = ['info', 'peringatan', 'nilai', 'absensi', 'pelanggaran', 'pengumuman'];
+        $notifikasis = $query
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString();
+
+        $unread = Notifikasi::where('pengguna_id', $user->id)
+            ->where('sudah_dibaca', false)
+            ->count();
 
         return view('orangtua.notifikasi.index', compact('notifikasis', 'unread', 'jenisList'));
     }
@@ -38,25 +46,31 @@ class NotifikasiController extends Controller
      */
     public function show(Notifikasi $notifikasi)
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        abort_if($notifikasi->pengguna_id !== Auth::id(), 403);
 
         if (! $notifikasi->sudah_dibaca) {
-            $notifikasi->update(['sudah_dibaca' => true, 'dibaca_pada' => now()]);
+            $notifikasi->update([
+                'sudah_dibaca' => true,
+                'dibaca_pada'  => now(),
+            ]);
         }
 
         return view('orangtua.notifikasi.show', compact('notifikasi'));
     }
 
     /**
-     * Tandai satu notifikasi sebagai sudah dibaca.
+     * Tandai satu notifikasi sebagai sudah dibaca (AJAX-friendly).
      */
     public function markRead(Notifikasi $notifikasi)
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        abort_if($notifikasi->pengguna_id !== Auth::id(), 403);
 
-        $notifikasi->update(['sudah_dibaca' => true, 'dibaca_pada' => now()]);
+        if (! $notifikasi->sudah_dibaca) {
+            $notifikasi->update([
+                'sudah_dibaca' => true,
+                'dibaca_pada'  => now(),
+            ]);
+        }
 
         if (request()->expectsJson()) {
             return response()->json(['success' => true]);
@@ -72,20 +86,30 @@ class NotifikasiController extends Controller
     {
         Notifikasi::where('pengguna_id', Auth::id())
             ->where('sudah_dibaca', false)
-            ->update(['sudah_dibaca' => true, 'dibaca_pada' => now()]);
+            ->update([
+                'sudah_dibaca' => true,
+                'dibaca_pada'  => now(),
+            ]);
+
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return back()->with('success', 'Semua notifikasi telah ditandai sebagai dibaca.');
     }
 
     /**
-     * Hapus notifikasi.
+     * Hapus satu notifikasi.
      */
     public function destroy(Notifikasi $notifikasi)
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        abort_if($notifikasi->pengguna_id !== Auth::id(), 403);
 
         $notifikasi->delete();
+
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true]);
+        }
 
         return back()->with('success', 'Notifikasi berhasil dihapus.');
     }

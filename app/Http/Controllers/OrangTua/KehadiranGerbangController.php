@@ -53,8 +53,9 @@ class KehadiranGerbangController extends Controller
             ->orderBy('waktu_scan')
             ->get();
 
-        $scanMasuk  = $scanHariIni->where('tipe', 'masuk')->first();
-        $scanPulang = $scanHariIni->where('tipe', 'pulang')->first();
+        // Ambil scan masuk & pulang pertama yang valid hari ini
+        $scanMasuk  = $scanHariIni->firstWhere('tipe', 'masuk');
+        $scanPulang = $scanHariIni->firstWhere('tipe', 'pulang');
 
         return view('orangtua.kehadiran-gerbang.status-hari-ini', compact(
             'anak',
@@ -97,13 +98,18 @@ class KehadiranGerbangController extends Controller
 
         $riwayat = $query->orderByDesc('waktu_scan')->paginate(20)->withQueryString();
 
+        // Hitung total hari unik, bukan total scan (lebih bermakna untuk orang tua)
         $totalHariMasuk = AbsensiGerbang::where('siswa_id', $anak->id)
-            ->valid()->masuk()
-            ->distinct('tanggal_scan')->count('tanggal_scan');
+            ->valid()
+            ->masuk()
+            ->selectRaw('COUNT(DISTINCT tanggal_scan) as total')
+            ->value('total') ?? 0;
 
         $totalHariPulang = AbsensiGerbang::where('siswa_id', $anak->id)
-            ->valid()->pulang()
-            ->distinct('tanggal_scan')->count('tanggal_scan');
+            ->valid()
+            ->pulang()
+            ->selectRaw('COUNT(DISTINCT tanggal_scan) as total')
+            ->value('total') ?? 0;
 
         return view('orangtua.kehadiran-gerbang.riwayat', compact(
             'anak',
@@ -132,7 +138,8 @@ class KehadiranGerbangController extends Controller
         $tahun = $request->filled('tahun') ? (int) $request->tahun : now()->year;
 
         // Scan valid anak bulan ini
-        $scanBulanIni = AbsensiGerbang::where('siswa_id', $anak->id)
+        $scanBulanIni = AbsensiGerbang::with('sesiGerbang')
+            ->where('siswa_id', $anak->id)
             ->valid()
             ->whereMonth('tanggal_scan', $bulan)
             ->whereYear('tanggal_scan', $tahun)
@@ -140,22 +147,53 @@ class KehadiranGerbangController extends Controller
             ->get();
 
         // Kelompokkan per tanggal → pasangkan masuk & pulang
+        // PERBAIKAN: Gunakan format string saat groupBy agar key konsisten,
+        // dan amankan casting tanggal_scan sebagai Carbon (sudah di-cast di model).
         $hariPerTanggal = $scanBulanIni
             ->groupBy(fn ($s) => $s->tanggal_scan->format('Y-m-d'))
-            ->map(fn ($group) => [
+            ->map(fn ($group, $tanggalStr) => [
                 'tanggal' => $group->first()->tanggal_scan,
-                'masuk'   => $group->where('tipe', 'masuk')->first(),
-                'pulang'  => $group->where('tipe', 'pulang')->first(),
+                'masuk'   => $group->firstWhere('tipe', 'masuk'),
+                'pulang'  => $group->firstWhere('tipe', 'pulang'),
             ])
             ->values();
 
         $rekap = [
-            'total_hari_masuk'  => $scanBulanIni->where('tipe', 'masuk')
-                ->unique('tanggal_scan')->count(),
-            'total_hari_pulang' => $scanBulanIni->where('tipe', 'pulang')
-                ->unique('tanggal_scan')->count(),
+            'total_hari_masuk'  => $scanBulanIni
+                ->where('tipe', 'masuk')
+                ->pluck('tanggal_scan')
+                ->map(fn ($d) => $d->format('Y-m-d'))
+                ->unique()
+                ->count(),
+            'total_hari_pulang' => $scanBulanIni
+                ->where('tipe', 'pulang')
+                ->pluck('tanggal_scan')
+                ->map(fn ($d) => $d->format('Y-m-d'))
+                ->unique()
+                ->count(),
             'total_scan'        => $scanBulanIni->count(),
         ];
+
+        // Rekap per bulan untuk tren tahunan (masuk & pulang)
+        $rekapTahunan = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $scanBulan = AbsensiGerbang::where('siswa_id', $anak->id)
+                ->valid()
+                ->whereMonth('tanggal_scan', $m)
+                ->whereYear('tanggal_scan', $tahun)
+                ->get();
+
+            $rekapTahunan[$m] = [
+                'masuk'  => $scanBulan->where('tipe', 'masuk')
+                    ->pluck('tanggal_scan')
+                    ->map(fn ($d) => $d->format('Y-m-d'))
+                    ->unique()->count(),
+                'pulang' => $scanBulan->where('tipe', 'pulang')
+                    ->pluck('tanggal_scan')
+                    ->map(fn ($d) => $d->format('Y-m-d'))
+                    ->unique()->count(),
+            ];
+        }
 
         $tahunList = collect(range(now()->year - 2, now()->year));
         $bulanList = collect(range(1, 12))->mapWithKeys(fn ($b) => [
@@ -167,6 +205,7 @@ class KehadiranGerbangController extends Controller
             'anakList',
             'hariPerTanggal',
             'rekap',
+            'rekapTahunan',
             'bulan',
             'tahun',
             'bulanList',
