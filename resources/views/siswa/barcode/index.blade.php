@@ -83,9 +83,11 @@
     }
     .barcode-status.aktif { background:rgba(16,185,129,.2); color:#6ee7b7; border:1px solid rgba(16,185,129,.3); }
     .barcode-status.kosong { background:rgba(239,68,68,.2); color:#fca5a5; border:1px solid rgba(239,68,68,.3); }
+    .barcode-status.menunggu { background:rgba(245,158,11,.2); color:#fcd34d; border:1px solid rgba(245,158,11,.3); }
     .barcode-status-dot { width:6px; height:6px; border-radius:50%; }
     .barcode-status.aktif .barcode-status-dot { background:#6ee7b7; animation:pulse-dot 1.4s ease-in-out infinite; }
     .barcode-status.kosong .barcode-status-dot { background:#fca5a5; }
+    .barcode-status.menunggu .barcode-status-dot { background:#fcd34d; animation:pulse-dot 1.4s ease-in-out infinite; }
     @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:.4} }
 
     .barcode-display { padding:24px 20px 20px; display:flex; flex-direction:column; align-items:center; position:relative; z-index:1; }
@@ -129,30 +131,31 @@
     .sesi-list { display:flex; flex-direction:column; }
     .sesi-item {
         display:flex; align-items:center; gap:14px;
-        padding:14px 20px; border-bottom:1px solid var(--border);
+        padding:14px 20px; border-bottom:1px solid rgba(255,255,255,.08);
         transition:background .12s;
     }
     .sesi-item:last-child { border-bottom:none; }
-    .sesi-item:hover { background:var(--s-50); }
+    .sesi-item:hover { background:rgba(255,255,255,.05); }
     .sesi-icon {
         width:42px; height:42px; border-radius:10px; flex-shrink:0;
-        display:flex; align-items:center; justify-content:center; background:var(--s-50);
+        display:flex; align-items:center; justify-content:center;
+        background:rgba(255,255,255,.1);
     }
     .sesi-body { flex:1; min-width:0; }
-    .sesi-mapel { font-family:'Outfit',sans-serif; font-size:13.5px; font-weight:700; color:var(--text); }
-    .sesi-meta { font-size:11.5px; color:var(--text4); margin-top:3px; display:flex; align-items:center; gap:8px; }
+    .sesi-mapel { font-family:'Outfit',sans-serif; font-size:13.5px; font-weight:700; color:#fff; }
+    .sesi-meta { font-size:11.5px; color:rgba(255,255,255,.45); margin-top:3px; display:flex; align-items:center; gap:8px; }
     .sesi-right { flex-shrink:0; text-align:right; }
     .sesi-countdown {
         font-family:'Outfit',sans-serif; font-size:13px; font-weight:800;
-        color:var(--g-500); display:flex; align-items:center; gap:4px;
+        color:var(--g-400); display:flex; align-items:center; gap:4px;
     }
     .sesi-countdown.expiring { color:var(--a-500); }
     .sesi-badge {
         font-size:10.5px; font-weight:700; font-family:'Outfit',sans-serif;
         padding:3px 8px; border-radius:99px; margin-top:4px; display:inline-block;
     }
-    .sesi-badge.aktif { background:var(--g-50); color:var(--g-500); border:1px solid var(--g-100); }
-    .sesi-badge.belum { background:var(--surface3); color:var(--text4); border:1px solid var(--border); }
+    .sesi-badge.aktif { background:rgba(16,185,129,.2); color:#6ee7b7; border:1px solid rgba(16,185,129,.3); }
+    .sesi-badge.belum { background:rgba(255,255,255,.1); color:rgba(255,255,255,.5); border:1px solid rgba(255,255,255,.15); }
 
     .sesi-empty { padding:40px 20px; text-align:center; }
     .sesi-empty-title { font-family:'Outfit',sans-serif; font-size:13.5px; font-weight:700; color:var(--text2); margin-bottom:4px; }
@@ -162,20 +165,21 @@
     .gerbang-banner {
         display:flex; align-items:center; gap:12px;
         padding:12px 20px; margin-bottom:0;
-        border-top:1px solid var(--border);
-        background:var(--surface2);
+        border-top:1px solid rgba(255,255,255,.08);
+        background:rgba(255,255,255,.04);
+        position:relative; z-index:1;
     }
     .gerbang-banner-icon {
         width:36px; height:36px; border-radius:8px; flex-shrink:0;
         display:flex; align-items:center; justify-content:center;
     }
-    .gerbang-banner-icon.masuk { background:var(--g-50); }
-    .gerbang-banner-icon.pulang { background:var(--a-50); }
+    .gerbang-banner-icon.masuk { background:rgba(16,185,129,.15); }
+    .gerbang-banner-icon.pulang { background:rgba(245,158,11,.15); }
     .gerbang-banner-text { flex:1; }
     .gerbang-banner-title { font-family:'Outfit',sans-serif; font-size:12.5px; font-weight:700; }
-    .gerbang-banner-title.masuk { color:var(--g-500); }
-    .gerbang-banner-title.pulang { color:var(--a-500); }
-    .gerbang-banner-sub { font-size:11.5px; color:var(--text4); margin-top:2px; }
+    .gerbang-banner-title.masuk { color:#6ee7b7; }
+    .gerbang-banner-title.pulang { color:#fcd34d; }
+    .gerbang-banner-sub { font-size:11.5px; color:rgba(255,255,255,.4); margin-top:2px; }
 
     /* ── Jadwal ── */
     .jadwal-list { display:flex; flex-direction:column; }
@@ -216,21 +220,6 @@
         padding:3px 9px; border-radius:99px;
     }
     .live-dot { width:6px; height:6px; border-radius:50%; background:var(--r-500); animation:pulse-dot 1.4s infinite; }
-
-    /* ── Refresh bar ── */
-    .refresh-bar {
-        display:flex; align-items:center; justify-content:space-between; gap:8px;
-        padding:10px 20px; background:var(--surface2); border-top:1px solid var(--border);
-    }
-    .refresh-text { font-size:11.5px; color:var(--text4); display:flex; align-items:center; gap:5px; }
-    .btn-refresh {
-        font-family:'Outfit',sans-serif; font-size:11.5px; font-weight:700;
-        color:var(--s-600); background:none; border:none; cursor:pointer;
-        display:flex; align-items:center; gap:4px; padding:0; transition:color .15s;
-    }
-    .btn-refresh:hover { color:var(--s-800); }
-    .btn-refresh.spinning svg { animation:spin .7s linear infinite; }
-    @keyframes spin { to{transform:rotate(360deg)} }
 
     /* ── Alert flash ── */
     .alert {
@@ -304,7 +293,6 @@
                 @if($barcodeGerbang)
                     <div class="barcode-display">
                         <div class="barcode-wrap">
-                            {{-- Di-render JsBarcode dari kode --}}
                             <svg id="barcode-gerbang-svg"></svg>
                             <p class="barcode-kode">{{ $barcodeGerbang->kode }}</p>
                         </div>
@@ -342,9 +330,9 @@
                         <div class="gerbang-banner">
                             <div class="gerbang-banner-icon {{ $sesiGerbangAktif->tipe }}">
                                 @if($sesiGerbangAktif->tipe === 'masuk')
-                                    <svg width="18" height="18" fill="none" stroke="var(--g-500)" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+                                    <svg width="18" height="18" fill="none" stroke="#6ee7b7" stroke-width="2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
                                 @else
-                                    <svg width="18" height="18" fill="none" stroke="var(--a-500)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                                    <svg width="18" height="18" fill="none" stroke="#fcd34d" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                                 @endif
                             </div>
                             <div class="gerbang-banner-text">
@@ -377,10 +365,16 @@
                         <svg width="14" height="14" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h.01M14 17h3M17 14v3M20 14h.01M20 17h.01"/></svg>
                         Absensi Per Pelajaran
                     </span>
-                    @if($kodeBarcodeMapel)
+                    {{-- Badge status: aktif hanya jika ada sesi, menunggu jika ada barcode tapi tidak ada sesi, kosong jika tidak ada barcode --}}
+                    @if($kodeBarcodeMapel && $sesiQrAktif->count() > 0)
                         <span class="barcode-status aktif">
                             <span class="barcode-status-dot"></span>
                             Aktif
+                        </span>
+                    @elseif($kodeBarcodeMapel && $sesiQrAktif->count() === 0)
+                        <span class="barcode-status menunggu">
+                            <span class="barcode-status-dot"></span>
+                            Menunggu Sesi
                         </span>
                     @else
                         <span class="barcode-status kosong">
@@ -390,7 +384,8 @@
                     @endif
                 </div>
 
-                @if($kodeBarcodeMapel)
+                {{-- KONDISI 1: Ada barcode DAN ada sesi aktif → tampilkan barcode --}}
+                @if($kodeBarcodeMapel && $sesiQrAktif->count() > 0)
                     <div class="barcode-display">
                         <div class="barcode-wrap">
                             <svg id="barcode-mapel-svg"></svg>
@@ -401,10 +396,8 @@
                             <p class="barcode-nama">{{ $siswa->nama_lengkap }}</p>
                             <div class="barcode-info">
                                 <span>{{ $siswa->kelas->nama_kelas ?? '—' }}</span>
-                                @if($sesiQrAktif->count() > 0)
-                                    <span class="barcode-dot-sep"></span>
-                                    <span>{{ $sesiQrAktif->count() }} mapel aktif</span>
-                                @endif
+                                <span class="barcode-dot-sep"></span>
+                                <span>{{ $sesiQrAktif->count() }} mapel aktif</span>
                             </div>
                         </div>
 
@@ -421,31 +414,40 @@
                     </div>
 
                     {{-- Daftar sesi mapel aktif --}}
-                    @if($sesiQrAktif->count() > 0)
-                        <div class="sesi-list">
-                            @foreach($sesiQrAktif as $sesi)
-                                <div class="sesi-item">
-                                    <div class="sesi-icon">
-                                        <svg width="20" height="20" fill="none" stroke="var(--s-500)" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                                    </div>
-                                    <div class="sesi-body">
-                                        <p class="sesi-mapel">{{ $sesi->mataPelajaran->nama_mapel ?? '—' }}</p>
-                                        <div class="sesi-meta">
-                                            <span>{{ \Carbon\Carbon::parse($sesi->berlaku_mulai)->format('H:i') }} – {{ \Carbon\Carbon::parse($sesi->kadaluarsa_pada)->format('H:i') }}</span>
-                                        </div>
-                                    </div>
-                                    <div class="sesi-right">
-                                        <div class="sesi-countdown" data-expires="{{ \Carbon\Carbon::parse($sesi->kadaluarsa_pada)->timestamp }}">
-                                            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                                            <span class="countdown-text">—</span>
-                                        </div>
-                                        <span class="sesi-badge aktif">Scan Sekarang</span>
+                    <div class="sesi-list">
+                        @foreach($sesiQrAktif as $sesi)
+                            <div class="sesi-item">
+                                <div class="sesi-icon">
+                                    <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,.7)" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                </div>
+                                <div class="sesi-body">
+                                    <p class="sesi-mapel">{{ $sesi->mataPelajaran->nama_mapel ?? '—' }}</p>
+                                    <div class="sesi-meta">
+                                        <span>{{ \Carbon\Carbon::parse($sesi->berlaku_mulai)->format('H:i') }} – {{ \Carbon\Carbon::parse($sesi->kadaluarsa_pada)->format('H:i') }}</span>
                                     </div>
                                 </div>
-                            @endforeach
-                        </div>
-                    @endif
+                                <div class="sesi-right">
+                                    <div class="sesi-countdown" data-expires="{{ \Carbon\Carbon::parse($sesi->kadaluarsa_pada)->timestamp }}">
+                                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                                        <span class="countdown-text">—</span>
+                                    </div>
+                                    <span class="sesi-badge aktif">Scan Sekarang</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
 
+                {{-- KONDISI 2: Ada barcode TAPI tidak ada sesi aktif → tampilkan pesan tunggu --}}
+                @elseif($kodeBarcodeMapel && $sesiQrAktif->count() === 0)
+                    <div class="barcode-empty">
+                        <div class="barcode-empty-icon">
+                            <svg width="28" height="28" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                        </div>
+                        <p class="barcode-empty-title">Tidak Ada Sesi Aktif</p>
+                        <p class="barcode-empty-sub">Barcode mapel Anda siap digunakan.<br>Tunggu guru membuka sesi absensi pelajaran.</p>
+                    </div>
+
+                {{-- KONDISI 3: Tidak ada barcode sama sekali --}}
                 @else
                     <div class="barcode-empty">
                         <div class="barcode-empty-icon">
@@ -455,6 +457,7 @@
                         <p class="barcode-empty-sub">Barcode mapel Anda belum diterbitkan.<br>Hubungi admin sekolah.</p>
                     </div>
                 @endif
+
             </div>
         </div>
 
@@ -535,12 +538,15 @@ try {
 } catch(e) { console.warn('JsBarcode gerbang error:', e); }
 @endif
 
-// ── Render barcode mapel ──────────────────────────────────────────────────
-@if($kodeBarcodeMapel)
+// ── Render barcode mapel (hanya jika ada sesi aktif, elemen SVG ada di DOM) ──
+@if($kodeBarcodeMapel && $sesiQrAktif->count() > 0)
 try {
-    JsBarcode('#barcode-mapel-svg', '{{ $kodeBarcodeMapel }}', {
-        format: 'CODE128', width: 1.8, height: 60, displayValue: false, margin: 0,
-    });
+    const elMapel = document.getElementById('barcode-mapel-svg');
+    if (elMapel) {
+        JsBarcode('#barcode-mapel-svg', '{{ $kodeBarcodeMapel }}', {
+            format: 'CODE128', width: 1.8, height: 60, displayValue: false, margin: 0,
+        });
+    }
 } catch(e) { console.warn('JsBarcode mapel error:', e); }
 @endif
 

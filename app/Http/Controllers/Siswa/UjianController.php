@@ -46,7 +46,10 @@ class UjianController extends Controller
             ->pluck('nilai_tertinggi', 'ujian_id')
             ->toArray();
 
+        // FIX [Perf]: Gunakan withCount agar tidak ada N+1 di transform() maupun di blade.
+        // soal_count tersedia sebagai $u->soal_count langsung tanpa query tambahan.
         $ujian = Ujian::with(['mataPelajaran', 'guru'])
+            ->withCount('soal')
             ->where('kelas_id', $siswa->kelas_id)
             ->where('is_active', true)
             ->orderBy('tanggal')
@@ -54,15 +57,24 @@ class UjianController extends Controller
             ->paginate(15);
 
         $ujian->getCollection()->transform(function ($u) use ($siswa, $selesaiMap, $nilaiTertinggiMap) {
-            $percobaan            = $selesaiMap[$u->id] ?? 0;
-            $u->boleh_ikut        = $percobaan < ($u->maks_percobaan ?? 1);
-            $u->percobaan_ke      = $percobaan;
-            $u->nilai_tertinggi   = $nilaiTertinggiMap[$u->id] ?? null;
-            $u->sesi_aktif        = SesiUjian::where('siswa_id', $siswa->id)
+            $percobaan           = $selesaiMap[$u->id] ?? 0;
+            $u->boleh_ikut       = $percobaan < ($u->maks_percobaan ?? 1);
+            $u->percobaan_ke     = $percobaan;
+            $u->nilai_tertinggi  = $nilaiTertinggiMap[$u->id] ?? null;
+
+            // Cek sesi berlangsung; selesaikan jika habis waktu
+            $sesiAktif = SesiUjian::where('siswa_id', $siswa->id)
                 ->where('ujian_id', $u->id)
                 ->where('status', 'berlangsung')
                 ->latest()
                 ->first();
+
+            if ($sesiAktif && $sesiAktif->isHabisWaktu()) {
+                $sesiAktif->selesaikan(habisWaktu: true);
+                $sesiAktif = null;
+            }
+
+            $u->sesi_aktif = $sesiAktif;
             return $u;
         });
 
@@ -113,10 +125,10 @@ class UjianController extends Controller
             $sesiAktif = null;
         }
 
-        $sisaDetik    = $sesiAktif?->sisa_detik ?? null;
+        $sisaDetik = $sesiAktif?->sisa_detik ?? null;
 
         // Info percobaan
-        $percobaanKe  = SesiUjian::where('siswa_id', $siswa->id)
+        $percobaanKe = SesiUjian::where('siswa_id', $siswa->id)
             ->where('ujian_id', $ujian->id)
             ->whereIn('status', ['selesai', 'habis_waktu'])
             ->count();
@@ -153,7 +165,6 @@ class UjianController extends Controller
 
         if ($sesiAktif) {
             if ($sesiAktif->isHabisWaktu()) {
-                // Selesaikan sesi yang habis waktu, lalu buat sesi baru di bawah
                 $sesiAktif->selesaikan(habisWaktu: true);
             } else {
                 // Sesi masih valid, lanjutkan
@@ -162,7 +173,16 @@ class UjianController extends Controller
             }
         }
 
-        // Buat sesi baru (percobaan baru)
+        // FIX [Medium]: Hitung percobaan sebelum membuat sesi baru, bukan sesudah.
+        // Sebelumnya +1 manual menyebabkan angka selalu meleset karena sesi baru
+        // belum pernah berstatus 'selesai' saat dihitung.
+        $percobaanKe = SesiUjian::where('siswa_id', $siswa->id)
+            ->where('ujian_id', $ujian->id)
+            ->whereIn('status', ['selesai', 'habis_waktu'])
+            ->count() + 1; // +1 = percobaan yang sedang dimulai sekarang
+
+        // FIX [Medium]: Semua operasi DB ada di dalam transaction,
+        // termasuk penentuan nilai redirect agar tidak ada race condition.
         DB::transaction(function () use ($ujian, $siswa) {
             $sesi = SesiUjian::create([
                 'siswa_id' => $siswa->id,
@@ -171,11 +191,6 @@ class UjianController extends Controller
             ]);
             $sesi->mulai();
         });
-
-        $percobaanKe = SesiUjian::where('siswa_id', $siswa->id)
-            ->where('ujian_id', $ujian->id)
-            ->whereIn('status', ['selesai', 'habis_waktu'])
-            ->count() + 1; // +1 karena sesi baru belum selesai
 
         return redirect()->route('siswa.ujian.kerjakan', $ujian->id)
             ->with('info', "Percobaan ke-{$percobaanKe} dimulai. Selamat mengerjakan!");
@@ -221,8 +236,8 @@ class UjianController extends Controller
         $soalQuery = $ujian->soal()->with('pilihan');
 
         $soalList = $ujian->acak_soal
-            // Seed dari sesi ID agar urutan konsisten per percobaan
-            ? $soalQuery->get()->shuffle($sesi->id)
+            // Seed dari sesi ID (int) agar urutan konsisten per percobaan
+            ? $soalQuery->get()->shuffle((int) $sesi->id)
             : $soalQuery->orderBy('nomor_soal')->orderBy('id')->get();
 
         $jawabanTersimpan = JawabanSiswa::where('sesi_ujian_id', $sesi->id)

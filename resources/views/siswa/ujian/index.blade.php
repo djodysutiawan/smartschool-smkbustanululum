@@ -1,13 +1,7 @@
 <x-app-layout>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-    :root{
-        --brand:#1f63db;--brand-50:#eef6ff;--brand-100:#d9ebff;--brand-700:#1750c0;
-        --surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;
-        --border:#e2e8f0;--border2:#cbd5e1;
-        --text:#0f172a;--text2:#475569;--text3:#94a3b8;
-        --radius:10px;--radius-sm:7px;
-    }
+    :root{--brand:#1f63db;--brand-50:#eef6ff;--brand-100:#d9ebff;--brand-700:#1750c0;--surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;--border:#e2e8f0;--text:#0f172a;--text2:#475569;--text3:#94a3b8;--radius:10px;--radius-sm:7px}
     *{box-sizing:border-box}
     .page{padding:28px 28px 60px;max-width:1400px;margin:0 auto}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
@@ -81,7 +75,12 @@
         @php
             $jenisLabel    = ['ulangan_harian'=>'Ulangan Harian','uts'=>'UTS','uas'=>'UAS','kuis'=>'Kuis','quiz'=>'Quiz','remedial'=>'Remedial'][$u->jenis] ?? ucfirst($u->jenis);
             $sudahBerakhir = $u->sudahBerakhir();
-            $jumlahSoal   = $u->soal()->count();
+            {{--
+                FIX [Perf]: Gunakan $u->soal_count yang sudah di-load via withCount('soal')
+                di controller. Sebelumnya memanggil $u->soal()->count() langsung dari blade,
+                menyebabkan N+1 query (1 query per card ujian).
+            --}}
+            $jumlahSoal    = $u->soal_count ?? 0;
         @endphp
         <div class="ujian-card">
             <div class="ujian-card-top">
@@ -128,6 +127,10 @@
                 </div>
                 <div>
                     @if($u->sesi_aktif)
+                        {{--
+                            Route kerjakan membutuhkan {ujian} bukan {sesi}.
+                            $u->id sudah benar karena $u adalah Ujian model.
+                        --}}
                         <a href="{{ route('siswa.ujian.kerjakan', $u->id) }}" class="btn btn-lanjut btn-sm">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             Lanjutkan

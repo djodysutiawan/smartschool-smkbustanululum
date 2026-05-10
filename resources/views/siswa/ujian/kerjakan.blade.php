@@ -228,6 +228,7 @@
 
         <div class="sidebar-card">
             <div class="sidebar-card-body" style="padding:12px">
+                {{-- FIX: Form action menggunakan $ujian->id (bukan sesi id) sesuai route siswa.ujian.selesai --}}
                 <form action="{{ route('siswa.ujian.selesai', $ujian->id) }}" method="POST" id="selesaiForm">
                     @csrf
                     <button type="button" class="btn-selesai-full" id="btnSelesai" onclick="konfirmasiSelesai()">
@@ -245,8 +246,10 @@
 <script>
 // ─── Data dari PHP ────────────────────────────────────────────
 const TOTAL_SOAL  = {{ $soalList->count() }};
-// URL dengan placeholder __SOAL__ yang akan diganti per soal
-const JAWAB_URL   = '{{ url("siswa/ujian/{$ujian->id}/soal/__SOAL__/jawab") }}';
+
+// FIX: Gunakan route() Laravel untuk URL yang benar, bukan hardcoded path.
+// Placeholder __SOAL_ID__ diganti di JS saat runtime.
+const JAWAB_URL   = '{{ route("siswa.ujian.jawab", [$ujian->id, "__SOAL_ID__"]) }}';
 const CSRF        = '{{ csrf_token() }}';
 const BATAS_WAKTU = @json($sesi->batas_waktu_pada?->toISOString());
 
@@ -265,12 +268,10 @@ let answeredSet = new Set(ANSWERED_INIT);
 // ─── Navigasi antar soal ──────────────────────────────────────
 function gantiSoal(idx) {
     if (idx < 0 || idx >= TOTAL_SOAL) return;
-    // Sembunyikan soal aktif
     var prevCard = document.getElementById('soal-' + currentIdx);
     var prevBtn  = document.getElementById('nav-btn-' + currentIdx);
     if (prevCard) prevCard.style.display = 'none';
     if (prevBtn)  prevBtn.classList.remove('current');
-    // Tampilkan soal baru
     currentIdx = idx;
     var nextCard = document.getElementById('soal-' + currentIdx);
     var nextBtn  = document.getElementById('nav-btn-' + currentIdx);
@@ -281,7 +282,6 @@ function gantiSoal(idx) {
 
 // ─── Pilih jawaban PG / Benar-Salah ──────────────────────────
 function pilihJawaban(soalId, pilihanId, labelEl, soalIdx) {
-    // Reset pilihan lain di soal ini
     var container = document.getElementById('pilihan-list-' + soalId);
     if (container) {
         container.querySelectorAll('.pilihan-item').forEach(function(l) {
@@ -314,7 +314,8 @@ function updateCharCount(soalId, len) {
 
 // ─── Kirim jawaban ke server ──────────────────────────────────
 function kirimJawaban(soalId, payload) {
-    var url = JAWAB_URL.replace('__SOAL__', soalId);
+    // FIX: Ganti placeholder __SOAL_ID__ dengan soalId yang sebenarnya
+    var url = JAWAB_URL.replace('__SOAL_ID__', soalId);
     fetch(url, {
         method: 'POST',
         headers: {
@@ -423,5 +424,4 @@ window.addEventListener('beforeunload', function(e) {
     e.returnValue = '';
 });
 </script>
-<style>@keyframes spin-btn{to{transform:rotate(360deg)}}</style>
 </x-app-layout>

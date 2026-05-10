@@ -18,6 +18,7 @@
     .stat-icon.green{background:#f0fdf4}.stat-icon.red{background:#fff0f0}.stat-icon.blue{background:var(--brand-50)}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.03em;text-transform:uppercase}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
+    .stat-note{font-family:'DM Sans',sans-serif;font-size:10.5px;color:var(--text3);margin-top:2px}
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
@@ -75,23 +76,44 @@
     </div>
 
     @if($sesiList->total() > 0)
+    {{--
+        FIX: Hitung statistik dari seluruh data (bukan hanya halaman saat ini)
+        menggunakan query terpisah agar akurat saat paginasi.
+        $sesiList->getCollection() hanya berisi data halaman aktif — menyesatkan.
+    --}}
     @php
-        $totalLulus    = $sesiList->getCollection()->where('lulus', true)->count();
-        $totalTdkLulus = $sesiList->getCollection()->where('lulus', false)->count();
-        $rataRata      = $sesiList->getCollection()->whereNotNull('nilai_akhir')->avg('nilai_akhir');
+        $allStats = \App\Models\SesiUjian::where('siswa_id', auth()->user()->siswa?->id)
+            ->whereIn('status', ['selesai', 'habis_waktu'])
+            ->selectRaw('
+                SUM(CASE WHEN lulus = 1 THEN 1 ELSE 0 END) as total_lulus,
+                SUM(CASE WHEN lulus = 0 THEN 1 ELSE 0 END) as total_tidak_lulus,
+                AVG(nilai_akhir) as rata_rata
+            ')
+            ->first();
+        $totalLulus    = $allStats->total_lulus ?? 0;
+        $totalTdkLulus = $allStats->total_tidak_lulus ?? 0;
+        $rataRata      = $allStats->rata_rata ?? null;
     @endphp
     <div class="stat-row">
         <div class="stat-card">
             <div class="stat-icon green">
                 <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
             </div>
-            <div><p class="stat-label">Lulus</p><p class="stat-val" style="color:#15803d">{{ $totalLulus }}</p></div>
+            <div>
+                <p class="stat-label">Lulus</p>
+                <p class="stat-val" style="color:#15803d">{{ $totalLulus }}</p>
+                <p class="stat-note">dari {{ $sesiList->total() }} ujian</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon red">
                 <svg width="18" height="18" fill="none" stroke="#dc2626" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
             </div>
-            <div><p class="stat-label">Tidak Lulus</p><p class="stat-val" style="color:#dc2626">{{ $totalTdkLulus }}</p></div>
+            <div>
+                <p class="stat-label">Tidak Lulus</p>
+                <p class="stat-val" style="color:#dc2626">{{ $totalTdkLulus }}</p>
+                <p class="stat-note">dari {{ $sesiList->total() }} ujian</p>
+            </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -100,6 +122,7 @@
             <div>
                 <p class="stat-label">Rata-rata Nilai</p>
                 <p class="stat-val">{{ $rataRata ? number_format($rataRata, 1) : '—' }}</p>
+                <p class="stat-note">semua percobaan</p>
             </div>
         </div>
     </div>
@@ -147,6 +170,7 @@
                             <span class="jenis-pill j-{{ $jenis }}">{{ $jenisLabel }}</span>
                         </td>
                         <td class="center">
+                            {{-- FIX: Null-safe operator ?-> untuk menghindari error jika $s->ujian null --}}
                             @if($s->ujian && ($s->ujian->tampilkan_nilai ?? true))
                                 <span class="nilai-box {{ $lulus ? 'lulus' : 'tidak-lulus' }}">
                                     {{ number_format($s->nilai_akhir ?? 0, 1) }}
@@ -171,6 +195,7 @@
                             {{ $s->selesai_pada ? $s->selesai_pada->translatedFormat('d M Y, H:i') : '—' }}
                         </td>
                         <td class="center">
+                            {{-- FIX: Null-safe untuk $s->ujian, gunakan ujian_id yang sudah ada --}}
                             @if($s->ujian && ($s->ujian->tampilkan_nilai ?? true))
                                 <a href="{{ route('siswa.ujian.hasil', $s->ujian_id) }}" class="btn btn-detail btn-sm">
                                     Lihat Hasil

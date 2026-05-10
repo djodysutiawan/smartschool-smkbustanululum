@@ -217,15 +217,37 @@
         @php
             $jawabanSiswa = $jawabanMap[$soal->id] ?? null;
             $adalahBenar  = $isBenarMap[$soal->id] ?? null;
-            $isEssay      = $soal->isEssay();
-            $isPilihan    = $soal->isPilihanGanda() || $soal->isBenarSalah();
 
-            // Pilihan yg dipilih siswa (ID-based)
+            {{--
+                FIX [Risk]: Sebelumnya memanggil $soal->isEssay() dan $soal->isPilihanGanda()
+                tanpa memastikan method ini ada di SoalUjian. Jika method tidak didefinisikan,
+                blade akan crash dengan BadMethodCallException.
+
+                Perbaikan: gunakan perbandingan langsung terhadap kolom jenis_soal yang
+                merupakan string database. Ini tidak bergantung pada keberadaan method helper
+                di model, sehingga aman meskipun method belum didefinisikan.
+
+                Catatan untuk developer: tambahkan method berikut ke SoalUjian jika belum ada:
+                    public function isEssay(): bool { return $this->jenis_soal === 'essay'; }
+                    public function isPilihanGanda(): bool { return $this->jenis_soal === 'pilihan_ganda'; }
+                    public function isBenarSalah(): bool { return $this->jenis_soal === 'benar_salah'; }
+                    public function bisaAutoCorrect(): bool { return in_array($this->jenis_soal, ['pilihan_ganda', 'benar_salah']); }
+            --}}
+            $isEssay   = $soal->jenis_soal === 'essay';
+            $isPilihan = in_array($soal->jenis_soal, ['pilihan_ganda', 'benar_salah']);
+
             $pilihanDipilihId = $jawabanSiswa['pilihan_jawaban_id'] ?? null;
             $essayDijawab     = $jawabanSiswa['jawaban_essay'] ?? null;
 
             if ($isEssay) {
-                $badgeClass = 'bh-essay'; $badgeLabel = 'Essay';
+                // Essay yang sudah dikoreksi dan benar
+                if ($adalahBenar === true) {
+                    $badgeClass = 'bh-benar'; $badgeLabel = 'Benar (Essay)';
+                } elseif ($adalahBenar === false) {
+                    $badgeClass = 'bh-salah'; $badgeLabel = 'Kurang (Essay)';
+                } else {
+                    $badgeClass = 'bh-essay'; $badgeLabel = 'Essay — Menunggu Koreksi';
+                }
             } elseif ($adalahBenar === true) {
                 $badgeClass = 'bh-benar'; $badgeLabel = 'Benar';
             } elseif ($adalahBenar === false) {
@@ -241,7 +263,7 @@
             </div>
 
             @if($soal->gambar_soal)
-                <img src="{{ asset('storage/'.$soal->gambar_soal) }}" alt="" style="max-width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:10px;display:block">
+                <img src="{{ asset('storage/'.$soal->gambar_soal) }}" alt="Gambar soal {{ $idx + 1 }}" style="max-width:100%;border-radius:6px;border:1px solid var(--border);margin-bottom:10px;display:block">
             @endif
 
             <div class="soal-review-pertanyaan">{!! nl2br(e($soal->pertanyaan)) !!}</div>
@@ -277,10 +299,19 @@
             <div>
                 <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Jawaban Anda:</p>
                 <div class="essay-display">{{ $essayDijawab ?? '(tidak dijawab)' }}</div>
-                <p style="font-size:12px;color:#1d4ed8;margin-top:8px;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px">
-                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Soal essay akan dikoreksi oleh guru
-                </p>
+                @if($adalahBenar === null)
+                    {{-- Essay belum dikoreksi --}}
+                    <p style="font-size:12px;color:#1d4ed8;margin-top:8px;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px">
+                        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Soal essay akan dikoreksi oleh guru
+                    </p>
+                @else
+                    {{-- Essay sudah dikoreksi — tampilkan poin dan catatan jika ada --}}
+                    @php $poinEssay = $jawabanSiswa['poin_didapat'] ?? null; @endphp
+                    <p style="font-size:12px;color:{{ $adalahBenar ? '#15803d' : '#dc2626' }};margin-top:8px;font-family:'DM Sans',sans-serif;font-weight:600">
+                        Poin diberikan: {{ $poinEssay !== null ? number_format($poinEssay, 1) : '—' }} / {{ $soal->bobot }}
+                    </p>
+                @endif
             </div>
             @endif
         </div>
