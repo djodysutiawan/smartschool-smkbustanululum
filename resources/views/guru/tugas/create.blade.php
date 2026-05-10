@@ -1,3 +1,10 @@
+{{--
+    resources/views/guru/tugas/create.blade.php
+    FIX: @json(implode('<br>', $errors->all())) → ParseError karena
+    Blade memparsing koma di dalam implode() sebagai pemisah argumen @json,
+    sehingga ", $errors->all()))" menjadi token JS mentah → unexpected token ","
+    SOLUSI: assign ke variabel PHP dulu, lalu @json variabelnya (satu argumen).
+--}}
 <x-app-layout>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
@@ -25,11 +32,9 @@
     .form-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
     .form-card-body{padding:20px;display:grid;gap:16px}
     .grid-2{grid-template-columns:1fr 1fr}
-    .grid-3{grid-template-columns:1fr 1fr 1fr}
 
     .field{display:flex;flex-direction:column;gap:5px}
     .field.span-2{grid-column:span 2}
-    .field.span-3{grid-column:span 3}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2)}
     .field label .req{color:#dc2626}
     .field label .hint{font-weight:400;color:var(--text3);margin-left:4px}
@@ -39,12 +44,14 @@
     .field .error{font-size:11.5px;color:#dc2626;margin-top:2px}
     .field input.is-invalid,.field select.is-invalid,.field textarea.is-invalid{border-color:#dc2626}
 
-    .upload-area{border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:20px;text-align:center;background:var(--surface2);cursor:pointer;transition:border-color .15s;position:relative}
+    /* Upload area: input[type=file] position:absolute sudah cover seluruh area,
+       jangan tambah onclick di div parent — akan trigger dialog DUA KALI. */
+    .upload-area{border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:20px;text-align:center;background:var(--surface2);transition:border-color .15s;position:relative;overflow:hidden}
     .upload-area:hover{border-color:var(--brand-500);background:#f8fbff}
     .upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-    .upload-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
-    .upload-hint{font-size:12px;color:var(--text3)}
-    .upload-filename{font-size:12.5px;color:var(--brand-600);margin-top:6px;font-weight:600;display:none}
+    .upload-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px;pointer-events:none}
+    .upload-hint{font-size:12px;color:var(--text3);pointer-events:none}
+    .upload-filename{font-size:12.5px;color:var(--brand-600);margin-top:6px;font-weight:600;display:none;pointer-events:none}
 
     .jenis-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
     .jenis-option{position:relative}
@@ -65,12 +72,12 @@
     .toggle-switch input:checked + .toggle-slider{background:var(--brand-500)}
     .toggle-switch input:checked + .toggle-slider::before{transform:translateX(18px)}
 
-    @media(max-width:640px){
-        .page{padding:16px}
-        .grid-2,.grid-3{grid-template-columns:1fr}
-        .field.span-2,.field.span-3{grid-column:span 1}
-        .jenis-grid{grid-template-columns:1fr 1fr}
-    }
+    /* Error banner — lebih baik dari SweetAlert untuk validasi form */
+    .error-banner{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:#fff0f0;border:1px solid #fecaca;border-radius:var(--radius-sm);margin-bottom:16px}
+    .error-banner ul{margin:0;padding-left:16px;font-size:13px;color:#dc2626;font-family:'DM Sans',sans-serif}
+    .error-banner ul li{margin-bottom:2px}
+
+    @media(max-width:640px){.page{padding:16px}.grid-2{grid-template-columns:1fr}.field.span-2{grid-column:span 1}.jenis-grid{grid-template-columns:1fr 1fr}}
 </style>
 
 <div class="page">
@@ -85,10 +92,31 @@
         </a>
     </div>
 
+    {{--
+        FIX: Ganti SweetAlert error menjadi error banner HTML.
+        Alasan: @json(implode('<br>', $errors->all())) → ParseError karena
+        Blade mem-parsing koma di dalam implode() sebagai pemisah argumen @json.
+        Error banner juga lebih baik dari sisi UX — user tidak perlu dismiss
+        modal sebelum bisa langsung memperbaiki field yang salah.
+    --}}
+    @if($errors->any())
+    <div class="error-banner">
+        <svg width="16" height="16" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <ul>
+            @foreach($errors->all() as $err)
+                <li>{{ $err }}</li>
+            @endforeach
+        </ul>
+    </div>
+    @endif
+
     <form action="{{ route('guru.tugas.store') }}" method="POST" enctype="multipart/form-data">
         @csrf
 
-        {{-- Informasi Tugas --}}
         <div class="form-card">
             <div class="form-card-header">
                 <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
@@ -97,7 +125,9 @@
             <div class="form-card-body grid-2">
                 <div class="field span-2">
                     <label>Judul Tugas <span class="req">*</span></label>
-                    <input type="text" name="judul" value="{{ old('judul') }}" placeholder="Contoh: Latihan Soal Bab 3 — Persamaan Linear"
+                    <input type="text" name="judul" value="{{ old('judul') }}"
+                           placeholder="Contoh: Latihan Soal Bab 3 — Persamaan Linear"
+                           maxlength="255"
                            class="{{ $errors->has('judul') ? 'is-invalid' : '' }}">
                     @error('judul')<span class="error">{{ $message }}</span>@enderror
                 </div>
@@ -107,7 +137,9 @@
                     <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
                         <option value="">— Pilih Kelas —</option>
                         @foreach($kelasList as $k)
-                            <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
+                            <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
+                                {{ $k->nama_kelas }}
+                            </option>
                         @endforeach
                     </select>
                     @error('kelas_id')<span class="error">{{ $message }}</span>@enderror
@@ -118,7 +150,9 @@
                     <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
                         <option value="">— Pilih Mata Pelajaran —</option>
                         @foreach($mapelList as $m)
-                            <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
+                            <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>
+                                {{ $m->nama_mapel }}
+                            </option>
                         @endforeach
                     </select>
                     @error('mata_pelajaran_id')<span class="error">{{ $message }}</span>@enderror
@@ -128,8 +162,10 @@
                     <label>Tahun Ajaran <span class="req">*</span></label>
                     <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
                         <option value="">— Pilih Tahun Ajaran —</option>
-                        @foreach($tahunAjaran as $t)
-                            <option value="{{ $t->id }}" {{ old('tahun_ajaran_id') == $t->id ? 'selected' : '' }}>{{ $t->tahun }}</option>
+                        @foreach($tahunAjaran as $ta)
+                            <option value="{{ $ta->id }}" {{ old('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>
+                                {{ $ta->tahun }}
+                            </option>
                         @endforeach
                     </select>
                     @error('tahun_ajaran_id')<span class="error">{{ $message }}</span>@enderror
@@ -137,14 +173,18 @@
 
                 <div class="field">
                     <label>Batas Waktu <span class="req">*</span></label>
-                    <input type="datetime-local" name="batas_waktu" value="{{ old('batas_waktu') }}"
+                    <input type="datetime-local" name="batas_waktu"
+                           value="{{ old('batas_waktu') }}"
                            class="{{ $errors->has('batas_waktu') ? 'is-invalid' : '' }}">
                     @error('batas_waktu')<span class="error">{{ $message }}</span>@enderror
                 </div>
 
                 <div class="field span-2">
-                    <label>Deskripsi / Petunjuk <span class="hint">(opsional)</span></label>
-                    <textarea name="deskripsi" placeholder="Jelaskan instruksi pengerjaan tugas…">{{ old('deskripsi') }}</textarea>
+                    <label>Deskripsi / Petunjuk <span class="hint">(opsional, maks. 5000 karakter)</span></label>
+                    <textarea name="deskripsi"
+                              placeholder="Jelaskan instruksi pengerjaan tugas…"
+                              maxlength="5000"
+                              class="{{ $errors->has('deskripsi') ? 'is-invalid' : '' }}">{{ old('deskripsi') }}</textarea>
                     @error('deskripsi')<span class="error">{{ $message }}</span>@enderror
                 </div>
             </div>
@@ -158,22 +198,21 @@
             </div>
             <div class="form-card-body">
                 <div class="jenis-grid">
-                    @php $jpIcons = ['file'=>['#1d4ed8','M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'],
-                                     'teks'=>['#15803d','M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7 M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'],
-                                     'link'=>['#a16207','M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71 M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71'],
-                                     'foto'=>['#7c3aed','M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z']] @endphp
                     @foreach($jenisPengumpulan as $j)
                     <label class="jenis-option">
                         <input type="radio" name="jenis_pengumpulan" value="{{ $j }}"
                                {{ old('jenis_pengumpulan', 'file') === $j ? 'checked' : '' }}>
                         <div class="jenis-card">
                             <div class="jenis-card-icon">
-                                <svg width="16" height="16" fill="none" stroke="{{ $jpIcons[$j][0] }}" stroke-width="2" viewBox="0 0 24 24">
-                                    @if($j==='file')<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
-                                    @elseif($j==='teks')<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-                                    @elseif($j==='link')<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                                    @else<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>@endif
-                                </svg>
+                                @if($j==='file')
+                                    <svg width="16" height="16" fill="none" stroke="#1d4ed8" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                                @elseif($j==='teks')
+                                    <svg width="16" height="16" fill="none" stroke="#15803d" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                @elseif($j==='link')
+                                    <svg width="16" height="16" fill="none" stroke="#a16207" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                                @else
+                                    <svg width="16" height="16" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                                @endif
                             </div>
                             <span class="jenis-card-label">{{ strtoupper($j) }}</span>
                         </div>
@@ -188,16 +227,19 @@
         <div class="form-card">
             <div class="form-card-header">
                 <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
-                <span class="form-card-title">File Soal & Penilaian</span>
+                <span class="form-card-title">File Soal &amp; Penilaian</span>
             </div>
             <div class="form-card-body grid-2">
                 <div class="field span-2">
-                    <label>Upload File Soal <span class="hint">opsional · maks. 10MB</span></label>
-                    <div class="upload-area" onclick="document.getElementById('soalInput').click()">
-                        <input type="file" name="path_file_soal" id="soalInput" onchange="showFileName(this,'soalLabel')">
-                        <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <label>Upload File Soal <span class="hint">opsional · PDF, DOC, DOCX, PPT, XLS, ZIP · maks. 10MB</span></label>
+                    {{-- Tidak ada onclick di div — input[type=file] position:absolute sudah cover area --}}
+                    <div class="upload-area">
+                        <input type="file" name="path_file_soal" id="soalInput"
+                               accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.rar"
+                               onchange="showFileName(this, 'soalLabel')">
+                        <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 6px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                         <p class="upload-label">Klik untuk pilih file soal</p>
-                        <p class="upload-hint">PDF, DOC, DOCX, dst.</p>
+                        <p class="upload-hint">PDF, DOC, DOCX, PPT, XLS, ZIP, RAR</p>
                         <p id="soalLabel" class="upload-filename"></p>
                     </div>
                     @error('path_file_soal')<span class="error">{{ $message }}</span>@enderror
@@ -205,7 +247,10 @@
 
                 <div class="field">
                     <label>Nilai Maksimal <span class="hint">default 100</span></label>
-                    <input type="number" name="nilai_maksimal" value="{{ old('nilai_maksimal', 100) }}" min="0" max="100" step="0.5">
+                    <input type="number" name="nilai_maksimal"
+                           value="{{ old('nilai_maksimal', 100) }}"
+                           min="0" max="100" step="0.5"
+                           class="{{ $errors->has('nilai_maksimal') ? 'is-invalid' : '' }}">
                     @error('nilai_maksimal')<span class="error">{{ $message }}</span>@enderror
                 </div>
             </div>
@@ -224,7 +269,8 @@
                         <p class="toggle-sub">Siswa masih dapat mengumpulkan setelah batas waktu lewat</p>
                     </div>
                     <label class="toggle-switch">
-                        <input type="checkbox" name="izinkan_terlambat" value="1" {{ old('izinkan_terlambat') ? 'checked' : '' }}>
+                        <input type="checkbox" name="izinkan_terlambat" value="1"
+                               {{ old('izinkan_terlambat') ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
@@ -234,7 +280,8 @@
                         <p class="toggle-sub">Tugas akan langsung terlihat oleh siswa setelah disimpan</p>
                     </div>
                     <label class="toggle-switch">
-                        <input type="checkbox" name="dipublikasikan" value="1" {{ old('dipublikasikan') ? 'checked' : '' }}>
+                        <input type="checkbox" name="dipublikasikan" value="1"
+                               {{ old('dipublikasikan') ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
@@ -253,13 +300,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-@if($errors->any())
-Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
-@endif
-
 function showFileName(input, labelId) {
     const lbl = document.getElementById(labelId);
-    if (input.files[0]) { lbl.textContent = input.files[0].name; lbl.style.display = 'block'; }
+    if (input.files && input.files[0]) {
+        lbl.textContent = input.files[0].name;
+        lbl.style.display = 'block';
+    }
 }
 </script>
 </x-app-layout>

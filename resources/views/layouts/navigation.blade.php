@@ -806,8 +806,8 @@
         Ketersediaan Saya
     </a>
 
-    <a href="{{ route('guru.barcode-kelas.index') }}"
-    class="sb-item {{ request()->routeIs('guru.barcode-kelas.*') ? 'active' : '' }}">
+    <a href="{{ route('guru.barcode.index') }}"
+    class="sb-item {{ request()->routeIs('guru.barcode.*') ? 'active' : '' }}">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <rect x="3" y="3" width="5" height="5"/>
             <rect x="16" y="3" width="5" height="5"/>
@@ -862,7 +862,7 @@
         "Barcode Kelas" ditambahkan agar guru bisa menampilkan barcode
         tetap per kelas untuk dipindai alat di pos piket (jika diperlukan).
     --}}
-    <details class="sb-group" {{ request()->routeIs('guru.absensi.*','guru.sesi-qr.*','guru.barcode-kelas.*') ? 'open' : '' }}>
+    <details class="sb-group" {{ request()->routeIs('guru.absensi.*','guru.sesi-qr.*','guru.barcode-kelas.*','guru.riwayat-scan.*') ? 'open' : '' }}>
         <summary class="sb-group-header">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <rect x="3" y="4" width="18" height="18" rx="2"/>
@@ -874,22 +874,11 @@
             <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </summary>
         <div class="sb-sub">
-            <a href="{{ route('guru.absensi.index') }}"       class="sb-item {{ request()->routeIs('guru.absensi.index') ? 'active' : '' }}">Catat Absensi</a>
+            <a href="{{ route('guru.absensi.index') }}"       class="sb-item {{ request()->routeIs('guru.absensi.index','guru.absensi.create','guru.absensi.show','guru.absensi.edit') ? 'active' : '' }}">Catat Absensi</a>
             <a href="{{ route('guru.absensi.rekap') }}"       class="sb-item {{ request()->routeIs('guru.absensi.rekap') ? 'active' : '' }}">Rekap Kehadiran</a>
-            {{-- [BARU] Sesi QR per jadwal —  QR berganti tiap sesi --}}
             <a href="{{ route('guru.sesi-qr.index') }}"       class="sb-item {{ request()->routeIs('guru.sesi-qr.*') ? 'active' : '' }}">Sesi QR Absensi</a>
-            {{-- [BARU] Barcode tetap kelas untuk alat piket / scan manual guru --}}
-            <a href="{{ route('guru.barcode-kelas.index') }}" class="sb-item {{ request()->routeIs('guru.barcode-kelas.*') ? 'active' : '' }}">
-                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <rect x="3" y="3" width="5" height="5"/>
-                    <rect x="16" y="3" width="5" height="5"/>
-                    <rect x="3" y="16" width="5" height="5"/>
-                    <path d="M21 16h-3v3"/>
-                    <path d="M21 21h-3"/>
-                    <path d="M16 21v-3"/>
-                </svg>
-                Barcode Kelas
-            </a>
+            <a href="{{ route('guru.barcode-kelas.index') }}" class="sb-item {{ request()->routeIs('guru.barcode-kelas.*') ? 'active' : '' }}">Barcode Kelas</a>
+            <a href="{{ route('guru.riwayat-scan.index') }}"  class="sb-item {{ request()->routeIs('guru.riwayat-scan.*') ? 'active' : '' }}">Riwayat Scan</a>
         </div>
     </details>
 

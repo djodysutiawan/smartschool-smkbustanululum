@@ -32,11 +32,11 @@ class JurnalMengajar extends Model
     protected function casts(): array
     {
         return [
-            'tanggal'           => 'date',
-            'diverifikasi_pada' => 'datetime',
-            'pertemuan_ke'      => 'integer',
-            'jumlah_hadir'      => 'integer',
-            'jumlah_tidak_hadir'=> 'integer',
+            'tanggal'            => 'date',
+            'diverifikasi_pada'  => 'datetime',
+            'pertemuan_ke'       => 'integer',
+            'jumlah_hadir'       => 'integer',
+            'jumlah_tidak_hadir' => 'integer',
         ];
     }
 

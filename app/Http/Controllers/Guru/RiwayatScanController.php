@@ -13,11 +13,13 @@ use Illuminate\Support\Facades\Auth;
  *
  * Guru hanya bisa melihat riwayat scan dari sesi QR yang dia buat sendiri
  * (dibuat_oleh = Auth::id()). Tidak ada akses ke sesi QR guru lain.
+ *
+ * Kolom waktu scan: di_scan_pada (TIMESTAMP) — sesuai struktur tabel riwayat_scan_qr.
  */
 class RiwayatScanController extends Controller
 {
     /**
-     * Pastikan guru terhubung ke data guru.
+     * Pastikan guru terhubung ke data guru dan kembalikan Auth::id().
      */
     private function getUserId(): int
     {
@@ -27,65 +29,64 @@ class RiwayatScanController extends Controller
     }
 
     // ── INDEX ─────────────────────────────────────────────────────────────────
-    /**
-     * Daftar riwayat scan — hanya dari sesi QR yang dibuat guru ini.
-     */
+
     public function index(Request $request)
     {
         $userId = $this->getUserId();
 
-        // Ambil ID sesi QR milik guru ini
-        $sesiIds = SesiQr::where('dibuat_oleh', $userId)
-            ->pluck('id');
+        // ID sesi QR milik guru ini
+        $sesiIds = SesiQr::where('dibuat_oleh', $userId)->pluck('id');
 
+        // Base query — scoped ke sesiIds milik guru
         $query = RiwayatScanQr::with([
-                'sesiQr.kelas',
-                'sesiQr.mataPelajaran',
-                'siswa',
+                'sesiQr.kelas:id,nama_kelas',
+                'sesiQr.mataPelajaran:id,nama_mapel',
+                'siswa:id,nama_lengkap,nis',
             ])
             ->whereIn('sesi_qr_id', $sesiIds);
 
-        // Filter per sesi
+        // ── Filter: per sesi QR ───────────────────────────────────────────────
         if ($request->filled('sesi_qr_id')) {
-            // Pastikan sesi yang diminta memang milik guru ini
-            abort_unless($sesiIds->contains($request->sesi_qr_id), 403);
+            abort_unless($sesiIds->contains((int) $request->sesi_qr_id), 403);
             $query->where('sesi_qr_id', $request->sesi_qr_id);
         }
 
-        // Filter status scan (valid / ditolak_*)
+        // ── Filter: status scan ───────────────────────────────────────────────
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter tanggal
+        // ── Filter: tanggal spesifik ──────────────────────────────────────────
         if ($request->filled('tanggal')) {
             $query->whereDate('di_scan_pada', $request->tanggal);
         }
 
+        // ── Filter: range tanggal ─────────────────────────────────────────────
         if ($request->filled('tanggal_dari')) {
             $query->whereDate('di_scan_pada', '>=', $request->tanggal_dari);
         }
-
         if ($request->filled('tanggal_sampai')) {
             $query->whereDate('di_scan_pada', '<=', $request->tanggal_sampai);
         }
 
-        // Filter nama siswa
+        // ── Filter: nama/NIS siswa ────────────────────────────────────────────
         if ($request->filled('search')) {
+            $search = $request->search;
             $query->whereHas('siswa', fn ($q) =>
-                $q->where('nama_lengkap', 'like', "%{$request->search}%")
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nis', 'like', "%{$search}%")
             );
         }
 
         $riwayats = $query->latest('di_scan_pada')->paginate(20)->withQueryString();
 
-        // Daftar sesi QR milik guru ini untuk dropdown filter
+        // ── Dropdown sesi QR ──────────────────────────────────────────────────
         $sesiList = SesiQr::where('dibuat_oleh', $userId)
-            ->with(['kelas', 'mataPelajaran'])
+            ->with(['kelas:id,nama_kelas', 'mataPelajaran:id,nama_mapel'])
             ->orderByDesc('tanggal')
             ->get();
 
-        // Status list untuk filter
+        // ── Label status ──────────────────────────────────────────────────────
         $statusList = [
             'valid'                  => 'Valid',
             'ditolak_radius'         => 'Ditolak (Radius)',
@@ -95,11 +96,14 @@ class RiwayatScanController extends Controller
             'ditolak_bukan_anggota'  => 'Ditolak (Bukan Anggota)',
         ];
 
-        // Rekap ringkasan hari ini
+        // ── Rekap hari ini (tidak terpengaruh filter aktif) ───────────────────
+        $baseHariIni = RiwayatScanQr::whereIn('sesi_qr_id', $sesiIds)
+            ->whereDate('di_scan_pada', today());
+
         $rekap = [
-            'valid'    => (clone $query)->whereDate('di_scan_pada', today())->where('status', 'valid')->count(),
-            'ditolak'  => (clone $query)->whereDate('di_scan_pada', today())->where('status', '!=', 'valid')->count(),
-            'total'    => (clone $query)->whereDate('di_scan_pada', today())->count(),
+            'total'   => (clone $baseHariIni)->count(),
+            'valid'   => (clone $baseHariIni)->where('status', 'valid')->count(),
+            'ditolak' => (clone $baseHariIni)->where('status', '!=', 'valid')->count(),
         ];
 
         return view('guru.riwayat-scan.index', compact(
@@ -111,15 +115,11 @@ class RiwayatScanController extends Controller
     }
 
     // ── SHOW ──────────────────────────────────────────────────────────────────
-    /**
-     * Detail satu riwayat scan.
-     * Hanya bisa diakses jika sesi QR-nya dibuat oleh guru ini.
-     */
+
     public function show(RiwayatScanQr $riwayat)
     {
         $userId = $this->getUserId();
 
-        // Verifikasi kepemilikan sesi
         abort_unless(
             SesiQr::where('id', $riwayat->sesi_qr_id)
                 ->where('dibuat_oleh', $userId)
@@ -129,9 +129,10 @@ class RiwayatScanController extends Controller
         );
 
         $riwayat->load([
-            'sesiQr.kelas',
-            'sesiQr.mataPelajaran',
-            'siswa',
+            'sesiQr.kelas:id,nama_kelas',
+            'sesiQr.mataPelajaran:id,nama_mapel',
+            'sesiQr.jadwalPelajaran.ruang',
+            'siswa:id,nama_lengkap,nis',
             'absensi',
         ]);
 

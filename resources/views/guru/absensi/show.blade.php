@@ -28,6 +28,7 @@
     .layout{display:grid;grid-template-columns:1fr 280px;gap:16px;align-items:start}
 
     .detail-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+    .detail-card:last-child{margin-bottom:0}
     .detail-card-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:8px}
     .detail-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
     .detail-card-body{padding:20px}
@@ -48,20 +49,32 @@
     .badge-sakit{background:#fdf4ff;color:#7c3aed} .badge-sakit .badge-dot{background:#a855f7}
     .badge-alfa {background:#fee2e2;color:#dc2626} .badge-alfa  .badge-dot{background:#dc2626}
     .badge-manual{background:var(--surface3);color:var(--text2)} .badge-manual .badge-dot{background:var(--text3)}
-    .badge-qr   {background:#ecfdf5;color:#065f46} .badge-qr    .badge-dot{background:#059669}
+    .badge-qr    {background:#ecfdf5;color:#065f46} .badge-qr    .badge-dot{background:#059669}
 
     .surat-box{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm)}
     .surat-icon{width:40px;height:40px;background:var(--brand-50);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
     @media(max-width:900px){.layout{grid-template-columns:1fr}}
-    @media(max-width:640px){.page{padding:16px}.info-grid{grid-template-columns:1fr}.info-row.full{grid-column:span 1}}
+    @media(max-width:640px){
+        .page{padding:16px}
+        .info-grid{grid-template-columns:1fr}
+        .info-row.full{grid-column:span 1}
+    }
 </style>
 
 <div class="page">
     <div class="page-header">
         <div>
             <h1 class="page-title">Detail Absensi</h1>
-            <p class="page-sub">{{ $absensi->siswa->nama_lengkap ?? '—' }} — {{ \Carbon\Carbon::parse($absensi->tanggal)->format('d M Y') }}</p>
+            {{--
+                Guard optional() agar tidak null-pointer jika relasi siswa tidak ditemukan.
+                Carbon::parse() aman karena tanggal dijamin ada dari DB (NOT NULL).
+            --}}
+            <p class="page-sub">
+                {{ optional($absensi->siswa)->nama_lengkap ?? '—' }}
+                &mdash;
+                {{ \Carbon\Carbon::parse($absensi->tanggal)->translatedFormat('d M Y') }}
+            </p>
         </div>
         <div class="header-actions">
             <a href="{{ route('guru.absensi.index') }}" class="btn btn-secondary">
@@ -69,14 +82,17 @@
                 Kembali
             </a>
             <a href="{{ route('guru.absensi.edit', $absensi->id) }}" class="btn btn-edit">Edit</a>
+            {{-- Form hapus: id unik agar tidak konflik jika ada beberapa form di layout --}}
             <form action="{{ route('guru.absensi.destroy', $absensi->id) }}" method="POST" id="delForm" style="display:inline">
-                @csrf @method('DELETE')
+                @csrf
+                @method('DELETE')
                 <button type="button" class="btn btn-del" onclick="confirmDelete()">Hapus</button>
             </form>
         </div>
     </div>
 
     <div class="layout">
+        {{-- Kolom Utama --}}
         <div>
             <div class="detail-card">
                 <div class="detail-card-header">
@@ -85,76 +101,135 @@
                 </div>
                 <div class="detail-card-body">
                     <div class="info-grid">
+
                         <div class="info-row">
                             <span class="info-label">Nama Siswa</span>
-                            <span class="info-val">{{ $absensi->siswa->nama_lengkap ?? '—' }}</span>
+                            <span class="info-val">{{ optional($absensi->siswa)->nama_lengkap ?? '—' }}</span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">NIS</span>
-                            <span class="info-val">{{ $absensi->siswa->nis ?? '—' }}</span>
+                            <span class="info-val {{ optional($absensi->siswa)->nis ? '' : 'muted' }}">
+                                {{ optional($absensi->siswa)->nis ?? '—' }}
+                            </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Kelas</span>
-                            <span class="info-val">{{ $absensi->kelas->nama_kelas ?? '—' }}</span>
+                            <span class="info-val {{ optional($absensi->kelas)->nama_kelas ? '' : 'muted' }}">
+                                {{ optional($absensi->kelas)->nama_kelas ?? '—' }}
+                            </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Tanggal</span>
-                            <span class="info-val">{{ \Carbon\Carbon::parse($absensi->tanggal)->format('d M Y') }}</span>
+                            <span class="info-val">
+                                {{ \Carbon\Carbon::parse($absensi->tanggal)->translatedFormat('d M Y') }}
+                            </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Status</span>
                             <span class="info-val">
-                                <span class="badge badge-{{ $absensi->status }}">
-                                    <span class="badge-dot"></span>{{ ucfirst($absensi->status) }}
-                                </span>
+                                {{--
+                                    Badge fallback: jika status tidak dikenal, tampilkan badge netral
+                                    daripada kelas CSS yang tidak ada.
+                                --}}
+                                @php
+                                    $validStatuses = ['hadir', 'telat', 'izin', 'sakit', 'alfa'];
+                                    $status = in_array($absensi->status, $validStatuses) ? $absensi->status : null;
+                                @endphp
+                                @if($status)
+                                    <span class="badge badge-{{ $status }}">
+                                        <span class="badge-dot"></span>
+                                        {{ ucfirst($status) }}
+                                    </span>
+                                @else
+                                    <span class="info-val muted">{{ $absensi->status ?? '—' }}</span>
+                                @endif
                             </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Metode</span>
                             <span class="info-val">
-                                @if($absensi->metode === 'qr')
+                                @if($absensi->metode === 'qr' || $absensi->metode === 'qr_scan')
                                     <span class="badge badge-qr"><span class="badge-dot"></span>QR Code</span>
                                 @elseif($absensi->metode === 'manual')
                                     <span class="badge badge-manual"><span class="badge-dot"></span>Manual</span>
+                                @elseif($absensi->metode)
+                                    <span class="badge badge-manual"><span class="badge-dot"></span>{{ ucfirst($absensi->metode) }}</span>
                                 @else
                                     <span class="info-val muted">—</span>
                                 @endif
                             </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Jam Masuk</span>
-                            <span class="info-val {{ !$absensi->jam_masuk ? 'muted' : '' }}">{{ $absensi->jam_masuk ? \Carbon\Carbon::parse($absensi->jam_masuk)->format('H:i') : '—' }}</span>
+                            <span class="info-val {{ $absensi->jam_masuk ? '' : 'muted' }}">
+                                {{--
+                                    jam_masuk bisa berupa string 'H:i' atau datetime penuh.
+                                    Carbon::parse() menangani keduanya, lalu format ke H:i.
+                                --}}
+                                {{ $absensi->jam_masuk ? \Carbon\Carbon::parse($absensi->jam_masuk)->format('H:i') : '—' }}
+                            </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Jam Keluar</span>
-                            <span class="info-val {{ !$absensi->jam_keluar ? 'muted' : '' }}">{{ $absensi->jam_keluar ? \Carbon\Carbon::parse($absensi->jam_keluar)->format('H:i') : '—' }}</span>
+                            <span class="info-val {{ $absensi->jam_keluar ? '' : 'muted' }}">
+                                {{ $absensi->jam_keluar ? \Carbon\Carbon::parse($absensi->jam_keluar)->format('H:i') : '—' }}
+                            </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Jadwal Pelajaran</span>
-                            <span class="info-val {{ !$absensi->jadwalPelajaran ? 'muted' : '' }}">{{ $absensi->jadwalPelajaran->mataPelajaran->nama_mapel ?? '—' }}</span>
+                            <span class="info-val {{ optional(optional($absensi->jadwalPelajaran)->mataPelajaran)->nama_mapel ? '' : 'muted' }}">
+                                {{--
+                                    Rantai relasi: absensi → jadwalPelajaran → mataPelajaran → nama_mapel
+                                    Setiap level di-wrap optional() untuk mencegah null-pointer.
+                                --}}
+                                {{ optional(optional($absensi->jadwalPelajaran)->mataPelajaran)->nama_mapel ?? '—' }}
+                            </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Dicatat Oleh</span>
-                            <span class="info-val">{{ $absensi->dicatatOleh->name ?? '—' }}</span>
+                            <span class="info-val {{ optional($absensi->dicatatOleh)->name ? '' : 'muted' }}">
+                                {{ optional($absensi->dicatatOleh)->name ?? '—' }}
+                            </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Dicatat Pada</span>
-                            <span class="info-val">{{ $absensi->created_at ? $absensi->created_at->format('d M Y, H:i') : '—' }}</span>
+                            <span class="info-val {{ $absensi->created_at ? '' : 'muted' }}">
+                                {{ $absensi->created_at ? $absensi->created_at->translatedFormat('d M Y, H:i') : '—' }}
+                            </span>
                         </div>
+
                         <div class="info-row">
                             <span class="info-label">Terakhir Diperbarui</span>
-                            <span class="info-val">{{ $absensi->updated_at ? $absensi->updated_at->format('d M Y, H:i') : '—' }}</span>
+                            <span class="info-val {{ $absensi->updated_at ? '' : 'muted' }}">
+                                {{ $absensi->updated_at ? $absensi->updated_at->translatedFormat('d M Y, H:i') : '—' }}
+                            </span>
                         </div>
+
                         @if($absensi->keterangan)
                         <div class="info-row full">
                             <span class="info-label">Keterangan</span>
-                            <span class="info-val" style="font-weight:400;font-family:'DM Sans',sans-serif;line-height:1.6">{{ $absensi->keterangan }}</span>
+                            <span class="info-val" style="font-weight:400;font-family:'DM Sans',sans-serif;line-height:1.6;white-space:pre-wrap">
+                                {{-- e() otomatis di-escape oleh {{ }}, tidak perlu {!! !!} --}}
+                                {{ $absensi->keterangan }}
+                            </span>
                         </div>
                         @endif
+
                     </div>
                 </div>
             </div>
 
+            {{-- Surat Izin — hanya tampil jika ada file --}}
             @if($absensi->path_surat_izin)
             <div class="detail-card">
                 <div class="detail-card-header">
@@ -167,10 +242,20 @@
                             <svg width="18" height="18" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
                         </div>
                         <div style="flex:1;overflow:hidden">
-                            <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ basename($absensi->path_surat_izin) }}</p>
-                            <p style="font-size:11.5px;color:var(--text3)">Surat izin ketidakhadiran</p>
+                            <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin:0">
+                                {{ basename($absensi->path_surat_izin) }}
+                            </p>
+                            <p style="font-size:11.5px;color:var(--text3);margin:0">Surat izin ketidakhadiran</p>
                         </div>
-                        <a href="{{ Storage::url($absensi->path_surat_izin) }}" target="_blank" class="btn btn-secondary" style="padding:5px 12px;font-size:12px">
+                        {{--
+                            Storage::url() mengembalikan path relatif publik.
+                            Dibungkus asset() agar URL absolut dan benar di semua environment.
+                        --}}
+                        <a href="{{ asset(Storage::url($absensi->path_surat_izin)) }}"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           class="btn btn-secondary"
+                           style="padding:5px 12px;font-size:12px">
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                             Buka
                         </a>
@@ -204,17 +289,42 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-@if(session('success'))
-Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2800,showConfirmButton:false,toast:true,position:'top-end'});
-@endif
-function confirmDelete() {
-    Swal.fire({
-        title:'Hapus Absensi?',
-        html:`Data absensi <strong>{{ addslashes($absensi->siswa->nama_lengkap ?? '') }}</strong> tanggal <strong>{{ \Carbon\Carbon::parse($absensi->tanggal)->format('d M Y') }}</strong> akan dihapus permanen.`,
-        icon:'warning',showCancelButton:true,
-        confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
-        confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal',
-    }).then(r => { if(r.isConfirmed) document.getElementById('delForm').submit(); });
-}
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: @json(session('success')),
+            timer: 2800,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    @endif
+
+    function confirmDelete() {
+        Swal.fire({
+            title: 'Hapus Absensi?',
+            {{--
+                @json() otomatis meng-escape HTML entities dan karakter khusus,
+                sehingga aman dipakai sebagai nilai JS string — tidak ada risiko XSS
+                atau syntax error akibat quote/apostrophe dalam nama siswa.
+            --}}
+            html: @json(
+                'Data absensi <strong>' . e(optional($absensi->siswa)->nama_lengkap ?? '') . '</strong>'
+                . ' tanggal <strong>' . \Carbon\Carbon::parse($absensi->tanggal)->translatedFormat('d M Y') . '</strong>'
+                . ' akan dihapus permanen.'
+            ),
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#dc2626',
+            cancelButtonColor: '#64748b',
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal',
+        }).then(function(result) {
+            if (result.isConfirmed) {
+                document.getElementById('delForm').submit();
+            }
+        });
+    }
 </script>
 </x-app-layout>

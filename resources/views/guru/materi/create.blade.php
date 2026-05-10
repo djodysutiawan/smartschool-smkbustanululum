@@ -1,6 +1,6 @@
 <x-app-layout>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
     :root {
         --brand-700:#1750c0;--brand-600:#1f63db;--brand-500:#3582f0;
         --brand-100:#d9ebff;--brand-50:#eef6ff;
@@ -9,12 +9,13 @@
         --text:#0f172a;--text2:#475569;--text3:#94a3b8;
         --radius:10px;--radius-sm:7px;
     }
+
     .page{padding:28px 28px 40px;max-width:2000px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
 
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap;line-height:1}
     .btn:hover{filter:brightness(.93)}
     .btn-primary{background:var(--brand-600);color:#fff}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
@@ -25,11 +26,9 @@
     .form-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
     .form-card-body{padding:20px;display:grid;gap:16px}
     .grid-2{grid-template-columns:1fr 1fr}
-    .grid-3{grid-template-columns:1fr 1fr 1fr}
 
     .field{display:flex;flex-direction:column;gap:5px}
     .field.span-2{grid-column:span 2}
-    .field.span-3{grid-column:span 3}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2)}
     .field label .req{color:#dc2626}
     .field label .hint{font-weight:400;color:var(--text3);margin-left:4px}
@@ -39,13 +38,7 @@
     .field .error{font-size:11.5px;color:#dc2626;margin-top:2px}
     .field input.is-invalid,.field select.is-invalid,.field textarea.is-invalid{border-color:#dc2626;background:#fff8f8}
 
-    .upload-area{border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:20px;text-align:center;background:var(--surface2);cursor:pointer;transition:border-color .15s,background .15s;position:relative}
-    .upload-area:hover{border-color:var(--brand-500);background:#f8fbff}
-    .upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
-    .upload-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
-    .upload-hint{font-size:12px;color:var(--text3)}
-    .upload-filename{font-size:12.5px;color:var(--brand-600);margin-top:6px;font-weight:600;display:none}
-
+    /* Jenis Selector */
     .jenis-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
     .jenis-option{position:relative}
     .jenis-option input[type=radio]{position:absolute;opacity:0;width:0;height:0}
@@ -55,6 +48,19 @@
     .jenis-card-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--surface3)}
     .jenis-card-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2)}
 
+    /* Upload */
+    .upload-area{border:2px dashed var(--border2);border-radius:var(--radius-sm);padding:20px;text-align:center;background:var(--surface2);cursor:pointer;transition:border-color .15s,background .15s;position:relative}
+    .upload-area:hover{border-color:var(--brand-500);background:#f8fbff}
+    .upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+    .upload-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);margin-bottom:3px}
+    .upload-hint{font-size:12px;color:var(--text3)}
+    .upload-filename{font-size:12.5px;color:var(--brand-600);margin-top:6px;font-weight:600}
+
+    /* Konten Section */
+    .section-konten{display:none;flex-direction:column;gap:8px}
+    .section-konten.active{display:flex}
+
+    /* Toggle */
     .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border)}
     .toggle-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
     .toggle-sub{font-size:11.5px;color:var(--text3);margin-top:1px}
@@ -65,14 +71,12 @@
     .toggle-switch input:checked + .toggle-slider{background:var(--brand-500)}
     .toggle-switch input:checked + .toggle-slider::before{transform:translateX(18px)}
 
-    .form-footer{display:flex;gap:10px;align-items:center;justify-content:flex-end;padding:16px 20px;border-top:1px solid var(--border);background:var(--surface2)}
-
-    .section-hidden{display:none}
+    .char-count{font-size:11.5px;color:var(--text3);text-align:right;margin-top:2px}
 
     @media(max-width:640px){
-        .page{padding:16px}
-        .grid-2,.grid-3{grid-template-columns:1fr}
-        .field.span-2,.field.span-3{grid-column:span 1}
+        .page{padding:16px;max-width:100%}
+        .grid-2{grid-template-columns:1fr}
+        .field.span-2{grid-column:span 1}
         .jenis-grid{grid-template-columns:1fr 1fr}
     }
 </style>
@@ -99,11 +103,13 @@
                 <span class="form-card-title">Informasi Dasar</span>
             </div>
             <div class="form-card-body grid-2">
+
                 <div class="field span-2">
                     <label>Judul Materi <span class="req">*</span></label>
                     <input type="text" name="judul" value="{{ old('judul') }}"
                            placeholder="Contoh: Pengenalan Aljabar Dasar"
-                           class="{{ $errors->has('judul') ? 'is-invalid' : '' }}">
+                           class="{{ $errors->has('judul') ? 'is-invalid' : '' }}"
+                           maxlength="255">
                     @error('judul')<span class="error">{{ $message }}</span>@enderror
                 </div>
 
@@ -112,7 +118,9 @@
                     <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-invalid' : '' }}">
                         <option value="">— Pilih Kelas —</option>
                         @foreach($kelasList as $k)
-                            <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
+                            <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
+                                {{ $k->nama_kelas }}
+                            </option>
                         @endforeach
                     </select>
                     @error('kelas_id')<span class="error">{{ $message }}</span>@enderror
@@ -123,7 +131,9 @@
                     <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-invalid' : '' }}">
                         <option value="">— Pilih Mata Pelajaran —</option>
                         @foreach($mapelList as $m)
-                            <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
+                            <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>
+                                {{ $m->nama_mapel }}
+                            </option>
                         @endforeach
                     </select>
                     @error('mata_pelajaran_id')<span class="error">{{ $message }}</span>@enderror
@@ -134,7 +144,9 @@
                     <select name="tahun_ajaran_id" class="{{ $errors->has('tahun_ajaran_id') ? 'is-invalid' : '' }}">
                         <option value="">— Pilih Tahun Ajaran —</option>
                         @foreach($tahunAjaran as $t)
-                            <option value="{{ $t->id }}" {{ old('tahun_ajaran_id') == $t->id ? 'selected' : '' }}>{{ $t->tahun }}</option>
+                            <option value="{{ $t->id }}" {{ old('tahun_ajaran_id') == $t->id ? 'selected' : '' }}>
+                                {{ $t->tahun }}
+                            </option>
                         @endforeach
                     </select>
                     @error('tahun_ajaran_id')<span class="error">{{ $message }}</span>@enderror
@@ -142,13 +154,17 @@
 
                 <div class="field">
                     <label>Urutan <span class="hint">(opsional)</span></label>
-                    <input type="number" name="urutan" value="{{ old('urutan', 0) }}" min="0" placeholder="0">
+                    <input type="number" name="urutan" value="{{ old('urutan', 0) }}"
+                           min="0" placeholder="0">
                     @error('urutan')<span class="error">{{ $message }}</span>@enderror
                 </div>
 
                 <div class="field span-2">
-                    <label>Deskripsi <span class="hint">(opsional)</span></label>
-                    <textarea name="deskripsi" placeholder="Penjelasan singkat tentang materi ini…">{{ old('deskripsi') }}</textarea>
+                    <label>Deskripsi <span class="hint">(opsional, maks. 2000 karakter)</span></label>
+                    <textarea name="deskripsi" id="deskripsiInput"
+                              placeholder="Penjelasan singkat tentang materi ini…"
+                              maxlength="2000">{{ old('deskripsi') }}</textarea>
+                    <span class="char-count"><span id="deskripsiCount">0</span> / 2000</span>
                     @error('deskripsi')<span class="error">{{ $message }}</span>@enderror
                 </div>
             </div>
@@ -161,12 +177,14 @@
                 <span class="form-card-title">Jenis Materi</span>
             </div>
             <div class="form-card-body">
+
+                {{-- Selector Jenis --}}
                 <div class="jenis-grid">
                     @foreach($jenisMateri as $j)
                     <label class="jenis-option">
                         <input type="radio" name="jenis" value="{{ $j }}"
                                {{ old('jenis', 'file') === $j ? 'checked' : '' }}
-                               onchange="onJenisChange(this.value)">
+                               onchange="onJenisChange('{{ $j }}')">
                         <div class="jenis-card">
                             <div class="jenis-card-icon">
                                 @if($j === 'file')
@@ -184,29 +202,49 @@
                     </label>
                     @endforeach
                 </div>
-                @error('jenis')<span class="error" style="margin-top:4px;display:block">{{ $message }}</span>@enderror
+                @error('jenis')<span class="error" style="display:block;margin-top:4px">{{ $message }}</span>@enderror
 
-                {{-- Section File --}}
-                <div id="section-file" class="field">
-                    <label>Upload File <span class="hint">(maks. 50MB)</span></label>
-                    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
-                        <input type="file" name="path_file" id="fileInput" onchange="showFileName(this,'fileNameLabel')">
-                        <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 6px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-                        <p class="upload-label">Klik untuk pilih file</p>
-                        <p class="upload-hint">PDF, PPT, DOC, ZIP, dsb.</p>
-                        <p id="fileNameLabel" class="upload-filename"></p>
+                {{-- Section: File --}}
+                <div id="section-file" class="section-konten">
+                    <div class="field">
+                        <label>Upload File <span class="req">*</span> <span class="hint">maks. 50MB — PDF, PPT, DOC, ZIP, dsb.</span></label>
+                        <div class="upload-area">
+                            <input type="file" name="path_file" id="fileInput"
+                                   onchange="showFileName(this, 'fileNameLabel')">
+                            <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 6px;display:block"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                            <p class="upload-label">Klik untuk pilih file</p>
+                            <p class="upload-hint">Semua format didukung</p>
+                            <p id="fileNameLabel" class="upload-filename" style="display:none"></p>
+                        </div>
+                        @error('path_file')<span class="error">{{ $message }}</span>@enderror
                     </div>
-                    @error('path_file')<span class="error">{{ $message }}</span>@enderror
                 </div>
 
-                {{-- Section URL/Video --}}
-                <div id="section-link" class="field section-hidden">
-                    <label>URL Eksternal <span class="req">*</span></label>
-                    <input type="url" name="url_eksternal" value="{{ old('url_eksternal') }}"
-                           placeholder="https://…"
-                           class="{{ $errors->has('url_eksternal') ? 'is-invalid' : '' }}">
-                    @error('url_eksternal')<span class="error">{{ $message }}</span>@enderror
+                {{-- Section: Link / Video --}}
+                <div id="section-link" class="section-konten">
+                    <div class="field">
+                        <label id="urlLabel">URL Eksternal <span class="req">*</span></label>
+                        <input type="url" name="url_eksternal"
+                               value="{{ old('url_eksternal') }}"
+                               placeholder="https://…"
+                               class="{{ $errors->has('url_eksternal') ? 'is-invalid' : '' }}">
+                        <span style="font-size:11.5px;color:var(--text3);margin-top:2px"
+                              id="urlHint">Masukkan URL tautan eksternal</span>
+                        @error('url_eksternal')<span class="error">{{ $message }}</span>@enderror
+                    </div>
                 </div>
+
+                {{-- Section: Teks --}}
+                <div id="section-teks" class="section-konten">
+                    <div class="field">
+                        <label>Konten Teks <span class="req">*</span></label>
+                        <textarea name="konten_teks" rows="8"
+                                  placeholder="Tulis konten materi teks di sini…"
+                                  class="{{ $errors->has('konten_teks') ? 'is-invalid' : '' }}">{{ old('konten_teks') }}</textarea>
+                        @error('konten_teks')<span class="error">{{ $message }}</span>@enderror
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -218,13 +256,17 @@
             </div>
             <div class="form-card-body">
                 <div class="field">
-                    <label>Gambar Thumbnail <span class="hint">JPG/PNG, maks. 2MB</span></label>
-                    <div class="upload-area" onclick="document.getElementById('thumbInput').click()">
-                        <input type="file" name="thumbnail" id="thumbInput" accept="image/*" onchange="showFileName(this,'thumbNameLabel');previewThumb(this)">
-                        <div id="thumbPreview" style="display:none;margin-bottom:8px"><img id="thumbImg" style="max-height:100px;border-radius:6px;margin:0 auto;display:block"></div>
-                        <svg width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" id="thumbIcon" style="margin:0 auto 6px"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <label>Gambar Thumbnail <span class="hint">JPG/PNG/WebP, maks. 2MB</span></label>
+                    <div class="upload-area">
+                        <input type="file" name="thumbnail" id="thumbInput"
+                               accept="image/jpg,image/jpeg,image/png,image/webp"
+                               onchange="showFileName(this,'thumbNameLabel');previewThumb(this)">
+                        <div id="thumbPreview" style="display:none;margin-bottom:8px">
+                            <img id="thumbImg" style="max-height:100px;border-radius:6px;margin:0 auto;display:block">
+                        </div>
+                        <svg id="thumbIcon" width="28" height="28" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 6px;display:block"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                         <p class="upload-label">Klik untuk pilih gambar</p>
-                        <p id="thumbNameLabel" class="upload-filename"></p>
+                        <p id="thumbNameLabel" class="upload-filename" style="display:none"></p>
                     </div>
                     @error('thumbnail')<span class="error">{{ $message }}</span>@enderror
                 </div>
@@ -244,14 +286,15 @@
                         <p class="toggle-sub">Materi akan langsung terlihat oleh siswa setelah disimpan</p>
                     </div>
                     <label class="toggle-switch">
-                        <input type="checkbox" name="dipublikasikan" value="1" {{ old('dipublikasikan') ? 'checked' : '' }}>
+                        <input type="checkbox" name="dipublikasikan" value="1"
+                               {{ old('dipublikasikan') ? 'checked' : '' }}>
                         <span class="toggle-slider"></span>
                     </label>
                 </div>
             </div>
         </div>
 
-        <div class="form-footer" style="background:transparent;border:none;padding:0;margin-top:4px">
+        <div style="display:flex;gap:10px;align-items:center;justify-content:flex-end;margin-top:4px">
             <a href="{{ route('guru.materi.index') }}" class="btn btn-secondary">Batal</a>
             <button type="submit" class="btn btn-primary">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
@@ -264,23 +307,48 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 @if($errors->any())
-Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
+Swal.fire({
+    icon: 'warning', title: 'Perhatian!',
+    html: `{!! implode('<br>', $errors->all()) !!}`,
+    confirmButtonColor: '#1f63db'
+});
 @endif
 
+/* ── Jenis Konten ──────────────────────────────────────────────────── */
 function onJenisChange(val) {
-    document.getElementById('section-file').style.display  = (val === 'file')  ? 'flex' : 'none';
-    document.getElementById('section-link').style.display  = (val === 'link' || val === 'video') ? 'flex' : 'none';
+    // Sembunyikan semua section
+    document.querySelectorAll('.section-konten').forEach(el => el.classList.remove('active'));
+
+    if (val === 'file') {
+        document.getElementById('section-file').classList.add('active');
+    } else if (val === 'link') {
+        document.getElementById('section-link').classList.add('active');
+        document.getElementById('urlLabel').textContent = 'URL Tautan ';
+        document.getElementById('urlLabel').innerHTML += '<span style="color:#dc2626">*</span>';
+        document.getElementById('urlHint').textContent = 'Masukkan URL tautan eksternal yang ingin dibagikan';
+    } else if (val === 'video') {
+        document.getElementById('section-link').classList.add('active');
+        document.getElementById('urlLabel').innerHTML = 'URL Video <span style="color:#dc2626">*</span>';
+        document.getElementById('urlHint').textContent = 'Masukkan URL video YouTube, Vimeo, atau platform lainnya';
+    } else if (val === 'teks') {
+        document.getElementById('section-teks').classList.add('active');
+    }
 }
 
+/* ── File Name Display ─────────────────────────────────────────────── */
 function showFileName(input, labelId) {
     const lbl = document.getElementById(labelId);
-    if (input.files[0]) { lbl.textContent = input.files[0].name; lbl.style.display = 'block'; }
+    if (input.files && input.files[0]) {
+        lbl.textContent = input.files[0].name;
+        lbl.style.display = 'block';
+    }
 }
 
+/* ── Thumbnail Preview ─────────────────────────────────────────────── */
 function previewThumb(input) {
-    if (input.files[0]) {
+    if (input.files && input.files[0]) {
         const reader = new FileReader();
-        reader.onload = e => {
+        reader.onload = function(e) {
             document.getElementById('thumbImg').src = e.target.result;
             document.getElementById('thumbPreview').style.display = 'block';
             document.getElementById('thumbIcon').style.display = 'none';
@@ -289,7 +357,19 @@ function previewThumb(input) {
     }
 }
 
-// Init berdasarkan old value
-onJenisChange('{{ old('jenis', 'file') }}');
+/* ── Char Counter ──────────────────────────────────────────────────── */
+(function() {
+    const ta = document.getElementById('deskripsiInput');
+    const counter = document.getElementById('deskripsiCount');
+    if (ta && counter) {
+        counter.textContent = ta.value.length;
+        ta.addEventListener('input', () => { counter.textContent = ta.value.length; });
+    }
+})();
+
+/* ── Init — setelah semua elemen tersedia ──────────────────────────── */
+document.addEventListener('DOMContentLoaded', function() {
+    onJenisChange('{{ old('jenis', 'file') }}');
+});
 </script>
 </x-app-layout>

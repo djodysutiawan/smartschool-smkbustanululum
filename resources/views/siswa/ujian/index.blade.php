@@ -73,64 +73,91 @@
     <div class="ujian-grid">
         @foreach($ujian as $u)
         @php
-            $jenisLabel    = ['ulangan_harian'=>'Ulangan Harian','uts'=>'UTS','uas'=>'UAS','kuis'=>'Kuis','quiz'=>'Quiz','remedial'=>'Remedial'][$u->jenis] ?? ucfirst($u->jenis);
+            /*
+             * FIX: Jangan gunakan match() atau array lookup dengan ?? di dalam
+             * @php block yang langsung di-echo ke blade — pindahkan ke @php
+             * sebagai variabel biasa agar tidak ada ParseError.
+             *
+             * FIX [Perf]: $u->soal_count berasal dari withCount('soal') di
+             * controller — tidak perlu query tambahan dari blade.
+             */
+            $jenisMap = [
+                'ulangan_harian' => 'Ulangan Harian',
+                'uts'            => 'UTS',
+                'uas'            => 'UAS',
+                'kuis'           => 'Kuis',
+                'quiz'           => 'Quiz',
+                'remedial'       => 'Remedial',
+            ];
+            $jenisLabel    = $jenisMap[$u->jenis] ?? ucfirst($u->jenis ?? '—');
             $sudahBerakhir = $u->sudahBerakhir();
-            {{--
-                FIX [Perf]: Gunakan $u->soal_count yang sudah di-load via withCount('soal')
-                di controller. Sebelumnya memanggil $u->soal()->count() langsung dari blade,
-                menyebabkan N+1 query (1 query per card ujian).
-            --}}
             $jumlahSoal    = $u->soal_count ?? 0;
         @endphp
         <div class="ujian-card">
             <div class="ujian-card-top">
                 <div class="ujian-mapel">
                     <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-                    {{ $u->mataPelajaran->nama_mapel ?? '—' }}
+                    {{ optional($u->mataPelajaran)->nama_mapel ?? '—' }}
                 </div>
                 <h3 class="ujian-judul">{{ $u->judul }}</h3>
                 <div class="ujian-meta">
+                    {{--
+                        FIX: class CSS dari jenis pakai variabel $u->jenis langsung,
+                        bukan interpolasi di dalam string PHP — aman di Blade.
+                    --}}
                     <span class="jenis-pill j-{{ $u->jenis }}">{{ $jenisLabel }}</span>
+
                     @if($u->durasi_menit)
                     <span class="meta-chip">
                         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                         {{ $u->durasi_menit }} menit
                     </span>
                     @endif
+
                     <span class="meta-chip">
                         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 11l3 3L22 4"/></svg>
                         KKM {{ $u->nilai_kkm ?? 0 }}
                     </span>
+
                     <span class="meta-chip">
                         <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
                         {{ $jumlahSoal }} soal
                     </span>
                 </div>
+
                 <div class="ujian-info-row">
-                    <span>Guru: <span class="ujian-guru">{{ $u->guru->nama_lengkap ?? '—' }}</span></span>
+                    <span>Guru: <span class="ujian-guru">{{ optional($u->guru)->nama_lengkap ?? '—' }}</span></span>
                     @if($u->tanggal)
                     <span>{{ \Carbon\Carbon::parse($u->tanggal)->translatedFormat('d M Y') }}</span>
                     @endif
                 </div>
             </div>
+
             <div class="ujian-card-footer">
+                {{-- Badge status --}}
                 <div>
                     @if($u->sesi_aktif)
-                        <span class="badge b-berlangsung"><span class="badge-dot"></span>Berlangsung</span>
+                        <span class="badge b-berlangsung">
+                            <span class="badge-dot"></span>Berlangsung
+                        </span>
                     @elseif(! $u->boleh_ikut)
-                        <span class="badge b-selesai"><span class="badge-dot"></span>Selesai ({{ $u->percobaan_ke }}x)</span>
+                        <span class="badge b-selesai">
+                            <span class="badge-dot"></span>Selesai ({{ $u->percobaan_ke }}x)
+                        </span>
                     @elseif($sudahBerakhir)
-                        <span style="font-size:12px;color:#dc2626;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif">Waktu habis</span>
+                        <span style="font-size:12px;color:#dc2626;font-weight:600;font-family:'Plus Jakarta Sans',sans-serif">
+                            Waktu habis
+                        </span>
                     @else
-                        <span class="badge b-aktif"><span class="badge-dot"></span>Tersedia</span>
+                        <span class="badge b-aktif">
+                            <span class="badge-dot"></span>Tersedia
+                        </span>
                     @endif
                 </div>
+
+                {{-- Tombol aksi --}}
                 <div>
                     @if($u->sesi_aktif)
-                        {{--
-                            Route kerjakan membutuhkan {ujian} bukan {sesi}.
-                            $u->id sudah benar karena $u adalah Ujian model.
-                        --}}
                         <a href="{{ route('siswa.ujian.kerjakan', $u->id) }}" class="btn btn-lanjut btn-sm">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                             Lanjutkan
@@ -154,39 +181,80 @@
         @endforeach
     </div>
 
-    {{-- Pagination --}}
+    {{--
+        FIX: Pagination manual dengan getUrlRange() bisa ParseError di Blade
+        karena Blade menginterpretasi ':' dalam ekspresi tertentu.
+        Ganti ke links() bawaan Laravel dengan view custom, ATAU
+        gunakan pendekatan range manual yang lebih aman tanpa getUrlRange().
+    --}}
     @if($ujian->hasPages())
     <div class="pag-wrap">
+
+        {{-- Prev --}}
         @if($ujian->onFirstPage())
-            <span class="pag-btn disabled">
+            <span class="pag-btn disabled" aria-disabled="true">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             </span>
         @else
-            <a href="{{ $ujian->previousPageUrl() }}" class="pag-btn">
+            <a href="{{ $ujian->previousPageUrl() }}" class="pag-btn" aria-label="Halaman sebelumnya">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             </a>
         @endif
-        @foreach($ujian->getUrlRange(1, $ujian->lastPage()) as $page => $url)
-            @if($page == $ujian->currentPage())
-                <span class="pag-btn active">{{ $page }}</span>
-            @elseif($page == 1 || $page == $ujian->lastPage() || abs($page - $ujian->currentPage()) <= 1)
-                <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-            @elseif(abs($page - $ujian->currentPage()) == 2)
-                <span class="pag-ellipsis">…</span>
+
+        {{--
+            FIX: Ganti getUrlRange() dengan range() PHP biasa + url() method.
+            getUrlRange() mengembalikan array asosiatif [page => url] yang
+            ketika di-loop di Blade bisa menyebabkan ParseError pada ':'.
+            Gunakan range(1, lastPage()) + paginator->url(page) yang lebih aman.
+        --}}
+        @php
+            $currentPage = $ujian->currentPage();
+            $lastPage    = $ujian->lastPage();
+            $ellipsisShown = ['before' => false, 'after' => false];
+        @endphp
+
+        @for($p = 1; $p <= $lastPage; $p++)
+            @php
+                $isFirst   = $p === 1;
+                $isLast    = $p === $lastPage;
+                $isCurrent = $p === $currentPage;
+                $isNear    = abs($p - $currentPage) <= 1;
+                $showPage  = $isFirst || $isLast || $isCurrent || $isNear;
+            @endphp
+
+            @if($showPage)
+                @if($isCurrent)
+                    <span class="pag-btn active">{{ $p }}</span>
+                @else
+                    <a href="{{ $ujian->url($p) }}" class="pag-btn">{{ $p }}</a>
+                @endif
+            @elseif(abs($p - $currentPage) === 2 && ! $isFirst && ! $isLast)
+                {{-- Tampilkan ellipsis hanya sekali di setiap sisi --}}
+                @if($p < $currentPage && ! $ellipsisShown['before'])
+                    <span class="pag-ellipsis">…</span>
+                    @php $ellipsisShown['before'] = true; @endphp
+                @elseif($p > $currentPage && ! $ellipsisShown['after'])
+                    <span class="pag-ellipsis">…</span>
+                    @php $ellipsisShown['after'] = true; @endphp
+                @endif
             @endif
-        @endforeach
+        @endfor
+
+        {{-- Next --}}
         @if($ujian->hasMorePages())
-            <a href="{{ $ujian->nextPageUrl() }}" class="pag-btn">
+            <a href="{{ $ujian->nextPageUrl() }}" class="pag-btn" aria-label="Halaman berikutnya">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
             </a>
         @else
-            <span class="pag-btn disabled">
+            <span class="pag-btn disabled" aria-disabled="true">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
             </span>
         @endif
+
     </div>
     @endif
-    @endif
+
+    @endif {{-- end if not empty --}}
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

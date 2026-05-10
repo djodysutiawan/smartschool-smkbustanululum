@@ -17,7 +17,9 @@ use Illuminate\Validation\Rule;
 class AbsensiController extends Controller
 {
     private const STATUS_LIST = ['hadir', 'telat', 'izin', 'sakit', 'alfa'];
-    private const METODE_LIST = ['manual', 'qr'];
+    private const METODE_LIST = ['manual', 'qr', 'qr_scan', 'wajah', 'rfid', 'import'];
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
     private function getGuru(): \App\Models\Guru
     {
@@ -32,13 +34,18 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Ambil kelas_id yang diajar guru ini.
+     * Ambil kelas_id yang diajar guru ini (di-cache di property untuk satu request).
      */
+    private ?\Illuminate\Support\Collection $cachedKelasIds = null;
+
     private function getKelasIds(): \Illuminate\Support\Collection
     {
-        return JadwalPelajaran::where('guru_id', $this->getGuruId())
-            ->pluck('kelas_id')
-            ->unique();
+        if ($this->cachedKelasIds === null) {
+            $this->cachedKelasIds = JadwalPelajaran::where('guru_id', $this->getGuruId())
+                ->pluck('kelas_id')
+                ->unique();
+        }
+        return $this->cachedKelasIds;
     }
 
     // ── INDEX ─────────────────────────────────────────────────────────────────
@@ -62,6 +69,7 @@ class AbsensiController extends Controller
 
         $absensi   = $query->orderByDesc('tanggal')->paginate(20)->withQueryString();
         $kelasList = Kelas::aktif()->whereIn('id', $kelasIds)->orderBy('nama_kelas')->get();
+        $statusList = self::STATUS_LIST;
 
         // Rekap hari ini
         $baseToday = Absensi::whereIn('kelas_id', $kelasIds)->whereDate('tanggal', today());
@@ -72,20 +80,29 @@ class AbsensiController extends Controller
             'alfa'  => (clone $baseToday)->where('status', 'alfa')->count(),
         ];
 
-        return view('guru.absensi.index', compact('absensi', 'kelasList', 'rekap'));
+        return view('guru.absensi.index', compact('absensi', 'kelasList', 'rekap', 'statusList'));
     }
 
-    // ── CREATE (input satu siswa) ─────────────────────────────────────────────
+    // ── CREATE (massal per kelas) ─────────────────────────────────────────────
 
     public function create(Request $request)
     {
         $guruId   = $this->getGuruId();
         $kelasIds = $this->getKelasIds();
 
-        $kelasList  = Kelas::aktif()->whereIn('id', $kelasIds)->orderBy('nama_kelas')->get();
-        $jadwalList = JadwalPelajaran::aktif()
+        $kelasList = Kelas::aktif()->whereIn('id', $kelasIds)->orderBy('nama_kelas')->get();
+
+        // Jadwal difilter per kelas jika kelas sudah dipilih, agar relevan
+        $jadwalQuery = JadwalPelajaran::aktif()
             ->with(['mataPelajaran', 'kelas'])
-            ->where('guru_id', $guruId)
+            ->where('guru_id', $guruId);
+
+        if ($request->filled('kelas_id')) {
+            $jadwalQuery->where('kelas_id', $request->kelas_id);
+        }
+
+        $jadwalList = $jadwalQuery->orderByRaw("FIELD(hari,'senin','selasa','rabu','kamis','jumat','sabtu')")
+            ->orderBy('jam_mulai')
             ->get();
 
         $siswaList = collect();
@@ -112,7 +129,7 @@ class AbsensiController extends Controller
             'siswa_id'            => ['required', 'exists:siswa,id'],
             'kelas_id'            => ['required', 'exists:kelas,id'],
             'jadwal_pelajaran_id' => ['nullable', 'exists:jadwal_pelajaran,id'],
-            'tanggal'             => ['required', 'date'],
+            'tanggal'             => ['required', 'date', 'before_or_equal:today'],
             'status'              => ['required', Rule::in(self::STATUS_LIST)],
             'metode'              => ['nullable', Rule::in(self::METODE_LIST)],
             'jam_masuk'           => ['nullable', 'date_format:H:i'],
@@ -123,15 +140,25 @@ class AbsensiController extends Controller
 
         abort_unless($kelasIds->contains($validated['kelas_id']), 403, 'Anda tidak memiliki akses ke kelas ini.');
 
-        // Cek duplikat
-        $exists = Absensi::where('siswa_id', $validated['siswa_id'])
-            ->where('kelas_id', $validated['kelas_id'])
-            ->whereDate('tanggal', $validated['tanggal'])
-            ->exists();
-
-        if ($exists) {
+        // Validasi siswa terdaftar di kelas tersebut
+        $siswa = Siswa::findOrFail($validated['siswa_id']);
+        if ($siswa->kelas_id !== (int) $validated['kelas_id']) {
             return back()->withInput()
-                ->with('error', 'Siswa ini sudah memiliki data absensi pada tanggal tersebut.');
+                ->with('error', 'Siswa tidak terdaftar di kelas yang dipilih.');
+        }
+
+        // Cek duplikat (per siswa, kelas, tanggal, jadwal)
+        $duplikatQuery = Absensi::where('siswa_id', $validated['siswa_id'])
+            ->where('kelas_id', $validated['kelas_id'])
+            ->whereDate('tanggal', $validated['tanggal']);
+
+        if (! empty($validated['jadwal_pelajaran_id'])) {
+            $duplikatQuery->where('jadwal_pelajaran_id', $validated['jadwal_pelajaran_id']);
+        }
+
+        if ($duplikatQuery->exists()) {
+            return back()->withInput()
+                ->with('error', 'Siswa ini sudah memiliki data absensi pada tanggal dan jadwal tersebut.');
         }
 
         if ($request->hasFile('path_surat_izin')) {
@@ -152,12 +179,11 @@ class AbsensiController extends Controller
 
     public function storeMassal(Request $request)
     {
-        $guruId   = $this->getGuruId();
         $kelasIds = $this->getKelasIds();
 
         $request->validate([
             'kelas_id'            => ['required', 'exists:kelas,id'],
-            'tanggal'             => ['required', 'date'],
+            'tanggal'             => ['required', 'date', 'before_or_equal:today'],
             'jadwal_pelajaran_id' => ['nullable', 'exists:jadwal_pelajaran,id'],
             'siswa'               => ['required', 'array', 'min:1'],
             'siswa.*.siswa_id'    => ['required', 'exists:siswa,id'],
@@ -168,6 +194,7 @@ class AbsensiController extends Controller
         ], [
             'kelas_id.required'         => 'Kelas wajib dipilih.',
             'tanggal.required'          => 'Tanggal absensi wajib diisi.',
+            'tanggal.before_or_equal'   => 'Tanggal tidak boleh melebihi hari ini.',
             'siswa.required'            => 'Tidak ada data siswa yang dikirim.',
             'siswa.*.siswa_id.required' => 'Data siswa tidak valid.',
             'siswa.*.status.required'   => 'Status kehadiran wajib dipilih untuk setiap siswa.',
@@ -178,21 +205,26 @@ class AbsensiController extends Controller
 
         $dicatatOleh       = Auth::id();
         $tanggal           = $request->tanggal;
-        $kelasId           = $request->kelas_id;
-        $jadwalPelajaranId = $request->jadwal_pelajaran_id;
-        $suratFiles        = $request->file('surat', []);
+        $kelasId           = (int) $request->kelas_id;
+        $jadwalPelajaranId = $request->jadwal_pelajaran_id ?: null;
+        // file() bisa null jika tidak ada upload sama sekali
+        $suratFiles        = $request->hasFile('surat') ? $request->file('surat') : [];
         $created           = 0;
         $skipped           = 0;
 
         foreach ($request->siswa as $item) {
-            $siswaId = $item['siswa_id'];
+            $siswaId = (int) $item['siswa_id'];
 
-            $exists = Absensi::where('siswa_id', $siswaId)
+            // Cek duplikat per siswa+kelas+tanggal+jadwal
+            $duplikatQuery = Absensi::where('siswa_id', $siswaId)
                 ->where('kelas_id', $kelasId)
-                ->whereDate('tanggal', $tanggal)
-                ->exists();
+                ->whereDate('tanggal', $tanggal);
 
-            if ($exists) {
+            if ($jadwalPelajaranId) {
+                $duplikatQuery->where('jadwal_pelajaran_id', $jadwalPelajaranId);
+            }
+
+            if ($duplikatQuery->exists()) {
                 $skipped++;
                 continue;
             }
@@ -206,11 +238,12 @@ class AbsensiController extends Controller
                 'metode'              => 'manual',
                 'jam_masuk'           => $item['jam_masuk']  ?? null,
                 'jam_keluar'          => $item['jam_keluar'] ?? null,
-                'keterangan'          => $item['keterangan'] ?? null,
+                'keterangan'          => isset($item['keterangan']) && $item['keterangan'] !== '' ? $item['keterangan'] : null,
                 'dicatat_oleh'        => $dicatatOleh,
             ];
 
-            if (isset($suratFiles[$siswaId]) && $suratFiles[$siswaId]->isValid()) {
+            // Upload surat izin jika ada (key berdasarkan siswa_id)
+            if (isset($suratFiles[$siswaId]) && is_object($suratFiles[$siswaId]) && $suratFiles[$siswaId]->isValid()) {
                 $data['path_surat_izin'] = $suratFiles[$siswaId]
                     ->store('absensi/surat_izin', 'public');
             }
@@ -232,7 +265,7 @@ class AbsensiController extends Controller
     public function show(Absensi $absensi)
     {
         $this->authorizeAbsensi($absensi);
-        $absensi->load(['siswa', 'kelas', 'jadwalPelajaran', 'dicatatOleh']);
+        $absensi->load(['siswa', 'kelas', 'jadwalPelajaran.mataPelajaran', 'dicatatOleh']);
         return view('guru.absensi.show', compact('absensi'));
     }
 
@@ -249,11 +282,16 @@ class AbsensiController extends Controller
         $jadwalList = JadwalPelajaran::aktif()
             ->with(['mataPelajaran', 'kelas'])
             ->where('guru_id', $guruId)
+            ->where('kelas_id', $absensi->kelas_id)
             ->get();
         $statusList = self::STATUS_LIST;
+        // FIX: $metodeList was missing — now passed to view
+        $metodeList = self::METODE_LIST;
+
+        $absensi->load(['siswa', 'kelas', 'jadwalPelajaran.mataPelajaran']);
 
         return view('guru.absensi.edit',
-            compact('absensi', 'kelasList', 'siswaList', 'jadwalList', 'statusList'));
+            compact('absensi', 'kelasList', 'siswaList', 'jadwalList', 'statusList', 'metodeList'));
     }
 
     // ── UPDATE ────────────────────────────────────────────────────────────────
@@ -264,6 +302,7 @@ class AbsensiController extends Controller
 
         $validated = $request->validate([
             'status'          => ['required', Rule::in(self::STATUS_LIST)],
+            'metode'          => ['nullable', Rule::in(self::METODE_LIST)],
             'jam_masuk'       => ['nullable', 'date_format:H:i'],
             'jam_keluar'      => ['nullable', 'date_format:H:i', 'after:jam_masuk'],
             'keterangan'      => ['nullable', 'string', 'max:500'],
@@ -271,6 +310,7 @@ class AbsensiController extends Controller
         ], $this->messages());
 
         if ($request->hasFile('path_surat_izin')) {
+            // Hapus file lama jika ada
             if ($absensi->path_surat_izin) {
                 Storage::disk('public')->delete($absensi->path_surat_izin);
             }
@@ -307,6 +347,7 @@ class AbsensiController extends Controller
         $kelasIds  = $this->getKelasIds();
         $kelasList = Kelas::aktif()->whereIn('id', $kelasIds)->orderBy('nama_kelas')->get();
 
+        // Jika kelas_id belum dipilih, tampilkan form kosong
         if (! $request->filled('kelas_id')) {
             return view('guru.absensi.rekap', [
                 'absensi'   => null,
@@ -316,10 +357,16 @@ class AbsensiController extends Controller
             ]);
         }
 
+        // Validasi filter lengkap
         $request->validate([
             'kelas_id'       => ['required', 'exists:kelas,id'],
             'tanggal_dari'   => ['required', 'date'],
             'tanggal_sampai' => ['required', 'date', 'after_or_equal:tanggal_dari'],
+        ], [
+            'kelas_id.required'             => 'Kelas wajib dipilih.',
+            'tanggal_dari.required'         => 'Tanggal dari wajib diisi.',
+            'tanggal_sampai.required'       => 'Tanggal sampai wajib diisi.',
+            'tanggal_sampai.after_or_equal' => 'Tanggal sampai harus sama atau setelah tanggal dari.',
         ]);
 
         abort_unless($kelasIds->contains($request->kelas_id), 403, 'Anda tidak memiliki akses ke kelas ini.');
@@ -327,6 +374,7 @@ class AbsensiController extends Controller
         $absensi = Absensi::with('siswa')
             ->where('kelas_id', $request->kelas_id)
             ->whereBetween('tanggal', [$request->tanggal_dari, $request->tanggal_sampai])
+            ->orderBy('tanggal')
             ->get()
             ->groupBy('siswa_id');
 
@@ -335,14 +383,8 @@ class AbsensiController extends Controller
         return view('guru.absensi.rekap', compact('absensi', 'kelas', 'kelasList', 'request'));
     }
 
-    // ── JADWAL: Daftar jadwal dengan status sesi QR ───────────────────────────
-    /**
-     * Menampilkan daftar jadwal pelajaran aktif guru ini,
-     * beserta status sesi QR hari ini (aktif / belum dibuat / kadaluarsa).
-     *
-     * Guru bisa klik "Tampilkan QR" atau "Buat Sesi QR" dari sini.
-     * Ini adalah pintu masuk dari sidebar "QR Per Pelajaran".
-     */
+    // ── JADWAL: Daftar jadwal + status sesi QR hari ini ──────────────────────
+
     public function jadwal(Request $request)
     {
         $guruId = $this->getGuruId();
@@ -359,7 +401,6 @@ class AbsensiController extends Controller
         ];
         $hariIni = $hariIndo[now()->format('l')] ?? 'senin';
 
-        // Semua jadwal aktif guru, dikelompokkan per hari
         $jadwalList = JadwalPelajaran::with(['mataPelajaran', 'kelas', 'ruang'])
             ->where('guru_id', $guruId)
             ->where('is_active', true)
@@ -374,11 +415,9 @@ class AbsensiController extends Controller
             ->get()
             ->keyBy('jadwal_pelajaran_id');
 
-        // Filter hanya hari ini jika diminta
         $jadwalHariIni = $jadwalList->where('hari', $hariIni);
         $jadwalPerHari = $jadwalList->groupBy('hari');
-
-        $hariList = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+        $hariList      = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
 
         return view('guru.absensi.jadwal', compact(
             'jadwalList',
@@ -391,22 +430,11 @@ class AbsensiController extends Controller
     }
 
     // ── SCAN QR: Halaman kamera / input token ────────────────────────────────
-    /**
-     * Halaman scan QR pelajaran — dari sisi guru (verifikasi manual).
-     *
-     * Guru bisa:
-     * 1. Membuka kamera untuk scan QR siswa (via JS).
-     * 2. Menginput token/kode QR secara manual jika kamera tidak tersedia.
-     *
-     * Ini berbeda dengan BarcodeKelasController::showSesi() yang menampilkan
-     * QR untuk ditayangkan ke siswa. Di sini guru yang men-scan QR siswa.
-     */
+
     public function scan(Request $request)
     {
-        $guruId = $this->getGuruId();
-        $user   = Auth::user();
+        $user = Auth::user();
 
-        // Sesi QR aktif milik guru ini hari ini — untuk dipilih di dropdown
         $sesiAktif = SesiQr::where('dibuat_oleh', $user->id)
             ->whereDate('tanggal', today())
             ->where('is_active', true)
@@ -417,49 +445,41 @@ class AbsensiController extends Controller
     }
 
     /**
-     * Proses hasil scan QR dari guru.
+     * Proses scan QR oleh guru.
      *
-     * Alur:
-     * 1. Guru submit token QR (dari kamera atau input manual).
-     * 2. Sistem cari SesiQr berdasarkan kode_qr.
-     * 3. Validasi: sesi valid, belum kadaluarsa, siswa terdaftar di kelas.
-     * 4. Buat RiwayatScanQr dan Absensi jika lolos.
+     * Form mengirimkan:
+     *   - sesi_qr_id : ID sesi QR yang dipilih (wajib dipilih dari dropdown)
+     *   - siswa_kode  : NIS atau kode barcode siswa (format "SISWA-{id}" atau NIS langsung)
      *
-     * Catatan: Flow ini untuk verifikasi manual oleh guru.
-     * Scan normal dari HP siswa menggunakan endpoint publik/API terpisah.
+     * PERBAIKAN: Pisahkan pencarian SesiQr dan pencarian Siswa.
+     * kode_qr pada SesiQr adalah UUID — bukan identitas siswa.
      */
     public function prosesScan(Request $request)
     {
-        $guruId = $this->getGuruId();
-        $user   = Auth::user();
+        $user = Auth::user();
 
         $request->validate([
-            'kode_qr'    => ['required', 'string'],
-            'sesi_qr_id' => ['nullable', 'exists:sesi_qr,id'],
+            'sesi_qr_id' => ['required', 'exists:sesi_qr,id'],
+            'siswa_kode'  => ['required', 'string', 'max:100'],
         ], [
-            'kode_qr.required' => 'Kode QR wajib diisi.',
+            'sesi_qr_id.required' => 'Sesi QR wajib dipilih.',
+            'sesi_qr_id.exists'   => 'Sesi QR tidak ditemukan.',
+            'siswa_kode.required' => 'Kode barcode siswa wajib diisi.',
         ]);
 
-        $kodeQr = trim($request->kode_qr);
+        $siswaKode = trim($request->siswa_kode);
 
-        // ── Cari sesi QR berdasarkan kode ────────────────────────────────────
-        $sesiQr = SesiQr::where('kode_qr', $kodeQr)
-            ->where('dibuat_oleh', $user->id) // hanya sesi milik guru ini
+        // ── Cari sesi QR berdasarkan ID (hanya milik guru ini) ───────────────
+        $sesiQr = SesiQr::where('id', $request->sesi_qr_id)
+            ->where('dibuat_oleh', $user->id)
             ->first();
-
-        // Jika guru memilih sesi dari dropdown, gunakan itu
-        if (! $sesiQr && $request->filled('sesi_qr_id')) {
-            $sesiQr = SesiQr::where('id', $request->sesi_qr_id)
-                ->where('dibuat_oleh', $user->id)
-                ->first();
-        }
 
         if (! $sesiQr) {
             return back()->withInput()
-                ->with('error', 'Kode QR tidak ditemukan atau bukan milik sesi Anda.');
+                ->with('error', 'Sesi QR tidak ditemukan atau bukan milik Anda.');
         }
 
-        // ── Validasi sesi aktif ───────────────────────────────────────────────
+        // ── Validasi sesi aktif & belum kadaluarsa ───────────────────────────
         if (! $sesiQr->is_active) {
             return back()->withInput()
                 ->with('error', 'Sesi QR sudah tidak aktif.');
@@ -470,20 +490,22 @@ class AbsensiController extends Controller
                 ->with('error', 'Sesi QR sudah kadaluarsa pada ' . $sesiQr->kadaluarsa_pada->format('H:i') . '.');
         }
 
-        // ── Cari siswa dari kode ──────────────────────────────────────────────
+        // ── Cari siswa berdasarkan kode barcode ──────────────────────────────
         // Format barcode siswa: "SISWA-{siswa_id}" atau NIS langsung
         $siswa = null;
-        if (str_starts_with($kodeQr, 'SISWA-')) {
-            $siswaId = (int) str_replace('SISWA-', '', $kodeQr);
-            $siswa   = \App\Models\Siswa::find($siswaId);
-        } else {
-            // Coba cari by NIS
-            $siswa = \App\Models\Siswa::where('nis', $kodeQr)->first();
+        if (str_starts_with($siswaKode, 'SISWA-')) {
+            $siswaId = (int) str_replace('SISWA-', '', $siswaKode);
+            $siswa   = Siswa::find($siswaId);
+        }
+
+        // Fallback: cari berdasarkan NIS
+        if (! $siswa) {
+            $siswa = Siswa::where('nis', $siswaKode)->first();
         }
 
         if (! $siswa) {
             return back()->withInput()
-                ->with('error', 'Siswa tidak ditemukan untuk kode QR ini.');
+                ->with('error', "Siswa dengan kode '{$siswaKode}' tidak ditemukan.");
         }
 
         // ── Validasi siswa terdaftar di kelas sesi ────────────────────────────
@@ -492,10 +514,10 @@ class AbsensiController extends Controller
                 ->with('error', "Siswa {$siswa->nama_lengkap} tidak terdaftar di kelas sesi QR ini.");
         }
 
-        // ── Cek duplikat scan ─────────────────────────────────────────────────
+        // ── Cek duplikat scan valid pada sesi ini ─────────────────────────────
         $sudahScan = RiwayatScanQr::where('sesi_qr_id', $sesiQr->id)
             ->where('siswa_id', $siswa->id)
-            ->where('status', 'valid')
+            ->where('status', RiwayatScanQr::STATUS_VALID)
             ->exists();
 
         if ($sudahScan) {
@@ -505,31 +527,36 @@ class AbsensiController extends Controller
 
         // ── Catat riwayat scan ────────────────────────────────────────────────
         RiwayatScanQr::create([
-            'sesi_qr_id' => $sesiQr->id,
-            'siswa_id'   => $siswa->id,
-            'status'     => 'valid',
+            'sesi_qr_id'   => $sesiQr->id,
+            'siswa_id'     => $siswa->id,
+            'status'       => RiwayatScanQr::STATUS_VALID,
+            'hasil'        => 'berhasil',
             'di_scan_pada' => now(),
-            'ip_address' => $request->ip(),
+            'ip_address'   => $request->ip(),
+            'user_agent'   => $request->userAgent(),
         ]);
 
-        // ── Buat atau update absensi ──────────────────────────────────────────
-        $kondisi = [
-            'siswa_id' => $siswa->id,
-            'tanggal'  => $sesiQr->tanggal->toDateString(),
-        ];
+        // ── Buat absensi jika belum ada ───────────────────────────────────────
+        // Cek berdasarkan siswa + tanggal + (jadwal atau sesi_qr)
+        $sudahAbsen = false;
         if ($sesiQr->jadwal_pelajaran_id) {
-            $kondisi['jadwal_pelajaran_id'] = $sesiQr->jadwal_pelajaran_id;
+            $sudahAbsen = Absensi::where('siswa_id', $siswa->id)
+                ->whereDate('tanggal', $sesiQr->tanggal->toDateString())
+                ->where('jadwal_pelajaran_id', $sesiQr->jadwal_pelajaran_id)
+                ->exists();
         } else {
-            $kondisi['sesi_qr_id'] = $sesiQr->id;
+            $sudahAbsen = Absensi::where('siswa_id', $siswa->id)
+                ->whereDate('tanggal', $sesiQr->tanggal->toDateString())
+                ->where('sesi_qr_id', $sesiQr->id)
+                ->exists();
         }
 
-        $sudahAbsen = Absensi::where($kondisi)->exists();
-
         if (! $sudahAbsen) {
-            // Tentukan status: telat jika jam scan > jam_mulai + toleransi 15 menit
-            $jamMulai  = $sesiQr->berlaku_mulai;
-            $toleransi = 15; // menit
-            $status    = now()->gt($jamMulai->copy()->addMinutes($toleransi)) ? 'telat' : 'hadir';
+            // Tentukan status: telat jika scan > jam_mulai + toleransi 15 menit
+            $toleransiMenit = 15;
+            $status = now()->gt($sesiQr->berlaku_mulai->copy()->addMinutes($toleransiMenit))
+                ? 'telat'
+                : 'hadir';
 
             Absensi::create([
                 'siswa_id'            => $siswa->id,
@@ -545,39 +572,41 @@ class AbsensiController extends Controller
             ]);
         }
 
-        return back()->with('success', "✓ {$siswa->nama_lengkap} berhasil dicatat hadir.");
+        return back()->with('success', "✓ {$siswa->nama_lengkap} berhasil dicatat " . ($sudahAbsen ? '(riwayat scan ditambahkan)' : 'hadir') . '.');
     }
 
     // ── HELPER: Otorisasi absensi ─────────────────────────────────────────────
 
     private function authorizeAbsensi(Absensi $absensi): void
     {
-        $kelasIds = $this->getKelasIds();
         abort_unless(
-            $kelasIds->contains($absensi->kelas_id),
+            $this->getKelasIds()->contains($absensi->kelas_id),
             403,
             'Anda tidak memiliki akses ke data absensi ini.'
         );
     }
 
+    // ── Pesan validasi ────────────────────────────────────────────────────────
+
     private function messages(): array
     {
         return [
-            'siswa_id.required'      => 'Siswa wajib dipilih.',
-            'siswa_id.exists'        => 'Siswa yang dipilih tidak valid.',
-            'kelas_id.required'      => 'Kelas wajib dipilih.',
-            'kelas_id.exists'        => 'Kelas yang dipilih tidak valid.',
-            'tanggal.required'       => 'Tanggal absensi wajib diisi.',
-            'tanggal.date'           => 'Format tanggal tidak valid.',
-            'status.required'        => 'Status kehadiran wajib dipilih.',
-            'status.in'              => 'Status kehadiran tidak valid.',
-            'metode.in'              => 'Metode absensi tidak valid.',
-            'jam_masuk.date_format'  => 'Format jam masuk harus HH:MM.',
-            'jam_keluar.date_format' => 'Format jam keluar harus HH:MM.',
-            'jam_keluar.after'       => 'Jam keluar harus setelah jam masuk.',
-            'keterangan.max'         => 'Keterangan maksimal 500 karakter.',
-            'path_surat_izin.mimes'  => 'Format surat izin harus PDF, JPG, JPEG, atau PNG.',
-            'path_surat_izin.max'    => 'Ukuran surat izin maksimal 2MB.',
+            'siswa_id.required'          => 'Siswa wajib dipilih.',
+            'siswa_id.exists'            => 'Siswa yang dipilih tidak valid.',
+            'kelas_id.required'          => 'Kelas wajib dipilih.',
+            'kelas_id.exists'            => 'Kelas yang dipilih tidak valid.',
+            'tanggal.required'           => 'Tanggal absensi wajib diisi.',
+            'tanggal.date'               => 'Format tanggal tidak valid.',
+            'tanggal.before_or_equal'    => 'Tanggal tidak boleh melebihi hari ini.',
+            'status.required'            => 'Status kehadiran wajib dipilih.',
+            'status.in'                  => 'Status kehadiran tidak valid.',
+            'metode.in'                  => 'Metode absensi tidak valid.',
+            'jam_masuk.date_format'      => 'Format jam masuk harus HH:MM.',
+            'jam_keluar.date_format'     => 'Format jam keluar harus HH:MM.',
+            'jam_keluar.after'           => 'Jam keluar harus setelah jam masuk.',
+            'keterangan.max'             => 'Keterangan maksimal 500 karakter.',
+            'path_surat_izin.mimes'      => 'Format surat izin harus PDF, JPG, JPEG, atau PNG.',
+            'path_surat_izin.max'        => 'Ukuran surat izin maksimal 2MB.',
         ];
     }
 }

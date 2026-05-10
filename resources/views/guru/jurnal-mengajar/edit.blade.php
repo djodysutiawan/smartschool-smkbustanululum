@@ -9,6 +9,7 @@
         --text:#0f172a;--text2:#475569;--text3:#94a3b8;
         --radius:10px;--radius-sm:7px;
     }
+    *,*::before,*::after{box-sizing:border-box}
     .page{padding:28px 28px 40px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
@@ -28,14 +29,33 @@
 
     /* Field */
     .field{display:flex;flex-direction:column;gap:5px;margin-bottom:16px}
+    .field:last-child{margin-bottom:0}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2)}
     .field label .req{color:#dc2626}
-    .field input[type=text],.field input[type=date],.field input[type=number],
-    .field select,.field textarea{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s,background .15s;width:100%}
-    .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--brand-500);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.08)}
+    .field input[type=text],
+    .field input[type=date],
+    .field input[type=number],
+    .field select,
+    .field textarea{
+        width:100%;
+        padding:9px 12px;
+        border:1px solid var(--border);
+        border-radius:var(--radius-sm);
+        font-family:'DM Sans',sans-serif;
+        font-size:13.5px;
+        color:var(--text);
+        background:var(--surface2);
+        outline:none;
+        transition:border-color .15s,background .15s;
+    }
+    .field input:focus,
+    .field textarea:focus,
+    .field select:focus{border-color:var(--brand-500);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.08)}
     .field .hint{font-size:11.5px;color:var(--text3)}
     .field .error-msg{font-size:11.5px;color:#dc2626;margin-top:2px}
-    .field input.is-error,.field textarea.is-error,.field select.is-error{border-color:#dc2626;background:#fff8f8}
+    .field input.is-error,
+    .field textarea.is-error,
+    .field select.is-error{border-color:#dc2626;background:#fff8f8}
 
     .two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}
     .three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
@@ -78,7 +98,8 @@
         </div>
         <div class="form-body">
             <form action="{{ route('guru.jurnal-mengajar.update', $jurnal->id) }}" method="POST">
-                @csrf @method('PUT')
+                @csrf
+                @method('PUT')
 
                 {{-- Sesi & Kelas --}}
                 <div class="form-section">
@@ -90,7 +111,7 @@
                     <div class="three-col">
                         <div class="field">
                             <label>Kelas <span class="req">*</span></label>
-                            <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-error' : '' }}">
+                            <select name="kelas_id" class="{{ $errors->has('kelas_id') ? 'is-error' : '' }}" required>
                                 <option value="">— Pilih Kelas —</option>
                                 @foreach($kelasList as $k)
                                     <option value="{{ $k->id }}" {{ old('kelas_id', $jurnal->kelas_id) == $k->id ? 'selected' : '' }}>
@@ -100,9 +121,10 @@
                             </select>
                             @error('kelas_id')<span class="error-msg">{{ $message }}</span>@enderror
                         </div>
+
                         <div class="field">
                             <label>Mata Pelajaran <span class="req">*</span></label>
-                            <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-error' : '' }}">
+                            <select name="mata_pelajaran_id" class="{{ $errors->has('mata_pelajaran_id') ? 'is-error' : '' }}" required>
                                 <option value="">— Pilih Mata Pelajaran —</option>
                                 @foreach($mapelList as $m)
                                     <option value="{{ $m->id }}" {{ old('mata_pelajaran_id', $jurnal->mata_pelajaran_id) == $m->id ? 'selected' : '' }}>
@@ -112,14 +134,17 @@
                             </select>
                             @error('mata_pelajaran_id')<span class="error-msg">{{ $message }}</span>@enderror
                         </div>
+
                         <div class="field">
                             <label>Jadwal Pelajaran <span style="font-weight:400;color:var(--text3)">(opsional)</span></label>
                             <select name="jadwal_pelajaran_id">
                                 <option value="">— Pilih Jadwal —</option>
                                 @foreach($jadwalList as $jp)
                                     <option value="{{ $jp->id }}" {{ old('jadwal_pelajaran_id', $jurnal->jadwal_pelajaran_id) == $jp->id ? 'selected' : '' }}>
-                                        {{ ucfirst($jp->hari) }} · {{ \Carbon\Carbon::parse($jp->jam_mulai)->format('H:i') }}–{{ \Carbon\Carbon::parse($jp->jam_selesai)->format('H:i') }}
-                                        · {{ $jp->kelas->nama_kelas ?? '' }} · {{ $jp->mataPelajaran->nama_mapel ?? '' }}
+                                        {{ ucfirst($jp->hari) }}
+                                        · {{ \Carbon\Carbon::parse($jp->jam_mulai)->format('H:i') }}–{{ \Carbon\Carbon::parse($jp->jam_selesai)->format('H:i') }}
+                                        · {{ $jp->kelas->nama_kelas ?? '' }}
+                                        · {{ $jp->mataPelajaran->nama_mapel ?? '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -131,9 +156,10 @@
                         <div class="field">
                             <label>Tanggal <span class="req">*</span></label>
                             <input type="date" name="tanggal"
-                                   value="{{ old('tanggal', $jurnal->tanggal) }}"
+                                   value="{{ old('tanggal', $jurnal->tanggal instanceof \Carbon\Carbon ? $jurnal->tanggal->format('Y-m-d') : $jurnal->tanggal) }}"
                                    max="{{ now()->toDateString() }}"
-                                   class="{{ $errors->has('tanggal') ? 'is-error' : '' }}">
+                                   class="{{ $errors->has('tanggal') ? 'is-error' : '' }}"
+                                   required>
                             @error('tanggal')<span class="error-msg">{{ $message }}</span>@enderror
                         </div>
                         <div class="field">
@@ -173,7 +199,8 @@
                                   placeholder="Tuliskan materi yang diajarkan pada pertemuan ini…"
                                   class="{{ $errors->has('materi_ajar') ? 'is-error' : '' }}"
                                   oninput="charCount('materiAjar','materiCount',2000)"
-                                  style="resize:vertical">{{ old('materi_ajar', $jurnal->materi_ajar) }}</textarea>
+                                  style="resize:vertical"
+                                  required>{{ old('materi_ajar', $jurnal->materi_ajar) }}</textarea>
                         @error('materi_ajar')<span class="error-msg">{{ $message }}</span>@enderror
                         <span class="char-count" id="materiCount">0 / 2000</span>
                     </div>

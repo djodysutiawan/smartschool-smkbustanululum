@@ -20,41 +20,36 @@
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
 
+    /* Readonly info strip */
+    .readonly-strip{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:20px;display:flex;gap:24px;flex-wrap:wrap}
+    .readonly-item .label{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
+    .readonly-item .val{font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:700;color:var(--text)}
+
     /* Form card */
     .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
     .form-card-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:8px}
     .form-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:var(--text)}
     .form-body{padding:20px}
 
-    /* Info readonly strip */
-    .readonly-strip{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:20px;display:flex;gap:24px;flex-wrap:wrap}
-    .readonly-item .label{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:2px}
-    .readonly-item .val{font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:700;color:var(--text)}
-
     /* Fields */
     .fields-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
     .field{display:flex;flex-direction:column;gap:5px}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2)}
-    .field label .req{color:#dc2626}
-    .field input[type=number],.field textarea,.field select{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s,background .15s;width:100%}
-    .field input:focus,.field textarea:focus,.field select:focus{border-color:var(--brand-500);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.08)}
+    .field input[type=number],.field textarea{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s,background .15s;width:100%;box-sizing:border-box}
+    .field input:focus,.field textarea:focus{border-color:var(--brand-500);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.08)}
     .field .hint{font-size:11.5px;color:var(--text3)}
     .field .error{font-size:11.5px;color:#dc2626;margin-top:2px}
     .field input.is-error,.field textarea.is-error{border-color:#dc2626;background:#fff8f8}
 
-    /* Nilai preview live */
+    /* Preview bar — konsisten dengan bobot model */
     .preview-bar{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 18px;margin-bottom:18px;display:flex;align-items:center;gap:20px;flex-wrap:wrap}
-    .preview-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3)}
-    .preview-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:var(--brand-600);min-width:48px}
-    .preview-predikat{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;padding:3px 14px;border-radius:99px}
+    .preview-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);margin-bottom:3px}
+    .preview-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;color:var(--brand-600);min-width:52px}
+    .preview-predikat{font-family:'Plus Jakarta Sans',sans-serif;font-size:15px;font-weight:800;padding:4px 16px;border-radius:99px}
 
     .form-actions{display:flex;gap:8px;justify-content:flex-end;padding-top:16px;border-top:1px solid var(--border)}
 
-    @media(max-width:768px){
-        .fields-grid{grid-template-columns:repeat(2,1fr)}
-        .page{padding:16px}
-        .header-actions{width:100%}
-    }
+    @media(max-width:768px){.fields-grid{grid-template-columns:repeat(2,1fr)}.page{padding:16px}.header-actions{width:100%}}
 </style>
 
 <div class="page">
@@ -67,7 +62,7 @@
         <div class="header-actions">
             <a href="{{ route('guru.nilai.show', $nilai->id) }}" class="btn btn-secondary">
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                Batal
+                Kembali
             </a>
         </div>
     </div>
@@ -79,11 +74,15 @@
         </div>
         <div class="form-body">
 
-            {{-- Readonly info --}}
+            {{-- Identitas siswa — readonly, tidak bisa diubah --}}
             <div class="readonly-strip">
                 <div class="readonly-item">
                     <p class="label">Siswa</p>
                     <p class="val">{{ $nilai->siswa->nama_lengkap ?? '—' }}</p>
+                </div>
+                <div class="readonly-item">
+                    <p class="label">NIS</p>
+                    <p class="val">{{ $nilai->siswa->nis ?? '—' }}</p>
                 </div>
                 <div class="readonly-item">
                     <p class="label">Kelas</p>
@@ -95,21 +94,24 @@
                 </div>
                 <div class="readonly-item">
                     <p class="label">Tahun Ajaran</p>
-                    <p class="val">{{ $nilai->tahunAjaran->tahun ?? '—' }} / {{ $nilai->tahunAjaran->semester ?? '—' }}</p>
+                    <p class="val">{{ $nilai->tahunAjaran->tahun ?? '—' }} – {{ ucfirst($nilai->tahunAjaran->semester ?? '—') }}</p>
                 </div>
             </div>
 
-            {{-- Preview nilai live --}}
+            {{-- Preview nilai akhir (bobot konsisten dengan model) --}}
             <div class="preview-bar">
                 <div>
-                    <p class="preview-label">Rata-rata Sementara</p>
+                    <p class="preview-label">Nilai Akhir Sementara*</p>
                     <p class="preview-val" id="previewNilai">—</p>
                 </div>
                 <div>
                     <p class="preview-label">Predikat</p>
-                    <span class="preview-predikat" id="previewPredikat" style="background:var(--surface3);color:var(--text3)">—</span>
+                    <span class="preview-predikat" id="previewPredikat"
+                          style="background:var(--surface3);color:var(--text3)">—</span>
                 </div>
-                <p style="font-size:12px;color:var(--text3);margin-top:auto">* Dihitung dari rata-rata 4 komponen yang diisi</p>
+                <p style="font-size:11.5px;color:var(--text3);margin-top:auto;align-self:flex-end">
+                    * Tugas 20% · Harian 30% · UTS 20% · UAS 30%, dihitung proporsional dari komponen yang diisi.
+                </p>
             </div>
 
             <form action="{{ route('guru.nilai.update', $nilai->id) }}" method="POST">
@@ -117,8 +119,9 @@
 
                 <div class="fields-grid">
                     <div class="field">
-                        <label>Nilai Tugas <span style="font-size:11px;color:var(--text3)">(0–100)</span></label>
-                        <input type="number" name="nilai_tugas" id="nilaiTugas" min="0" max="100" step="0.01"
+                        <label>Nilai Tugas <span style="font-size:11px;font-weight:400;color:var(--text3)">(bobot 20%)</span></label>
+                        <input type="number" name="nilai_tugas" id="nilaiTugas"
+                               min="0" max="100" step="0.01"
                                value="{{ old('nilai_tugas', $nilai->nilai_tugas) }}"
                                placeholder="Kosongkan jika belum ada"
                                class="{{ $errors->has('nilai_tugas') ? 'is-error' : '' }}"
@@ -126,8 +129,9 @@
                         @error('nilai_tugas')<span class="error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
-                        <label>Nilai Harian <span style="font-size:11px;color:var(--text3)">(0–100)</span></label>
-                        <input type="number" name="nilai_harian" id="nilaiHarian" min="0" max="100" step="0.01"
+                        <label>Nilai Harian <span style="font-size:11px;font-weight:400;color:var(--text3)">(bobot 30%)</span></label>
+                        <input type="number" name="nilai_harian" id="nilaiHarian"
+                               min="0" max="100" step="0.01"
                                value="{{ old('nilai_harian', $nilai->nilai_harian) }}"
                                placeholder="Kosongkan jika belum ada"
                                class="{{ $errors->has('nilai_harian') ? 'is-error' : '' }}"
@@ -135,8 +139,9 @@
                         @error('nilai_harian')<span class="error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
-                        <label>Nilai UTS <span style="font-size:11px;color:var(--text3)">(0–100)</span></label>
-                        <input type="number" name="nilai_uts" id="nilaiUts" min="0" max="100" step="0.01"
+                        <label>Nilai UTS <span style="font-size:11px;font-weight:400;color:var(--text3)">(bobot 20%)</span></label>
+                        <input type="number" name="nilai_uts" id="nilaiUts"
+                               min="0" max="100" step="0.01"
                                value="{{ old('nilai_uts', $nilai->nilai_uts) }}"
                                placeholder="Kosongkan jika belum ada"
                                class="{{ $errors->has('nilai_uts') ? 'is-error' : '' }}"
@@ -144,8 +149,9 @@
                         @error('nilai_uts')<span class="error">{{ $message }}</span>@enderror
                     </div>
                     <div class="field">
-                        <label>Nilai UAS <span style="font-size:11px;color:var(--text3)">(0–100)</span></label>
-                        <input type="number" name="nilai_uas" id="nilaiUas" min="0" max="100" step="0.01"
+                        <label>Nilai UAS <span style="font-size:11px;font-weight:400;color:var(--text3)">(bobot 30%)</span></label>
+                        <input type="number" name="nilai_uas" id="nilaiUas"
+                               min="0" max="100" step="0.01"
                                value="{{ old('nilai_uas', $nilai->nilai_uas) }}"
                                placeholder="Kosongkan jika belum ada"
                                class="{{ $errors->has('nilai_uas') ? 'is-error' : '' }}"
@@ -180,42 +186,68 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 @if(session('error'))
-Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+Swal.fire({ icon: 'error', title: 'Gagal!', text: @json(session('error')), confirmButtonColor: '#1f63db' });
 @endif
 @if($errors->any())
-Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
+Swal.fire({
+    icon: 'warning',
+    title: 'Perhatian!',
+    html: @json('<ul style="text-align:left;padding-left:16px">' . implode('', array_map(fn($e) => '<li>' . e($e) . '</li>', $errors->all())) . '</ul>'),
+    confirmButtonColor: '#1f63db'
+});
 @endif
 
 const PREDIKAT_COLORS = {
-    A: ['#dcfce7','#15803d'], B: ['#dbeafe','#1d4ed8'],
-    C: ['#fefce8','#a16207'], D: ['#fff7ed','#c2410c'], E: ['#fee2e2','#dc2626']
+    A: ['#dcfce7', '#15803d'],
+    B: ['#dbeafe', '#1d4ed8'],
+    C: ['#fefce8', '#a16207'],
+    D: ['#fff7ed', '#c2410c'],
+    E: ['#fee2e2', '#dc2626']
 };
 
-function updatePreview() {
-    const vals = [
-        parseFloat(document.getElementById('nilaiTugas').value),
-        parseFloat(document.getElementById('nilaiHarian').value),
-        parseFloat(document.getElementById('nilaiUts').value),
-        parseFloat(document.getElementById('nilaiUas').value),
-    ].filter(v => !isNaN(v));
+// Bobot sesuai model Nilai::hitungNilaiAkhir()
+const BOBOT = [
+    { id: 'nilaiTugas',  w: 0.20 },
+    { id: 'nilaiHarian', w: 0.30 },
+    { id: 'nilaiUts',    w: 0.20 },
+    { id: 'nilaiUas',    w: 0.30 },
+];
 
-    if (vals.length === 0) {
-        document.getElementById('previewNilai').textContent = '—';
-        const p = document.getElementById('previewPredikat');
-        p.textContent = '—'; p.style.background = 'var(--surface3)'; p.style.color = 'var(--text3)';
+function updatePreview() {
+    var totalNilai = 0, totalBobot = 0;
+
+    BOBOT.forEach(function(f) {
+        var raw = document.getElementById(f.id).value;
+        var val = parseFloat(raw);
+        if (raw !== '' && !isNaN(val)) {
+            var clamped = Math.max(0, Math.min(100, val));
+            totalNilai += clamped * f.w;
+            totalBobot += f.w;
+        }
+    });
+
+    var nilaiEl    = document.getElementById('previewNilai');
+    var predikatEl = document.getElementById('previewPredikat');
+
+    if (totalBobot === 0) {
+        nilaiEl.textContent = '—';
+        predikatEl.textContent = '—';
+        predikatEl.style.background = 'var(--surface3)';
+        predikatEl.style.color = 'var(--text3)';
         return;
     }
 
-    const avg = vals.reduce((a, b) => a + b, 0) / vals.length;
-    document.getElementById('previewNilai').textContent = avg.toFixed(1);
+    // Normalisasi proporsional (sama dengan model)
+    var avg = totalNilai / totalBobot * 100 / 100;
+    nilaiEl.textContent = avg.toFixed(1);
 
-    let predikat = avg >= 90 ? 'A' : avg >= 80 ? 'B' : avg >= 70 ? 'C' : avg >= 60 ? 'D' : 'E';
-    const p = document.getElementById('previewPredikat');
-    const [bg, fg] = PREDIKAT_COLORS[predikat];
-    p.textContent = predikat; p.style.background = bg; p.style.color = fg;
+    var predikat = avg >= 90 ? 'A' : avg >= 80 ? 'B' : avg >= 70 ? 'C' : avg >= 60 ? 'D' : 'E';
+    var colors   = PREDIKAT_COLORS[predikat];
+    predikatEl.textContent       = predikat;
+    predikatEl.style.background  = colors[0];
+    predikatEl.style.color       = colors[1];
 }
 
-// Init on load
 document.addEventListener('DOMContentLoaded', updatePreview);
 </script>
 </x-app-layout>

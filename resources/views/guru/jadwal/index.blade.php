@@ -47,7 +47,7 @@
     /* ── Filter card ── */
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px}
     .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-    .filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
+    .filter-row select{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;cursor:pointer}
     .filter-row select:focus{border-color:var(--brand-500);background:#fff}
     .filter-sep{flex:1}
     .btn-filter{height:36px;padding:0 18px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
@@ -72,6 +72,11 @@
     .jadwal-card .jc-ruang{font-size:11px;color:var(--text3);margin-top:4px;display:flex;align-items:center;gap:4px}
     .hari-empty{padding:16px;text-align:center;font-size:12px;color:var(--text3)}
 
+    /* ── Badge "sedang berlangsung" ── */
+    .jc-live{display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#b45309;background:#fef3c7;border:1px solid #fde68a;border-radius:99px;padding:2px 7px;margin-bottom:5px}
+    .jc-live-dot{width:5px;height:5px;border-radius:50%;background:#d97706;animation:pulse 1.4s ease-in-out infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
     /* ── Table view ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
@@ -85,6 +90,7 @@
     tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
     tbody tr:last-child{border-bottom:none}
     tbody tr:hover{background:#fafbff}
+    tbody tr.row-live{background:#fffbeb}
     td{padding:10px 14px;color:var(--text);vertical-align:middle}
     td.center{text-align:center}
     td.muted{color:var(--text3)}
@@ -93,14 +99,15 @@
     /* ── Badges ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .badge-aktif  {background:#dcfce7;color:#15803d} .badge-aktif  .badge-dot{background:#15803d}
+    .badge-aktif   {background:#dcfce7;color:#15803d} .badge-aktif   .badge-dot{background:#15803d}
     .badge-nonaktif{background:#fee2e2;color:#dc2626} .badge-nonaktif .badge-dot{background:#dc2626}
+    .badge-live    {background:#fef3c7;color:#b45309} .badge-live    .badge-dot{background:#d97706;animation:pulse 1.4s ease-in-out infinite}
 
     /* ── Pill hari ── */
     .pill-hari{display:inline-flex;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;background:var(--brand-50);color:var(--brand-700)}
 
     /* ── Two-line cell ── */
-    .two-line .primary{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
+    .two-line .primary  {font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
     .two-line .secondary{font-size:12px;color:var(--text3);margin-top:1px}
 
     /* ── Action group ── */
@@ -112,7 +119,7 @@
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
     .empty-sub{font-size:13px;color:var(--text3)}
 
-    /* ── Info banner ── */
+    /* ── Info / alert banner ── */
     .info-banner{background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius-sm);padding:11px 16px;display:flex;align-items:center;gap:10px;margin-bottom:16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--brand-700)}
 
     @media(max-width:640px){
@@ -120,6 +127,7 @@
         .page{padding:16px}
         .header-actions{width:100%}
         .weekly-grid{grid-template-columns:1fr}
+        .filter-sep{display:none}
     }
 </style>
 
@@ -147,6 +155,7 @@
     </div>
 
     {{-- ── Stats ── --}}
+    {{-- Stats dihitung dari SEMUA jadwal guru (sebelum filter), bukan dari $jadwal --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -155,7 +164,7 @@
             <div>
                 <p class="stat-label">Total Jadwal</p>
                 <p class="stat-val">{{ $jadwal->count() }}</p>
-                <p class="stat-sub">semua hari</p>
+                <p class="stat-sub">{{ request()->hasAny(['hari','kelas_id','is_active']) ? 'hasil filter' : 'semua hari' }}</p>
             </div>
         </div>
         <div class="stat-card">
@@ -190,8 +199,8 @@
         </div>
     </div>
 
-    {{-- ── Info banner jika tidak ada jadwal ── --}}
-    @if($jadwal->isEmpty())
+    {{-- ── Info banner jika tidak ada jadwal sama sekali ── --}}
+    @if($jadwal->isEmpty() && !request()->hasAny(['hari','kelas_id','is_active']))
     <div class="info-banner">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         Belum ada jadwal mengajar yang ditetapkan untuk akun Anda. Hubungi admin jika ada kesalahan.
@@ -202,6 +211,8 @@
     <div class="filter-card">
         <form method="GET" action="{{ route('guru.jadwal.index') }}">
             <div class="filter-row">
+
+                {{-- Filter Hari --}}
                 <select name="hari">
                     <option value="">Semua Hari</option>
                     @foreach($hariList as $h)
@@ -211,15 +222,17 @@
                     @endforeach
                 </select>
 
+                {{-- Filter Kelas — dari $kelasOptions (semua kelas guru, tidak terpengaruh filter) --}}
                 <select name="kelas_id">
                     <option value="">Semua Kelas</option>
-                    @foreach($jadwal->pluck('kelas')->unique('id')->filter() as $k)
+                    @foreach($kelasOptions as $k)
                         <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
                             {{ $k->nama_kelas }}
                         </option>
                     @endforeach
                 </select>
 
+                {{-- Filter Status --}}
                 <select name="is_active">
                     <option value="">Semua Status</option>
                     <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Aktif</option>
@@ -228,7 +241,9 @@
 
                 <div class="filter-sep"></div>
 
-                <a href="{{ route('guru.jadwal.index') }}" class="btn-reset">Reset</a>
+                @if(request()->hasAny(['hari','kelas_id','is_active']))
+                    <a href="{{ route('guru.jadwal.index') }}" class="btn-reset">Reset</a>
+                @endif
                 <button type="submit" class="btn-filter">Terapkan</button>
             </div>
         </form>
@@ -250,17 +265,29 @@
             </div>
         @else
             <div class="weekly-grid">
-                @foreach($hariList as $hari)
-                    @php $jadwalHari = $jadwalPerHari->get($hari, collect()); @endphp
+                {{--
+                    $jadwalPerHari sudah berurutan sesuai HARI_LIST dari controller.
+                    Setiap hari selalu muncul, bahkan jika kosong.
+                --}}
+                @foreach($jadwalPerHari as $hari => $jadwalHari)
                     <div class="hari-col">
                         <div class="hari-header">
                             <span class="hari-name">{{ ucfirst($hari) }}</span>
                             <span class="hari-count">{{ $jadwalHari->count() }}</span>
                         </div>
                         <div class="hari-body">
-                            @forelse($jadwalHari as $j)
+                            @forelse($jadwalHari->sortBy('jam_mulai') as $j)
+                                @php $sedangBerlangsung = $j->isSedangBerlangsung(); @endphp
                                 <a href="{{ route('guru.jadwal.show', $j->id) }}"
                                    class="jadwal-card {{ $j->is_active ? '' : 'inactive' }}">
+
+                                    @if($sedangBerlangsung)
+                                        <div class="jc-live">
+                                            <span class="jc-live-dot"></span>
+                                            Berlangsung
+                                        </div>
+                                    @endif
+
                                     <p class="jc-time">
                                         {{ \Carbon\Carbon::parse($j->jam_mulai)->format('H:i') }}
                                         –
@@ -268,10 +295,11 @@
                                     </p>
                                     <p class="jc-mapel">{{ $j->mataPelajaran->nama_mapel ?? '—' }}</p>
                                     <p class="jc-kelas">{{ $j->kelas->nama_kelas ?? '—' }}</p>
+
                                     @if($j->ruang)
                                         <p class="jc-ruang">
                                             <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                                            {{ $j->ruang->nama_ruang ?? $j->ruang }}
+                                            {{ is_object($j->ruang) ? ($j->ruang->nama_ruang ?? '—') : $j->ruang }}
                                         </p>
                                     @endif
                                 </a>
@@ -309,6 +337,7 @@
                             <th>Kelas</th>
                             <th class="center">Hari</th>
                             <th>Jam</th>
+                            <th>Durasi</th>
                             <th>Ruang</th>
                             <th>Tahun Ajaran</th>
                             <th class="center">Status</th>
@@ -317,13 +346,16 @@
                     </thead>
                     <tbody>
                         @forelse($jadwal as $index => $j)
-                        <tr>
+                        @php $sedangBerlangsung = $j->isSedangBerlangsung(); @endphp
+                        <tr class="{{ $sedangBerlangsung ? 'row-live' : '' }}">
                             <td><span class="no-col">{{ $index + 1 }}</span></td>
 
                             <td>
                                 <div class="two-line">
                                     <p class="primary">{{ $j->mataPelajaran->nama_mapel ?? '—' }}</p>
-                                    <p class="secondary">{{ $j->mataPelajaran->kode_mapel ?? '' }}</p>
+                                    @if($j->mataPelajaran->kode_mapel ?? null)
+                                        <p class="secondary">{{ $j->mataPelajaran->kode_mapel }}</p>
+                                    @endif
                                 </div>
                             </td>
 
@@ -339,6 +371,9 @@
                                 {{ \Carbon\Carbon::parse($j->jam_selesai)->format('H:i') }}
                             </td>
 
+                            {{-- Gunakan accessor dari model --}}
+                            <td class="muted" style="font-size:12.5px">{{ $j->durasi_menit }} mnt</td>
+
                             <td class="muted" style="font-size:12.5px">
                                 {{ is_object($j->ruang) ? ($j->ruang->nama_ruang ?? '—') : ($j->ruang ?? '—') }}
                             </td>
@@ -348,7 +383,9 @@
                             </td>
 
                             <td class="center">
-                                @if($j->is_active)
+                                @if($sedangBerlangsung)
+                                    <span class="badge badge-live"><span class="badge-dot"></span>Berlangsung</span>
+                                @elseif($j->is_active)
                                     <span class="badge badge-aktif"><span class="badge-dot"></span>Aktif</span>
                                 @else
                                     <span class="badge badge-nonaktif"><span class="badge-dot"></span>Nonaktif</span>
@@ -363,7 +400,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9">
+                            <td colspan="10">
                                 <div class="empty-state">
                                     <div class="empty-icon">
                                         <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -383,7 +420,7 @@
 </div>
 
 <script>
-/* ── View toggle ── */
+/* ── View toggle dengan localStorage ── */
 const VIEW_KEY = 'jadwal_view_pref';
 
 function switchView(mode) {
@@ -406,10 +443,12 @@ function switchView(mode) {
     try { localStorage.setItem(VIEW_KEY, mode); } catch(e) {}
 }
 
-/* Restore preference */
-try {
-    const saved = localStorage.getItem(VIEW_KEY);
-    if (saved === 'tabel') switchView('tabel');
-} catch(e) {}
+/* Restore preference on load */
+(function () {
+    try {
+        const saved = localStorage.getItem(VIEW_KEY);
+        if (saved === 'tabel') switchView('tabel');
+    } catch(e) {}
+})();
 </script>
 </x-app-layout>

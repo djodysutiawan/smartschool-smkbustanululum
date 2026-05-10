@@ -1,6 +1,6 @@
 <x-app-layout>
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
     :root {
         --brand-700:#1750c0;--brand-600:#1f63db;--brand-500:#3582f0;
         --brand-100:#d9ebff;--brand-50:#eef6ff;
@@ -8,20 +8,23 @@
         --border:#e2e8f0;--border2:#cbd5e1;
         --text:#0f172a;--text2:#475569;--text3:#94a3b8;
         --radius:10px;--radius-sm:7px;
+        --success-bg:#dcfce7;--success-text:#15803d;--success-dot:#15803d;
+        --draft-bg:#f1f5f9;--draft-text:#64748b;--draft-dot:#94a3b8;
     }
 
-    .page{padding:28px 28px 40px}
+    /* ── Layout ── */
+    .page{padding:28px 28px 40px;max-width:1800px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
-    .header-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
+    /* ── Buttons ── */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap;line-height:1}
     .btn:hover{filter:brightness(.93)}
     .btn-primary{background:var(--brand-600);color:#fff}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
-    .btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
+    .btn-sm{padding:5px 10px;font-size:12px;border-radius:6px}
     .btn-edit{background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100)}
     .btn-edit:hover{background:var(--brand-100);filter:none}
     .btn-del{background:#fff0f0;color:#dc2626;border:1px solid #fecaca}
@@ -33,28 +36,30 @@
     .btn-toggle-off{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
     .btn-toggle-off:hover{background:#dcfce7;filter:none}
 
+    /* ── Stats Strip ── */
     .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
-    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px;transition:box-shadow .2s}
-    .stat-card:hover{box-shadow:0 4px 16px rgba(0,0,0,.06)}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .stat-icon.blue{background:#eff6ff}
     .stat-icon.green{background:#f0fdf4}
-    .stat-icon.purple{background:#faf5ff}
     .stat-icon.yellow{background:#fefce8}
+    .stat-icon.purple{background:#faf5ff}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
     .stat-sub{font-size:11px;color:var(--text3);margin-top:1px}
 
+    /* ── Filter Card ── */
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px}
     .filter-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
     .filter-row select,.filter-row input[type=text]{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
     .filter-row select:focus,.filter-row input:focus{border-color:var(--brand-500);background:#fff}
-    .filter-sep{flex:1}
-    .btn-filter{height:36px;padding:0 18px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s}
+    .filter-sep{flex:1;min-width:0}
+    .btn-filter{height:36px;padding:0 18px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer}
     .btn-filter:hover{background:var(--brand-700)}
-    .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;transition:background .15s}
+    .btn-reset{height:36px;padding:0 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center}
     .btn-reset:hover{background:var(--surface3)}
 
+    /* ── Table ── */
     .table-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .table-topbar{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--border)}
     .table-info{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
@@ -69,28 +74,31 @@
     tbody tr:hover{background:#fafbff}
     td{padding:10px 14px;color:var(--text);vertical-align:middle}
     td.center{text-align:center}
-    td.muted{color:var(--text3)}
+    td.muted{color:var(--text3);font-size:12.5px}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)}
 
+    /* ── Badges ── */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .badge-publish   {background:#dcfce7;color:#15803d} .badge-publish   .badge-dot{background:#15803d}
-    .badge-draft     {background:#f1f5f9;color:#64748b} .badge-draft     .badge-dot{background:#94a3b8}
-    .badge-file      {background:#eff6ff;color:#1d4ed8} .badge-file      .badge-dot{background:#3b82f6}
-    .badge-video     {background:#fdf4ff;color:#7c3aed} .badge-video     .badge-dot{background:#a855f7}
-    .badge-link      {background:#fefce8;color:#a16207} .badge-link      .badge-dot{background:#eab308}
-    .badge-teks      {background:#f0fdf4;color:#15803d} .badge-teks      .badge-dot{background:#22c55e}
+    .badge-publish{background:var(--success-bg);color:var(--success-text)} .badge-publish .badge-dot{background:var(--success-dot)}
+    .badge-draft  {background:var(--draft-bg);color:var(--draft-text)}     .badge-draft   .badge-dot{background:var(--draft-dot)}
+    .badge-file   {background:#eff6ff;color:#1d4ed8}  .badge-file  .badge-dot{background:#3b82f6}
+    .badge-video  {background:#fdf4ff;color:#7c3aed}  .badge-video .badge-dot{background:#a855f7}
+    .badge-link   {background:#fefce8;color:#a16207}  .badge-link  .badge-dot{background:#eab308}
+    .badge-teks   {background:#f0fdf4;color:#15803d}  .badge-teks  .badge-dot{background:#22c55e}
 
+    /* ── Cells ── */
     .two-line .primary{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
-    .two-line .secondary{font-size:12px;color:var(--text3);margin-top:1px}
+    .two-line .secondary{font-size:12px;color:var(--text3);margin-top:2px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .action-group{display:flex;align-items:center;gap:4px;justify-content:center;flex-wrap:nowrap}
 
-    .action-group{display:flex;align-items:center;gap:5px;justify-content:center;flex-wrap:wrap}
-
+    /* ── Empty State ── */
     .empty-state{padding:60px 20px;text-align:center}
     .empty-icon{width:56px;height:56px;background:var(--surface2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:5px}
     .empty-sub{font-size:13px;color:var(--text3)}
 
+    /* ── Pagination ── */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
     .pag-btns{display:flex;gap:4px;align-items:center}
@@ -98,12 +106,13 @@
     .pag-btn:hover{background:var(--surface2);border-color:var(--border2)}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
     .pag-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
-    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
+    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 2px}
 
+    @media(max-width:900px){.stats-strip{grid-template-columns:1fr 1fr}}
     @media(max-width:640px){
-        .stats-strip{grid-template-columns:1fr 1fr}
         .page{padding:16px}
-        .header-actions{width:100%}
+        .stats-strip{grid-template-columns:1fr 1fr}
+        .action-group{flex-wrap:wrap}
     }
 </style>
 
@@ -115,21 +124,13 @@
             <h1 class="page-title">Materi Pelajaran</h1>
             <p class="page-sub">Kelola materi pembelajaran untuk siswa</p>
         </div>
-        <div class="header-actions">
-            <a href="{{ route('guru.materi.create') }}" class="btn btn-primary">
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                Tambah Materi
-            </a>
-        </div>
+        <a href="{{ route('guru.materi.create') }}" class="btn btn-primary">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Tambah Materi
+        </a>
     </div>
 
-    {{-- Stats --}}
-    @php
-        $totalMateri    = $materi->total();
-        $totalPublish   = \App\Models\Materi::where('guru_id', auth()->user()->guru->id)->where('dipublikasikan', true)->count();
-        $totalDraft     = \App\Models\Materi::where('guru_id', auth()->user()->guru->id)->where('dipublikasikan', false)->count();
-        $totalFile      = \App\Models\Materi::where('guru_id', auth()->user()->guru->id)->where('jenis', 'file')->count();
-    @endphp
+    {{-- Stats — data dikirim dari controller, tidak ada query di blade --}}
     <div class="stats-strip">
         <div class="stat-card">
             <div class="stat-icon blue">
@@ -137,7 +138,7 @@
             </div>
             <div>
                 <p class="stat-label">Total Materi</p>
-                <p class="stat-val">{{ $totalMateri }}</p>
+                <p class="stat-val">{{ $stats['total'] }}</p>
                 <p class="stat-sub">semua materi</p>
             </div>
         </div>
@@ -147,7 +148,7 @@
             </div>
             <div>
                 <p class="stat-label">Dipublikasikan</p>
-                <p class="stat-val">{{ $totalPublish }}</p>
+                <p class="stat-val">{{ $stats['publish'] }}</p>
                 <p class="stat-sub">aktif terlihat siswa</p>
             </div>
         </div>
@@ -157,17 +158,17 @@
             </div>
             <div>
                 <p class="stat-label">Draft</p>
-                <p class="stat-val">{{ $totalDraft }}</p>
+                <p class="stat-val">{{ $stats['draft'] }}</p>
                 <p class="stat-sub">belum dipublikasi</p>
             </div>
         </div>
         <div class="stat-card">
             <div class="stat-icon purple">
-                <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
             <div>
                 <p class="stat-label">File / Dokumen</p>
-                <p class="stat-val">{{ $totalFile }}</p>
+                <p class="stat-val">{{ $stats['file'] }}</p>
                 <p class="stat-sub">materi berkas</p>
             </div>
         </div>
@@ -177,27 +178,28 @@
     <div class="filter-card">
         <form method="GET" action="{{ route('guru.materi.index') }}">
             <div class="filter-row">
-                <select name="kelas_id">
+                <select name="kelas_id" style="min-width:130px">
                     <option value="">Semua Kelas</option>
                     @foreach($kelasList as $k)
                         <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
                     @endforeach
                 </select>
 
-                <select name="mata_pelajaran_id">
+                <select name="mata_pelajaran_id" style="min-width:150px">
                     <option value="">Semua Mapel</option>
                     @foreach($mapelList as $m)
                         <option value="{{ $m->id }}" {{ request('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
                     @endforeach
                 </select>
 
-                <select name="dipublikasikan">
+                <select name="dipublikasikan" style="min-width:130px">
                     <option value="">Semua Status</option>
                     <option value="1" {{ request('dipublikasikan') === '1' ? 'selected' : '' }}>Dipublikasikan</option>
                     <option value="0" {{ request('dipublikasikan') === '0' ? 'selected' : '' }}>Draft</option>
                 </select>
 
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari judul materi…" style="min-width:200px">
+                <input type="text" name="search" value="{{ request('search') }}"
+                       placeholder="Cari judul materi…" style="min-width:200px">
 
                 <div class="filter-sep"></div>
                 <a href="{{ route('guru.materi.index') }}" class="btn-reset">Reset</a>
@@ -212,7 +214,7 @@
             <p class="table-info">
                 Daftar Materi
                 @if($materi->total() > 0)
-                    <span>— menampilkan {{ $materi->firstItem() }}–{{ $materi->lastItem() }} dari {{ $materi->total() }} data</span>
+                    <span>— {{ $materi->firstItem() }}–{{ $materi->lastItem() }} dari {{ $materi->total() }} data</span>
                 @else
                     <span>— tidak ada data</span>
                 @endif
@@ -223,15 +225,15 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width:48px">#</th>
+                        <th style="width:44px">#</th>
                         <th>Judul Materi</th>
                         <th>Kelas</th>
                         <th>Mata Pelajaran</th>
                         <th class="center">Jenis</th>
                         <th class="center">Status</th>
-                        <th>Dipublikasikan</th>
-                        <th class="center">Urutan</th>
-                        <th class="center" style="width:200px">Aksi</th>
+                        <th>Dipublikasikan Pada</th>
+                        <th class="center" style="width:52px">Urutan</th>
+                        <th class="center" style="width:230px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -242,12 +244,14 @@
                         <td>
                             <div class="two-line">
                                 <p class="primary">{{ $m->judul }}</p>
-                                <p class="secondary">{{ Str::limit($m->deskripsi ?? '—', 50) }}</p>
+                                @if($m->deskripsi)
+                                    <p class="secondary">{{ $m->deskripsi }}</p>
+                                @endif
                             </div>
                         </td>
 
-                        <td class="muted" style="font-size:12.5px">{{ $m->kelas->nama_kelas ?? '—' }}</td>
-                        <td class="muted" style="font-size:12.5px">{{ $m->mataPelajaran->nama_mapel ?? '—' }}</td>
+                        <td class="muted">{{ $m->kelas->nama_kelas ?? '—' }}</td>
+                        <td class="muted">{{ $m->mataPelajaran->nama_mapel ?? '—' }}</td>
 
                         <td class="center">
                             <span class="badge badge-{{ $m->jenis }}">
@@ -264,12 +268,14 @@
                             @endif
                         </td>
 
-                        <td class="muted" style="font-size:12.5px">
-                            {{ $m->dipublikasikan_pada ? \Carbon\Carbon::parse($m->dipublikasikan_pada)->format('d M Y, H:i') : '—' }}
+                        <td class="muted">
+                            {{ $m->dipublikasikan_pada?->format('d M Y, H:i') ?? '—' }}
                         </td>
 
                         <td class="center">
-                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text2)">{{ $m->urutan ?? '—' }}</span>
+                            <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text2)">
+                                {{ $m->urutan ?? '—' }}
+                            </span>
                         </td>
 
                         <td class="center">
@@ -277,25 +283,23 @@
                                 <a href="{{ route('guru.materi.show', $m->id) }}" class="btn btn-sm btn-detail">Detail</a>
                                 <a href="{{ route('guru.materi.edit', $m->id) }}" class="btn btn-sm btn-edit">Edit</a>
 
-                                {{-- Toggle Publish --}}
-                                <form action="{{ route('guru.materi.toggle-publish', $m->id) }}" method="POST" style="display:inline">
+                                <form action="{{ route('guru.materi.toggle-publish', $m->id) }}"
+                                      method="POST" style="display:inline">
                                     @csrf @method('PATCH')
                                     @if($m->dipublikasikan)
-                                        <button type="submit" class="btn btn-sm btn-toggle-on" title="Sembunyikan">Sembunyikan</button>
+                                        <button type="submit" class="btn btn-sm btn-toggle-on">Sembunyikan</button>
                                     @else
-                                        <button type="submit" class="btn btn-sm btn-toggle-off" title="Publikasikan">Publikasikan</button>
+                                        <button type="submit" class="btn btn-sm btn-toggle-off">Publikasikan</button>
                                     @endif
                                 </form>
 
-                                {{-- Delete --}}
-                                <form action="{{ route('guru.materi.destroy', $m->id) }}" method="POST"
-                                      id="delMateri-{{ $m->id }}" style="display:inline">
+                                <form action="{{ route('guru.materi.destroy', $m->id) }}"
+                                      method="POST" id="delForm-{{ $m->id }}" style="display:inline">
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(
-                                            document.getElementById('delMateri-{{ $m->id }}'),
-                                            '{{ addslashes($m->judul) }}'
-                                        )">Hapus</button>
+                                        onclick="confirmDelete('delForm-{{ $m->id }}', '{{ addslashes($m->judul) }}')">
+                                        Hapus
+                                    </button>
                                 </form>
                             </div>
                         </td>
@@ -320,7 +324,7 @@
         {{-- Pagination --}}
         @if($materi->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">Menampilkan {{ $materi->firstItem() }} – {{ $materi->lastItem() }} dari {{ $materi->total() }} materi</p>
+            <p class="pag-info">Menampilkan {{ $materi->firstItem() }}–{{ $materi->lastItem() }} dari {{ $materi->total() }} materi</p>
             <div class="pag-btns">
                 @if($materi->onFirstPage())
                     <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
@@ -352,23 +356,27 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 @if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+Swal.fire({
+    icon:'success', title:'Berhasil!',
+    text:@json(session('success')),
+    timer:2800, showConfirmButton:false, toast:true, position:'top-end'
+});
 @endif
 @if(session('error'))
 Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
 @endif
 
-function confirmDelete(form, judul) {
+function confirmDelete(formId, judul) {
     Swal.fire({
         title: 'Hapus Materi?',
-        html: `Materi <strong>${judul}</strong> akan dihapus permanen.`,
+        html: `Materi <strong>${judul}</strong> akan dihapus permanen beserta filenya.`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
         cancelButtonColor: '#64748b',
         confirmButtonText: 'Ya, Hapus!',
         cancelButtonText: 'Batal',
-    }).then(r => { if (r.isConfirmed) form.submit(); });
+    }).then(r => { if (r.isConfirmed) document.getElementById(formId).submit(); });
 }
 </script>
 </x-app-layout>

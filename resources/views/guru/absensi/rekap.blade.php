@@ -28,7 +28,7 @@
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text2)}
     .field select,.field input{height:36px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s}
     .field select:focus,.field input:focus{border-color:var(--brand-500);background:#fff}
-    .field .error{font-size:11.5px;color:#dc2626;margin-top:2px}
+    .field .error-msg{font-size:11.5px;color:#dc2626;margin-top:2px}
     .btn-filter{height:36px;padding:0 18px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:background .15s;align-self:flex-end}
     .btn-filter:hover{background:var(--brand-700)}
 
@@ -105,24 +105,26 @@
         <form action="{{ route('guru.absensi.rekap') }}" method="GET">
             <div class="filter-form-row">
                 <div class="field">
-                    <label>Kelas <span style="color:#dc2626">*</span></label>
-                    <select name="kelas_id" required style="min-width:180px">
+                    <label for="kelas_id">Kelas <span style="color:#dc2626">*</span></label>
+                    <select id="kelas_id" name="kelas_id" required style="min-width:180px">
                         <option value="">— Pilih Kelas —</option>
                         @foreach($kelasList as $k)
-                            <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
+                            <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                                {{ $k->nama_kelas }}
+                            </option>
                         @endforeach
                     </select>
-                    @error('kelas_id')<span class="error">{{ $message }}</span>@enderror
+                    @error('kelas_id')<span class="error-msg">{{ $message }}</span>@enderror
                 </div>
                 <div class="field">
-                    <label>Dari Tanggal <span style="color:#dc2626">*</span></label>
-                    <input type="date" name="tanggal_dari" value="{{ request('tanggal_dari') }}" required>
-                    @error('tanggal_dari')<span class="error">{{ $message }}</span>@enderror
+                    <label for="tanggal_dari">Dari Tanggal <span style="color:#dc2626">*</span></label>
+                    <input type="date" id="tanggal_dari" name="tanggal_dari" value="{{ request('tanggal_dari') }}" required>
+                    @error('tanggal_dari')<span class="error-msg">{{ $message }}</span>@enderror
                 </div>
                 <div class="field">
-                    <label>Sampai Tanggal <span style="color:#dc2626">*</span></label>
-                    <input type="date" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}" required>
-                    @error('tanggal_sampai')<span class="error">{{ $message }}</span>@enderror
+                    <label for="tanggal_sampai">Sampai Tanggal <span style="color:#dc2626">*</span></label>
+                    <input type="date" id="tanggal_sampai" name="tanggal_sampai" value="{{ request('tanggal_sampai') }}" required>
+                    @error('tanggal_sampai')<span class="error-msg">{{ $message }}</span>@enderror
                 </div>
                 <button type="submit" class="btn-filter">Lihat Rekap</button>
             </div>
@@ -131,27 +133,42 @@
 
     @if($absensi !== null)
         @php
-            $allAbsensi = $absensi->flatten();
-            $totalHadir = $allAbsensi->whereIn('status', ['hadir','telat'])->count();
-            $totalIzin  = $allAbsensi->where('status','izin')->count();
-            $totalSakit = $allAbsensi->where('status','sakit')->count();
-            $totalAlfa  = $allAbsensi->where('status','alfa')->count();
-            $totalTelat = $allAbsensi->where('status','telat')->count();
+            /*
+             * $absensi adalah hasil ->get()->groupBy('siswa_id')
+             * sehingga merupakan Collection of Collections (Illuminate\Support\Collection).
+             * flatten() meratakan satu level untuk mendapatkan semua record Absensi.
+             */
+            $allAbsensi = $absensi->flatten(1);
+
+            // Hadir murni (tidak termasuk telat) — sesuai status 'hadir'
+            $totalHadir = $allAbsensi->where('status', 'hadir')->count();
+            // Telat dihitung terpisah
+            $totalTelat = $allAbsensi->where('status', 'telat')->count();
+            $totalIzin  = $allAbsensi->where('status', 'izin')->count();
+            $totalSakit = $allAbsensi->where('status', 'sakit')->count();
+            $totalAlfa  = $allAbsensi->where('status', 'alfa')->count();
             $totalAll   = $allAbsensi->count();
+
+            // "Hadir efektif" = hadir + telat (untuk persentase kehadiran keseluruhan)
+            $totalHadirEfektif = $totalHadir + $totalTelat;
         @endphp
 
         {{-- Header Kelas --}}
         @if($kelas)
         <div style="background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius);padding:14px 20px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
             <div style="display:flex;align-items:center;gap:10px">
-                <div style="width:36px;height:36px;background:var(--brand-600);border-radius:9px;display:flex;align-items:center;justify-content:center">
+                <div style="width:36px;height:36px;background:var(--brand-600);border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
                     <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                 </div>
                 <div>
-                    <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;color:var(--brand-700)">{{ $kelas->nama_kelas }}</p>
+                    <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;color:var(--brand-700)">
+                        {{ $kelas->nama_kelas }}
+                    </p>
                     <p style="font-size:12px;color:var(--brand-600)">
-                        {{ \Carbon\Carbon::parse(request('tanggal_dari'))->format('d M Y') }} — {{ \Carbon\Carbon::parse(request('tanggal_sampai'))->format('d M Y') }}
-                        · {{ $absensi->count() }} siswa
+                        {{ \Carbon\Carbon::parse(request('tanggal_dari'))->translatedFormat('d M Y') }}
+                        —
+                        {{ \Carbon\Carbon::parse(request('tanggal_sampai'))->translatedFormat('d M Y') }}
+                        &middot; {{ $absensi->count() }} siswa
                     </p>
                 </div>
             </div>
@@ -190,7 +207,10 @@
         {{-- Tabel Rekap Per Siswa --}}
         <div class="table-card">
             <div class="table-topbar">
-                <p class="table-info">Rekap Per Siswa <span style="font-weight:400;color:var(--text3);margin-left:6px">— {{ $absensi->count() }} siswa</span></p>
+                <p class="table-info">
+                    Rekap Per Siswa
+                    <span style="font-weight:400;color:var(--text3);margin-left:6px">— {{ $absensi->count() }} siswa</span>
+                </p>
             </div>
             <div class="table-wrap">
                 <table>
@@ -209,43 +229,73 @@
                     </thead>
                     <tbody>
                         @forelse($absensi as $siswaId => $records)
-                        @php
-                            $siswa   = $records->first()->siswa;
-                            $hadir   = $records->where('status','hadir')->count();
-                            $telat   = $records->where('status','telat')->count();
-                            $izin    = $records->where('status','izin')->count();
-                            $sakit   = $records->where('status','sakit')->count();
-                            $alfa    = $records->where('status','alfa')->count();
-                            $total   = $records->count();
-                            $pctHadir = $total > 0 ? round((($hadir + $telat) / $total) * 100) : 0;
-                        @endphp
-                        <tr>
-                            <td style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)">{{ $loop->iteration }}</td>
-                            <td>
-                                <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">{{ $siswa->nama_lengkap ?? '—' }}</p>
-                                <p style="font-size:11.5px;color:var(--text3)">{{ $siswa->nis ?? '' }}</p>
-                            </td>
-                            <td class="center"><span class="val-chip hadir">{{ $hadir }}</span></td>
-                            <td class="center"><span class="val-chip telat">{{ $telat }}</span></td>
-                            <td class="center"><span class="val-chip izin">{{ $izin }}</span></td>
-                            <td class="center"><span class="val-chip sakit">{{ $sakit }}</span></td>
-                            <td class="center"><span class="val-chip alfa">{{ $alfa }}</span></td>
-                            <td class="center" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">{{ $total }}</td>
-                            <td>
-                                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:{{ $pctHadir >= 75 ? '#15803d' : ($pctHadir >= 50 ? '#a16207' : '#dc2626') }}">{{ $pctHadir }}%</span>
-                                <div class="pct-bar-wrap">
-                                    <div class="pct-bar {{ $pctHadir >= 75 ? 'hadir' : ($pctHadir >= 50 ? 'telat' : 'alfa') }}" style="width:{{ $pctHadir }}%"></div>
-                                </div>
-                            </td>
-                        </tr>
+                            @php
+                                /*
+                                 * Ambil data siswa dari relasi yang sudah di-eager load.
+                                 * Guard dengan optional() agar tidak error jika relasi null.
+                                 */
+                                $firstRecord = $records->first();
+                                $siswa       = optional($firstRecord)->siswa;
+
+                                $hadir = $records->where('status', 'hadir')->count();
+                                $telat = $records->where('status', 'telat')->count();
+                                $izin  = $records->where('status', 'izin')->count();
+                                $sakit = $records->where('status', 'sakit')->count();
+                                $alfa  = $records->where('status', 'alfa')->count();
+                                $total = $records->count();
+
+                                // Kehadiran efektif = hadir + telat
+                                $hadirEfektif = $hadir + $telat;
+                                $pctHadir     = $total > 0 ? round(($hadirEfektif / $total) * 100) : 0;
+
+                                // Warna bar & teks berdasarkan threshold
+                                $pctClass = $pctHadir >= 75 ? 'hadir' : ($pctHadir >= 50 ? 'telat' : 'alfa');
+                                $pctColor = $pctHadir >= 75 ? '#15803d' : ($pctHadir >= 50 ? '#a16207' : '#dc2626');
+                            @endphp
+                            <tr>
+                                <td style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)">
+                                    {{ $loop->iteration }}
+                                </td>
+                                <td>
+                                    <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;margin:0">
+                                        {{ $siswa->nama_lengkap ?? '—' }}
+                                    </p>
+                                    <p style="font-size:11.5px;color:var(--text3);margin:0">
+                                        {{ $siswa->nis ?? '' }}
+                                    </p>
+                                </td>
+                                <td class="center"><span class="val-chip hadir">{{ $hadir }}</span></td>
+                                <td class="center"><span class="val-chip telat">{{ $telat }}</span></td>
+                                <td class="center"><span class="val-chip izin">{{ $izin }}</span></td>
+                                <td class="center"><span class="val-chip sakit">{{ $sakit }}</span></td>
+                                <td class="center"><span class="val-chip alfa">{{ $alfa }}</span></td>
+                                <td class="center" style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">
+                                    {{ $total }}
+                                </td>
+                                <td>
+                                    <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:{{ $pctColor }}">
+                                        {{ $pctHadir }}%
+                                    </span>
+                                    <div class="pct-bar-wrap">
+                                        <div class="pct-bar {{ $pctClass }}" style="width:{{ $pctHadir }}%"></div>
+                                    </div>
+                                </td>
+                            </tr>
                         @empty
-                        <tr><td colspan="9">
-                            <div class="empty-state">
-                                <div class="empty-icon"><svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-                                <p class="empty-title">Tidak ada data absensi</p>
-                                <p class="empty-sub">Tidak ada catatan kehadiran pada rentang waktu yang dipilih</p>
-                            </div>
-                        </td></tr>
+                            <tr>
+                                <td colspan="9">
+                                    <div class="empty-state">
+                                        <div class="empty-icon">
+                                            <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24">
+                                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="9" cy="7" r="4"/>
+                                            </svg>
+                                        </div>
+                                        <p class="empty-title">Tidak ada data absensi</p>
+                                        <p class="empty-sub">Tidak ada catatan kehadiran pada rentang waktu yang dipilih</p>
+                                    </div>
+                                </td>
+                            </tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -256,21 +306,44 @@
         {{-- State awal: belum ada filter --}}
         <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:60px 20px;text-align:center">
             <div style="width:60px;height:60px;background:var(--brand-50);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
-                <svg width="28" height="28" fill="none" stroke="var(--brand-500)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+                <svg width="28" height="28" fill="none" stroke="var(--brand-500)" stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
             </div>
-            <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">Pilih Kelas dan Rentang Tanggal</p>
-            <p style="font-size:13px;color:var(--text3)">Isi filter di atas lalu klik "Lihat Rekap" untuk menampilkan data kehadiran</p>
+            <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:6px">
+                Pilih Kelas dan Rentang Tanggal
+            </p>
+            <p style="font-size:13px;color:var(--text3)">
+                Isi filter di atas lalu klik &ldquo;Lihat Rekap&rdquo; untuk menampilkan data kehadiran
+            </p>
         </div>
     @endif
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-@if(session('success'))
-Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2800,showConfirmButton:false,toast:true,position:'top-end'});
-@endif
-@if($errors->any())
-Swal.fire({icon:'warning',title:'Perhatian!',html:`{!! implode('<br>', $errors->all()) !!}`,confirmButtonColor:'#1f63db'});
-@endif
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'Berhasil!',
+            text: @json(session('success')),
+            timer: 2800,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
+    @endif
+
+    @if($errors->any())
+        Swal.fire({
+            icon: 'warning',
+            title: 'Perhatian!',
+            html: @json(implode('<br>', $errors->all())),
+            confirmButtonColor: '#1f63db'
+        });
+    @endif
 </script>
 </x-app-layout>

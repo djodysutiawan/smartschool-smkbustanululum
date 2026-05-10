@@ -48,7 +48,23 @@ class TugasController extends Controller
         $kelasList = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
 
-        return view('guru.tugas.index', compact('tugas', 'kelasList', 'mapelList'));
+        // PERBAIKAN: Hitung stats di controller, bukan di blade.
+        // Ini mencegah potensi fatal error auth()->user()->guru di blade
+        // dan menjaga blade tetap bersih dari logika bisnis.
+        $stats = [
+            'total_aktif'   => Tugas::where('guru_id', $guruId)
+                ->where('dipublikasikan', true)
+                ->where('batas_waktu', '>=', now())
+                ->count(),
+            'total_expired' => Tugas::where('guru_id', $guruId)
+                ->where('batas_waktu', '<', now())
+                ->count(),
+            'total_draft'   => Tugas::where('guru_id', $guruId)
+                ->where('dipublikasikan', false)
+                ->count(),
+        ];
+
+        return view('guru.tugas.index', compact('tugas', 'kelasList', 'mapelList', 'stats'));
     }
 
     public function create()
@@ -56,7 +72,7 @@ class TugasController extends Controller
         $kelasList        = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList        = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $tahunAjaran      = TahunAjaran::orderByDesc('tahun')->get();
-        $jenisPengumpulan = ['file', 'teks', 'link', 'foto'];
+        $jenisPengumpulan = Tugas::JENIS_PENGUMPULAN;
 
         return view('guru.tugas.create', compact('kelasList', 'mapelList', 'tahunAjaran', 'jenisPengumpulan'));
     }
@@ -71,8 +87,8 @@ class TugasController extends Controller
             'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
             'judul'             => ['required', 'string', 'max:255'],
             'deskripsi'         => ['nullable', 'string', 'max:5000'],
-            'path_file_soal'    => ['nullable', 'file', 'max:10240'],
-            'jenis_pengumpulan' => ['required', Rule::in(['file', 'teks', 'link', 'foto'])],
+            'path_file_soal'    => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar', 'max:10240'],
+            'jenis_pengumpulan' => ['required', Rule::in(Tugas::JENIS_PENGUMPULAN)],
             'batas_waktu'       => ['required', 'date', 'after:now'],
             'nilai_maksimal'    => ['nullable', 'numeric', 'min:0', 'max:100'],
             'izinkan_terlambat' => ['boolean'],
@@ -80,6 +96,9 @@ class TugasController extends Controller
         ], $this->messages());
 
         $validated['guru_id'] = $guruId;
+
+        // Nilai maksimal default 100 jika tidak diisi
+        $validated['nilai_maksimal'] = $validated['nilai_maksimal'] ?? 100;
 
         if ($request->hasFile('path_file_soal')) {
             $validated['path_file_soal'] = $request->file('path_file_soal')
@@ -99,10 +118,17 @@ class TugasController extends Controller
 
         $tugas->load(['mataPelajaran', 'kelas', 'tahunAjaran', 'pengumpulan.siswa']);
 
+        // PERBAIKAN: Gunakan kelas_id langsung agar tidak bergantung pada withDefault()
+        // yang mengembalikan instance Kelas kosong (tanpa id) — bisa menyebabkan
+        // error pada ->siswa()->count() karena query WHERE kelas_id = null.
+        $totalSiswa = $tugas->kelas_id
+            ? Kelas::find($tugas->kelas_id)?->siswa()->count() ?? 0
+            : 0;
+
         $stats = [
-            'total_siswa'   => $tugas->kelas->siswa()->count(),
+            'total_siswa'   => $totalSiswa,
             'terkumpul'     => $tugas->jumlah_terkumpul,
-            'sudah_dinilai' => $tugas->pengumpulan()->where('status', 'sudah_dinilai')->count(),
+            'sudah_dinilai' => $tugas->jumlah_dinilai,
         ];
 
         return view('guru.tugas.show', compact('tugas', 'stats'));
@@ -116,7 +142,7 @@ class TugasController extends Controller
         $kelasList        = Kelas::aktif()->orderBy('nama_kelas')->get();
         $mapelList        = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $tahunAjaran      = TahunAjaran::orderByDesc('tahun')->get();
-        $jenisPengumpulan = ['file', 'teks', 'link', 'foto'];
+        $jenisPengumpulan = Tugas::JENIS_PENGUMPULAN;
 
         return view('guru.tugas.edit',
             compact('tugas', 'kelasList', 'mapelList', 'tahunAjaran', 'jenisPengumpulan'));
@@ -133,8 +159,8 @@ class TugasController extends Controller
             'tahun_ajaran_id'   => ['required', 'exists:tahun_ajaran,id'],
             'judul'             => ['required', 'string', 'max:255'],
             'deskripsi'         => ['nullable', 'string', 'max:5000'],
-            'path_file_soal'    => ['nullable', 'file', 'max:10240'],
-            'jenis_pengumpulan' => ['required', Rule::in(['file', 'teks', 'link', 'foto'])],
+            'path_file_soal'    => ['nullable', 'file', 'mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar', 'max:10240'],
+            'jenis_pengumpulan' => ['required', Rule::in(Tugas::JENIS_PENGUMPULAN)],
             'batas_waktu'       => ['required', 'date'],
             'nilai_maksimal'    => ['nullable', 'numeric', 'min:0', 'max:100'],
             'izinkan_terlambat' => ['boolean'],
@@ -142,6 +168,7 @@ class TugasController extends Controller
         ], $this->messages());
 
         if ($request->hasFile('path_file_soal')) {
+            // Hapus file lama sebelum simpan yang baru
             if ($tugas->path_file_soal) {
                 Storage::disk('public')->delete($tugas->path_file_soal);
             }
@@ -192,6 +219,7 @@ class TugasController extends Controller
             'tahun_ajaran_id.exists'     => 'Tahun ajaran yang dipilih tidak valid.',
             'judul.required'             => 'Judul tugas wajib diisi.',
             'judul.max'                  => 'Judul tugas maksimal 255 karakter.',
+            'deskripsi.max'              => 'Deskripsi maksimal 5000 karakter.',
             'jenis_pengumpulan.required' => 'Jenis pengumpulan wajib dipilih.',
             'jenis_pengumpulan.in'       => 'Jenis pengumpulan tidak valid.',
             'batas_waktu.required'       => 'Batas waktu pengumpulan wajib diisi.',
@@ -200,6 +228,8 @@ class TugasController extends Controller
             'nilai_maksimal.numeric'     => 'Nilai maksimal harus berupa angka.',
             'nilai_maksimal.min'         => 'Nilai maksimal tidak boleh negatif.',
             'nilai_maksimal.max'         => 'Nilai maksimal tidak boleh lebih dari 100.',
+            'path_file_soal.file'        => 'File soal tidak valid.',
+            'path_file_soal.mimes'       => 'Format file soal tidak didukung (PDF, DOC, DOCX, PPT, XLS, ZIP).',
             'path_file_soal.max'         => 'Ukuran file soal maksimal 10MB.',
         ];
     }

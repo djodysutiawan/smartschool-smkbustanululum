@@ -3,149 +3,284 @@
 namespace App\Http\Controllers\Guru;
 
 use App\Http\Controllers\Controller;
-use App\Models\Kelas;
-use App\Models\MataPelajaran;
+use App\Models\JadwalPelajaran;
 use App\Models\SesiQr;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+/**
+ * SesiQrController
+ *
+ * Mengelola sesi QR absensi berbasis jadwal pelajaran.
+ * Guru hanya bisa membuat sesi QR dari jadwal yang sudah ada —
+ * tidak bisa membuat sesi manual tanpa jadwal.
+ *
+ * Alur:
+ *   index  → daftar semua sesi QR milik guru (historis + aktif)
+ *   create → pilih jadwal hari ini → isi durasi/radius
+ *   store  → validasi ketat → buat sesi → redirect ke show
+ *   show   → detail sesi (bukan fullscreen QR, itu di BarcodeKelasController)
+ *   nonaktifkan → matikan sesi lebih awal
+ *   destroy → hapus sesi (hanya jika tidak aktif / sudah kadaluarsa)
+ *   cetakQr → PDF cetak QR
+ */
 class SesiQrController extends Controller
 {
-    private function getGuruId(): int
+    // ── Auth Helper ───────────────────────────────────────────────────────────
+
+    private function getGuru(): \App\Models\Guru
     {
         $guru = Auth::user()->guru;
         abort_if(! $guru, 403, 'Akun Anda tidak terhubung dengan data guru.');
-        return $guru->id;
+        return $guru;
     }
+
+    private function authorizeSesi(SesiQr $sesiQr): void
+    {
+        abort_if($sesiQr->dibuat_oleh !== Auth::id(), 403, 'Anda tidak memiliki akses ke sesi QR ini.');
+    }
+
+    // ── Hari Helper ───────────────────────────────────────────────────────────
+
+    private function hariIni(): string
+    {
+        return [
+            'Sunday'    => 'minggu',
+            'Monday'    => 'senin',
+            'Tuesday'   => 'selasa',
+            'Wednesday' => 'rabu',
+            'Thursday'  => 'kamis',
+            'Friday'    => 'jumat',
+            'Saturday'  => 'sabtu',
+        ][now()->format('l')] ?? 'senin';
+    }
+
+    // ── Index ─────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
     {
-        $guruId = $this->getGuruId();
+        $guru = $this->getGuru();
 
-        $query = SesiQr::with(['kelas', 'mataPelajaran'])
+        $query = SesiQr::with(['kelas', 'mataPelajaran', 'jadwalPelajaran'])
             ->where('dibuat_oleh', Auth::id());
 
-        if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-
+        // Filter tanggal
         if ($request->filled('tanggal')) {
             $query->whereDate('tanggal', $request->tanggal);
         }
 
-        if ($request->filled('is_active')) {
-            $query->where('is_active', $request->boolean('is_active'));
+        // Filter status
+        if ($request->filled('status')) {
+            if ($request->status === 'aktif') {
+                $query->where('is_active', true);
+            } elseif ($request->status === 'nonaktif') {
+                $query->where('is_active', false);
+            }
         }
 
-        $sesiQrs   = $query->latest()->paginate(15)->withQueryString();
+        // Filter kelas
+        if ($request->filled('kelas_id')) {
+            $query->where('kelas_id', $request->kelas_id);
+        }
 
-        // Kelas yang diajar guru ini
-        $kelasIds  = \App\Models\JadwalPelajaran::where('guru_id', $guruId)->pluck('kelas_id')->unique();
-        $kelasList = Kelas::aktif()->whereIn('id', $kelasIds)->orderBy('nama_kelas')->get();
+        $sesiList = $query->latest('tanggal')->latest()->paginate(15)->withQueryString();
 
-        return view('guru.sesi-qr.index', compact('sesiQrs', 'kelasList'));
+        // Stats
+        $stats = [
+            'total'    => SesiQr::where('dibuat_oleh', Auth::id())->count(),
+            'aktif'    => SesiQr::where('dibuat_oleh', Auth::id())->where('is_active', true)->count(),
+            'hari_ini' => SesiQr::where('dibuat_oleh', Auth::id())->whereDate('tanggal', today())->count(),
+        ];
+
+        // Daftar kelas untuk dropdown filter
+        $kelasIds  = JadwalPelajaran::where('guru_id', $guru->id)->pluck('kelas_id')->unique();
+        $kelasList = \App\Models\Kelas::aktif()->whereIn('id', $kelasIds)->orderBy('nama_kelas')->get();
+
+        // Jadwal hari ini + status sesi
+        $hariIni       = $this->hariIni();
+        $jadwalHariIni = JadwalPelajaran::with(['mataPelajaran', 'kelas'])
+            ->where('guru_id', $guru->id)
+            ->where('hari', $hariIni)
+            ->where('is_active', true)
+            ->orderBy('jam_mulai')
+            ->get();
+
+        $sesiPerJadwal = SesiQr::where('dibuat_oleh', Auth::id())
+            ->whereDate('tanggal', today())
+            ->where('is_active', true)
+            ->get()
+            ->keyBy('jadwal_pelajaran_id');
+
+        return view('guru.sesi-qr.index', compact(
+            'sesiList', 'stats', 'kelasList',
+            'jadwalHariIni', 'sesiPerJadwal', 'hariIni'
+        ));
     }
 
-    public function create()
+    // ── Create ────────────────────────────────────────────────────────────────
+
+    public function create(Request $request)
     {
-        $guruId = $this->getGuruId();
+        $guru    = $this->getGuru();
+        $hariIni = $this->hariIni();
 
-        $kelasIds      = \App\Models\JadwalPelajaran::where('guru_id', $guruId)->pluck('kelas_id')->unique();
-        $kelasList     = Kelas::aktif()->whereIn('id', $kelasIds)->orderBy('nama_kelas')->get();
-        $mataPelajaran = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
+        // Jadwal hari ini milik guru ini
+        $jadwalHariIni = JadwalPelajaran::with(['mataPelajaran', 'kelas'])
+            ->where('guru_id', $guru->id)
+            ->where('hari', $hariIni)
+            ->where('is_active', true)
+            ->orderBy('jam_mulai')
+            ->get();
 
-        return view('guru.sesi-qr.create', compact('kelasList', 'mataPelajaran'));
+        // Tandai jadwal yang sudah punya sesi aktif hari ini
+        $sesiSudahAda = SesiQr::where('dibuat_oleh', Auth::id())
+            ->whereDate('tanggal', today())
+            ->pluck('jadwal_pelajaran_id')
+            ->toArray();
+
+        // Pre-selected dari query string (dari tombol "Buat QR" di index)
+        $jadwalTerpilih = null;
+        if ($request->filled('jadwal_pelajaran_id')) {
+            $jadwalTerpilih = $jadwalHariIni->firstWhere('id', (int) $request->jadwal_pelajaran_id);
+        }
+
+        return view('guru.sesi-qr.create', compact(
+            'guru', 'jadwalHariIni', 'sesiSudahAda', 'jadwalTerpilih', 'hariIni'
+        ));
     }
+
+    // ── Store ─────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
     {
-        $guruId = $this->getGuruId();
+        $guru = $this->getGuru();
 
-        $validated = $request->validate([
-            'kelas_id'          => ['required', 'exists:kelas,id'],
-            'mata_pelajaran_id' => ['nullable', 'exists:mata_pelajaran,id'],
-            'tanggal'           => ['required', 'date'],
-            'berlaku_mulai'     => ['required', 'date'],
-            'kadaluarsa_pada'   => ['required', 'date', 'after:berlaku_mulai'],
-            'radius_meter'      => ['nullable', 'integer', 'min:10', 'max:1000'],
+        $request->validate([
+            'jadwal_pelajaran_id' => ['required', 'exists:jadwal_pelajaran,id'],
+            'durasi_menit'        => ['nullable', 'integer', 'min:5', 'max:240'],
+            'radius_meter'        => ['nullable', 'integer', 'min:10', 'max:1000'],
+            'latitude'            => ['nullable', 'numeric', 'between:-90,90'],
+            'longitude'           => ['nullable', 'numeric', 'between:-180,180'],
         ], [
-            'kelas_id.required'       => 'Kelas wajib dipilih.',
-            'kelas_id.exists'         => 'Kelas yang dipilih tidak valid.',
-            'tanggal.required'        => 'Tanggal wajib diisi.',
-            'tanggal.date'            => 'Format tanggal tidak valid.',
-            'berlaku_mulai.required'  => 'Waktu berlaku wajib diisi.',
-            'kadaluarsa_pada.required' => 'Waktu kadaluarsa wajib diisi.',
-            'kadaluarsa_pada.after'   => 'Waktu kadaluarsa harus setelah waktu berlaku.',
-            'radius_meter.min'        => 'Radius minimal 10 meter.',
-            'radius_meter.max'        => 'Radius maksimal 1000 meter.',
+            'jadwal_pelajaran_id.required' => 'Jadwal pelajaran wajib dipilih.',
+            'jadwal_pelajaran_id.exists'   => 'Jadwal pelajaran tidak ditemukan.',
+            'durasi_menit.min'             => 'Durasi minimal 5 menit.',
+            'durasi_menit.max'             => 'Durasi maksimal 240 menit.',
+            'radius_meter.min'             => 'Radius minimal 10 meter.',
+            'radius_meter.max'             => 'Radius maksimal 1000 meter.',
         ]);
 
-        // Pastikan kelas yang dipilih adalah kelas yang diajar guru ini
-        $kelasIds = \App\Models\JadwalPelajaran::where('guru_id', $guruId)->pluck('kelas_id')->unique();
-        abort_unless($kelasIds->contains($validated['kelas_id']), 403, 'Anda tidak mengajar kelas yang dipilih.');
+        // Pastikan jadwal milik guru ini & aktif
+        $jadwal = JadwalPelajaran::where('id', $request->jadwal_pelajaran_id)
+            ->where('guru_id', $guru->id)
+            ->where('is_active', true)
+            ->firstOrFail();
 
-        // kode_qr di-generate otomatis oleh SesiQr::booted()
-        $validated['dibuat_oleh'] = Auth::id();
+        // Jadwal harus untuk hari ini
+        if ($jadwal->hari !== $this->hariIni()) {
+            return back()->withInput()
+                ->with('error', 'Sesi QR hanya bisa dibuat untuk jadwal hari ini (' . ucfirst($this->hariIni()) . ').');
+        }
 
-        SesiQr::create($validated);
+        // Cegah duplikat sesi aktif untuk jadwal yang sama hari ini
+        $sudahAda = SesiQr::where('jadwal_pelajaran_id', $jadwal->id)
+            ->whereDate('tanggal', today())
+            ->where('is_active', true)
+            ->exists();
 
-        return redirect()->route('guru.sesi-qr.index')
-            ->with('success', 'Sesi QR berhasil dibuat.');
+        if ($sudahAda) {
+            return back()->withInput()
+                ->with('error', 'Sudah ada sesi QR aktif untuk jadwal ini hari ini. Nonaktifkan sesi sebelumnya terlebih dahulu.');
+        }
+
+        // Hitung waktu berlaku dari jam jadwal
+        $berlakuMulai = Carbon::parse(today()->toDateString() . ' ' . $jadwal->jam_mulai);
+
+        $durasiMenit = $request->filled('durasi_menit')
+            ? (int) $request->durasi_menit
+            : (int) Carbon::parse($jadwal->jam_mulai)->diffInMinutes(Carbon::parse($jadwal->jam_selesai));
+
+        // Minimal 5 menit
+        $durasiMenit = max(5, $durasiMenit);
+
+        $kadaluarsaPada = $berlakuMulai->copy()->addMinutes($durasiMenit);
+
+        $sesi = SesiQr::create([
+            'jadwal_pelajaran_id' => $jadwal->id,
+            'kelas_id'            => $jadwal->kelas_id,
+            'mata_pelajaran_id'   => $jadwal->mata_pelajaran_id,
+            'guru_id'             => $guru->id,
+            'dibuat_oleh'         => Auth::id(),
+            'tanggal'             => today(),
+            'berlaku_mulai'       => $berlakuMulai,
+            'kadaluarsa_pada'     => $kadaluarsaPada,
+            'radius_meter'        => $request->filled('radius_meter') ? (int) $request->radius_meter : 100,
+            'latitude'            => $request->latitude ?: null,
+            'longitude'           => $request->longitude ?: null,
+            'maks_scan'           => 0,
+            'is_active'           => true,
+        ]);
+
+        return redirect()
+            ->route('guru.barcode-kelas.show-sesi', $sesi)
+            ->with('success', 'Sesi QR berhasil dibuat. Tampilkan QR ke siswa sekarang.');
     }
+
+    // ── Show ──────────────────────────────────────────────────────────────────
 
     public function show(SesiQr $sesiQr)
     {
-        $this->authorizeSesiQr($sesiQr);
+        $this->authorizeSesi($sesiQr);
 
-        $sesiQr->load([
-            'kelas',
-            'mataPelajaran',
-            'riwayatScan.siswa',
-        ]);
+        $sesiQr->load(['kelas', 'mataPelajaran', 'jadwalPelajaran.ruang', 'riwayatScan.siswa']);
 
-        return view('guru.sesi-qr.show', compact('sesiQr'));
+        $sudahScan  = $sesiQr->riwayatScan()->where('status', 'valid')->count();
+        $totalSiswa = $sesiQr->kelas?->siswa()->count() ?? 0;
+
+        return view('guru.sesi-qr.show', compact('sesiQr', 'sudahScan', 'totalSiswa'));
     }
 
-    public function destroy(SesiQr $sesiQr)
-    {
-        $this->authorizeSesiQr($sesiQr);
-
-        $sesiQr->delete();
-
-        return redirect()->route('guru.sesi-qr.index')
-            ->with('success', 'Sesi QR berhasil dihapus.');
-    }
+    // ── Nonaktifkan ───────────────────────────────────────────────────────────
 
     public function nonaktifkan(SesiQr $sesiQr)
     {
-        $this->authorizeSesiQr($sesiQr);
-
+        $this->authorizeSesi($sesiQr);
         $sesiQr->nonaktifkan();
 
         return back()->with('success', 'Sesi QR berhasil dinonaktifkan.');
     }
 
-    /**
-     * Cetak QR code ke PDF untuk ditempel di kelas.
-     */
-    public function cetakQr(SesiQr $sesiQr)
+    // ── Destroy ───────────────────────────────────────────────────────────────
+
+    public function destroy(SesiQr $sesiQr)
     {
-        $this->authorizeSesiQr($sesiQr);
+        $this->authorizeSesi($sesiQr);
 
-        $sesiQr->load(['kelas', 'mataPelajaran']);
+        // Tidak boleh hapus sesi yang masih aktif & belum kadaluarsa
+        if ($sesiQr->is_active && ! $sesiQr->isKadaluarsa()) {
+            return back()->with('error', 'Nonaktifkan sesi terlebih dahulu sebelum menghapus.');
+        }
 
-        $pdf = Pdf::loadView('guru.sesi-qr.exports.cetak-qr', compact('sesiQr'))
-            ->setPaper('a5', 'portrait');
+        $sesiQr->delete();
 
-        return $pdf->stream('qr_sesi_' . $sesiQr->id . '_' . $sesiQr->tanggal->format('Ymd') . '.pdf');
+        return redirect()
+            ->route('guru.sesi-qr.index')
+            ->with('success', 'Sesi QR berhasil dihapus.');
     }
 
-    /**
-     * Pastikan sesi QR dibuat oleh guru yang sedang login.
-     */
-    private function authorizeSesiQr(SesiQr $sesiQr): void
+    // ── Cetak QR (PDF) ────────────────────────────────────────────────────────
+
+    public function cetakQr(SesiQr $sesiQr)
     {
-        abort_if($sesiQr->dibuat_oleh !== Auth::id(), 403, 'Anda tidak memiliki akses ke sesi QR ini.');
+        $this->authorizeSesi($sesiQr);
+        $sesiQr->load(['kelas', 'mataPelajaran']);
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+            'guru.sesi-qr.exports.cetak-qr',
+            compact('sesiQr')
+        )->setPaper('a5', 'portrait');
+
+        return $pdf->stream('qr_sesi_' . $sesiQr->id . '_' . $sesiQr->tanggal->format('Ymd') . '.pdf');
     }
 }

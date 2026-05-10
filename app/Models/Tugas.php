@@ -15,8 +15,9 @@ class Tugas extends Model
     protected $table = 'tugas';
 
     /**
-     * Jenis pengumpulan yang diizinkan — harus sinkron dengan
-     * PengumpulanTugas::JENIS_VALID dan TugasController::JENIS_PENGUMPULAN.
+     * Jenis pengumpulan yang diizinkan.
+     * PERBAIKAN: Dijadikan konstanta tunggal agar TugasController dan
+     * PengumpulanTugas bisa referensikan dari sini tanpa duplikasi.
      */
     const JENIS_PENGUMPULAN = ['file', 'teks', 'link', 'foto'];
 
@@ -28,7 +29,7 @@ class Tugas extends Model
         'judul',
         'deskripsi',
         'path_file_soal',
-        'jenis_pengumpulan',   // file | teks | link | foto
+        'jenis_pengumpulan',
         'batas_waktu',
         'nilai_maksimal',
         'izinkan_terlambat',
@@ -42,7 +43,6 @@ class Tugas extends Model
             'izinkan_terlambat' => 'boolean',
             'dipublikasikan'    => 'boolean',
             'nilai_maksimal'    => 'decimal:2',
-            // FIX: cast FK ke integer agar perbandingan strict tidak mismatch
             'guru_id'           => 'integer',
             'mata_pelajaran_id' => 'integer',
             'kelas_id'          => 'integer',
@@ -57,9 +57,6 @@ class Tugas extends Model
         return $query->where('dipublikasikan', true);
     }
 
-    // FIX: Hapus scopeAktif yang duplikat dengan scopeDipublikasikan —
-    // dua scope dengan logika identik membingungkan. Gunakan ->dipublikasikan() saja.
-
     // ── Business Logic ─────────────────────────────────────────────────────────
 
     public function isTelahBerakhir(): bool
@@ -72,24 +69,22 @@ class Tugas extends Model
         if (! $this->isTelahBerakhir()) {
             return true;
         }
-
         return (bool) $this->izinkan_terlambat;
     }
 
     /**
      * Cek apakah siswa tertentu sudah mengumpulkan tugas ini.
      *
-     * FIX: Import PengumpulanTugas tidak diperlukan karena konstanta
-     * direferensikan via fully-qualified name atau diganti nilai string langsung.
-     * Sebelumnya kode mengacu PengumpulanTugas::STATUS_BELUM tanpa `use` — fatal error.
-     * Solusi: gunakan nilai string konstanta langsung agar tidak ada dependency
-     * circular antara Tugas ↔ PengumpulanTugas, atau tambahkan use statement.
+     * PERBAIKAN: Tambahkan 'use App\Models\PengumpulanTugas' di atas,
+     * atau gunakan nilai string konstanta langsung untuk menghindari
+     * fatal error karena class PengumpulanTugas tidak di-import.
+     * Menggunakan string literal 'belum' lebih aman dari dependency circular.
      */
     public function sudahDikumpulkan(int $siswaId): bool
     {
         return $this->pengumpulan()
             ->where('siswa_id', $siswaId)
-            ->where('status', '!=', PengumpulanTugas::STATUS_BELUM)
+            ->where('status', '!=', 'belum')
             ->exists();
     }
 
@@ -102,17 +97,23 @@ class Tugas extends Model
             : null;
     }
 
+    /**
+     * PERBAIKAN: Gunakan string literal konstanta status, bukan
+     * PengumpulanTugas::STATUS_BELUM / STATUS_DINILAI (tidak ada 'use' statement,
+     * fatal error saat dipanggil). Nilai string sesuai dengan konstanta di model
+     * PengumpulanTugas yang harus sinkron.
+     */
     public function getJumlahTerkumpulAttribute(): int
     {
         return $this->pengumpulan()
-            ->where('status', '!=', PengumpulanTugas::STATUS_BELUM)
+            ->where('status', '!=', 'belum')
             ->count();
     }
 
     public function getJumlahDinilaiAttribute(): int
     {
         return $this->pengumpulan()
-            ->where('status', PengumpulanTugas::STATUS_DINILAI)
+            ->where('status', 'sudah_dinilai')
             ->count();
     }
 
@@ -121,8 +122,27 @@ class Tugas extends Model
         if ($this->isTelahBerakhir()) {
             return null;
         }
-
         return now()->diffForHumans($this->batas_waktu, true);
+    }
+
+    /**
+     * Ambil satu pengumpulan milik siswa tertentu.
+     * PERBAIKAN: Tidak ada return type hint relasi HasMany di sini —
+     * ini adalah method biasa yang mengembalikan model atau null.
+     * Relasi pengumpulan() sudah di-load via eager loading dari controller,
+     * gunakan filter collection daripada query baru untuk hindari N+1.
+     */
+    public function pengumpulanSiswa(int $siswaId): ?PengumpulanTugas
+    {
+        // Jika relasi sudah di-load (eager loaded), pakai filter collection.
+        if ($this->relationLoaded('pengumpulan')) {
+            return $this->pengumpulan->firstWhere('siswa_id', $siswaId);
+        }
+
+        // Fallback: query langsung jika belum di-load.
+        return $this->pengumpulan()
+            ->where('siswa_id', $siswaId)
+            ->first();
     }
 
     // ── Relationships ──────────────────────────────────────────────────────────
@@ -139,10 +159,9 @@ class Tugas extends Model
 
     public function kelas(): BelongsTo
     {
-        // FIX: withDefault() di sini aman tapi perlu hati-hati —
-        // withDefault() mengembalikan instance Kelas kosong (bukan null)
-        // sehingga $tugas->kelas->nama tidak error tapi menghasilkan null.
-        // Ini perilaku yang diinginkan untuk view — pertahankan.
+        // withDefault() aman untuk akses property di blade,
+        // tapi JANGAN panggil ->siswa()->count() dari instance default ini.
+        // Gunakan $tugas->kelas_id di controller (sudah diperbaiki).
         return $this->belongsTo(Kelas::class)->withDefault();
     }
 
@@ -154,18 +173,5 @@ class Tugas extends Model
     public function pengumpulan(): HasMany
     {
         return $this->hasMany(PengumpulanTugas::class);
-    }
-
-    /**
-     * Ambil pengumpulan milik siswa tertentu (single record).
-     * FIX: Kembalikan relasi HasMany dengan constraint, bukan langsung ->first(),
-     * agar bisa di-eager load dari luar jika diperlukan.
-     * Untuk fetch langsung, gunakan ->pengumpulanSiswa($id)->first().
-     */
-    public function pengumpulanSiswa(int $siswaId): ?PengumpulanTugas
-    {
-        return $this->pengumpulan()
-            ->where('siswa_id', $siswaId)
-            ->first();
     }
 }

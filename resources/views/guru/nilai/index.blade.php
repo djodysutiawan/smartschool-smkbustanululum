@@ -28,6 +28,7 @@
     .btn-detail{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
     .btn-detail:hover{background:#dcfce7;filter:none}
 
+    /* Stats — sekarang akurat (total semua filter, bukan per halaman) */
     .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
     .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 18px;display:flex;align-items:center;gap:12px}
     .stat-icon{width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
@@ -64,21 +65,14 @@
     tbody tr:hover{background:#fafbff}
     td{padding:10px 14px;color:var(--text);vertical-align:middle}
     td.center{text-align:center}
-    td.muted{color:var(--text3)}
     .no-col{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)}
 
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700}
+    .badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700}
     .badge-A{background:#dcfce7;color:#15803d}
     .badge-B{background:#eff6ff;color:#1d4ed8}
     .badge-C{background:#fefce8;color:#a16207}
     .badge-D{background:#fff0f0;color:#dc2626}
     .badge-E{background:#fdf4ff;color:#7c3aed}
-
-    .nilai-cell{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700}
-    .nilai-mini{display:flex;flex-direction:column;gap:2px}
-    .nilai-mini-row{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:11.5px}
-    .nilai-mini-label{color:var(--text3)}
-    .nilai-mini-val{font-weight:700;color:var(--text)}
 
     .two-line .primary{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text)}
     .two-line .secondary{font-size:12px;color:var(--text3);margin-top:1px}
@@ -98,7 +92,8 @@
     .pag-btn.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
     .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
 
-    @media(max-width:640px){.stats-strip{grid-template-columns:1fr 1fr}.page{padding:16px}}
+    @media(max-width:900px){.stats-strip{grid-template-columns:1fr 1fr}}
+    @media(max-width:640px){.page{padding:16px}}
 </style>
 
 <div class="page">
@@ -116,23 +111,47 @@
         </div>
     </div>
 
-    {{-- Stats --}}
+    {{-- Stats — dihitung dari seluruh data (bukan hanya halaman ini) --}}
     <div class="stats-strip">
         <div class="stat-card">
-            <div class="stat-icon blue"><svg width="18" height="18" fill="none" stroke="#1d4ed8" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-            <div><p class="stat-label">Total Data</p><p class="stat-val">{{ $nilai->total() }}</p><p class="stat-sub">entri nilai</p></div>
+            <div class="stat-icon blue">
+                <svg width="18" height="18" fill="none" stroke="#1d4ed8" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Total Data</p>
+                <p class="stat-val">{{ $totalData }}</p>
+                <p class="stat-sub">entri nilai</p>
+            </div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon green"><svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>
-            <div><p class="stat-label">Predikat A</p><p class="stat-val">{{ $nilai->getCollection()->where('predikat', 'A')->count() }}</p><p class="stat-sub">halaman ini</p></div>
+            <div class="stat-icon green">
+                <svg width="18" height="18" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Predikat A</p>
+                <p class="stat-val">{{ $totalPredikatA }}</p>
+                <p class="stat-sub">dari hasil filter</p>
+            </div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon yellow"><svg width="18" height="18" fill="none" stroke="#a16207" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg></div>
-            <div><p class="stat-label">Mapel</p><p class="stat-val">{{ $nilai->getCollection()->pluck('mata_pelajaran_id')->unique()->count() }}</p><p class="stat-sub">halaman ini</p></div>
+            <div class="stat-icon yellow">
+                <svg width="18" height="18" fill="none" stroke="#a16207" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Mapel</p>
+                <p class="stat-val">{{ $totalMapel }}</p>
+                <p class="stat-sub">dari hasil filter</p>
+            </div>
         </div>
         <div class="stat-card">
-            <div class="stat-icon purple"><svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div>
-            <div><p class="stat-label">Kelas</p><p class="stat-val">{{ $nilai->getCollection()->pluck('kelas_id')->unique()->count() }}</p><p class="stat-sub">halaman ini</p></div>
+            <div class="stat-icon purple">
+                <svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            </div>
+            <div>
+                <p class="stat-label">Kelas</p>
+                <p class="stat-val">{{ $totalKelas }}</p>
+                <p class="stat-sub">dari hasil filter</p>
+            </div>
         </div>
     </div>
 
@@ -140,11 +159,13 @@
     <div class="filter-card">
         <form method="GET" action="{{ route('guru.nilai.index') }}">
             <div class="filter-row">
-                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama siswa…">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama / NIS siswa…">
                 <select name="tahun_ajaran_id">
                     <option value="">Semua Tahun Ajaran</option>
                     @foreach($tahunAjaran as $ta)
-                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>{{ $ta->nama ?? $ta->tahun }}</option>
+                        <option value="{{ $ta->id }}" {{ request('tahun_ajaran_id') == $ta->id ? 'selected' : '' }}>
+                            {{ $ta->tahun }} – {{ ucfirst($ta->semester) }}
+                        </option>
                     @endforeach
                 </select>
                 <select name="kelas_id">
@@ -195,6 +216,7 @@
                         <th class="center">Harian</th>
                         <th class="center">UTS</th>
                         <th class="center">UAS</th>
+                        <th class="center">Akhir</th>
                         <th class="center">Predikat</th>
                         <th class="center" style="width:160px">Aksi</th>
                     </tr>
@@ -221,16 +243,23 @@
                         @foreach(['nilai_tugas', 'nilai_harian', 'nilai_uts', 'nilai_uas'] as $field)
                         <td class="center">
                             @if(!is_null($n->$field))
-                                @php
-                                    $v = $n->$field;
-                                    $color = $v >= 80 ? '#15803d' : ($v >= 65 ? '#a16207' : '#dc2626');
-                                @endphp
-                                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:13.5px;color:{{ $color }}">{{ $v }}</span>
+                                @php $v = $n->$field; $color = $v >= 80 ? '#15803d' : ($v >= 65 ? '#a16207' : '#dc2626'); @endphp
+                                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:13.5px;color:{{ $color }}">{{ number_format($v, 1) }}</span>
                             @else
                                 <span style="color:var(--text3);font-size:12px">—</span>
                             @endif
                         </td>
                         @endforeach
+
+                        {{-- Nilai akhir --}}
+                        <td class="center">
+                            @if(!is_null($n->nilai_akhir))
+                                @php $va = $n->nilai_akhir; $ca = $va >= 80 ? '#15803d' : ($va >= 65 ? '#a16207' : '#dc2626'); @endphp
+                                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:13.5px;color:{{ $ca }}">{{ number_format($va, 1) }}</span>
+                            @else
+                                <span style="color:var(--text3);font-size:12px">—</span>
+                            @endif
+                        </td>
 
                         <td class="center">
                             @if($n->predikat)
@@ -244,10 +273,13 @@
                             <div class="action-group">
                                 <a href="{{ route('guru.nilai.show', $n->id) }}" class="btn btn-sm btn-detail">Detail</a>
                                 <a href="{{ route('guru.nilai.edit', $n->id) }}" class="btn btn-sm btn-edit">Edit</a>
-                                <form action="{{ route('guru.nilai.destroy', $n->id) }}" method="POST" id="delNilai-{{ $n->id }}" style="display:inline">
+                                <form action="{{ route('guru.nilai.destroy', $n->id) }}" method="POST"
+                                      id="delNilai-{{ $n->id }}" style="display:inline">
                                     @csrf @method('DELETE')
                                     <button type="button" class="btn btn-sm btn-del"
-                                        onclick="confirmDelete(document.getElementById('delNilai-{{ $n->id }}'), '{{ addslashes($n->siswa->nama_lengkap ?? '') }}')">
+                                        data-form="delNilai-{{ $n->id }}"
+                                        data-nama="{{ $n->siswa->nama_lengkap ?? '' }}"
+                                        onclick="confirmDelete(this)">
                                         Hapus
                                     </button>
                                 </form>
@@ -256,9 +288,11 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="9">
+                        <td colspan="10">
                             <div class="empty-state">
-                                <div class="empty-icon"><svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+                                <div class="empty-icon">
+                                    <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                                </div>
                                 <p class="empty-title">Belum ada data nilai</p>
                                 <p class="empty-sub">Mulai input nilai siswa dengan klik "Input Nilai"</p>
                             </div>
@@ -268,15 +302,17 @@
                 </tbody>
             </table>
         </div>
+
         @if($nilai->hasPages())
         <div class="pag-wrap">
-            <p class="pag-info">Menampilkan {{ $nilai->firstItem() }} – {{ $nilai->lastItem() }} dari {{ $nilai->total() }}</p>
+            <p class="pag-info">Menampilkan {{ $nilai->firstItem() }}–{{ $nilai->lastItem() }} dari {{ $nilai->total() }}</p>
             <div class="pag-btns">
                 @if($nilai->onFirstPage())
                     <span class="pag-btn disabled"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></span>
                 @else
                     <a href="{{ $nilai->previousPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></a>
                 @endif
+
                 @foreach($nilai->getUrlRange(1, $nilai->lastPage()) as $page => $url)
                     @if($page == $nilai->currentPage())
                         <span class="pag-btn active">{{ $page }}</span>
@@ -286,6 +322,7 @@
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach
+
                 @if($nilai->hasMorePages())
                     <a href="{{ $nilai->nextPageUrl() }}" class="pag-btn"><svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></a>
                 @else
@@ -300,20 +337,41 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 @if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+Swal.fire({
+    icon: 'success',
+    title: 'Berhasil!',
+    text: @json(session('success')),
+    timer: 2800,
+    showConfirmButton: false,
+    toast: true,
+    position: 'top-end'
+});
 @endif
 @if(session('error'))
-Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
+Swal.fire({
+    icon: 'error',
+    title: 'Gagal!',
+    text: @json(session('error')),
+    confirmButtonColor: '#1f63db'
+});
 @endif
 
-function confirmDelete(form, nama) {
+// Gunakan data-attribute agar aman dari XSS (tidak lewat string interpolasi JS)
+function confirmDelete(btn) {
+    const formId = btn.getAttribute('data-form');
+    const nama   = btn.getAttribute('data-nama');
     Swal.fire({
         title: 'Hapus Nilai?',
-        html: `Data nilai <strong>${nama}</strong> akan dihapus permanen.`,
-        icon: 'warning', showCancelButton: true,
-        confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
-        confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',
-    }).then(r => { if (r.isConfirmed) form.submit(); });
+        html: 'Data nilai <strong>' + Swal.escapeHtml(nama) + '</strong> akan dihapus permanen.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus!',
+        cancelButtonText: 'Batal',
+    }).then(function(r) {
+        if (r.isConfirmed) document.getElementById(formId).submit();
+    });
 }
 </script>
 </x-app-layout>

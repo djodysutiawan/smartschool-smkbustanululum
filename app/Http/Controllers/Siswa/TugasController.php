@@ -12,10 +12,6 @@ use Illuminate\Validation\Rule;
 
 class TugasController extends Controller
 {
-    /**
-     * FIX: Sinkronkan dengan PengumpulanTugas::JENIS_VALID dan Tugas::JENIS_PENGUMPULAN.
-     * Gunakan referensi konstanta model agar tidak ada triple hardcode.
-     */
     private function getSiswa()
     {
         $siswa = Auth::user()->siswa;
@@ -25,52 +21,63 @@ class TugasController extends Controller
 
     /**
      * Daftar tugas untuk kelas siswa.
-     * Ditandai apakah sudah dikumpulkan atau belum.
      */
     public function index(Request $request)
     {
         $siswa = $this->getSiswa();
 
-        // FIX: Gunakan scope dipublikasikan() dan eager load tahunAjaran
-        // jika dipakai di view untuk menghindari N+1.
         $query = Tugas::with(['mataPelajaran', 'guru'])
             ->where('kelas_id', $siswa->kelas_id)
             ->dipublikasikan();
 
-        // Filter status pengumpulan
         if ($request->filled('status')) {
             match ($request->status) {
-                'sudah'    => $query->whereHas('pengumpulan', fn ($q) =>
+                'sudah'     => $query->whereHas('pengumpulan', fn($q) =>
                                     $q->where('siswa_id', $siswa->id)
-                                      ->where('status', '!=', PengumpulanTugas::STATUS_BELUM)),
+                                      ->whereIn('status', [
+                                          PengumpulanTugas::STATUS_DIKUMPULKAN,
+                                          PengumpulanTugas::STATUS_TERLAMBAT,
+                                          PengumpulanTugas::STATUS_DINILAI,
+                                      ])),
 
-                'belum'    => $query->whereDoesntHave('pengumpulan', fn ($q) =>
-                                    $q->where('siswa_id', $siswa->id))
-                                    ->where('batas_waktu', '>=', now()),
+                'belum'     => $query->whereDoesntHave('pengumpulan', fn($q) =>
+                                    $q->where('siswa_id', $siswa->id)
+                                      ->whereIn('status', [
+                                          PengumpulanTugas::STATUS_DIKUMPULKAN,
+                                          PengumpulanTugas::STATUS_TERLAMBAT,
+                                          PengumpulanTugas::STATUS_DINILAI,
+                                      ]))
+                                     ->where('batas_waktu', '>=', now()),
 
-                'terlambat'=> $query->whereDoesntHave('pengumpulan', fn ($q) =>
-                                    $q->where('siswa_id', $siswa->id))
-                                    ->where('batas_waktu', '<', now()),
+                'terlambat' => $query->whereDoesntHave('pengumpulan', fn($q) =>
+                                    $q->where('siswa_id', $siswa->id)
+                                      ->whereIn('status', [
+                                          PengumpulanTugas::STATUS_DIKUMPULKAN,
+                                          PengumpulanTugas::STATUS_TERLAMBAT,
+                                          PengumpulanTugas::STATUS_DINILAI,
+                                      ]))
+                                     ->where('batas_waktu', '<', now()),
 
-                default    => null, // nilai tidak dikenal — abaikan, tampilkan semua
+                default     => null,
             };
         }
 
-        // FIX: Cast mapel_id ke int agar tidak ada type mismatch di query
         if ($request->filled('mapel_id')) {
             $query->where('mata_pelajaran_id', (int) $request->mapel_id);
         }
 
         $tugas = $query->orderBy('batas_waktu')->paginate(15)->withQueryString();
 
-        // ID tugas yang sudah dikumpulkan siswa ini — dipakai di view untuk badge status
+        // FIX: cek sudah dikumpulkan berdasarkan status yang valid, bukan != STATUS_BELUM
         $sudahDikumpulkan = PengumpulanTugas::where('siswa_id', $siswa->id)
-            ->where('status', '!=', PengumpulanTugas::STATUS_BELUM)
+            ->whereIn('status', [
+                PengumpulanTugas::STATUS_DIKUMPULKAN,
+                PengumpulanTugas::STATUS_TERLAMBAT,
+                PengumpulanTugas::STATUS_DINILAI,
+            ])
             ->pluck('tugas_id')
             ->toArray();
 
-        // FIX: Ganti query mapelList dari jadwalPelajaran (rentan kolom is_active tidak ada)
-        // ke query via tugas yang dipublikasikan untuk kelas ini — lebih akurat.
         $mapelList = MataPelajaran::whereHas('tugas', function ($q) use ($siswa) {
                 $q->where('kelas_id', $siswa->kelas_id)
                   ->where('dipublikasikan', true);
@@ -88,20 +95,25 @@ class TugasController extends Controller
     {
         $siswa = $this->getSiswa();
 
-        // FIX: Cast eksplisit ke int agar perbandingan tidak gagal karena string vs int
         abort_if(
             (int) $tugas->kelas_id !== (int) $siswa->kelas_id,
             403,
             'Tugas ini bukan untuk kelas Anda.'
         );
 
-        // FIX: Cek juga dipublikasikan — siswa tidak boleh akses tugas yang di-unpublish
         abort_if(! $tugas->dipublikasikan, 403, 'Tugas ini tidak tersedia.');
 
         $tugas->load(['mataPelajaran', 'guru', 'kelas', 'tahunAjaran']);
 
-        $pengumpulan = PengumpulanTugas::where('tugas_id', $tugas->id)
+        // FIX: eager load tugas di pengumpulan agar getLabelJenisAttribute tidak N+1
+        $pengumpulan = PengumpulanTugas::with('tugas')
+            ->where('tugas_id', $tugas->id)
             ->where('siswa_id', $siswa->id)
+            ->whereIn('status', [
+                PengumpulanTugas::STATUS_DIKUMPULKAN,
+                PengumpulanTugas::STATUS_TERLAMBAT,
+                PengumpulanTugas::STATUS_DINILAI,
+            ])
             ->first();
 
         $sudahDikumpulkan = ! is_null($pengumpulan);
@@ -115,13 +127,11 @@ class TugasController extends Controller
 
     /**
      * Proses pengumpulan tugas (POST /{tugas}/kumpul).
-     * Route name: siswa.tugas.kumpul
      */
     public function kumpul(Request $request, Tugas $tugas)
     {
         $siswa = $this->getSiswa();
 
-        // FIX: Cast eksplisit ke int — konsisten dengan show()
         abort_if(
             (int) $tugas->kelas_id !== (int) $siswa->kelas_id,
             403,
@@ -130,88 +140,92 @@ class TugasController extends Controller
         abort_if(! $tugas->dipublikasikan, 403, 'Tugas ini sudah tidak aktif.');
         abort_if(! $tugas->isMasihBisaDikumpulkan(), 422, 'Batas waktu pengumpulan sudah habis.');
 
-        // FIX: Sertakan filter status != belum agar konsisten dengan definisi "sudah kumpul"
+        // FIX: cek sudah dikumpulkan berdasarkan status positif (bukan != belum)
+        // Ini menghindari false positive saat status NULL di DB
         $sudahDikumpulkan = PengumpulanTugas::where('tugas_id', $tugas->id)
             ->where('siswa_id', $siswa->id)
-            ->where('status', '!=', PengumpulanTugas::STATUS_BELUM)
+            ->whereIn('status', [
+                PengumpulanTugas::STATUS_DIKUMPULKAN,
+                PengumpulanTugas::STATUS_TERLAMBAT,
+                PengumpulanTugas::STATUS_DINILAI,
+            ])
             ->exists();
 
         abort_if($sudahDikumpulkan, 422, 'Anda sudah mengumpulkan tugas ini.');
 
-        // FIX: Gunakan konstanta model sebagai sumber kebenaran jenis yang valid
-        $validated = $request->validate([
-            'jenis_pengumpulan' => ['required', Rule::in(PengumpulanTugas::JENIS_VALID)],
-            'konten_teks'       => [
+        // FIX: jenis_pengumpulan diambil dari tugas (DB tugas punya kolom ini),
+        // bukan dari input user. DB tugas: ENUM('file','teks','link','semua')
+        $jenisTugas = $tugas->jenis_pengumpulan;
+
+        // FIX: Validasi disesuaikan nama field dengan kolom DB yang ada:
+        //   path_file     → kolom DB: path_file     (bukan file_pengumpulan)
+        //   jawaban_teks  → kolom DB: jawaban_teks  (bukan konten_teks)
+        //   url_link      → kolom DB: url_link       (bukan link_pengumpulan)
+        // Kolom 'catatan' TIDAK ADA di DB — dihapus dari validasi dan insert
+        $rules = [
+            'jawaban_teks' => [
                 'nullable',
                 'string',
                 'max:10000',
-                'required_if:jenis_pengumpulan,teks',
             ],
-            'link_pengumpulan'  => [
+            'url_link' => [
                 'nullable',
                 'url',
-                'max:2048',
-                'required_if:jenis_pengumpulan,link',
+                'max:255',
             ],
-            'file_pengumpulan'  => [
+            'path_file' => [
                 'nullable',
                 'file',
-                // FIX: Pisahkan validasi mimes antara file dan foto
-                // untuk memberi feedback yang lebih tepat kepada siswa.
-                Rule::when(
-                    $request->jenis_pengumpulan === 'foto',
-                    ['mimes:jpg,jpeg,png', 'max:10240'],
-                    ['mimes:pdf,doc,docx,jpg,jpeg,png,zip', 'max:10240']
-                ),
-                Rule::requiredIf(
-                    fn () => in_array($request->jenis_pengumpulan, ['file', 'foto'], strict: true)
-                ),
+                'mimes:pdf,doc,docx,jpg,jpeg,png,zip',
+                'max:10240',
             ],
-            'catatan' => ['nullable', 'string', 'max:1000'],
-        ], [
-            'jenis_pengumpulan.required'  => 'Jenis pengumpulan wajib dipilih.',
-            'jenis_pengumpulan.in'        => 'Jenis pengumpulan tidak valid.',
-            'konten_teks.required_if'     => 'Teks jawaban wajib diisi.',
-            'konten_teks.max'             => 'Teks jawaban terlalu panjang (maks 10.000 karakter).',
-            'link_pengumpulan.required_if'=> 'Link wajib diisi.',
-            'link_pengumpulan.url'        => 'Format link tidak valid. Pastikan diawali https://.',
-            'link_pengumpulan.max'        => 'URL terlalu panjang.',
-            'file_pengumpulan.required'   => 'File wajib diunggah.',
-            'file_pengumpulan.mimes'      => 'Format file tidak didukung.',
-            'file_pengumpulan.max'        => 'Ukuran file maksimal 10MB.',
-        ]);
+        ];
 
-        // Upload file jika ada
-        if ($request->hasFile('file_pengumpulan') && $request->file('file_pengumpulan')->isValid()) {
-            // FIX: Gunakan folder berbeda untuk foto vs file dokumen
-            $folder = $request->jenis_pengumpulan === 'foto'
-                ? 'pengumpulan-foto'
-                : 'pengumpulan-tugas';
-
-            $validated['file_pengumpulan'] = $request->file('file_pengumpulan')
-                ->store($folder, 'public');
-        } else {
-            // Pastikan tidak ada nilai sisa dari validated jika tidak ada file
-            $validated['file_pengumpulan'] = null;
+        // Required berdasarkan jenis tugas
+        if (in_array($jenisTugas, ['teks', 'semua'])) {
+            $rules['jawaban_teks'][] = 'required';
+        }
+        if (in_array($jenisTugas, ['link', 'semua'])) {
+            $rules['url_link'][] = 'required';
+        }
+        if (in_array($jenisTugas, ['file', 'semua'])) {
+            $rules['path_file'][] = 'required';
         }
 
-        // FIX: Evaluasi status berdasarkan waktu saat ini vs batas_waktu,
-        // bukan dari isMasihBisaDikumpulkan() (yang mencakup izinkan_terlambat).
+        $messages = [
+            'jawaban_teks.required' => 'Jawaban teks wajib diisi.',
+            'jawaban_teks.max'      => 'Jawaban teks terlalu panjang (maks 10.000 karakter).',
+            'url_link.required'     => 'Link wajib diisi.',
+            'url_link.url'          => 'Format link tidak valid. Pastikan diawali https://.',
+            'url_link.max'          => 'URL terlalu panjang (maks 255 karakter).',
+            'path_file.required'    => 'File wajib diunggah.',
+            'path_file.mimes'       => 'Format file tidak didukung (PDF, Word, JPG, PNG, ZIP).',
+            'path_file.max'         => 'Ukuran file maksimal 10MB.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
+
+        // Upload file jika ada
+        $pathFile = null;
+        if ($request->hasFile('path_file') && $request->file('path_file')->isValid()) {
+            $pathFile = $request->file('path_file')->store('pengumpulan-tugas', 'public');
+        }
+
+        // Status: terlambat jika waktu sudah lewat, dikumpulkan jika tepat waktu
         $status = $tugas->isTelahBerakhir()
             ? PengumpulanTugas::STATUS_TERLAMBAT
             : PengumpulanTugas::STATUS_DIKUMPULKAN;
 
-        // FIX: Nama kolom sekarang selaras dengan PengumpulanTugas::$fillable
+        // FIX: insert menggunakan nama kolom DB yang benar
+        // path_file, jawaban_teks, url_link — bukan nama kolom model lama
         PengumpulanTugas::create([
-            'tugas_id'          => $tugas->id,
-            'siswa_id'          => $siswa->id,
-            'jenis_pengumpulan' => $validated['jenis_pengumpulan'],
-            'konten_teks'       => $validated['konten_teks'] ?? null,
-            'link_pengumpulan'  => $validated['link_pengumpulan'] ?? null,
-            'file_pengumpulan'  => $validated['file_pengumpulan'] ?? null,
-            'catatan'           => $validated['catatan'] ?? null,
-            'status'            => $status,
-            'dikumpulkan_pada'  => now(),
+            'tugas_id'         => $tugas->id,
+            'siswa_id'         => $siswa->id,
+            'path_file'        => $pathFile,
+            'jawaban_teks'     => $validated['jawaban_teks'] ?? null,
+            'url_link'         => $validated['url_link'] ?? null,
+            'status'           => $status,
+            'dikumpulkan_pada' => now(),
         ]);
 
         return redirect()->route('siswa.tugas.show', $tugas)

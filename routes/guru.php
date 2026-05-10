@@ -19,6 +19,8 @@ use App\Http\Controllers\Guru\RiwayatScanController;
 use App\Http\Controllers\Guru\GuruIzinController;
 use App\Http\Controllers\Guru\NotifikasiController;
 use App\Http\Controllers\Guru\PengumumanController;
+use App\Http\Controllers\Guru\BarcodeController;
+use App\Http\Controllers\Guru\SoalUjianController;
 
 Route::prefix('guru')
     ->name('guru.')
@@ -80,10 +82,38 @@ Route::prefix('guru')
         // PENGUMPULAN TUGAS
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('pengumpulan-tugas')->name('pengumpulan-tugas.')->group(function () {
-            Route::get('/',                           [PengumpulanTugasController::class, 'index'])->name('index');
-            Route::get('/{pengumpulan}',              [PengumpulanTugasController::class, 'show'])->name('show');
-            Route::patch('/{pengumpulan}/beri-nilai', [PengumpulanTugasController::class, 'beriNilai'])->name('beri-nilai');
-            Route::patch('/{pengumpulan}/kembalikan', [PengumpulanTugasController::class, 'kembalikan'])->name('kembalikan');
+            Route::get('/',                          [PengumpulanTugasController::class, 'index'])     ->name('index');
+            Route::get('/{pengumpulan}',             [PengumpulanTugasController::class, 'show'])      ->name('show');
+            Route::get('/{pengumpulan}/nilai',       [PengumpulanTugasController::class, 'formNilai']) ->name('form-nilai');
+            Route::put('/{pengumpulan}/nilai',       [PengumpulanTugasController::class, 'simpanNilai'])->name('simpan-nilai');
+            Route::patch('/{pengumpulan}/kembalikan',[PengumpulanTugasController::class, 'kembalikan'])->name('kembalikan');
+            
+        });
+
+        // ──────────────────────────────────────────────────────────────────────────────
+        // SOAL UJIAN (nested di bawah ujian)
+        // ──────────────────────────────────────────────────────────────────────────────
+        Route::prefix('ujian/{ujian}/soal')->name('ujian.soal.')->group(function () {
+        
+            // Index: daftar semua soal ujian
+            Route::get('/',                [SoalUjianController::class, 'index'])->name('index');
+        
+            // Create & Store
+            Route::get('/create',          [SoalUjianController::class, 'create'])->name('create');
+            Route::post('/',               [SoalUjianController::class, 'store'])->name('store');
+        
+            // Reorder soal (AJAX — POST body: { order: [id, id, ...] })
+            Route::post('/reorder',        [SoalUjianController::class, 'reorder'])->name('reorder');
+        
+            // Koreksi essay
+            Route::get('/koreksi',         [SoalUjianController::class, 'koreksiIndex'])->name('koreksi.index');
+            Route::post('/koreksi/{jawaban}', [SoalUjianController::class, 'koreksiStore'])->name('koreksi.store');
+        
+            // Wildcard soal — HARUS di bawah static routes
+            Route::get('/{soal}',          [SoalUjianController::class, 'show'])->name('show');
+            Route::get('/{soal}/edit',     [SoalUjianController::class, 'edit'])->name('edit');
+            Route::put('/{soal}',          [SoalUjianController::class, 'update'])->name('update');
+            Route::delete('/{soal}',       [SoalUjianController::class, 'destroy'])->name('destroy');
         });
 
         // ──────────────────────────────────────────────────────────────────────
@@ -240,5 +270,14 @@ Route::prefix('guru')
         Route::prefix('pengumuman')->name('pengumuman.')->group(function () {
             Route::get('/',             [PengumumanController::class, 'index'])->name('index');
             Route::get('/{pengumuman}', [PengumumanController::class, 'show'])->name('show');
+        });
+
+        // ──────────────────────────────────────────────────────────────────────
+        // BARCODE GERBANG GURU (barcode pribadi guru untuk scan di gerbang)
+        // ──────────────────────────────────────────────────────────────────────
+        Route::prefix('barcode')->name('barcode.')->group(function () {
+            Route::get('/',         [BarcodeController::class, 'index'])->name('index');
+            Route::get('/gerbang',  [BarcodeController::class, 'gerbang'])->name('gerbang');
+            Route::get('/download', [BarcodeController::class, 'download'])->name('download');
         });
     });

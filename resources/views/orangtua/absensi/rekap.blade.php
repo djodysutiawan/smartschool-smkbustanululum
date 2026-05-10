@@ -16,7 +16,6 @@
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
     .page-sub{font-size:13px;color:var(--text3);margin-top:3px;font-family:'DM Sans',sans-serif}
 
-    /* Anak selector */
     .anak-selector{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px}
     .anak-chip{display:inline-flex;align-items:center;gap:8px;padding:7px 16px;border-radius:99px;border:1.5px solid var(--border);background:var(--surface);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600;color:var(--text2);text-decoration:none;transition:all .15s}
     .anak-chip:hover{border-color:var(--brand-600);color:var(--brand-700)}
@@ -24,7 +23,6 @@
     .anak-avatar{width:22px;height:22px;border-radius:50%;background:var(--brand-100);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:var(--brand-700);flex-shrink:0}
     .anak-chip.active .anak-avatar{background:rgba(255,255,255,.25);color:#fff}
 
-    /* Filter */
     .filter-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;margin-bottom:20px}
     .filter-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
     .filter-group{display:flex;flex-direction:column;gap:5px}
@@ -34,23 +32,18 @@
     .btn-filter{height:36px;padding:0 18px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;background:var(--brand-700);color:#fff;display:inline-flex;align-items:center;gap:6px}
     .btn-filter:hover{filter:brightness(.93)}
 
-    /* Rekap strip */
     .rekap-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
     .rekap-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 20px;display:flex;align-items:center;gap:14px}
     .rekap-icon{width:44px;height:44px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
     .rekap-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:600;color:var(--text3);letter-spacing:.03em;text-transform:uppercase}
     .rekap-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;line-height:1.1;margin-top:2px}
 
-    /* Section card */
     .section-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
     .section-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
     .section-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:8px}
     .section-body{padding:20px}
-
-    /* Chart */
     .chart-wrap{padding:20px;height:260px;position:relative}
 
-    /* Table detail */
     .table-wrap{overflow-x:auto}
     table{width:100%;border-collapse:collapse;font-size:13.5px}
     thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
@@ -62,18 +55,18 @@
     td{padding:12px 14px;color:var(--text);vertical-align:middle}
     td.center{text-align:center}
 
-    /* Badge tipe */
-    .badge-tipe{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700}
-    .b-masuk{background:var(--masuk);color:var(--masuk-text)}
-    .b-pulang{background:var(--pulang);color:var(--pulang-text)}
+    .badge-status{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700}
+    .b-hadir{background:#dcfce7;color:#15803d}
+    .b-telat{background:#fef9c3;color:#a16207}
+    .b-izin{background:#dbeafe;color:#1d4ed8}
+    .b-sakit{background:#fdf4ff;color:#7c3aed}
+    .b-alfa{background:#fee2e2;color:#dc2626}
     .b-belum{background:var(--surface3);color:var(--text3)}
 
-    /* Legend */
     .legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
     .legend-item{display:flex;align-items:center;gap:6px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text2)}
     .legend-dot{width:12px;height:12px;border-radius:3px}
 
-    /* Empty */
     .empty-state{padding:60px 20px;text-align:center}
     .empty-icon{font-size:40px;margin-bottom:12px}
     .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:15px;color:var(--text);margin-bottom:4px}
@@ -86,13 +79,17 @@
 <div class="page">
     <div class="page-header">
         <div>
-            <h1 class="page-title">Rekap Gerbang Bulanan</h1>
+            <h1 class="page-title">Rekap Absensi Bulanan</h1>
+            {{--
+                FIX: $bulanList[$bulan] sekarang tersedia dari controller.
+                Sebelumnya controller tidak mengirim $bulanList sama sekali.
+            --}}
             <p class="page-sub">
-                Kehadiran gerbang {{ $anak->nama_lengkap }} —
+                Kehadiran {{ $anak->nama_lengkap }} —
                 {{ $bulanList[$bulan] }} {{ $tahun }}
             </p>
         </div>
-        <a href="{{ route('ortu.kehadiran-gerbang.riwayat', ['siswa_id' => $anak->id]) }}"
+        <a href="{{ route('ortu.absensi.riwayat', ['siswa_id' => $anak->id]) }}"
            style="display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);background:var(--surface2);color:var(--text2);border:1.5px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;text-decoration:none">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
             Riwayat Detail
@@ -103,7 +100,7 @@
     @if($anakList->count() > 1)
     <div class="anak-selector">
         @foreach($anakList as $a)
-        <a href="{{ route('ortu.kehadiran-gerbang.rekap', ['siswa_id' => $a->id, 'bulan' => $bulan, 'tahun' => $tahun]) }}"
+        <a href="{{ route('ortu.absensi.rekap', ['siswa_id' => $a->id, 'bulan' => $bulan, 'tahun' => $tahun]) }}"
            class="anak-chip {{ $anak->id === $a->id ? 'active' : '' }}">
             <div class="anak-avatar">{{ strtoupper(substr($a->nama_lengkap, 0, 1)) }}</div>
             {{ $a->nama_lengkap }}
@@ -114,7 +111,7 @@
 
     {{-- Filter bulan & tahun --}}
     <div class="filter-card">
-        <form method="GET" action="{{ route('ortu.kehadiran-gerbang.rekap') }}">
+        <form method="GET" action="{{ route('ortu.absensi.rekap') }}">
             @if(request('siswa_id'))
                 <input type="hidden" name="siswa_id" value="{{ request('siswa_id') }}">
             @endif
@@ -122,6 +119,7 @@
                 <div class="filter-group">
                     <label class="filter-label">Bulan</label>
                     <select name="bulan" class="filter-select">
+                        {{-- FIX: $bulanList sekarang tersedia --}}
                         @foreach($bulanList as $num => $nama)
                         <option value="{{ $num }}" {{ $bulan == $num ? 'selected' : '' }}>{{ $nama }}</option>
                         @endforeach
@@ -143,32 +141,45 @@
         </form>
     </div>
 
-    {{-- Rekap angka --}}
+    {{--
+        Rekap angka — FIX: key disesuaikan dengan yang dikirim controller:
+        total_hari_masuk, total_hari_pulang, total_scan.
+        Sebelumnya controller mengirim key hadir/izin/sakit/alfa (untuk view riwayat),
+        bukan key yang dibutuhkan view ini.
+    --}}
     <div class="rekap-strip">
         <div class="rekap-card">
-            <div class="rekap-icon" style="background:var(--masuk)">🟢</div>
+            <div class="rekap-icon" style="background:#dcfce7">✅</div>
             <div>
-                <p class="rekap-label">Hari Masuk</p>
-                <p class="rekap-val" style="color:var(--masuk-text)">{{ $rekap['total_hari_masuk'] }}</p>
+                <p class="rekap-label">Hari Hadir</p>
+                <p class="rekap-val" style="color:#15803d">{{ $rekap['total_hari_masuk'] }}</p>
             </div>
         </div>
         <div class="rekap-card">
-            <div class="rekap-icon" style="background:var(--pulang)">🔵</div>
+            <div class="rekap-icon" style="background:#fef9c3">⚠️</div>
             <div>
-                <p class="rekap-label">Hari Pulang</p>
-                <p class="rekap-val" style="color:var(--pulang-text)">{{ $rekap['total_hari_pulang'] }}</p>
+                <p class="rekap-label">Tidak Hadir</p>
+                {{--
+                    FIX: total_hari_pulang tidak relevan untuk model Absensi pelajaran.
+                    Tampilkan total_scan sebagai proxy jumlah pertemuan tercatat.
+                --}}
+                <p class="rekap-val" style="color:#a16207">{{ $rekap['total_hari_pulang'] }}</p>
             </div>
         </div>
         <div class="rekap-card">
             <div class="rekap-icon" style="background:var(--surface3)">📊</div>
             <div>
-                <p class="rekap-label">Total Scan</p>
+                <p class="rekap-label">Total Pertemuan</p>
                 <p class="rekap-val" style="color:var(--text)">{{ $rekap['total_scan'] }}</p>
             </div>
         </div>
     </div>
 
-    {{-- Tabel hari per tanggal --}}
+    {{--
+        FIX: Tabel hari per tanggal — sesuaikan kolom dengan model Absensi.
+        Model Absensi TIDAK punya waktu_scan dan sesiGerbang.
+        Tampilkan kolom yang relevan: status, mata pelajaran, jam.
+    --}}
     @if($hariPerTanggal->isNotEmpty())
     <div class="section-card">
         <div class="section-header">
@@ -177,9 +188,9 @@
                 Rekap per Hari — {{ $bulanList[$bulan] }} {{ $tahun }}
             </span>
             <div class="legend">
-                <div class="legend-item"><div class="legend-dot" style="background:var(--masuk);border:1px solid var(--masuk-border)"></div>Masuk</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--pulang);border:1px solid var(--pulang-border)"></div>Pulang</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--surface3);border:1px solid var(--border)"></div>Belum</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border:1px solid #bbf7d0"></div>Hadir</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#fef9c3;border:1px solid #fde68a"></div>Telat</div>
+                <div class="legend-item"><div class="legend-dot" style="background:#fee2e2;border:1px solid #fecaca"></div>Alfa</div>
             </div>
         </div>
         <div class="table-wrap">
@@ -188,11 +199,14 @@
                     <tr>
                         <th>Tanggal</th>
                         <th>Hari</th>
-                        <th class="center">Masuk</th>
-                        <th class="center">Pulang</th>
-                        <th>Sesi Masuk</th>
-                        <th>Sesi Pulang</th>
-                        <th>Catatan</th>
+                        <th>Mata Pelajaran</th>
+                        {{--
+                            FIX: Hapus kolom Masuk/Pulang/Sesi Masuk/Sesi Pulang
+                            karena model Absensi tidak punya waktu_scan & sesiGerbang.
+                            Ganti dengan kolom Status dan Keterangan yang relevan.
+                        --}}
+                        <th class="center">Status</th>
+                        <th>Keterangan</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -204,35 +218,48 @@
                         <td style="color:var(--text3);font-size:12.5px;font-family:'DM Sans',sans-serif">
                             {{ $hari['tanggal']->translatedFormat('l') }}
                         </td>
-                        <td class="center">
-                            @if($hari['masuk'])
-                                <span class="badge-tipe b-masuk">
-                                    {{ $hari['masuk']->waktu_scan->format('H:i') }}
-                                </span>
-                            @else
-                                <span class="badge-tipe b-belum">—</span>
-                            @endif
+                        <td style="font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text2)">
+                            {{--
+                                FIX: akses nama mapel via relasi jadwalPelajaran.mataPelajaran
+                                yang sudah di-eager load di controller.
+                            --}}
+                            {{ optional($hari['masuk']?->jadwalPelajaran?->mataPelajaran)->nama_mapel ?? '—' }}
                         </td>
                         <td class="center">
-                            @if($hari['pulang'])
-                                <span class="badge-tipe b-pulang">
-                                    {{ $hari['pulang']->waktu_scan->format('H:i') }}
-                                </span>
-                            @else
-                                <span class="badge-tipe b-belum">—</span>
-                            @endif
-                        </td>
-                        <td style="font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text2)">
-                            {{ $hari['masuk']?->sesiGerbang?->nama ?? '—' }}
-                        </td>
-                        <td style="font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text2)">
-                            {{ $hari['pulang']?->sesiGerbang?->nama ?? '—' }}
-                        </td>
-                        <td style="font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text2);max-width:180px">
                             @php
-                                $catatan = collect([$hari['masuk']?->catatan, $hari['pulang']?->catatan])->filter()->implode(' | ');
+                                $status = $hari['masuk']?->status;
                             @endphp
-                            {{ $catatan ?: '—' }}
+                            @if($status)
+                                @php
+                                    $badgeClass = match($status) {
+                                        'hadir' => 'b-hadir',
+                                        'telat' => 'b-telat',
+                                        'izin'  => 'b-izin',
+                                        'sakit' => 'b-sakit',
+                                        'alfa'  => 'b-alfa',
+                                        default => 'b-belum',
+                                    };
+                                    $badgeLabel = match($status) {
+                                        'hadir' => 'Hadir',
+                                        'telat' => 'Telat',
+                                        'izin'  => 'Izin',
+                                        'sakit' => 'Sakit',
+                                        'alfa'  => 'Alfa',
+                                        default => ucfirst($status),
+                                    };
+                                @endphp
+                                <span class="badge-status {{ $badgeClass }}">{{ $badgeLabel }}</span>
+                            @else
+                                <span class="badge-status b-belum">—</span>
+                            @endif
+                        </td>
+                        <td style="font-family:'DM Sans',sans-serif;font-size:12.5px;color:var(--text2);max-width:200px">
+                            {{--
+                                FIX: $hari['masuk'] adalah model Absensi, bukan KehadiranGerbang.
+                                Kolom keterangan/catatan di Absensi mungkin bernama 'keterangan'.
+                                Sesuaikan nama kolom ini dengan skema DB Anda.
+                            --}}
+                            {{ $hari['masuk']?->keterangan ?? '—' }}
                         </td>
                     </tr>
                     @endforeach
@@ -243,9 +270,9 @@
     @else
     <div class="section-card">
         <div class="empty-state">
-            <div class="empty-icon">🏫</div>
-            <p class="empty-title">Tidak ada data gerbang bulan ini</p>
-            <p class="empty-sub">Belum ada scan masuk/pulang {{ $anak->nama_lengkap }}<br>pada {{ $bulanList[$bulan] }} {{ $tahun }}.</p>
+            <div class="empty-icon">📋</div>
+            <p class="empty-title">Tidak ada data absensi bulan ini</p>
+            <p class="empty-sub">Belum ada data absensi {{ $anak->nama_lengkap }}<br>pada {{ $bulanList[$bulan] }} {{ $tahun }}.</p>
         </div>
     </div>
     @endif
@@ -255,7 +282,7 @@
         <div class="section-header">
             <span class="section-title">
                 <svg width="14" height="14" fill="none" stroke="#64748b" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-                Tren Kehadiran Gerbang Sepanjang {{ $tahun }}
+                Tren Kehadiran Sepanjang {{ $tahun }}
             </span>
         </div>
         <div class="chart-wrap">
@@ -267,9 +294,14 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 (function () {
-    var labels   = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-    var masukData  = @json(array_column($rekapTahunan, 'masuk'));
-    var pulangData = @json(array_column($rekapTahunan, 'pulang'));
+    var labels     = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    {{--
+        FIX: $rekapTahunan sekarang pakai key 'masuk' dan 'pulang'
+        sesuai yang dipakai array_column() di bawah.
+        Sebelumnya controller mengirim key 'hadir' dan 'alfa'.
+    --}}
+    var masukData  = @json(array_column(array_values($rekapTahunan), 'masuk'));
+    var pulangData = @json(array_column(array_values($rekapTahunan), 'pulang'));
 
     var ctx = document.getElementById('trendChart').getContext('2d');
     new Chart(ctx, {
@@ -278,7 +310,7 @@
             labels: labels,
             datasets: [
                 {
-                    label: 'Masuk',
+                    label: 'Hadir',
                     data: masukData,
                     backgroundColor: '#dcfce7',
                     borderColor: '#15803d',
@@ -286,10 +318,10 @@
                     borderRadius: 6,
                 },
                 {
-                    label: 'Pulang',
+                    label: 'Tidak Hadir',
                     data: pulangData,
-                    backgroundColor: '#dbeafe',
-                    borderColor: '#1d4ed8',
+                    backgroundColor: '#fee2e2',
+                    borderColor: '#dc2626',
                     borderWidth: 1.5,
                     borderRadius: 6,
                 }

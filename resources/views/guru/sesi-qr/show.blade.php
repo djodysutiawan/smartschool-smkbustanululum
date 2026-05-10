@@ -2,286 +2,372 @@
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
     :root {
-        --brand-700:#1750c0;--brand-600:#1f63db;--brand-500:#3582f0;
-        --brand-100:#d9ebff;--brand-50:#eef6ff;
+        --brand-600:#1f63db;--brand-500:#3582f0;--brand-50:#eef6ff;--brand-100:#d9ebff;
         --surface:#fff;--surface2:#f8fafc;--surface3:#f1f5f9;
-        --border:#e2e8f0;--border2:#cbd5e1;
-        --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+        --border:#e2e8f0;--text:#0f172a;--text2:#475569;--text3:#94a3b8;
+        --green:#15803d;--green-bg:#dcfce7;--green-border:#bbf7d0;
+        --red:#dc2626;--red-bg:#fee2e2;--red-border:#fecaca;
+        --yellow:#a16207;--yellow-bg:#fefce8;--yellow-border:#fde68a;
+        --purple:#7c3aed;--purple-bg:#faf5ff;--purple-border:#e9d5ff;
         --radius:10px;--radius-sm:7px;
     }
-    .page{padding:28px 28px 40px}
-    .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
-    .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
-    .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
-    .header-actions{display:flex;gap:8px;flex-wrap:wrap}
+    *{box-sizing:border-box;margin:0;padding:0}
+    .page{padding:28px 28px 48px;font-family:'DM Sans',sans-serif}
+    .breadcrumb{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text3);margin-bottom:20px;flex-wrap:wrap}
+    .breadcrumb a{color:var(--text3);text-decoration:none}.breadcrumb a:hover{color:var(--brand-600)}
+    .breadcrumb-sep{color:var(--border)}
 
-    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
+    /* Hero card */
+    .hero{background:linear-gradient(135deg,#1750c0 0%,#1f63db 60%,#3582f0 100%);border-radius:var(--radius);padding:28px 28px 0;margin-bottom:20px;overflow:hidden;position:relative}
+    .hero::before{content:'';position:absolute;right:-40px;top:-40px;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.06)}
+    .hero::after{content:'';position:absolute;right:60px;bottom:-30px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.04)}
+    .hero-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+    .hero-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 12px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700}
+    .hero-badge.aktif{background:rgba(34,197,94,.2);color:#86efac;border:1px solid rgba(34,197,94,.3)}
+    .hero-badge.expired{background:rgba(239,68,68,.2);color:#fca5a5;border:1px solid rgba(239,68,68,.3)}
+    .hero-badge-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+    .hero-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .hero-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:22px;font-weight:800;color:#fff;line-height:1.2;margin-bottom:4px}
+    .hero-mapel{font-size:14px;color:rgba(255,255,255,.7)}
+    .hero-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid rgba(255,255,255,.12);margin:0 -28px}
+    .hero-stat{padding:16px 20px;border-right:1px solid rgba(255,255,255,.12)}
+    .hero-stat:last-child{border-right:none}
+    .hero-stat-label{font-size:10.5px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.05em;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;margin-bottom:4px}
+    .hero-stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:#fff}
+    .hero-stat-sub{font-size:11px;color:rgba(255,255,255,.5);margin-top:2px}
+
+    /* Btn */
+    .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s;white-space:nowrap}
     .btn:hover{filter:brightness(.93)}
-    .btn-primary{background:var(--brand-600);color:#fff}
+    .btn-white{background:#fff;color:var(--brand-600)}
+    .btn-white-outline{background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35)}
+    .btn-white-outline:hover{background:rgba(255,255,255,.1);filter:none}
+    .btn-sm{padding:6px 12px;font-size:12px;border-radius:6px}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
-    .btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
-    .btn-del{background:#fff0f0;color:#dc2626;border:1px solid #fecaca}
-    .btn-del:hover{background:#fee2e2;filter:none}
-    .btn-nonaktif{background:#fefce8;color:#a16207;border:1px solid #fde68a}
+    .btn-nonaktif{background:var(--yellow-bg);color:var(--yellow);border:1px solid var(--yellow-border)}
     .btn-nonaktif:hover{background:#fef9c3;filter:none}
-    .btn-print{background:#faf5ff;color:#7c3aed;border:1px solid #e9d5ff}
-    .btn-print:hover{background:#f3e8ff;filter:none}
+    .btn-del{background:var(--red-bg);color:var(--red);border:1px solid var(--red-border)}
+    .btn-del:hover{background:#fecaca;filter:none}
+    .btn-print{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+    .btn-print:hover{background:#ede9fe;filter:none}
+    .btn-tayangkan{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+    .btn-tayangkan:hover{background:#bbf7d0;filter:none}
 
-    .layout{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+    /* Layout 2 col */
+    .layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start}
+    
+    /* Card */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
+    .card:last-child{margin-bottom:0}
+    .card-header{padding:14px 18px;border-bottom:1px solid var(--surface3);display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .card-header-left{display:flex;align-items:center;gap:10px}
+    .card-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:var(--text)}
+    .card-sub{font-size:11.5px;color:var(--text3);margin-top:1px}
+    .card-body{padding:18px}
 
-    .detail-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
-    .detail-card-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .detail-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
-    .detail-card-body{padding:20px}
+    /* Info grid */
+    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .info-item{}
+    .info-item-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px}
+    .info-item-val{font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);font-weight:500}
+    .info-item-val.mono{font-family:monospace;font-size:12px;background:var(--surface2);padding:4px 8px;border-radius:5px;display:inline-block;border:1px solid var(--border)}
+    .info-divider{grid-column:1/-1;height:1px;background:var(--surface3)}
 
-    .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
-    .info-row{display:flex;flex-direction:column;gap:3px;padding:12px 0;border-bottom:1px solid var(--surface3)}
-    .info-row:last-child{border-bottom:none}
-    .info-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
-    .info-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:600;color:var(--text)}
-    .info-val.muted{color:var(--text3);font-weight:400}
+    /* Progress */
+    .progress-wrap{padding:14px 18px;border-top:1px solid var(--surface3)}
+    .progress-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .progress-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2)}
+    .progress-pct{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:var(--brand-600)}
+    .progress-track{height:8px;background:var(--surface3);border-radius:99px;overflow:hidden}
+    .progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--brand-500),#22c55e);transition:width .6s cubic-bezier(.4,0,.2,1)}
+    .progress-sub{font-size:11px;color:var(--text3);margin-top:6px;font-family:'DM Sans',sans-serif}
 
-    .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700}
-    .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .badge-aktif  {background:#dcfce7;color:#15803d} .badge-aktif   .badge-dot{background:#15803d}
-    .badge-expired{background:#fee2e2;color:#dc2626} .badge-expired .badge-dot{background:#dc2626}
-    .badge-hadir{background:#dcfce7;color:#15803d} .badge-hadir .badge-dot{background:#15803d}
-    .badge-telat{background:#fefce8;color:#a16207} .badge-telat .badge-dot{background:#a16207}
-    .badge-alfa {background:#fee2e2;color:#dc2626} .badge-alfa  .badge-dot{background:#dc2626}
+    /* Table */
+    .table-wrap{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;font-family:'DM Sans',sans-serif;font-size:13px}
+    th{padding:10px 14px;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;background:var(--surface2);border-bottom:1px solid var(--border)}
+    td{padding:11px 14px;color:var(--text2);border-bottom:1px solid var(--surface3)}
+    tr:last-child td{border-bottom:none}
+    tr:hover td{background:var(--surface2)}
+    .td-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:var(--text);font-size:13px}
+    .td-nis{font-size:11.5px;color:var(--text3);margin-top:1px}
 
-    .qr-display{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:24px;text-align:center}
-    .qr-code-text{font-family:'DM Sans',monospace;font-size:20px;font-weight:700;color:var(--text);letter-spacing:.08em;word-break:break-all;margin-bottom:8px}
-    .qr-hint{font-size:12px;color:var(--text3)}
+    /* Status badges in table */
+    .s-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 9px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700}
+    .s-valid{background:var(--green-bg);color:var(--green)}
+    .s-invalid{background:var(--red-bg);color:var(--red)}
 
-    .progress-bar-wrap{height:8px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-top:8px}
-    .progress-bar{height:100%;background:var(--brand-500);border-radius:99px;transition:width .4s}
+    /* Alert */
+    .alert{padding:11px 14px;border-radius:var(--radius-sm);margin-bottom:14px;font-size:13px;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:8px}
+    .alert-success{background:#f0fdf4;border:1px solid var(--green-border);color:#166534}
+    .alert-error{background:var(--red-bg);border:1px solid var(--red-border);color:#991b1b}
 
-    table{width:100%;border-collapse:collapse;font-size:13px}
-    thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
-    thead th{padding:10px 14px;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase}
-    thead th.center{text-align:center}
-    tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
-    tbody tr:last-child{border-bottom:none}
-    tbody tr:hover{background:#fafbff}
-    td{padding:9px 14px;color:var(--text);vertical-align:middle}
-    td.center{text-align:center}
+    /* Empty */
+    .table-empty{padding:40px 20px;text-align:center}
+    .table-empty p{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13.5px;color:var(--text3)}
+    .table-empty small{font-size:12px;color:var(--text3)}
 
-    .empty-state{padding:40px 20px;text-align:center}
-    .empty-title{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:14px;color:var(--text);margin-bottom:4px}
-    .empty-sub{font-size:12.5px;color:var(--text3)}
-
-    @media(max-width:900px){.layout{grid-template-columns:1fr}}
-    @media(max-width:640px){.page{padding:16px}.info-grid{grid-template-columns:1fr}}
+    @media(max-width:768px){
+        .page{padding:16px}
+        .layout{grid-template-columns:1fr}
+        .hero-stats{grid-template-columns:repeat(2,1fr)}
+        .hero-stat:nth-child(2){border-right:none}
+        .hero-stat:nth-child(3){border-right:1px solid rgba(255,255,255,.12)}
+        .info-grid{grid-template-columns:1fr}
+    }
 </style>
 
 <div class="page">
-    <div class="page-header">
-        <div>
-            <h1 class="page-title">Detail Sesi QR</h1>
-            <p class="page-sub">{{ $sesiQr->kelas->nama_kelas ?? '—' }} — {{ \Carbon\Carbon::parse($sesiQr->tanggal)->format('d M Y') }}</p>
+
+    {{-- Breadcrumb --}}
+    <div class="breadcrumb">
+        <a href="{{ route('guru.sesi-qr.index') }}">Sesi QR</a>
+        <span class="breadcrumb-sep">/</span>
+        <span>Detail Sesi</span>
+    </div>
+
+    @if(session('success'))
+    <div class="alert alert-success">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        {{ session('success') }}
+    </div>
+    @endif
+    @if(session('error'))
+    <div class="alert alert-error">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        {{ session('error') }}
+    </div>
+    @endif
+
+    {{-- Hero --}}
+    @php
+        $isExpired = $sesiQr->isKadaluarsa() || !$sesiQr->is_active;
+        $totalSiswaKelas = $sesiQr->kelas?->siswa()->count() ?? 0;
+        $validScans = $sesiQr->riwayatScan->where('status','valid');
+        $allScans = $sesiQr->riwayatScan;
+        $pct = $totalSiswaKelas > 0 ? round(($sudahScan / $totalSiswaKelas) * 100) : 0;
+        $durasiMenit = \Carbon\Carbon::parse($sesiQr->berlaku_mulai)->diffInMinutes($sesiQr->kadaluarsa_pada);
+    @endphp
+    <div class="hero">
+        <div class="hero-top">
+            <div>
+                <span class="hero-badge {{ $isExpired ? 'expired' : 'aktif' }}">
+                    <span class="hero-badge-dot"></span>
+                    {{ $isExpired ? 'Kedaluwarsa' : 'Aktif' }}
+                </span>
+                <h1 class="hero-title" style="margin-top:8px">{{ $sesiQr->kelas->nama_kelas ?? '—' }}</h1>
+                <p class="hero-mapel">{{ $sesiQr->mataPelajaran->nama_mapel ?? 'Semua Mata Pelajaran' }}</p>
+            </div>
+            <div class="hero-actions">
+                @if(!$isExpired)
+                <a href="{{ route('guru.barcode-kelas.show-sesi', $sesiQr) }}" class="btn btn-white">
+                    <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    Tayangkan QR
+                </a>
+                <form action="{{ route('guru.sesi-qr.nonaktifkan', $sesiQr) }}" method="POST" style="display:inline">
+                    @csrf @method('PATCH')
+                    <button type="submit" class="btn btn-white-outline" onclick="return confirm('Nonaktifkan sesi QR ini sekarang?')">Nonaktifkan</button>
+                </form>
+                @endif
+                <a href="{{ route('guru.sesi-qr.cetak-qr', $sesiQr) }}" target="_blank" class="btn btn-white-outline">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                    Cetak QR
+                </a>
+            </div>
         </div>
-        <div class="header-actions">
-            <a href="{{ route('guru.sesi-qr.index') }}" class="btn btn-secondary">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
-                Kembali
-            </a>
-            <a href="{{ route('guru.sesi-qr.cetak-qr', $sesiQr->id) }}" target="_blank" class="btn btn-print">
-                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                Cetak QR
-            </a>
-            @php $isExpired = \Carbon\Carbon::parse($sesiQr->kadaluarsa_pada)->isPast() || !$sesiQr->is_active; @endphp
-            @if(!$isExpired)
-            <form action="{{ route('guru.sesi-qr.nonaktifkan', $sesiQr->id) }}" method="POST" style="display:inline">
-                @csrf @method('PATCH')
-                <button type="submit" class="btn btn-nonaktif">Nonaktifkan</button>
-            </form>
-            @endif
-            <form action="{{ route('guru.sesi-qr.destroy', $sesiQr->id) }}" method="POST" id="delForm" style="display:inline">
-                @csrf @method('DELETE')
-                <button type="button" class="btn btn-del" onclick="confirmDelete()">Hapus</button>
-            </form>
+        <div class="hero-stats">
+            <div class="hero-stat">
+                <p class="hero-stat-label">Scan Valid</p>
+                <p class="hero-stat-val">{{ $sudahScan }}</p>
+                <p class="hero-stat-sub">dari {{ $totalSiswa }} siswa</p>
+            </div>
+            <div class="hero-stat">
+                <p class="hero-stat-label">Kehadiran</p>
+                <p class="hero-stat-val">{{ $pct }}%</p>
+                <p class="hero-stat-sub">persentase</p>
+            </div>
+            <div class="hero-stat">
+                <p class="hero-stat-label">Durasi</p>
+                <p class="hero-stat-val">{{ $durasiMenit }}'</p>
+                <p class="hero-stat-sub">menit</p>
+            </div>
+            <div class="hero-stat">
+                <p class="hero-stat-label">Total Scan</p>
+                <p class="hero-stat-val">{{ $allScans->count() }}</p>
+                <p class="hero-stat-sub">semua percobaan</p>
+            </div>
         </div>
     </div>
 
     <div class="layout">
-        {{-- Kiri --}}
+        {{-- Kiri: Riwayat Scan --}}
         <div>
-            {{-- Info Sesi --}}
-            <div class="detail-card">
-                <div class="detail-card-header">
-                    <span class="detail-card-title">Informasi Sesi</span>
-                    <span class="badge {{ $isExpired ? 'badge-expired' : 'badge-aktif' }}">
-                        <span class="badge-dot"></span>{{ $isExpired ? 'Kedaluwarsa' : 'Aktif' }}
-                    </span>
-                </div>
-                <div class="detail-card-body">
-                    <div class="info-grid">
-                        <div class="info-row">
-                            <span class="info-label">Kelas</span>
-                            <span class="info-val">{{ $sesiQr->kelas->nama_kelas ?? '—' }}</span>
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon" style="background:var(--green-bg)">
+                            <svg width="15" height="15" fill="none" stroke="#15803d" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         </div>
-                        <div class="info-row">
-                            <span class="info-label">Mata Pelajaran</span>
-                            <span class="info-val {{ !$sesiQr->mataPelajaran ? 'muted' : '' }}">{{ $sesiQr->mataPelajaran->nama_mapel ?? 'Semua Mapel' }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Tanggal</span>
-                            <span class="info-val">{{ \Carbon\Carbon::parse($sesiQr->tanggal)->format('d M Y') }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Radius Lokasi</span>
-                            <span class="info-val {{ !$sesiQr->radius_meter ? 'muted' : '' }}">{{ $sesiQr->radius_meter ? $sesiQr->radius_meter . ' meter' : 'Tidak dibatasi' }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Berlaku Mulai</span>
-                            <span class="info-val">{{ \Carbon\Carbon::parse($sesiQr->berlaku_mulai)->format('d M Y, H:i') }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Kadaluarsa Pada</span>
-                            <span class="info-val {{ $isExpired ? '' : '' }}" style="{{ $isExpired ? 'color:#dc2626' : '' }}">{{ \Carbon\Carbon::parse($sesiQr->kadaluarsa_pada)->format('d M Y, H:i') }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Dibuat</span>
-                            <span class="info-val">{{ $sesiQr->created_at ? $sesiQr->created_at->format('d M Y, H:i') : '—' }}</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Total Scan</span>
-                            <span class="info-val">{{ $sesiQr->riwayatScan->count() }} siswa</span>
+                        <div>
+                            <p class="card-title">Riwayat Scan Siswa</p>
+                            <p class="card-sub">{{ $sudahScan }} scan valid dari {{ $totalSiswa }} siswa</p>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            {{-- Riwayat Scan --}}
-            <div class="detail-card">
-                <div class="detail-card-header">
-                    <span class="detail-card-title">Riwayat Scan ({{ $sesiQr->riwayatScan->count() }})</span>
+                {{-- Progress --}}
+                <div class="progress-wrap">
+                    <div class="progress-label">
+                        <span class="progress-title">Tingkat Kehadiran</span>
+                        <span class="progress-pct">{{ $pct }}%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width:{{ $pct }}%"></div>
+                    </div>
+                    <p class="progress-sub">{{ $sudahScan }} hadir · {{ $totalSiswa - $sudahScan }} belum scan</p>
                 </div>
-                @if($sesiQr->riwayatScan->count() > 0)
-                <div style="overflow-x:auto">
+
+                <div class="table-wrap">
+                    @php $riwayat = $sesiQr->riwayatScan->sortByDesc('dipindai_pada'); @endphp
+                    @if($riwayat->count() > 0)
                     <table>
                         <thead>
                             <tr>
-                                <th style="width:40px">#</th>
-                                <th>Nama Siswa</th>
+                                <th>Siswa</th>
                                 <th>Waktu Scan</th>
-                                <th class="center">Status</th>
+                                <th>Status</th>
+                                <th>Keterangan</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($sesiQr->riwayatScan as $i => $scan)
+                            @foreach($riwayat as $r)
                             <tr>
-                                <td style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text3)">{{ $i + 1 }}</td>
                                 <td>
-                                    <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px">{{ $scan->siswa->nama_lengkap ?? '—' }}</p>
-                                    <p style="font-size:11.5px;color:var(--text3)">{{ $scan->siswa->nis ?? '' }}</p>
+                                    <p class="td-name">{{ $r->siswa->nama_lengkap ?? '—' }}</p>
+                                    <p class="td-nis">{{ $r->siswa->nis ?? '—' }}</p>
                                 </td>
-                                <td style="font-size:12.5px;color:var(--text2)">{{ $scan->created_at ? $scan->created_at->format('H:i:s, d M Y') : '—' }}</td>
-                                <td class="center">
-                                    @if(isset($scan->status))
-                                        <span class="badge badge-{{ $scan->status }}"><span class="badge-dot"></span>{{ ucfirst($scan->status) }}</span>
-                                    @else
-                                        <span class="badge badge-hadir"><span class="badge-dot"></span>Hadir</span>
-                                    @endif
+                                <td style="white-space:nowrap;font-size:13px">
+                                    {{ optional($r->dipindai_pada)->format('H:i:s') ?? '—' }}
                                 </td>
+                                <td>
+                                    <span class="s-badge {{ $r->status === 'valid' ? 's-valid' : 's-invalid' }}">
+                                        {{ $r->status === 'valid' ? 'Valid' : ucfirst($r->status) }}
+                                    </span>
+                                </td>
+                                <td style="font-size:12px;color:var(--text3)">{{ $r->keterangan ?? '—' }}</td>
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
-                </div>
-                @else
-                <div class="detail-card-body">
-                    <div class="empty-state">
-                        <div style="width:44px;height:44px;background:var(--surface2);border-radius:10px;display:flex;align-items:center;justify-content:center;margin:0 auto 10px">
-                            <svg width="20" height="20" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        </div>
-                        <p class="empty-title">Belum ada scan</p>
-                        <p class="empty-sub">Siswa belum melakukan scan QR ini</p>
+                    @else
+                    <div class="table-empty">
+                        <p>Belum ada siswa yang scan</p>
+                        <small>Tayangkan QR ke siswa agar mereka bisa scan</small>
                     </div>
+                    @endif
                 </div>
-                @endif
             </div>
         </div>
 
-        {{-- Sidebar --}}
+        {{-- Kanan: Info & Aksi --}}
         <div>
-            {{-- Tampilkan Kode QR --}}
-            <div class="detail-card">
-                <div class="detail-card-header">
-                    <span class="detail-card-title">Kode QR</span>
-                </div>
-                <div class="detail-card-body">
-                    <div class="qr-display">
-                        <div style="margin-bottom:12px">
-                            <svg width="120" height="120" viewBox="0 0 120 120" style="margin:0 auto;display:block">
-                                <rect width="120" height="120" fill="#f8fafc" rx="8"/>
-                                <rect x="10" y="10" width="40" height="40" fill="none" stroke="#1f63db" stroke-width="4"/>
-                                <rect x="18" y="18" width="24" height="24" fill="#1f63db" rx="2"/>
-                                <rect x="70" y="10" width="40" height="40" fill="none" stroke="#1f63db" stroke-width="4"/>
-                                <rect x="78" y="18" width="24" height="24" fill="#1f63db" rx="2"/>
-                                <rect x="10" y="70" width="40" height="40" fill="none" stroke="#1f63db" stroke-width="4"/>
-                                <rect x="18" y="78" width="24" height="24" fill="#1f63db" rx="2"/>
-                                <g fill="#1f63db">
-                                    <rect x="70" y="70" width="8" height="8"/>
-                                    <rect x="82" y="70" width="8" height="8"/>
-                                    <rect x="94" y="70" width="8" height="8"/>
-                                    <rect x="70" y="82" width="8" height="8"/>
-                                    <rect x="94" y="82" width="8" height="8"/>
-                                    <rect x="70" y="94" width="8" height="8"/>
-                                    <rect x="82" y="94" width="8" height="8"/>
-                                    <rect x="94" y="94" width="8" height="8"/>
-                                </g>
-                            </svg>
+            {{-- Info Sesi --}}
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon" style="background:#eff6ff">
+                            <svg width="15" height="15" fill="none" stroke="#1d4ed8" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                         </div>
-                        <p class="qr-code-text">{{ $sesiQr->kode_qr ?? '—' }}</p>
-                        <p class="qr-hint">Kode ini digenerate otomatis oleh sistem</p>
+                        <p class="card-title">Informasi Sesi</p>
                     </div>
-
-                    <div style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
-                        <a href="{{ route('guru.sesi-qr.cetak-qr', $sesiQr->id) }}" target="_blank" class="btn btn-print" style="width:100%;justify-content:center">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
-                            Cetak QR PDF
-                        </a>
-                        @if(!$isExpired)
-                        <form action="{{ route('guru.sesi-qr.nonaktifkan', $sesiQr->id) }}" method="POST">
-                            @csrf @method('PATCH')
-                            <button type="submit" class="btn btn-nonaktif" style="width:100%;justify-content:center">
-                                Nonaktifkan Sesi
-                            </button>
-                        </form>
+                </div>
+                <div class="card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <p class="info-item-label">Tanggal</p>
+                            <p class="info-item-val">{{ \Carbon\Carbon::parse($sesiQr->tanggal)->translatedFormat('d M Y') }}</p>
+                        </div>
+                        <div class="info-item">
+                            <p class="info-item-label">Hari</p>
+                            <p class="info-item-val">{{ ucfirst($sesiQr->jadwalPelajaran->hari ?? '—') }}</p>
+                        </div>
+                        <div class="info-divider"></div>
+                        <div class="info-item">
+                            <p class="info-item-label">Mulai</p>
+                            <p class="info-item-val">{{ \Carbon\Carbon::parse($sesiQr->berlaku_mulai)->format('H:i') }}</p>
+                        </div>
+                        <div class="info-item">
+                            <p class="info-item-label">Berakhir</p>
+                            <p class="info-item-val">{{ \Carbon\Carbon::parse($sesiQr->kadaluarsa_pada)->format('H:i') }}</p>
+                        </div>
+                        <div class="info-divider"></div>
+                        <div class="info-item">
+                            <p class="info-item-label">Ruang</p>
+                            <p class="info-item-val">{{ $sesiQr->jadwalPelajaran->ruang->nama_ruang ?? '—' }}</p>
+                        </div>
+                        <div class="info-item">
+                            <p class="info-item-label">Radius</p>
+                            <p class="info-item-val">{{ $sesiQr->radius_meter ? $sesiQr->radius_meter.' m' : 'Nonaktif' }}</p>
+                        </div>
+                        @if($sesiQr->latitude && $sesiQr->longitude)
+                        <div class="info-divider"></div>
+                        <div class="info-item" style="grid-column:1/-1">
+                            <p class="info-item-label">Koordinat GPS</p>
+                            <p class="info-item-val mono">{{ $sesiQr->latitude }}, {{ $sesiQr->longitude }}</p>
+                        </div>
                         @endif
-                        <button type="button" class="btn btn-del" style="width:100%;justify-content:center" onclick="confirmDelete()">
-                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
-                            Hapus Sesi
-                        </button>
+                        <div class="info-divider"></div>
+                        <div class="info-item" style="grid-column:1/-1">
+                            <p class="info-item-label">Kode QR</p>
+                            <p class="info-item-val mono" style="word-break:break-all">{{ $sesiQr->kode_qr ?? '—' }}</p>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            {{-- Waktu --}}
-            <div class="detail-card">
-                <div class="detail-card-header">
-                    <span class="detail-card-title">Waktu Berlaku</span>
+            {{-- Aksi --}}
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon" style="background:var(--surface2)">
+                            <svg width="15" height="15" fill="none" stroke="#64748b" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+                        </div>
+                        <p class="card-title">Aksi</p>
+                    </div>
                 </div>
-                <div class="detail-card-body" style="display:flex;flex-direction:column;gap:12px">
-                    <div>
-                        <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Mulai</p>
-                        <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:700;color:var(--text)">{{ \Carbon\Carbon::parse($sesiQr->berlaku_mulai)->format('H:i') }}</p>
-                        <p style="font-size:12px;color:var(--text3)">{{ \Carbon\Carbon::parse($sesiQr->berlaku_mulai)->format('d M Y') }}</p>
-                    </div>
-                    <div style="height:1px;background:var(--border)"></div>
-                    <div>
-                        <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Kadaluarsa</p>
-                        <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:700;color:{{ $isExpired ? '#dc2626' : 'var(--text)' }}">{{ \Carbon\Carbon::parse($sesiQr->kadaluarsa_pada)->format('H:i') }}</p>
-                        <p style="font-size:12px;color:var(--text3)">{{ \Carbon\Carbon::parse($sesiQr->kadaluarsa_pada)->format('d M Y') }}</p>
-                    </div>
+                <div class="card-body" style="display:flex;flex-direction:column;gap:8px">
                     @if(!$isExpired)
-                    @php $remaining = now()->diffForHumans(\Carbon\Carbon::parse($sesiQr->kadaluarsa_pada), ['syntax' => \Carbon\CarbonInterface::DIFF_ABSOLUTE, 'parts' => 2]); @endphp
-                    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:7px;padding:10px 12px;text-align:center">
-                        <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:#15803d">Sisa waktu: {{ $remaining }}</p>
-                    </div>
+                    <a href="{{ route('guru.barcode-kelas.show-sesi', $sesiQr) }}" class="btn" style="background:var(--brand-600);color:#fff;justify-content:center">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                        Tayangkan QR ke Siswa
+                    </a>
                     @endif
+                    <a href="{{ route('guru.sesi-qr.cetak-qr', $sesiQr) }}" target="_blank" class="btn btn-print" style="justify-content:center">
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        Cetak QR (PDF)
+                    </a>
+                    @if(!$isExpired)
+                    <form action="{{ route('guru.sesi-qr.nonaktifkan', $sesiQr) }}" method="POST">
+                        @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-nonaktif" style="width:100%;justify-content:center"
+                            onclick="return confirm('Nonaktifkan sesi ini sekarang?')">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+                            Nonaktifkan Sesi
+                        </button>
+                    </form>
+                    @endif
+                    <form action="{{ route('guru.sesi-qr.destroy', $sesiQr) }}" method="POST" id="delForm">
+                        @csrf @method('DELETE')
+                        <button type="button" class="btn btn-del" style="width:100%;justify-content:center" onclick="confirmDel()">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+                            Hapus Sesi
+                        </button>
+                    </form>
+                    <a href="{{ route('guru.sesi-qr.index') }}" class="btn btn-secondary" style="justify-content:center">
+                        ← Kembali ke Daftar
+                    </a>
                 </div>
             </div>
         </div>
@@ -290,17 +376,19 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-@if(session('success'))
-Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2800,showConfirmButton:false,toast:true,position:'top-end'});
-@endif
-function confirmDelete() {
+function confirmDel() {
+    @php $isAktif = !$sesiQr->isKadaluarsa() && $sesiQr->is_active; @endphp
+    @if($isAktif)
+    Swal.fire({ icon: 'error', title: 'Tidak bisa dihapus', text: 'Nonaktifkan sesi terlebih dahulu sebelum menghapus.', confirmButtonColor: '#1f63db' });
+    @else
     Swal.fire({
-        title:'Hapus Sesi QR?',
-        html:`Sesi QR kelas <strong>{{ addslashes($sesiQr->kelas->nama_kelas ?? '') }}</strong> dan seluruh riwayat scan akan dihapus permanen.`,
-        icon:'warning',showCancelButton:true,
-        confirmButtonColor:'#dc2626',cancelButtonColor:'#64748b',
-        confirmButtonText:'Ya, Hapus!',cancelButtonText:'Batal',
-    }).then(r => { if(r.isConfirmed) document.getElementById('delForm').submit(); });
+        title: 'Hapus Sesi QR?',
+        html: 'Sesi ini beserta seluruh riwayat scan akan dihapus permanen.',
+        icon: 'warning', showCancelButton: true,
+        confirmButtonColor: '#dc2626', cancelButtonColor: '#64748b',
+        confirmButtonText: 'Ya, Hapus!', cancelButtonText: 'Batal',
+    }).then(r => { if (r.isConfirmed) document.getElementById('delForm').submit(); });
+    @endif
 }
 </script>
 </x-app-layout>

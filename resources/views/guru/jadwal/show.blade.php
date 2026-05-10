@@ -18,9 +18,9 @@
 
     /* Breadcrumb */
     .breadcrumb{display:flex;align-items:center;gap:6px;margin-bottom:20px;font-size:12.5px;color:var(--text3);flex-wrap:wrap}
-    .breadcrumb a{color:var(--text3);text-decoration:none;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600}
+    .breadcrumb a{color:var(--text3);text-decoration:none;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;transition:color .15s}
     .breadcrumb a:hover{color:var(--text)}
-    .breadcrumb-sep{color:var(--text3)}
+    .breadcrumb-sep{color:var(--border2)}
     .breadcrumb-current{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:var(--text2)}
 
     /* Btn */
@@ -40,30 +40,37 @@
     .card-body{padding:20px}
 
     /* Big time display */
-    .time-hero{text-align:center;padding:24px 20px;background:linear-gradient(135deg,var(--brand-50) 0%,#e0f0ff 100%);border-bottom:1px solid var(--brand-100)}
+    .time-hero{text-align:center;padding:24px 20px;background:linear-gradient(135deg,var(--brand-50) 0%,#e0f0ff 100%);border-bottom:1px solid var(--brand-100);position:relative}
     .time-hero-hari{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--brand-600);margin-bottom:6px}
     .time-hero-jam{font-family:'Plus Jakarta Sans',sans-serif;font-size:32px;font-weight:800;color:var(--text);letter-spacing:-1px}
     .time-hero-dur{font-size:12.5px;color:var(--text3);margin-top:4px}
 
+    /* Live indicator on hero */
+    .live-banner{display:flex;align-items:center;justify-content:center;gap:6px;background:#fef3c7;border:1px solid #fde68a;border-radius:var(--radius-sm);padding:7px 14px;margin-bottom:12px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:#b45309}
+    .live-dot{width:7px;height:7px;border-radius:50%;background:#d97706;animation:pulse 1.4s ease-in-out infinite;flex-shrink:0}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
     /* Detail list */
     .detail-list{display:flex;flex-direction:column;gap:0}
-    .detail-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--surface3)}
+    .detail-row{display:flex;align-items:flex-start;gap:12px;padding:13px 0;border-bottom:1px solid var(--surface3)}
     .detail-row:last-child{border-bottom:none}
     .detail-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-    .detail-icon.blue{background:#eff6ff}
-    .detail-icon.green{background:#f0fdf4}
+    .detail-icon.blue  {background:#eff6ff}
+    .detail-icon.green {background:#f0fdf4}
     .detail-icon.yellow{background:#fefce8}
     .detail-icon.purple{background:#faf5ff}
-    .detail-icon.gray{background:var(--surface2)}
+    .detail-icon.gray  {background:var(--surface2)}
     .detail-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px}
     .detail-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
-    .detail-sub{font-size:12px;color:var(--text3);margin-top:1px}
+    .detail-sub{font-size:12px;color:var(--text3);margin-top:2px}
+    .detail-empty{font-family:'DM Sans',sans-serif;font-size:13.5px;font-weight:400;color:var(--text3)}
 
     /* Badges */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;white-space:nowrap}
     .badge-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
-    .badge-aktif  {background:#dcfce7;color:#15803d} .badge-aktif  .badge-dot{background:#15803d}
+    .badge-aktif   {background:#dcfce7;color:#15803d} .badge-aktif   .badge-dot{background:#15803d}
     .badge-nonaktif{background:#fee2e2;color:#dc2626} .badge-nonaktif .badge-dot{background:#dc2626}
+    .badge-live    {background:#fef3c7;color:#b45309} .badge-live    .badge-dot{background:#d97706;animation:pulse 1.4s ease-in-out infinite}
 
     /* Sidebar quick info */
     .quick-info{display:flex;flex-direction:column;gap:10px}
@@ -74,6 +81,12 @@
 
     /* Status hero pill */
     .status-hero{display:flex;align-items:center;justify-content:center;padding:16px;border-bottom:1px solid var(--border)}
+
+    /* Pertemuan counter */
+    .pertemuan-strip{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px}
+    .pertemuan-item{background:var(--surface2);border-radius:var(--radius-sm);padding:11px 14px;text-align:center}
+    .pertemuan-num{font-family:'Plus Jakarta Sans',sans-serif;font-size:18px;font-weight:800;color:var(--text)}
+    .pertemuan-label{font-size:11px;color:var(--text3);margin-top:2px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:600}
 
     @media(max-width:900px){
         .detail-layout{grid-template-columns:1fr}
@@ -92,14 +105,37 @@
         <span class="breadcrumb-current">Detail Jadwal</span>
     </div>
 
+    @php
+        /**
+         * Gunakan accessor dari model untuk durasi agar konsisten.
+         * isSedangBerlangsung() sudah ada di model JadwalPelajaran.
+         */
+        $durasi             = $jadwal->durasi_menit;
+        $sedangBerlangsung  = $jadwal->isSedangBerlangsung();
+        $totalPertemuan     = $jadwal->total_pertemuan;
+        $namaGuru           = $jadwal->guru->nama_lengkap
+                              ?? Auth::user()->name
+                              ?? '—';
+        $nipGuru            = $jadwal->guru->nip ?? null;
+        $namaRuang          = is_object($jadwal->ruang)
+                              ? ($jadwal->ruang->nama_ruang ?? '—')
+                              : ($jadwal->ruang ?? null);
+        $namaTahunAjaran    = $jadwal->tahunAjaran->nama
+                              ?? $jadwal->tahunAjaran->tahun
+                              ?? '—';
+    @endphp
+
     {{-- ── Page Header ── --}}
     <div class="page-header">
         <div>
             <h1 class="page-title">{{ $jadwal->mataPelajaran->nama_mapel ?? 'Detail Jadwal' }}</h1>
             <p class="page-sub">
-                {{ $jadwal->kelas->nama_kelas ?? '—' }} &middot;
-                {{ ucfirst($jadwal->hari) }} &middot;
-                {{ \Carbon\Carbon::parse($jadwal->jam_mulai)->format('H:i') }} – {{ \Carbon\Carbon::parse($jadwal->jam_selesai)->format('H:i') }}
+                {{ $jadwal->kelas->nama_kelas ?? '—' }}
+                &middot; {{ ucfirst($jadwal->hari) }}
+                &middot; {{ \Carbon\Carbon::parse($jadwal->jam_mulai)->format('H:i') }} – {{ \Carbon\Carbon::parse($jadwal->jam_selesai)->format('H:i') }}
+                @if($sedangBerlangsung)
+                    &middot; <span style="color:#b45309;font-weight:700">Sedang Berlangsung</span>
+                @endif
             </p>
         </div>
         <div class="header-actions">
@@ -114,9 +150,19 @@
 
         {{-- ══ Kolom Kiri: Detail Utama ══ --}}
         <div>
-
-            {{-- Waktu ── --}}
             <div class="card">
+
+                {{-- Live banner --}}
+                @if($sedangBerlangsung)
+                    <div style="padding:12px 20px 0">
+                        <div class="live-banner">
+                            <span class="live-dot"></span>
+                            Jadwal ini sedang berlangsung sekarang
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Waktu hero --}}
                 <div class="time-hero">
                     <p class="time-hero-hari">{{ ucfirst($jadwal->hari) }}</p>
                     <p class="time-hero-jam">
@@ -124,12 +170,7 @@
                         <span style="color:var(--text3);font-weight:400;font-size:22px">–</span>
                         {{ \Carbon\Carbon::parse($jadwal->jam_selesai)->format('H:i') }}
                     </p>
-                    @php
-                        $start    = \Carbon\Carbon::parse($jadwal->jam_mulai);
-                        $end      = \Carbon\Carbon::parse($jadwal->jam_selesai);
-                        $durasi   = $start->diffInMinutes($end);
-                    @endphp
-                    <p class="time-hero-dur">Durasi: {{ $durasi }} menit</p>
+                    <p class="time-hero-dur">Durasi {{ $durasi }} menit</p>
                 </div>
 
                 <div class="card-body">
@@ -170,13 +211,11 @@
                             </div>
                             <div>
                                 <p class="detail-label">Ruang / Lokasi</p>
-                                <p class="detail-val">
-                                    @if($jadwal->ruang)
-                                        {{ is_object($jadwal->ruang) ? ($jadwal->ruang->nama_ruang ?? '—') : $jadwal->ruang }}
-                                    @else
-                                        <span style="color:var(--text3);font-weight:400">Tidak ditentukan</span>
-                                    @endif
-                                </p>
+                                @if($namaRuang)
+                                    <p class="detail-val">{{ $namaRuang }}</p>
+                                @else
+                                    <p class="detail-empty">Tidak ditentukan</p>
+                                @endif
                             </div>
                         </div>
 
@@ -186,10 +225,10 @@
                                 <svg width="15" height="15" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                             </div>
                             <div>
-                                <p class="detail-label">Guru</p>
-                                <p class="detail-val">{{ $jadwal->guru->nama_lengkap ?? (Auth::user()->name ?? '—') }}</p>
-                                @if($jadwal->guru->nip ?? null)
-                                    <p class="detail-sub">NIP: {{ $jadwal->guru->nip }}</p>
+                                <p class="detail-label">Guru Pengampu</p>
+                                <p class="detail-val">{{ $namaGuru }}</p>
+                                @if($nipGuru)
+                                    <p class="detail-sub">NIP: {{ $nipGuru }}</p>
                                 @endif
                             </div>
                         </div>
@@ -201,19 +240,38 @@
                             </div>
                             <div>
                                 <p class="detail-label">Tahun Ajaran</p>
-                                <p class="detail-val">
-                                    {{ $jadwal->tahunAjaran->nama ?? ($jadwal->tahunAjaran->tahun ?? '—') }}
-                                </p>
+                                <p class="detail-val">{{ $namaTahunAjaran }}</p>
                                 @if($jadwal->tahunAjaran->semester ?? null)
                                     <p class="detail-sub">Semester {{ $jadwal->tahunAjaran->semester }}</p>
                                 @endif
                             </div>
                         </div>
 
+                        {{-- Pertemuan ke & total --}}
+                        @if($jadwal->pertemuan_ke)
+                        <div class="detail-row">
+                            <div class="detail-icon gray">
+                                <svg width="15" height="15" fill="none" stroke="#64748b" stroke-width="1.8" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                            </div>
+                            <div style="flex:1">
+                                <p class="detail-label">Progres Pertemuan</p>
+                                <div class="pertemuan-strip">
+                                    <div class="pertemuan-item">
+                                        <p class="pertemuan-num">{{ $jadwal->pertemuan_ke }}</p>
+                                        <p class="pertemuan-label">Pertemuan ke-</p>
+                                    </div>
+                                    <div class="pertemuan-item">
+                                        <p class="pertemuan-num">{{ $totalPertemuan }}</p>
+                                        <p class="pertemuan-label">Total Sesi</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
                     </div>
                 </div>
             </div>
-
         </div>
 
         {{-- ══ Kolom Kanan: Sidebar ══ --}}
@@ -222,7 +280,12 @@
             {{-- Status Card --}}
             <div class="card">
                 <div class="status-hero">
-                    @if($jadwal->is_active)
+                    @if($sedangBerlangsung)
+                        <span class="badge badge-live" style="font-size:13px;padding:6px 18px;gap:6px">
+                            <span class="badge-dot" style="width:7px;height:7px"></span>
+                            Sedang Berlangsung
+                        </span>
+                    @elseif($jadwal->is_active)
                         <span class="badge badge-aktif" style="font-size:13px;padding:6px 18px;gap:6px">
                             <span class="badge-dot" style="width:7px;height:7px"></span>
                             Jadwal Aktif
@@ -234,6 +297,7 @@
                         </span>
                     @endif
                 </div>
+
                 <div class="card-body" style="padding:16px">
                     <div class="quick-info">
                         <div class="qi-item">
@@ -278,11 +342,15 @@
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         Semua Jadwal
                     </a>
-                    <a href="{{ route('guru.jurnal-mengajar.create') }}" class="btn" style="background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100);width:100%;justify-content:center">
+                    <a href="{{ route('guru.jurnal-mengajar.create') }}"
+                       class="btn"
+                       style="background:var(--brand-50);color:var(--brand-700);border:1px solid var(--brand-100);width:100%;justify-content:center">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Buat Jurnal Mengajar
                     </a>
-                    <a href="{{ route('guru.absensi.create') }}" class="btn" style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;width:100%;justify-content:center">
+                    <a href="{{ route('guru.absensi.create') }}"
+                       class="btn"
+                       style="background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0;width:100%;justify-content:center">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
                         Catat Absensi
                     </a>

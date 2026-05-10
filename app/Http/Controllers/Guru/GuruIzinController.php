@@ -6,22 +6,32 @@ use App\Http\Controllers\Controller;
 use App\Models\IzinKeluarSiswa;
 use App\Models\JadwalPelajaran;
 use App\Models\Kelas;
+use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class GuruIzinController extends Controller
 {
     /**
-     * Ambil semua kelas yang diajar oleh guru yang sedang login.
+     * Ambil guru yang sedang login. Abort 403 jika tidak terhubung ke data guru.
      */
-    private function getKelasIds(): \Illuminate\Support\Collection
+    private function getGuru()
     {
         $guru = Auth::user()->guru;
         abort_if(! $guru, 403, 'Akun Anda tidak terhubung dengan data guru.');
+        return $guru;
+    }
 
+    /**
+     * Ambil semua kelas_id yang diajar guru ini (lintas tahun ajaran, unique).
+     * Menggunakan eager-loaded guru agar tidak double query.
+     */
+    private function getKelasIds($guru): \Illuminate\Support\Collection
+    {
         return JadwalPelajaran::where('guru_id', $guru->id)
             ->pluck('kelas_id')
-            ->unique();
+            ->unique()
+            ->values();
     }
 
     /**
@@ -29,54 +39,72 @@ class GuruIzinController extends Controller
      */
     public function index(Request $request)
     {
-        $kelasIds  = $this->getKelasIds();
-        $kelasList = Kelas::aktif()->whereIn('id', $kelasIds)->orderBy('nama_kelas')->get();
+        $guru     = $this->getGuru();
+        $kelasIds = $this->getKelasIds($guru);
 
-        $query = IzinKeluarSiswa::with(['siswa.kelas', 'tahunAjaran', 'diprosesOleh'])
+        // Daftar kelas untuk filter dropdown
+        $kelasList = Kelas::whereIn('id', $kelasIds)
+            ->orderBy('nama_kelas')
+            ->get();
+
+        // Base query: hanya siswa yang kelasnya ada di daftar kelas guru
+        $query = IzinKeluarSiswa::with([
+                'siswa.kelas',
+                'tahunAjaran',
+                'diprosesOleh',
+                'dicatatKembaliOleh',
+            ])
             ->whereHas('siswa', fn ($q) => $q->whereIn('kelas_id', $kelasIds));
 
-        // Filter kelas
+        // ── Filter ────────────────────────────────────────────────────────────
+
         if ($request->filled('kelas_id')) {
-            $query->whereHas('siswa', fn ($q) => $q->where('kelas_id', $request->kelas_id));
+            $kelas = (int) $request->kelas_id;
+            // Pastikan kelas yang diminta memang ada di daftar kelas guru
+            abort_unless($kelasIds->contains($kelas), 403);
+            $query->whereHas('siswa', fn ($q) => $q->where('kelas_id', $kelas));
         }
 
-        // Filter status
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        // Filter kategori
         if ($request->filled('kategori')) {
             $query->where('kategori', $request->kategori);
         }
 
-        // Filter tanggal dari
         if ($request->filled('tanggal_dari')) {
             $query->whereDate('tanggal', '>=', $request->tanggal_dari);
         }
 
-        // Filter tanggal sampai
         if ($request->filled('tanggal_sampai')) {
             $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
         }
 
-        // Filter pencarian nama siswa
         if ($request->filled('search')) {
+            $cari = $request->search;
             $query->whereHas('siswa', fn ($q) =>
-                $q->where('nama_lengkap', 'like', "%{$request->search}%")
+                $q->where('nama_lengkap', 'like', "%{$cari}%")
+                  ->orWhere('nis', 'like', "%{$cari}%")
             );
         }
 
-        $izinList = $query->orderByDesc('tanggal')->orderByDesc('created_at')
-            ->paginate(20)->withQueryString();
+        $izinList = $query
+            ->orderByDesc('tanggal')
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString();
 
-        // Stats ringkasan
-        $baseStats = IzinKeluarSiswa::whereHas('siswa', fn ($q) => $q->whereIn('kelas_id', $kelasIds));
+        // ── Rekap stats hari ini ──────────────────────────────────────────────
+        // Re-query setiap status agar tidak ada bug clone builder.
+        $baseToday = fn () => IzinKeluarSiswa::whereHas('siswa', fn ($q) => $q->whereIn('kelas_id', $kelasIds))
+            ->whereDate('tanggal', today());
+
         $rekap = [
-            'menunggu'      => (clone $baseStats)->whereDate('tanggal', today())->where('status', IzinKeluarSiswa::STATUS_MENUNGGU)->count(),
-            'disetujui'     => (clone $baseStats)->whereDate('tanggal', today())->where('status', IzinKeluarSiswa::STATUS_DISETUJUI)->count(),
-            'sudah_kembali' => (clone $baseStats)->whereDate('tanggal', today())->where('status', IzinKeluarSiswa::STATUS_SUDAH_KEMBALI)->count(),
-            'ditolak'       => (clone $baseStats)->whereDate('tanggal', today())->where('status', IzinKeluarSiswa::STATUS_DITOLAK)->count(),
+            'menunggu'      => $baseToday()->where('status', IzinKeluarSiswa::STATUS_MENUNGGU)->count(),
+            'disetujui'     => $baseToday()->where('status', IzinKeluarSiswa::STATUS_DISETUJUI)->count(),
+            'sudah_kembali' => $baseToday()->where('status', IzinKeluarSiswa::STATUS_SUDAH_KEMBALI)->count(),
+            'ditolak'       => $baseToday()->where('status', IzinKeluarSiswa::STATUS_DITOLAK)->count(),
         ];
 
         $statusList   = IzinKeluarSiswa::STATUS_LIST;
@@ -93,16 +121,18 @@ class GuruIzinController extends Controller
      */
     public function show(IzinKeluarSiswa $izin)
     {
-        $kelasIds = $this->getKelasIds();
+        $guru     = $this->getGuru();
+        $kelasIds = $this->getKelasIds($guru);
 
-        // Pastikan siswa yang mengajukan izin ada di kelas yang diajar guru ini
-        abort_unless(
-            $kelasIds->contains($izin->siswa->kelas_id ?? null),
+        // Load relasi dulu agar $izin->siswa tidak null saat di-check
+        $izin->load(['siswa.kelas', 'tahunAjaran', 'diprosesOleh', 'dicatatKembaliOleh']);
+
+        // Guard: siswa harus ada dan kelasnya termasuk kelas yang diajar guru ini
+        abort_if(
+            ! $izin->siswa || ! $kelasIds->contains($izin->siswa->kelas_id),
             403,
             'Anda tidak memiliki akses ke data izin ini.'
         );
-
-        $izin->load(['siswa.kelas', 'tahunAjaran', 'diprosesOleh', 'dicatatKembaliOleh']);
 
         return view('guru.izin-keluar-siswa.show', compact('izin'));
     }

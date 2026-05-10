@@ -101,12 +101,43 @@ class SesiGerbang extends Model
      * Ambil sesi aktif saat ini (jika ada).
      * Prioritaskan yang paling baru dibuka.
      */
+    // public static function sesiAktifSekarang(): ?static
+    // {
+    //     return static::aktif()
+    //                  ->hariIni()
+    //                  ->orderByDesc('dibuka_pada')
+    //                  ->first();
+    // }
     public static function sesiAktifSekarang(): ?static
     {
+        $sekarang = now();
+
+        // Auto-tutup sesi yang sudah melewati batas waktu
+        static::aktif()
+            ->hariIni()
+            ->each(function ($sesi) use ($sekarang) {
+                $batasJam = $sesi->tipe === 'masuk'
+                    ? $sekarang->copy()->setTime(9, 0)   // 09:00
+                    : $sekarang->copy()->setTime(17, 0);  // 17:00
+
+                if ($sekarang->gte($batasJam)) {
+                    $sesi->tutup(
+                        ditutupOleh: 1,
+                        catatan: "Ditutup otomatis oleh sistem (batas jam {$batasJam->format('H:i')})"
+                    );
+                }
+            });
+
+        // Auto-tutup sesi hari sebelumnya yang masih aktif (lupa ditutup)
+        static::aktif()
+            ->where('tanggal', '<', $sekarang->toDateString())
+            ->each(fn ($s) => $s->tutup(1, 'Ditutup otomatis oleh sistem (hari sudah berganti)'));
+
+        // Kembalikan sesi aktif hari ini (jika masih ada)
         return static::aktif()
-                     ->hariIni()
-                     ->orderByDesc('dibuka_pada')
-                     ->first();
+                    ->hariIni()
+                    ->orderByDesc('dibuka_pada')
+                    ->first();
     }
 
     /**

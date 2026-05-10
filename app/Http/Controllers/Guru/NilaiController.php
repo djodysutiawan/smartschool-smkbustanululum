@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\Auth;
 
 class NilaiController extends Controller
 {
+    // ── Helper: ambil guru_id yang sedang login ────────────────────────────────
+
     private function getGuruId(): int
     {
         $guru = Auth::user()->guru;
@@ -20,54 +22,75 @@ class NilaiController extends Controller
         return $guru->id;
     }
 
+    // ── Shared data untuk dropdown ─────────────────────────────────────────────
+
+    private function dropdownData(): array
+    {
+        return [
+            'tahunAjaran' => TahunAjaran::orderByDesc('tahun')->orderByDesc('semester')->get(),
+            'kelasList'   => Kelas::aktif()->orderBy('nama_kelas')->get(),
+            'mapelList'   => MataPelajaran::aktif()->orderBy('nama_mapel')->get(),
+        ];
+    }
+
+    // ── Index ──────────────────────────────────────────────────────────────────
+
     public function index(Request $request)
     {
         $guruId = $this->getGuruId();
 
         $query = Nilai::with(['siswa', 'mataPelajaran', 'kelas', 'tahunAjaran'])
-            ->where('guru_id', $guruId);
+            ->where('guru_id', $guruId)
+            ->latest();
 
         if ($request->filled('tahun_ajaran_id')) {
             $query->where('tahun_ajaran_id', $request->tahun_ajaran_id);
         }
-
         if ($request->filled('kelas_id')) {
             $query->where('kelas_id', $request->kelas_id);
         }
-
         if ($request->filled('mata_pelajaran_id')) {
             $query->where('mata_pelajaran_id', $request->mata_pelajaran_id);
         }
-
         if ($request->filled('predikat')) {
             $query->where('predikat', $request->predikat);
         }
-
         if ($request->filled('search')) {
+            $search = $request->search;
             $query->whereHas('siswa', fn ($q) =>
-                $q->where('nama_lengkap', 'like', "%{$request->search}%")
+                $q->where('nama_lengkap', 'like', "%{$search}%")
+                  ->orWhere('nis', 'like', "%{$search}%")
             );
         }
 
+        // Hitung stats SEBELUM paginate agar akurat (total, bukan per halaman)
+        $totalData       = (clone $query)->count();
+        $totalPredikatA  = (clone $query)->where('predikat', 'A')->count();
+        $totalMapel      = (clone $query)->distinct('mata_pelajaran_id')->count('mata_pelajaran_id');
+        $totalKelas      = (clone $query)->distinct('kelas_id')->count('kelas_id');
+
         $nilai        = $query->paginate(20)->withQueryString();
-        $tahunAjaran  = TahunAjaran::orderByDesc('tahun')->get();
-        $kelasList    = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $mapelList    = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
         $predikatList = ['A', 'B', 'C', 'D', 'E'];
 
-        return view('guru.nilai.index',
-            compact('nilai', 'tahunAjaran', 'kelasList', 'mapelList', 'predikatList'));
+        return view('guru.nilai.index', array_merge(
+            $this->dropdownData(),
+            compact('nilai', 'predikatList', 'totalData', 'totalPredikatA', 'totalMapel', 'totalKelas')
+        ));
     }
+
+    // ── Create ─────────────────────────────────────────────────────────────────
 
     public function create()
     {
-        $siswaList   = Siswa::aktif()->orderBy('nama_lengkap')->get();
-        $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $mapelList   = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
-        $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
+        $siswaList = Siswa::aktif()->orderBy('nama_lengkap')->get();
 
-        return view('guru.nilai.create', compact('siswaList', 'kelasList', 'mapelList', 'tahunAjaran'));
+        return view('guru.nilai.create', array_merge(
+            $this->dropdownData(),
+            compact('siswaList')
+        ));
     }
+
+    // ── Store ──────────────────────────────────────────────────────────────────
 
     public function store(Request $request)
     {
@@ -85,8 +108,8 @@ class NilaiController extends Controller
             'catatan'           => ['nullable', 'string', 'max:500'],
         ], $this->messages());
 
-        $validated['guru_id'] = $guruId;
-
+        // Cek duplikasi: 1 siswa hanya boleh punya 1 nilai per mapel per tahun ajaran
+        // (kelas tidak termasuk constraint karena siswa bisa pindah kelas)
         $exists = Nilai::where('siswa_id', $validated['siswa_id'])
             ->where('mata_pelajaran_id', $validated['mata_pelajaran_id'])
             ->where('tahun_ajaran_id', $validated['tahun_ajaran_id'])
@@ -94,14 +117,18 @@ class NilaiController extends Controller
 
         if ($exists) {
             return back()->withInput()
-                ->with('error', 'Nilai untuk siswa dan mata pelajaran ini pada tahun ajaran yang dipilih sudah ada.');
+                ->withErrors(['siswa_id' => 'Nilai untuk siswa dan mata pelajaran ini pada tahun ajaran yang dipilih sudah ada.']);
         }
+
+        $validated['guru_id'] = $guruId;
 
         Nilai::create($validated);
 
         return redirect()->route('guru.nilai.index')
             ->with('success', 'Nilai berhasil ditambahkan.');
     }
+
+    // ── Show ───────────────────────────────────────────────────────────────────
 
     public function show(Nilai $nilai)
     {
@@ -113,19 +140,20 @@ class NilaiController extends Controller
         return view('guru.nilai.show', compact('nilai'));
     }
 
+    // ── Edit ───────────────────────────────────────────────────────────────────
+
     public function edit(Nilai $nilai)
     {
         $guruId = $this->getGuruId();
         abort_if($nilai->guru_id !== $guruId, 403, 'Anda tidak memiliki akses ke data nilai ini.');
 
-        $siswaList   = Siswa::aktif()->orderBy('nama_lengkap')->get();
-        $kelasList   = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $mapelList   = MataPelajaran::aktif()->orderBy('nama_mapel')->get();
-        $tahunAjaran = TahunAjaran::orderByDesc('tahun')->get();
+        // Edit hanya untuk komponen nilai — identitas (siswa/kelas/mapel/tahun) readonly
+        $nilai->load(['siswa', 'mataPelajaran', 'kelas', 'tahunAjaran']);
 
-        return view('guru.nilai.edit',
-            compact('nilai', 'siswaList', 'kelasList', 'mapelList', 'tahunAjaran'));
+        return view('guru.nilai.edit', compact('nilai'));
     }
+
+    // ── Update ─────────────────────────────────────────────────────────────────
 
     public function update(Request $request, Nilai $nilai)
     {
@@ -146,6 +174,8 @@ class NilaiController extends Controller
             ->with('success', 'Nilai berhasil diperbarui.');
     }
 
+    // ── Destroy ────────────────────────────────────────────────────────────────
+
     public function destroy(Nilai $nilai)
     {
         $guruId = $this->getGuruId();
@@ -156,6 +186,8 @@ class NilaiController extends Controller
         return redirect()->route('guru.nilai.index')
             ->with('success', 'Nilai berhasil dihapus.');
     }
+
+    // ── Validation Messages ────────────────────────────────────────────────────
 
     private function messages(): array
     {

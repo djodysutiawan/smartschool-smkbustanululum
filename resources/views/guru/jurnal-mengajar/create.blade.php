@@ -9,6 +9,7 @@
         --text:#0f172a;--text2:#475569;--text3:#94a3b8;
         --radius:10px;--radius-sm:7px;
     }
+    *,*::before,*::after{box-sizing:border-box}
     .page{padding:28px 28px 40px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text)}
@@ -23,31 +24,66 @@
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
 
+    /* Layout */
     .form-layout{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start}
+
+    /* Card */
     .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
     .card:last-child{margin-bottom:0}
     .card-header{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;background:var(--surface2)}
     .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:var(--text)}
     .card-body{padding:20px}
+
+    /* Grid helpers */
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-    .form-grid.col3{grid-template-columns:1fr 1fr 1fr}
     .form-grid.col1{grid-template-columns:1fr}
+
+    /* Field */
     .field{display:flex;flex-direction:column;gap:5px}
     .field label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text2)}
     .field label .req{color:#dc2626}
-    .field select,.field input[type=text],.field input[type=date],.field input[type=number],.field textarea{padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;width:100%;box-sizing:border-box}
-    .field select:focus,.field input:focus,.field textarea:focus{border-color:var(--brand-500);background:#fff}
+    .field select,
+    .field input[type=text],
+    .field input[type=date],
+    .field input[type=number],
+    .field textarea{
+        width:100%;
+        padding:9px 12px;
+        border:1px solid var(--border);
+        border-radius:var(--radius-sm);
+        font-family:'DM Sans',sans-serif;
+        font-size:13px;
+        color:var(--text);
+        background:var(--surface2);
+        outline:none;
+        transition:border-color .15s,background .15s;
+    }
+    .field select:focus,
+    .field input:focus,
+    .field textarea:focus{border-color:var(--brand-500);background:#fff;box-shadow:0 0 0 3px rgba(53,130,240,.08)}
     .field textarea{resize:vertical;min-height:100px}
     .field-hint{font-size:11.5px;color:var(--text3)}
-
     .char-counter{font-size:11px;color:var(--text3);text-align:right;margin-top:2px}
 
-    .btn-submit-full{width:100%;height:40px;background:var(--brand-600);color:#fff;border:none;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s}
+    /* Submit */
+    .btn-submit-full{
+        width:100%;height:40px;
+        background:var(--brand-600);color:#fff;
+        border:none;border-radius:var(--radius-sm);
+        font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;
+        cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;
+        transition:background .15s
+    }
     .btn-submit-full:hover{background:var(--brand-700)}
 
-    .info-box{background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius-sm);padding:12px 14px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--brand-700);line-height:1.6}
+    /* Info box */
+    .info-box{background:none;border:none;padding:0;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;color:var(--brand-700);line-height:1.6}
 
-    @media(max-width:900px){.form-layout{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}.form-grid.col3{grid-template-columns:1fr 1fr}.page{padding:16px}}
+    @media(max-width:900px){
+        .form-layout{grid-template-columns:1fr}
+        .form-grid{grid-template-columns:1fr}
+        .page{padding:16px}
+    }
 </style>
 
 <div class="page">
@@ -75,32 +111,40 @@
         @csrf
         <div class="form-layout">
 
+            {{-- Kolom utama --}}
             <div>
-                {{-- Identitas --}}
+
+                {{-- Identitas Kelas --}}
                 <div class="card">
                     <div class="card-header">
                         <svg width="14" height="14" fill="none" stroke="var(--brand-500)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
                         <span class="card-title">Identitas Kelas</span>
                     </div>
                     <div class="card-body">
-                        <div class="form-grid">
+                        <div class="form-grid" style="gap:14px">
                             <div class="field">
                                 <label>Kelas <span class="req">*</span></label>
                                 <select name="kelas_id" required>
                                     <option value="">— Pilih Kelas —</option>
                                     @foreach($kelasList as $k)
-                                        <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>{{ $k->nama_kelas }}</option>
+                                        <option value="{{ $k->id }}" {{ old('kelas_id') == $k->id ? 'selected' : '' }}>
+                                            {{ $k->nama_kelas }}
+                                        </option>
                                     @endforeach
                                 </select>
+                                @error('kelas_id')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             </div>
                             <div class="field">
                                 <label>Mata Pelajaran <span class="req">*</span></label>
                                 <select name="mata_pelajaran_id" required>
                                     <option value="">— Pilih Mapel —</option>
                                     @foreach($mapelList as $m)
-                                        <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>{{ $m->nama_mapel }}</option>
+                                        <option value="{{ $m->id }}" {{ old('mata_pelajaran_id') == $m->id ? 'selected' : '' }}>
+                                            {{ $m->nama_mapel }}
+                                        </option>
                                     @endforeach
                                 </select>
+                                @error('mata_pelajaran_id')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             </div>
                             <div class="field">
                                 <label>Jadwal Pelajaran</label>
@@ -108,7 +152,10 @@
                                     <option value="">— Pilih Jadwal (Opsional) —</option>
                                     @foreach($jadwalList as $jd)
                                         <option value="{{ $jd->id }}" {{ old('jadwal_pelajaran_id') == $jd->id ? 'selected' : '' }}>
-                                            {{ ucfirst($jd->hari) }} – {{ $jd->kelas->nama_kelas ?? '' }} – {{ $jd->mataPelajaran->nama_mapel ?? '' }}
+                                            {{ ucfirst($jd->hari) }}
+                                            · {{ \Carbon\Carbon::parse($jd->jam_mulai)->format('H:i') }}–{{ \Carbon\Carbon::parse($jd->jam_selesai)->format('H:i') }}
+                                            · {{ $jd->kelas->nama_kelas ?? '' }}
+                                            · {{ $jd->mataPelajaran->nama_mapel ?? '' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -116,14 +163,18 @@
                             </div>
                             <div class="field">
                                 <label>Tanggal <span class="req">*</span></label>
-                                <input type="date" name="tanggal" value="{{ old('tanggal', date('Y-m-d')) }}" max="{{ date('Y-m-d') }}" required>
+                                <input type="date" name="tanggal"
+                                       value="{{ old('tanggal', date('Y-m-d')) }}"
+                                       max="{{ date('Y-m-d') }}"
+                                       required>
                                 <span class="field-hint">Tidak boleh lebih dari hari ini</span>
+                                @error('tanggal')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             </div>
                         </div>
                     </div>
                 </div>
 
-                {{-- Kegiatan --}}
+                {{-- Kegiatan Mengajar --}}
                 <div class="card">
                     <div class="card-header">
                         <svg width="14" height="14" fill="none" stroke="var(--brand-500)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -133,55 +184,71 @@
                         <div class="form-grid" style="margin-bottom:14px">
                             <div class="field">
                                 <label>Pertemuan Ke-</label>
-                                <input type="number" name="pertemuan_ke" value="{{ old('pertemuan_ke') }}" min="1" max="52" placeholder="1–52">
+                                <input type="number" name="pertemuan_ke"
+                                       value="{{ old('pertemuan_ke') }}"
+                                       min="1" max="52"
+                                       placeholder="1–52">
                                 <span class="field-hint">Opsional</span>
+                                @error('pertemuan_ke')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             </div>
                             <div class="field">
                                 <label>Metode Pembelajaran</label>
                                 <select name="metode_pembelajaran">
                                     <option value="">— Pilih Metode —</option>
                                     @foreach($metodeList as $mt)
-                                        <option value="{{ $mt }}" {{ old('metode_pembelajaran') === $mt ? 'selected' : '' }}>{{ ucfirst($mt) }}</option>
+                                        <option value="{{ $mt }}" {{ old('metode_pembelajaran') === $mt ? 'selected' : '' }}>
+                                            {{ ucfirst($mt) }}
+                                        </option>
                                     @endforeach
                                 </select>
+                                @error('metode_pembelajaran')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             </div>
                         </div>
                         <div class="field" style="margin-bottom:14px">
                             <label>Materi Ajar <span class="req">*</span></label>
                             <textarea name="materi_ajar" id="materiAjar" required maxlength="2000"
-                                oninput="countChar('materiAjar','charMateri')"
-                                placeholder="Deskripsikan materi yang diajarkan...">{{ old('materi_ajar') }}</textarea>
+                                      oninput="countChar('materiAjar','charMateri')"
+                                      placeholder="Deskripsikan materi yang diajarkan...">{{ old('materi_ajar') }}</textarea>
+                            @error('materi_ajar')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             <span class="char-counter" id="charMateri">0 / 2000</span>
                         </div>
                         <div class="field">
                             <label>Catatan Kelas</label>
                             <textarea name="catatan_kelas" id="catatanKelas" maxlength="2000"
-                                oninput="countChar('catatanKelas','charCatatan')"
-                                placeholder="Catatan tambahan, kejadian khusus, PR, dsb...">{{ old('catatan_kelas') }}</textarea>
+                                      oninput="countChar('catatanKelas','charCatatan')"
+                                      placeholder="Catatan tambahan, kejadian khusus, PR, dsb...">{{ old('catatan_kelas') }}</textarea>
+                            @error('catatan_kelas')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             <span class="char-counter" id="charCatatan">0 / 2000</span>
                         </div>
                     </div>
                 </div>
 
-                {{-- Kehadiran --}}
+                {{-- Rekap Kehadiran --}}
                 <div class="card">
                     <div class="card-header">
                         <svg width="14" height="14" fill="none" stroke="var(--brand-500)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
-                        <span class="card-title">Rekap Kehadiran (Opsional)</span>
+                        <span class="card-title">Rekap Kehadiran <span style="font-weight:500;color:var(--text3)">(Opsional)</span></span>
                     </div>
                     <div class="card-body">
                         <div class="form-grid">
                             <div class="field">
                                 <label>Jumlah Hadir</label>
-                                <input type="number" name="jumlah_hadir" value="{{ old('jumlah_hadir') }}" min="0" placeholder="0">
+                                <input type="number" name="jumlah_hadir"
+                                       value="{{ old('jumlah_hadir') }}"
+                                       min="0" placeholder="0">
+                                @error('jumlah_hadir')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             </div>
                             <div class="field">
                                 <label>Jumlah Tidak Hadir</label>
-                                <input type="number" name="jumlah_tidak_hadir" value="{{ old('jumlah_tidak_hadir') }}" min="0" placeholder="0">
+                                <input type="number" name="jumlah_tidak_hadir"
+                                       value="{{ old('jumlah_tidak_hadir') }}"
+                                       min="0" placeholder="0">
+                                @error('jumlah_tidak_hadir')<span style="font-size:11.5px;color:#dc2626">{{ $message }}</span>@enderror
                             </div>
                         </div>
                     </div>
                 </div>
+
             </div>
 
             {{-- Sidebar --}}
@@ -196,15 +263,17 @@
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
                             Simpan Jurnal
                         </button>
-                        <a href="{{ route('guru.jurnal-mengajar.index') }}" class="btn btn-secondary" style="width:100%;justify-content:center">Batal</a>
+                        <a href="{{ route('guru.jurnal-mengajar.index') }}" class="btn btn-secondary" style="width:100%;justify-content:center">
+                            Batal
+                        </a>
                     </div>
                 </div>
 
                 <div class="card" style="background:var(--brand-50);border-color:var(--brand-100)">
                     <div class="card-body" style="padding:14px">
-                        <div class="info-box" style="background:none;border:none;padding:0">
-                            <p style="font-weight:800;margin-bottom:6px">
-                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;vertical-align:-1px;margin-right:4px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        <div class="info-box">
+                            <p style="font-weight:800;margin-bottom:6px;display:flex;align-items:center;gap:5px">
+                                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                 Informasi
                             </p>
                             <p>Jurnal yang sudah diverifikasi oleh admin tidak dapat diubah atau dihapus. Pastikan isian sudah benar sebelum disimpan.</p>
@@ -212,6 +281,7 @@
                     </div>
                 </div>
             </div>
+
         </div>
     </form>
 </div>
@@ -219,15 +289,22 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 @if($errors->any())
-Swal.fire({ icon:'warning', title:'Perhatian!', html:`{!! implode('<br>', $errors->all()) !!}`, confirmButtonColor:'#1f63db' });
+Swal.fire({
+    icon: 'warning',
+    title: 'Perhatian!',
+    html: `{!! implode('<br>', $errors->all()) !!}`,
+    confirmButtonColor: '#1f63db'
+});
 @endif
 
 function countChar(inputId, counterId) {
     const el = document.getElementById(inputId);
     document.getElementById(counterId).textContent = el.value.length + ' / 2000';
 }
-/* init */
-countChar('materiAjar', 'charMateri');
-countChar('catatanKelas', 'charCatatan');
+
+document.addEventListener('DOMContentLoaded', function () {
+    countChar('materiAjar', 'charMateri');
+    countChar('catatanKelas', 'charCatatan');
+});
 </script>
 </x-app-layout>

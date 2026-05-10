@@ -17,7 +17,6 @@
 
     .layout{display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start}
 
-    /* Main card */
     .main-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .main-header{padding:20px 24px;border-bottom:1px solid var(--border)}
     .back-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
@@ -31,21 +30,17 @@
 
     .content-area{padding:24px}
 
-    /* Deskripsi */
     .desc-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 18px;margin-bottom:20px;font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text2);line-height:1.6;white-space:pre-wrap}
 
-    /* File soal */
     .file-soal{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;background:var(--sk-50);border:1px solid var(--sk-100);border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--sk-700);text-decoration:none;margin-bottom:20px;transition:background .15s}
     .file-soal:hover{background:var(--sk-100)}
 
-    /* Alert */
     .alert{display:flex;align-items:flex-start;gap:10px;padding:13px 16px;border-radius:var(--radius-sm);margin-bottom:16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600}
     .a-success{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
     .a-warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
     .a-error{background:#fee2e2;border:1px solid #fecaca;color:#dc2626}
     .a-info{background:var(--sk-50);border:1px solid var(--sk-100);color:var(--sk-700)}
 
-    /* Form pengumpulan */
     .form-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
     .form-head{padding:13px 18px;border-bottom:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-size:13.5px;font-weight:700;color:var(--text);display:flex;align-items:center;gap:7px}
     .form-body{padding:20px}
@@ -53,7 +48,7 @@
     .field{margin-bottom:16px}
     .field label{display:block;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2);margin-bottom:5px}
     .field label .req{color:#dc2626}
-    .field select,.field input[type=file],.field input[type=url]{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;box-sizing:border-box}
+    .field select,.field input[type=file],.field input[type=url],.field input[type=text]{width:100%;height:40px;padding:0 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;transition:border-color .15s;box-sizing:border-box}
     .field select:focus,.field input:focus{border-color:var(--sk-500);background:#fff}
     .field input[type=file]{height:auto;padding:8px 12px}
     .field textarea{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);outline:none;resize:vertical;min-height:120px;transition:border-color .15s;box-sizing:border-box}
@@ -65,7 +60,6 @@
     .btn-submit:hover{background:var(--sk-700)}
     .btn-submit:disabled{opacity:.6;cursor:not-allowed}
 
-    /* Hasil pengumpulan */
     .hasil-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius);padding:18px 20px}
     .hasil-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;color:#15803d;margin-bottom:12px;display:flex;align-items:center;gap:7px}
     .hasil-list{list-style:none;padding:0;margin:0}
@@ -74,7 +68,6 @@
     .hl-key{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:#166534}
     .hl-val{font-family:'DM Sans',sans-serif;color:#15803d;word-break:break-all}
 
-    /* Sidebar */
     .sidebar-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
     .sc-head{padding:12px 16px;border-bottom:1px solid var(--border);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text)}
     .sc-body{padding:14px 16px}
@@ -84,7 +77,6 @@
     .info-key{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:var(--text3)}
     .info-val{font-family:'DM Sans',sans-serif;color:var(--text2);text-align:right}
 
-    /* Deadline box */
     .deadline-box{border-radius:var(--radius-sm);padding:12px 16px;text-align:center;margin-bottom:14px}
     .db-ok{background:#f0fdf4;border:1px solid #bbf7d0}
     .db-warn{background:#fffbeb;border:1px solid #fde68a}
@@ -100,7 +92,6 @@
 
 <div class="page">
 
-    {{-- Flash success --}}
     @if(session('success'))
     <div class="alert a-success" style="margin-bottom:16px">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
@@ -126,7 +117,6 @@
                         </a>
                     </div>
 
-                    {{-- FIX: optional() untuk semua relasi --}}
                     <p class="mapel-label">{{ optional($tugas->mataPelajaran)->nama_mapel ?? '—' }}</p>
                     <h1 class="tugas-title">{{ $tugas->judul }}</h1>
 
@@ -143,17 +133,26 @@
                             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
                             Nilai maks: {{ rtrim(rtrim(number_format($tugas->nilai_maksimal ?? 100, 2), '0'), '.') }}
                         </span>
+                        <span class="meta-item">
+                            {{-- FIX: tampilkan jenis pengumpulan dari kolom tugas --}}
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/></svg>
+                            Jenis: {{ match($tugas->jenis_pengumpulan) {
+                                'file'  => 'Upload File',
+                                'teks'  => 'Ketik Jawaban',
+                                'link'  => 'Link / URL',
+                                'semua' => 'File / Teks / Link',
+                                default => ucfirst($tugas->jenis_pengumpulan ?? '—')
+                            } }}
+                        </span>
                     </div>
                 </div>
 
                 <div class="content-area">
 
-                    {{-- Deskripsi --}}
                     @if($tugas->deskripsi)
                     <div class="desc-box">{{ $tugas->deskripsi }}</div>
                     @endif
 
-                    {{-- File soal --}}
                     @if($tugas->path_file_soal)
                     <a href="{{ asset('storage/' . $tugas->path_file_soal) }}" target="_blank" download class="file-soal">
                         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -161,7 +160,7 @@
                     </a>
                     @endif
 
-                    {{-- Status: sudah dikumpulkan --}}
+                    {{-- ─── SUDAH DIKUMPULKAN ─── --}}
                     @if($sudahDikumpulkan && $pengumpulan)
                         <div class="hasil-card">
                             <p class="hasil-title">
@@ -171,53 +170,78 @@
                             <ul class="hasil-list">
                                 <li>
                                     <span class="hl-key">Waktu Pengumpulan</span>
-                                    {{-- FIX: dikumpulkan_pada sudah ada di fillable & casts --}}
                                     <span class="hl-val">{{ $pengumpulan->dikumpulkan_pada?->format('d M Y, H:i') ?? '—' }}</span>
                                 </li>
                                 <li>
                                     <span class="hl-key">Jenis</span>
-                                    {{-- FIX: pakai accessor label_jenis dari model --}}
+                                    {{-- FIX: label jenis dari accessor (baca relasi tugas) --}}
                                     <span class="hl-val">{{ $pengumpulan->label_jenis }}</span>
                                 </li>
                                 <li>
                                     <span class="hl-key">Status</span>
-                                    {{-- FIX: pakai accessor label_status dari model --}}
                                     <span class="hl-val">{{ $pengumpulan->label_status }}</span>
                                 </li>
-                                @if($pengumpulan->catatan)
-                                <li>
-                                    <span class="hl-key">Catatan</span>
-                                    <span class="hl-val">{{ $pengumpulan->catatan }}</span>
-                                </li>
-                                @endif
 
-                                {{-- FIX: Nama kolom sekarang link_pengumpulan, file_pengumpulan, konten_teks --}}
-                                @if($pengumpulan->jenis_pengumpulan === 'link' && $pengumpulan->link_pengumpulan)
+                                {{-- FIX: gunakan nama kolom DB yang benar --}}
+
+                                {{-- Link: kolom DB = url_link --}}
+                                @if($tugas->jenis_pengumpulan === 'link' && $pengumpulan->url_link)
                                 <li>
                                     <span class="hl-key">Link</span>
                                     <span class="hl-val">
-                                        <a href="{{ $pengumpulan->link_pengumpulan }}" target="_blank" rel="noopener noreferrer" style="color:var(--sk-600)">
+                                        <a href="{{ $pengumpulan->url_link }}" target="_blank" rel="noopener noreferrer" style="color:var(--sk-600)">
                                             Buka Link
                                         </a>
                                     </span>
                                 </li>
-                                @elseif(in_array($pengumpulan->jenis_pengumpulan, ['file', 'foto']) && $pengumpulan->file_pengumpulan)
+                                @endif
+
+                                {{-- File: kolom DB = path_file --}}
+                                @if($tugas->jenis_pengumpulan === 'file' && $pengumpulan->path_file)
                                 <li>
                                     <span class="hl-key">File</span>
                                     <span class="hl-val">
-                                        <a href="{{ asset('storage/' . $pengumpulan->file_pengumpulan) }}" target="_blank" style="color:var(--sk-600)">
+                                        <a href="{{ asset('storage/' . $pengumpulan->path_file) }}" target="_blank" style="color:var(--sk-600)">
                                             Lihat File
                                         </a>
                                     </span>
                                 </li>
-                                @elseif($pengumpulan->jenis_pengumpulan === 'teks' && $pengumpulan->konten_teks)
+                                @endif
+
+                                {{-- Teks: kolom DB = jawaban_teks --}}
+                                @if($tugas->jenis_pengumpulan === 'teks' && $pengumpulan->jawaban_teks)
                                 <li style="flex-direction:column;align-items:flex-start;gap:6px">
                                     <span class="hl-key">Jawaban Teks</span>
-                                    <span class="hl-val" style="text-align:left;white-space:pre-wrap;background:#dcfce7;padding:8px 10px;border-radius:6px;width:100%;box-sizing:border-box">{{ $pengumpulan->konten_teks }}</span>
+                                    <span class="hl-val" style="text-align:left;white-space:pre-wrap;background:#dcfce7;padding:8px 10px;border-radius:6px;width:100%;box-sizing:border-box">{{ $pengumpulan->jawaban_teks }}</span>
                                 </li>
                                 @endif
 
-                                {{-- Nilai (jika sudah dinilai) --}}
+                                {{-- Jenis 'semua': tampilkan semua yang terisi --}}
+                                @if($tugas->jenis_pengumpulan === 'semua')
+                                    @if($pengumpulan->url_link)
+                                    <li>
+                                        <span class="hl-key">Link</span>
+                                        <span class="hl-val">
+                                            <a href="{{ $pengumpulan->url_link }}" target="_blank" rel="noopener noreferrer" style="color:var(--sk-600)">Buka Link</a>
+                                        </span>
+                                    </li>
+                                    @endif
+                                    @if($pengumpulan->path_file)
+                                    <li>
+                                        <span class="hl-key">File</span>
+                                        <span class="hl-val">
+                                            <a href="{{ asset('storage/' . $pengumpulan->path_file) }}" target="_blank" style="color:var(--sk-600)">Lihat File</a>
+                                        </span>
+                                    </li>
+                                    @endif
+                                    @if($pengumpulan->jawaban_teks)
+                                    <li style="flex-direction:column;align-items:flex-start;gap:6px">
+                                        <span class="hl-key">Jawaban Teks</span>
+                                        <span class="hl-val" style="text-align:left;white-space:pre-wrap;background:#dcfce7;padding:8px 10px;border-radius:6px;width:100%;box-sizing:border-box">{{ $pengumpulan->jawaban_teks }}</span>
+                                    </li>
+                                    @endif
+                                @endif
+
                                 @if($pengumpulan->sudahDinilai())
                                 <li>
                                     <span class="hl-key">Nilai</span>
@@ -233,17 +257,18 @@
                                 </li>
                                 @endif
                                 @endif
+
                             </ul>
                         </div>
 
-                    {{-- Status: waktu habis, tidak bisa kumpul --}}
+                    {{-- ─── WAKTU HABIS, TIDAK BISA KUMPUL ─── --}}
                     @elseif(! $masihBisaKumpul)
                         <div class="alert a-error">
                             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                             Batas waktu pengumpulan sudah habis dan pengumpulan terlambat tidak diizinkan.
                         </div>
 
-                    {{-- Status: bisa kumpul (tepat waktu atau terlambat diizinkan) --}}
+                    {{-- ─── FORM PENGUMPULAN ─── --}}
                     @else
 
                         @if($terlambat)
@@ -270,57 +295,77 @@
                                 Form Pengumpulan Tugas
                             </div>
                             <div class="form-body">
-                                <form action="{{ route('siswa.tugas.kumpul', $tugas) }}" method="POST" enctype="multipart/form-data" id="formKumpul">
+                                {{--
+                                    FIX: action sesuai route, enctype multipart wajib ada.
+                                    Nama field input disesuaikan dengan kolom DB:
+                                      path_file    → kolom DB: path_file
+                                      jawaban_teks → kolom DB: jawaban_teks
+                                      url_link     → kolom DB: url_link
+                                    Kolom 'catatan' tidak ada di DB → dihapus dari form.
+                                    Tidak ada select jenis_pengumpulan karena jenis
+                                    sudah ditentukan di tugas (kolom DB tugas.jenis_pengumpulan).
+                                --}}
+                                <form action="{{ route('siswa.tugas.kumpul', $tugas) }}"
+                                      method="POST"
+                                      enctype="multipart/form-data"
+                                      id="formKumpul">
                                     @csrf
 
+                                    {{-- Field upload file (jenis: file atau semua) --}}
+                                    @if(in_array($tugas->jenis_pengumpulan, ['file', 'semua']))
                                     <div class="field">
-                                        <label>Jenis Pengumpulan <span class="req">*</span></label>
-                                        <select name="jenis_pengumpulan" id="jenisSel" required>
-                                            <option value="">— Pilih jenis —</option>
-                                            <option value="file" {{ old('jenis_pengumpulan') === 'file' ? 'selected' : '' }}>📄 Upload File (PDF, Word, ZIP)</option>
-                                            <option value="foto" {{ old('jenis_pengumpulan') === 'foto' ? 'selected' : '' }}>📷 Upload Foto</option>
-                                            <option value="teks" {{ old('jenis_pengumpulan') === 'teks' ? 'selected' : '' }}>📝 Ketik Jawaban</option>
-                                            <option value="link" {{ old('jenis_pengumpulan') === 'link' ? 'selected' : '' }}>🔗 Link / URL</option>
-                                        </select>
-                                        @error('jenis_pengumpulan')<p class="field-err">{{ $message }}</p>@enderror
-                                    </div>
-
-                                    {{-- File dokumen --}}
-                                    <div class="field" id="wrap-file" style="display:none">
-                                        <label>File Tugas <span class="req">*</span></label>
-                                        <input type="file" name="file_pengumpulan" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip">
+                                        <label>
+                                            Upload File
+                                            @if(in_array($tugas->jenis_pengumpulan, ['file']))
+                                                <span class="req">*</span>
+                                            @endif
+                                        </label>
+                                        {{-- FIX: name="path_file" sesuai kolom DB --}}
+                                        <input type="file"
+                                               name="path_file"
+                                               accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.zip"
+                                               {{ in_array($tugas->jenis_pengumpulan, ['file']) ? 'required' : '' }}>
                                         <p class="field-hint">Format: PDF, Word, JPG, PNG, ZIP · Maks 10MB</p>
-                                        @error('file_pengumpulan')<p class="field-err">{{ $message }}</p>@enderror
+                                        @error('path_file')<p class="field-err">{{ $message }}</p>@enderror
                                     </div>
+                                    @endif
 
-                                    {{-- Foto --}}
-                                    <div class="field" id="wrap-foto" style="display:none">
-                                        <label>Foto Tugas <span class="req">*</span></label>
-                                        <input type="file" name="file_pengumpulan" accept=".jpg,.jpeg,.png">
-                                        <p class="field-hint">Format: JPG, PNG · Maks 10MB</p>
-                                        @error('file_pengumpulan')<p class="field-err">{{ $message }}</p>@enderror
-                                    </div>
-
-                                    {{-- Teks --}}
-                                    <div class="field" id="wrap-teks" style="display:none">
-                                        <label>Jawaban / Teks <span class="req">*</span></label>
-                                        <textarea name="konten_teks" placeholder="Ketik jawaban Anda di sini…">{{ old('konten_teks') }}</textarea>
-                                        @error('konten_teks')<p class="field-err">{{ $message }}</p>@enderror
-                                    </div>
-
-                                    {{-- Link --}}
-                                    <div class="field" id="wrap-link" style="display:none">
-                                        <label>Link / URL <span class="req">*</span></label>
-                                        <input type="url" name="link_pengumpulan" placeholder="https://…" value="{{ old('link_pengumpulan') }}">
-                                        <p class="field-hint">Contoh: link Google Drive, GitHub, dsb.</p>
-                                        @error('link_pengumpulan')<p class="field-err">{{ $message }}</p>@enderror
-                                    </div>
-
+                                    {{-- Field jawaban teks (jenis: teks atau semua) --}}
+                                    @if(in_array($tugas->jenis_pengumpulan, ['teks', 'semua']))
                                     <div class="field">
-                                        <label>Catatan (opsional)</label>
-                                        <textarea name="catatan" placeholder="Catatan tambahan untuk guru…" style="min-height:70px">{{ old('catatan') }}</textarea>
-                                        @error('catatan')<p class="field-err">{{ $message }}</p>@enderror
+                                        <label>
+                                            Jawaban / Teks
+                                            @if($tugas->jenis_pengumpulan === 'teks')
+                                                <span class="req">*</span>
+                                            @endif
+                                        </label>
+                                        {{-- FIX: name="jawaban_teks" sesuai kolom DB --}}
+                                        <textarea name="jawaban_teks"
+                                                  placeholder="Ketik jawaban Anda di sini…"
+                                                  {{ $tugas->jenis_pengumpulan === 'teks' ? 'required' : '' }}>{{ old('jawaban_teks') }}</textarea>
+                                        @error('jawaban_teks')<p class="field-err">{{ $message }}</p>@enderror
                                     </div>
+                                    @endif
+
+                                    {{-- Field link/URL (jenis: link atau semua) --}}
+                                    @if(in_array($tugas->jenis_pengumpulan, ['link', 'semua']))
+                                    <div class="field">
+                                        <label>
+                                            Link / URL
+                                            @if($tugas->jenis_pengumpulan === 'link')
+                                                <span class="req">*</span>
+                                            @endif
+                                        </label>
+                                        {{-- FIX: name="url_link" sesuai kolom DB --}}
+                                        <input type="url"
+                                               name="url_link"
+                                               placeholder="https://…"
+                                               value="{{ old('url_link') }}"
+                                               {{ $tugas->jenis_pengumpulan === 'link' ? 'required' : '' }}>
+                                        <p class="field-hint">Contoh: link Google Drive, GitHub, dsb.</p>
+                                        @error('url_link')<p class="field-err">{{ $message }}</p>@enderror
+                                    </div>
+                                    @endif
 
                                     <button type="submit" class="btn-submit" id="btnSubmit">
                                         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -338,7 +383,6 @@
 
         {{-- Sidebar --}}
         <div>
-            {{-- Deadline box --}}
             @php
                 $jamSisa = (int) now()->diffInHours($tugas->batas_waktu, false);
                 $dbClass = $terlambat ? 'db-late' : ($jamSisa < 24 ? 'db-warn' : 'db-ok');
@@ -352,7 +396,6 @@
                 <p class="db-label" style="margin-top:4px">{{ $tugas->batas_waktu->format('d M Y · H:i') }} WIB</p>
             </div>
 
-            {{-- Info --}}
             <div class="sidebar-card">
                 <div class="sc-head">Detail Tugas</div>
                 <div class="sc-body">
@@ -367,8 +410,18 @@
                         </li>
                         <li>
                             <span class="info-key">Kelas</span>
-                            {{-- FIX: kelas pakai withDefault() di model — nama bisa null jika default kosong --}}
                             <span class="info-val">{{ $tugas->kelas->nama ?? '—' }}</span>
+                        </li>
+                        <li>
+                            <span class="info-key">Jenis Pengumpulan</span>
+                            {{-- FIX: tampilkan dari kolom tugas --}}
+                            <span class="info-val">{{ match($tugas->jenis_pengumpulan) {
+                                'file'  => 'Upload File',
+                                'teks'  => 'Ketik Jawaban',
+                                'link'  => 'Link / URL',
+                                'semua' => 'Semua Format',
+                                default => ucfirst($tugas->jenis_pengumpulan ?? '—')
+                            } }}</span>
                         </li>
                         <li>
                             <span class="info-key">Nilai Maks</span>
@@ -393,34 +446,31 @@
 </div>
 
 <script>
-function toggleJenis(val) {
-    ['file', 'foto', 'teks', 'link'].forEach(function(j) {
-        var el = document.getElementById('wrap-' + j);
-        if (el) el.style.display = (j === val) ? 'block' : 'none';
-    });
-}
-
-// FIX: Render old value dari PHP agar aman (tidak ada interpolasi JS langsung)
-// Gunakan data attribute pada elemen select untuk menghindari potensi XSS
-var jenisSel = document.getElementById('jenisSel');
-if (jenisSel) {
-    // Ambil old value dari value attribute option yang selected
-    var oldVal = jenisSel.value;
-    if (oldVal) toggleJenis(oldVal);
-
-    jenisSel.addEventListener('change', function() {
-        toggleJenis(this.value);
-    });
-}
-
-// FIX: Disable tombol submit saat form sedang dikirim untuk mencegah double-submit
+// FIX: Disable tombol hanya setelah form lolos validasi HTML bawaan browser.
+// Jika browser menangkap field invalid (required kosong, url salah format, dll),
+// form tidak jadi dikirim — tombol TIDAK di-disable agar user bisa coba lagi.
 var formKumpul = document.getElementById('formKumpul');
 var btnSubmit  = document.getElementById('btnSubmit');
+
 if (formKumpul && btnSubmit) {
-    formKumpul.addEventListener('submit', function() {
+    formKumpul.addEventListener('submit', function(e) {
+        // checkValidity() menjalankan validasi HTML5 tanpa menampilkan pesan
+        if (!formKumpul.checkValidity()) {
+            // Biarkan browser tampilkan pesan validasi native, jangan disable
+            return;
+        }
+        // Form valid dan akan benar-benar dikirim — disable untuk cegah double submit
         btnSubmit.disabled = true;
-        btnSubmit.textContent = 'Mengirim…';
+        btnSubmit.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/></svg> Mengirim…';
     });
 }
+
+// Re-enable tombol saat user kembali ke halaman ini via tombol Back browser
+// (pageshow lebih reliable daripada load untuk kasus bfcache)
+window.addEventListener('pageshow', function(e) {
+    if (btnSubmit) {
+        btnSubmit.disabled = false;
+    }
+});
 </script>
 </x-app-layout>
