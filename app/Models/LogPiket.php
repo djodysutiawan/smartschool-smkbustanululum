@@ -41,20 +41,24 @@ class LogPiket extends Model
         if (! $this->masuk_pada || ! $this->keluar_pada) {
             return null;
         }
+
         return (int) $this->masuk_pada->diffInMinutes($this->keluar_pada);
     }
 
     /**
-     * Durasi dalam format H jam M menit (human-readable).
+     * Durasi dalam format "X jam Y menit" (human-readable).
      */
     public function getDurasiFormatAttribute(): ?string
     {
         $menit = $this->durasi;
+
         if ($menit === null) {
             return null;
         }
-        $jam   = intdiv($menit, 60);
-        $sisa  = $menit % 60;
+
+        $jam  = intdiv($menit, 60);
+        $sisa = $menit % 60;
+
         return $jam > 0 ? "{$jam} jam {$sisa} menit" : "{$sisa} menit";
     }
 
@@ -62,24 +66,46 @@ class LogPiket extends Model
 
     /**
      * Apakah guru sedang bertugas (sudah check-in, belum check-out).
+     *
+     * FIX: operator precedence bug pada versi lama.
+     * `(bool) $this->masuk_pada && !$this->keluar_pada` diparsing sebagai
+     * `(bool)($this->masuk_pada && !$this->keluar_pada)` yang berbeda semantik
+     * dari yang diinginkan. Perbaiki dengan explicit cast terpisah.
      */
     public function isSedangBertugas(): bool
     {
-        return (bool) $this->masuk_pada && ! $this->keluar_pada;
+        return $this->masuk_pada !== null && $this->keluar_pada === null;
     }
 
     /**
      * Catat check-out dengan waktu sekarang.
+     *
+     * @throws \LogicException jika belum check-in atau sudah check-out.
      */
     public function checkOut(): void
     {
         if (! $this->masuk_pada) {
             throw new \LogicException('Guru belum melakukan check-in.');
         }
+
         if ($this->keluar_pada) {
             throw new \LogicException('Guru sudah melakukan check-out sebelumnya.');
         }
+
         $this->update(['keluar_pada' => now()]);
+    }
+
+    // ─── Scopes ───────────────────────────────────────────────────────────────
+
+    /**
+     * Filter log yang sedang aktif (masuk tapi belum keluar) untuk hari ini.
+     */
+    public function scopeAktifHariIni($query)
+    {
+        return $query
+            ->whereDate('tanggal', today())
+            ->whereNotNull('masuk_pada')
+            ->whereNull('keluar_pada');
     }
 
     // ─── Relationships ────────────────────────────────────────────────────────

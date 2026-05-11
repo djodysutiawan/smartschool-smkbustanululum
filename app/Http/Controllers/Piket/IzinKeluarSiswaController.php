@@ -52,12 +52,19 @@ class IzinKeluarSiswaController extends Controller
             $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
         }
 
-        // Stats hari ini — sama persis dengan Admin, selalu dihitung tanpa filter aktif
-        $hariIniTotal    = IzinKeluarSiswa::whereDate('tanggal', today())->count();
-        $hariIniMenunggu = IzinKeluarSiswa::whereDate('tanggal', today())
-                            ->where('status', IzinKeluarSiswa::STATUS_MENUNGGU)->count();
-        $hariIniKeluar   = IzinKeluarSiswa::whereDate('tanggal', today())
-                            ->where('status', IzinKeluarSiswa::STATUS_DISETUJUI)->count();
+        // ── Stats hari ini — selalu dihitung tanpa filter aktif ──
+        $stats = [
+            'menunggu'      => IzinKeluarSiswa::whereDate('tanggal', today())
+                                ->where('status', IzinKeluarSiswa::STATUS_MENUNGGU)
+                                ->count(),
+            // "Sedang keluar" = sudah disetujui tapi belum kembali
+            'sedang_keluar' => IzinKeluarSiswa::whereDate('tanggal', today())
+                                ->where('status', IzinKeluarSiswa::STATUS_DISETUJUI)
+                                ->count(),
+            'sudah_kembali' => IzinKeluarSiswa::whereDate('tanggal', today())
+                                ->where('status', IzinKeluarSiswa::STATUS_SUDAH_KEMBALI)
+                                ->count(),
+        ];
 
         $izins        = $query->paginate(15)->withQueryString();
         $statusList   = IzinKeluarSiswa::STATUS_LIST;
@@ -68,9 +75,7 @@ class IzinKeluarSiswaController extends Controller
             'izins',
             'statusList',
             'kategoriList',
-            'hariIniTotal',
-            'hariIniMenunggu',
-            'hariIniKeluar',
+            'stats',
             'guruAktifId',
         ));
     }
@@ -92,7 +97,7 @@ class IzinKeluarSiswaController extends Controller
             'tahunAjarans',
             'kategoriList',
             'tahunAjaranAktif',
-            'guruAktifId', // null = belum check-in → view tampilkan banner peringatan
+            'guruAktifId',
         ));
     }
 
@@ -110,8 +115,6 @@ class IzinKeluarSiswaController extends Controller
             'jam_kembali'     => [
                 'nullable',
                 'date_format:H:i',
-                // Selaras dengan Admin: gunakan closure, bukan 'after:jam_keluar'
-                // karena 'after' tidak akurat untuk format H:i tanpa konteks tanggal
                 function ($attribute, $value, $fail) use ($request) {
                     if ($value && $request->jam_keluar && $value <= $request->jam_keluar) {
                         $fail('Rencana jam kembali harus setelah jam keluar.');
@@ -156,7 +159,6 @@ class IzinKeluarSiswaController extends Controller
 
     public function edit(IzinKeluarSiswa $izinKeluarSiswa): View|RedirectResponse
     {
-        // Selaras dengan Admin: redirect dengan pesan error, bukan abort 403
         if (! $izinKeluarSiswa->isMenunggu()) {
             return redirect()
                 ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa->id)
@@ -220,7 +222,6 @@ class IzinKeluarSiswaController extends Controller
 
     public function destroy(IzinKeluarSiswa $izinKeluarSiswa): RedirectResponse
     {
-        // Selaras dengan Admin: blokir hapus jika siswa masih di luar (status disetujui)
         if ($izinKeluarSiswa->isDisetujui()) {
             return redirect()
                 ->route('piket.izin-keluar-siswa.show', $izinKeluarSiswa->id)
@@ -235,9 +236,7 @@ class IzinKeluarSiswaController extends Controller
     }
 
     // =========================================================================
-    // APPROVE (setujui)
-    // Nama method 'approve' sesuai route: piket.izin-keluar-siswa.approve
-    // Logic selaras dengan Admin::setujui() — pakai DB::transaction + lockForUpdate
+    // APPROVE
     // =========================================================================
 
     public function approve(Request $request, IzinKeluarSiswa $izinKeluarSiswa): RedirectResponse
@@ -250,8 +249,6 @@ class IzinKeluarSiswaController extends Controller
             'catatan_piket' => 'nullable|string|max:500',
         ]);
 
-        // Selaras dengan Admin: gunakan DB::transaction agar nomor surat tidak dobel
-        // saat ada request bersamaan (lockForUpdate ada di generateNomorSurat())
         DB::transaction(function () use ($request, $izinKeluarSiswa) {
             $izinKeluarSiswa->update([
                 'status'        => IzinKeluarSiswa::STATUS_DISETUJUI,
@@ -290,9 +287,7 @@ class IzinKeluarSiswaController extends Controller
     }
 
     // =========================================================================
-    // KONFIRMASI KEMBALI (catatKembali di Admin)
-    // Nama method 'konfirmasiKembali' sesuai route: piket.izin-keluar-siswa.konfirmasi-kembali
-    // Logic selaras dengan Admin::catatKembali()
+    // KONFIRMASI KEMBALI
     // =========================================================================
 
     public function konfirmasiKembali(Request $request, IzinKeluarSiswa $izinKeluarSiswa): RedirectResponse
@@ -305,7 +300,6 @@ class IzinKeluarSiswaController extends Controller
             'jam_kembali_aktual' => [
                 'required',
                 'date_format:H:i',
-                // Selaras dengan Admin: validasi menggunakan closure
                 function ($attribute, $value, $fail) use ($izinKeluarSiswa) {
                     if ($izinKeluarSiswa->jam_keluar && $value <= $izinKeluarSiswa->jam_keluar) {
                         $fail('Jam kembali aktual harus setelah jam keluar (' . $izinKeluarSiswa->jam_keluar . ').');
@@ -320,7 +314,6 @@ class IzinKeluarSiswaController extends Controller
             'jam_kembali_aktual'   => $request->jam_kembali_aktual,
             'dicatat_kembali_oleh' => Auth::id(),
             'dicatat_kembali_pada' => now(),
-            // Selaras dengan Admin: pertahankan catatan piket lama jika tidak diisi ulang
             'catatan_piket'        => $request->filled('catatan_piket')
                                         ? $request->catatan_piket
                                         : $izinKeluarSiswa->catatan_piket,
@@ -331,7 +324,6 @@ class IzinKeluarSiswaController extends Controller
 
     // =========================================================================
     // CETAK SURAT
-    // Selaras dengan Admin: load relasi yang sama, ambil profil sekolah
     // =========================================================================
 
     public function cetakSurat(IzinKeluarSiswa $izinKeluarSiswa)
@@ -351,10 +343,8 @@ class IzinKeluarSiswaController extends Controller
             'diprosesOleh',
         ]);
 
-        // Selaras dengan Admin: ambil profil sekolah via singleton
         $profil = \App\Models\ProfilSekolah::instance();
 
-        // Bersihkan karakter / dan \ dari nomor surat agar aman sebagai nama file
         $nomorSurat = $izin->nomor_surat
             ? str_replace(['/', '\\', ' '], ['-', '-', ''], $izin->nomor_surat)
             : $izin->id;
@@ -373,8 +363,6 @@ class IzinKeluarSiswaController extends Controller
 
     /**
      * Cek log piket aktif hari ini (sudah check-in, belum checkout).
-     * Dipakai untuk konteks tampilan — bukan hard-block akses.
-     * Sama dengan helper di PelanggaranController.
      */
     private function getLogAktif(int $userId): ?object
     {

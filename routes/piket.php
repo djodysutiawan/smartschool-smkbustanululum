@@ -89,24 +89,20 @@ Route::prefix('piket')
         // Piket sebagai operator utama: buka sesi, pantau, tutup, export arsip.
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('sesi-gerbang')->name('sesi-gerbang.')->group(function () {
-            Route::get('/',                       [SesiGerbangController::class, 'index'])->name('index');
-            Route::get('/create',                 [SesiGerbangController::class, 'create'])->name('create');
-            Route::post('/',                      [SesiGerbangController::class, 'store'])->name('store');
-            Route::get('/{sesiGerbang}',          [SesiGerbangController::class, 'show'])->name('show');
-            Route::get('/{sesiGerbang}/edit',     [SesiGerbangController::class, 'edit'])->name('edit');
-            Route::patch('/{sesiGerbang}',        [SesiGerbangController::class, 'update'])->name('update');
-
-            // Tutup sesi — mengisi ditutup_pada & ditutup_oleh
-            Route::patch('/{sesiGerbang}/tutup',  [SesiGerbangController::class, 'tutup'])->name('tutup');
-
-            // Buka kembali sesi hari ini yang salah ditutup
-            Route::patch('/{sesiGerbang}/buka',   [SesiGerbangController::class, 'buka'])->name('buka');
-
-            // Export satu sesi ke PDF untuk arsip fisik piket
-            Route::get('/{sesiGerbang}/export-pdf', [SesiGerbangController::class, 'exportPdf'])->name('export-pdf');
-
-            // JSON — status sesi aktif (untuk polling live monitor)
+ 
+            // JSON polling — harus didefinisikan SEBELUM route /{sesiGerbang}
+            // agar 'ajax' tidak ditangkap sebagai parameter model binding
             Route::get('/ajax/sesi-aktif', [SesiGerbangController::class, 'ajaxSesiAktif'])->name('ajax-sesi-aktif');
+ 
+            Route::get('/',                         [SesiGerbangController::class, 'index'])->name('index');
+            Route::get('/create',                   [SesiGerbangController::class, 'create'])->name('create');
+            Route::post('/',                        [SesiGerbangController::class, 'store'])->name('store');
+            Route::get('/{sesiGerbang}',            [SesiGerbangController::class, 'show'])->name('show');
+            Route::get('/{sesiGerbang}/edit',       [SesiGerbangController::class, 'edit'])->name('edit');
+            Route::patch('/{sesiGerbang}',          [SesiGerbangController::class, 'update'])->name('update');
+            Route::patch('/{sesiGerbang}/tutup',    [SesiGerbangController::class, 'tutup'])->name('tutup');
+            Route::patch('/{sesiGerbang}/buka',     [SesiGerbangController::class, 'buka'])->name('buka');
+            Route::get('/{sesiGerbang}/export-pdf', [SesiGerbangController::class, 'exportPdf'])->name('export-pdf');
         });
 
         // ──────────────────────────────────────────────────────────────────────
@@ -115,57 +111,50 @@ Route::prefix('piket')
         // koreksi scan, dan webhook dari alat scanner hardware.
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('absensi-gerbang')->name('absensi-gerbang.')->group(function () {
-
-            // Live monitor — SSR awal + polling JSON real-time
-            Route::get('/live',         [AbsensiGerbangController::class, 'live'])->name('live');
-
-            // Rekap harian (per tanggal / kelas / tipe)
-            Route::get('/rekap',        [AbsensiGerbangController::class, 'rekap'])->name('rekap');
-
-            // Daftar siswa belum hadir hari ini
-            Route::get('/belum-hadir',  [AbsensiGerbangController::class, 'belumHadir'])->name('belum-hadir');
-
-            // Scan manual — tanpa alat scanner
-            Route::get('/scan-manual',  [AbsensiGerbangController::class, 'scanManual'])->name('scan-manual');
-            Route::post('/scan-manual', [AbsensiGerbangController::class, 'prosesScanManual'])->name('proses-scan-manual');
-
-            // Export log harian ke PDF (arsip piket)
-            Route::get('/export-pdf',   [AbsensiGerbangController::class, 'exportPdf'])->name('export-pdf');
-
-            // Export daftar belum hadir ke PDF
-            Route::get('/belum-hadir/export-pdf', [AbsensiGerbangController::class, 'exportBelumHadirPdf'])->name('belum-hadir-export-pdf');
-
-            // JSON polling untuk live monitor
-            Route::get('/ajax-live',    [AbsensiGerbangController::class, 'ajaxLive'])->name('ajax-live');
-
-            // Koreksi tipe scan (masuk → pulang atau sebaliknya)
-            Route::post('/{absensiGerbang}/koreksi', [AbsensiGerbangController::class, 'koreksi'])->name('koreksi');
-
-            // Edit catatan & hapus scan (terbatas)
-            Route::get('/{absensiGerbang}/edit',  [AbsensiGerbangController::class, 'edit'])->name('edit');
-            Route::patch('/{absensiGerbang}',     [AbsensiGerbangController::class, 'update'])->name('update');
-            Route::delete('/{absensiGerbang}',    [AbsensiGerbangController::class, 'destroy'])->name('destroy');
-
-            // Endpoint penerima data dari alat scanner hardware (POST dari device)
-            // withoutMiddleware: alat tidak punya session Laravel
+ 
+            // Endpoint penerima data dari alat scanner hardware (POST dari device).
+            // withoutMiddleware: alat tidak punya session Laravel.
+            // Didefinisikan PERTAMA agar tidak konflik dengan route /{absensiGerbang}.
             Route::post('/webhook', [AbsensiGerbangController::class, 'webhook'])
                 ->name('webhook')
                 ->withoutMiddleware(['auth', 'role:guru_piket']);
+ 
+            // JSON polling — didefinisikan SEBELUM /{absensiGerbang}
+            Route::get('/ajax-live', [AbsensiGerbangController::class, 'ajaxLive'])->name('ajax-live');
+ 
+            // Export — didefinisikan SEBELUM /{absensiGerbang}
+            Route::get('/export-pdf',             [AbsensiGerbangController::class, 'exportPdf'])->name('export-pdf');
+            Route::get('/belum-hadir/export-pdf', [AbsensiGerbangController::class, 'exportBelumHadirPdf'])->name('belum-hadir-export-pdf');
+ 
+            // Halaman utama
+            Route::get('/live',        [AbsensiGerbangController::class, 'live'])->name('live');
+            Route::get('/rekap',       [AbsensiGerbangController::class, 'rekap'])->name('rekap');
+            Route::get('/belum-hadir', [AbsensiGerbangController::class, 'belumHadir'])->name('belum-hadir');
+            Route::get('/scan-manual', [AbsensiGerbangController::class, 'scanManual'])->name('scan-manual');
+            Route::post('/scan-manual',[AbsensiGerbangController::class, 'prosesScanManual'])->name('proses-scan-manual');
+ 
+            // Resource-like routes dengan model binding — SETELAH semua static routes
+            Route::get('/{absensiGerbang}/edit',         [AbsensiGerbangController::class, 'edit'])->name('edit');
+            Route::patch('/{absensiGerbang}',            [AbsensiGerbangController::class, 'update'])->name('update');
+            Route::delete('/{absensiGerbang}',           [AbsensiGerbangController::class, 'destroy'])->name('destroy');
+            Route::post('/{absensiGerbang}/koreksi',     [AbsensiGerbangController::class, 'koreksi'])->name('koreksi');
         });
 
         // ──────────────────────────────────────────────────────────────────────
         // ABSENSI GURU — SESI QR GURU
+        // Method yang tersedia di controller: index, buka, tutup, refreshKodeQr, status
+        // Route yang tidak ada handler-nya (create, store, show, edit, update,
+        // aktif, refresh versi lama) telah dihapus / diselaraskan.
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('sesi-qr-guru')->name('sesi-qr-guru.')->group(function () {
-            Route::get('/',                      [SesiQrGuruController::class, 'index'])->name('index');
-            Route::get('/create',                [SesiQrGuruController::class, 'create'])->name('create');
-            Route::post('/',                     [SesiQrGuruController::class, 'store'])->name('store');
-            Route::get('/aktif',                 [SesiQrGuruController::class, 'aktif'])->name('aktif');
-            Route::get('/{sesiQrGuru}',          [SesiQrGuruController::class, 'show'])->name('show');
-            Route::get('/{sesiQrGuru}/edit',     [SesiQrGuruController::class, 'edit'])->name('edit');
-            Route::patch('/{sesiQrGuru}',        [SesiQrGuruController::class, 'update'])->name('update');
-            Route::patch('/{sesiQrGuru}/tutup',  [SesiQrGuruController::class, 'tutup'])->name('tutup');
-            Route::patch('/{sesiQrGuru}/refresh',[SesiQrGuruController::class, 'refresh'])->name('refresh');
+ 
+            // JSON polling — SEBELUM route dengan parameter
+            Route::get('/status', [SesiQrGuruController::class, 'status'])->name('status');
+ 
+            Route::get('/',                [SesiQrGuruController::class, 'index'])->name('index');
+            Route::post('/buka',           [SesiQrGuruController::class, 'buka'])->name('buka');
+            Route::post('/tutup',          [SesiQrGuruController::class, 'tutup'])->name('tutup');
+            Route::post('/refresh',        [SesiQrGuruController::class, 'refreshKodeQr'])->name('refresh');
         });
 
         // ──────────────────────────────────────────────────────────────────────
@@ -173,15 +162,20 @@ Route::prefix('piket')
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('absensi-guru')->name('absensi-guru.')->group(function () {
             Route::get('/dashboard', [AbsensiGuruController::class, 'dashboard'])->name('dashboard');
-
+ 
             Route::prefix('massal')->name('massal.')->group(function () {
                 Route::get('/form', [AbsensiGuruController::class, 'massalForm'])->name('form');
                 Route::post('/',    [AbsensiGuruController::class, 'massalStore'])->name('store');
             });
-
+ 
             Route::get('/riwayat',  [AbsensiGuruController::class, 'riwayat'])->name('riwayat');
+ 
+            // Scan QR — form + proses
             Route::get('/scan-qr',  [AbsensiGuruController::class, 'scanQr'])->name('scan-qr');
             Route::post('/scan-qr', [AbsensiGuruController::class, 'prosesQr'])->name('proses-qr');
+ 
+            // Export PDF harian absensi guru
+            Route::get('/export-pdf', [AbsensiGuruController::class, 'exportPdf'])->name('export-pdf');
         });
 
         // ──────────────────────────────────────────────────────────────────────

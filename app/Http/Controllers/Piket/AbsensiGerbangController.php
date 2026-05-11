@@ -32,7 +32,11 @@ class AbsensiGerbangController extends Controller
 
         if ($sesiAktif) {
             $scanTerakhir = $sesiAktif->absensiGerbang()
-                ->with(['siswa:id,nama_lengkap,nis,kelas_id', 'siswa.kelas:id,nama_kelas'])
+                ->with([
+                    'siswa:id,nama_lengkap,nis,kelas_id',
+                    'siswa.kelas:id,nama_kelas',
+                    'guru:id,nama_lengkap,nip',
+                ])
                 ->orderByDesc('id')
                 ->limit(30)
                 ->get();
@@ -64,14 +68,20 @@ class AbsensiGerbangController extends Controller
     {
         $tanggal = $request->input('tanggal', now()->toDateString());
 
+        // Validasi format tanggal agar tidak bisa inject nilai aneh
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+            $tanggal = now()->toDateString();
+        }
+
         $query = AbsensiGerbang::with([
                 'siswa.kelas',
+                'guru',
                 'sesiGerbang',
                 'inputOleh:id,name',
             ])
             ->where('tanggal_scan', $tanggal);
 
-        if ($request->filled('tipe')) {
+        if ($request->filled('tipe') && in_array($request->tipe, ['masuk', 'pulang'])) {
             $query->where('tipe', $request->tipe);
         }
 
@@ -92,13 +102,20 @@ class AbsensiGerbangController extends Controller
                   ->orWhereHas('siswa', fn ($sq) =>
                       $sq->where('nama_lengkap', 'like', "%{$cari}%")
                          ->orWhere('nis', 'like', "%{$cari}%")
+                  )
+                  ->orWhereHas('guru', fn ($sq) =>
+                      $sq->where('nama_lengkap', 'like', "%{$cari}%")
+                         ->orWhere('nip', 'like', "%{$cari}%")
                   );
             });
         }
 
         $scanList  = $query->orderByDesc('waktu_scan')->paginate(30)->withQueryString();
         $kelasList = Kelas::aktif()->orderBy('tingkat')->orderBy('nama_kelas')->get();
-        $statistik = $this->hitungStatistikHarian($tanggal, $request->kelas_id ? (int) $request->kelas_id : null);
+        $statistik = $this->hitungStatistikHarian(
+            $tanggal,
+            $request->filled('kelas_id') ? (int) $request->kelas_id : null
+        );
         $sesiAktif = SesiGerbang::sesiAktifSekarang();
 
         return view('piket.absensi-gerbang.rekap', compact(
@@ -120,6 +137,10 @@ class AbsensiGerbangController extends Controller
     {
         $tanggal = $request->input('tanggal', now()->toDateString());
 
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+            $tanggal = now()->toDateString();
+        }
+
         $sudahHadirIds = AbsensiGerbang::where('tipe', 'masuk')
             ->where('tanggal_scan', $tanggal)
             ->whereIn('status', ['normal', 'manual', 'koreksi'])
@@ -131,7 +152,7 @@ class AbsensiGerbangController extends Controller
             ->whereNotIn('id', $sudahHadirIds);
 
         if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
+            $query->where('kelas_id', (int) $request->kelas_id);
         }
 
         if ($request->filled('cari')) {
@@ -142,18 +163,29 @@ class AbsensiGerbangController extends Controller
             });
         }
 
-        $belumHadirList  = $query->orderBy('nama_lengkap')->paginate(30)->withQueryString();
-        $kelasList       = Kelas::aktif()->orderBy('tingkat')->orderBy('nama_kelas')->get();
+        $belumHadirList = $query->orderBy('nama_lengkap')->paginate(30)->withQueryString();
+
+        $kelasList = Kelas::aktif()->orderBy('tingkat')->orderBy('nama_kelas')->get();
+
         $totalSiswaAktif = Siswa::aktif()
-            ->when($request->kelas_id, fn ($q) => $q->where('kelas_id', $request->kelas_id))
+            ->when($request->filled('kelas_id'), fn ($q) => $q->where('kelas_id', (int) $request->kelas_id))
             ->count();
+
+        $jumlahSudahHadir = $request->filled('kelas_id')
+            ? AbsensiGerbang::where('tipe', 'masuk')
+                ->where('tanggal_scan', $tanggal)
+                ->whereIn('status', ['normal', 'manual', 'koreksi'])
+                ->whereNotNull('siswa_id')
+                ->whereHas('siswa', fn ($q) => $q->where('kelas_id', (int) $request->kelas_id))
+                ->distinct('siswa_id')->count('siswa_id')
+            : $sudahHadirIds->count();
 
         $statistik = [
             'total_siswa' => $totalSiswaAktif,
-            'sudah_hadir' => $sudahHadirIds->count(),
+            'sudah_hadir' => $jumlahSudahHadir,
             'belum_hadir' => $belumHadirList->total(),
             'persentase'  => $totalSiswaAktif > 0
-                ? round(($sudahHadirIds->count() / $totalSiswaAktif) * 100, 1)
+                ? round(($jumlahSudahHadir / $totalSiswaAktif) * 100, 1)
                 : 0,
         ];
 
@@ -192,6 +224,7 @@ class AbsensiGerbangController extends Controller
 
     /**
      * Simpan input manual absensi gerbang oleh piket.
+     * Hanya untuk siswa — input manual guru tidak ada di fitur ini.
      */
     public function prosesScanManual(Request $request): RedirectResponse
     {
@@ -211,7 +244,8 @@ class AbsensiGerbangController extends Controller
                 ->withInput();
         }
 
-        $tipe       = $request->tipe ?? $sesi->tipe;
+        $tipe = $request->filled('tipe') ? $request->tipe : $sesi->tipe;
+
         $sudahAbsen = AbsensiGerbang::where('sesi_gerbang_id', $sesi->id)
             ->where('siswa_id', $siswa->id)
             ->where('tipe', $tipe)
@@ -248,6 +282,7 @@ class AbsensiGerbangController extends Controller
     {
         $absensiGerbang->load([
             'siswa.kelas',
+            'guru',
             'sesiGerbang',
             'inputOleh:id,name',
             'hasilKoreksi.siswa',
@@ -271,7 +306,7 @@ class AbsensiGerbangController extends Controller
         $absensiGerbang->update(['catatan' => $request->catatan]);
 
         return redirect()
-            ->route('piket.absensi-gerbang.rekap', ['tanggal' => $absensiGerbang->tanggal_scan])
+            ->route('piket.absensi-gerbang.rekap', ['tanggal' => $absensiGerbang->tanggal_scan->toDateString()])
             ->with('success', 'Catatan scan berhasil diperbarui.');
     }
 
@@ -282,9 +317,9 @@ class AbsensiGerbangController extends Controller
      *
      * Piket boleh menghapus jika:
      *  - Scan manual (is_manual = true), ATAU
-     *  - Kode tidak dikenal (siswa_id = null)
+     *  - Kode tidak dikenal (siswa_id = null DAN guru_id = null)
      *
-     * Scan dari alat yang sudah teridentifikasi siswa → hanya admin.
+     * Scan dari alat yang sudah teridentifikasi → hanya admin.
      * Scan yang sudah dikoreksi → tidak bisa dihapus siapapun (integritas data).
      */
     public function destroy(AbsensiGerbang $absensiGerbang): RedirectResponse
@@ -293,7 +328,8 @@ class AbsensiGerbangController extends Controller
             return back()->with('error', 'Record ini sudah dikoreksi dan tidak bisa dihapus.');
         }
 
-        $bolehHapus = $absensiGerbang->is_manual || $absensiGerbang->siswa_id === null;
+        $bolehHapus = $absensiGerbang->is_manual
+            || ($absensiGerbang->siswa_id === null && $absensiGerbang->guru_id === null);
 
         if (! $bolehHapus) {
             return back()->with('error',
@@ -312,8 +348,6 @@ class AbsensiGerbangController extends Controller
     /**
      * Koreksi tipe scan (masuk → pulang atau sebaliknya).
      *
-     * Piket adalah orang pertama yang tahu jika terjadi kesalahan tipe
-     * (mis. alat salah baca, siswa scan di sesi pulang padahal baru masuk).
      * Membuat record baru bertipe 'koreksi', record lama tetap tersimpan.
      */
     public function koreksi(Request $request, AbsensiGerbang $absensiGerbang): RedirectResponse
@@ -333,7 +367,7 @@ class AbsensiGerbangController extends Controller
         $authUser = Auth::user();
 
         try {
-            $koreksi = $absensiGerbang->koreksi(
+            $absensiGerbang->koreksi(
                 inputOleh: $authUser->id,
                 tipeBaru:  $request->tipe_baru,
                 catatan:   $request->catatan,
@@ -343,7 +377,7 @@ class AbsensiGerbangController extends Controller
         }
 
         return redirect()
-            ->route('piket.absensi-gerbang.rekap', ['tanggal' => $absensiGerbang->tanggal_scan])
+            ->route('piket.absensi-gerbang.rekap', ['tanggal' => $absensiGerbang->tanggal_scan->toDateString()])
             ->with('success', 'Koreksi tipe scan berhasil disimpan.');
     }
 
@@ -351,39 +385,53 @@ class AbsensiGerbangController extends Controller
 
     /**
      * Export log scan harian ke PDF — untuk arsip laporan piket.
-     *
      * Piket hanya bisa export per tanggal (bukan rekap multi-bulan).
-     * Export rekap periode panjang ada di sisi admin.
      */
     public function exportPdf(Request $request): mixed
     {
         $tanggal = $request->input('tanggal', now()->toDateString());
 
-        $query = AbsensiGerbang::with(['siswa.kelas', 'sesiGerbang', 'inputOleh:id,name'])
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+            $tanggal = now()->toDateString();
+        }
+
+        $query = AbsensiGerbang::with([
+                'siswa.kelas',
+                'guru',
+                'sesiGerbang',
+                'inputOleh:id,name',
+            ])
             ->where('tanggal_scan', $tanggal)
             ->whereIn('status', ['normal', 'manual', 'koreksi']);
 
-        if ($request->filled('tipe')) {
+        if ($request->filled('tipe') && in_array($request->tipe, ['masuk', 'pulang'])) {
             $query->where('tipe', $request->tipe);
         }
 
         if ($request->filled('kelas_id')) {
-            $query->whereHas('siswa', fn ($q) => $q->where('kelas_id', $request->kelas_id));
+            $query->whereHas('siswa', fn ($q) => $q->where('kelas_id', (int) $request->kelas_id));
         }
 
         $scanList  = $query->orderBy('tipe')->orderBy('waktu_scan')->get();
-        $statistik = $this->hitungStatistikHarian($tanggal, $request->kelas_id ? (int) $request->kelas_id : null);
+        $statistik = $this->hitungStatistikHarian(
+            $tanggal,
+            $request->filled('kelas_id') ? (int) $request->kelas_id : null
+        );
 
         /** @var \App\Models\User $authUser */
         $authUser = Auth::user();
+
+        $kelasLabel = 'Semua Kelas';
+        if ($request->filled('kelas_id')) {
+            $kelas = Kelas::find((int) $request->kelas_id);
+            $kelasLabel = $kelas?->nama_kelas ?? 'Semua Kelas';
+        }
 
         $filter = [
             'tanggal'      => $tanggal,
             'tipe'         => $request->tipe,
             'kelas_id'     => $request->kelas_id,
-            'kelas_label'  => $request->kelas_id
-                ? Kelas::find($request->kelas_id)?->nama_kelas
-                : 'Semua Kelas',
+            'kelas_label'  => $kelasLabel,
             'dicetak_pada' => now()->isoFormat('D MMMM Y, HH:mm'),
             'dicetak_oleh' => $authUser->name,
         ];
@@ -406,6 +454,10 @@ class AbsensiGerbangController extends Controller
     {
         $tanggal = $request->input('tanggal', now()->toDateString());
 
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+            $tanggal = now()->toDateString();
+        }
+
         $sudahHadirIds = AbsensiGerbang::where('tipe', 'masuk')
             ->where('tanggal_scan', $tanggal)
             ->whereIn('status', ['normal', 'manual', 'koreksi'])
@@ -415,7 +467,7 @@ class AbsensiGerbangController extends Controller
         $query = Siswa::aktif()->with('kelas')->whereNotIn('id', $sudahHadirIds);
 
         if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
+            $query->where('kelas_id', (int) $request->kelas_id);
         }
 
         $belumHadirList = $query->orderBy('nama_lengkap')->get();
@@ -423,11 +475,15 @@ class AbsensiGerbangController extends Controller
         /** @var \App\Models\User $authUser */
         $authUser = Auth::user();
 
+        $kelasLabel = 'Semua Kelas';
+        if ($request->filled('kelas_id')) {
+            $kelas = Kelas::find((int) $request->kelas_id);
+            $kelasLabel = $kelas?->nama_kelas ?? 'Semua Kelas';
+        }
+
         $filter = [
             'tanggal'      => $tanggal,
-            'kelas_label'  => $request->kelas_id
-                ? Kelas::find($request->kelas_id)?->nama_kelas
-                : 'Semua Kelas',
+            'kelas_label'  => $kelasLabel,
             'dicetak_pada' => now()->isoFormat('D MMMM Y, HH:mm'),
             'dicetak_oleh' => $authUser->name,
         ];
@@ -448,12 +504,15 @@ class AbsensiGerbangController extends Controller
      *
      * Alat mengirim: kode_scan + opsional sesi_gerbang_id.
      * Jika sesi_gerbang_id tidak dikirim, sistem auto-detect sesi aktif.
+     *
+     * Menggunakan AbsensiGerbang::rekamScan() agar logika duplikat
+     * dan pendeteksian pemilik (siswa/guru) terpusat di model.
      */
     public function webhook(Request $request): JsonResponse
     {
         $request->validate([
             'kode_scan'       => ['required', 'string', 'max:100'],
-            'sesi_gerbang_id' => ['nullable', 'exists:sesi_gerbang,id'],
+            'sesi_gerbang_id' => ['nullable', 'integer', 'exists:sesi_gerbang,id'],
         ]);
 
         // Cari sesi aktif
@@ -468,66 +527,42 @@ class AbsensiGerbangController extends Controller
             ], 422);
         }
 
-        // Cari siswa berdasarkan kode barcode atau NIS
-        $siswa = Siswa::where('kode_barcode', $request->kode_scan)
-            ->orWhere('nis', $request->kode_scan)
-            ->first();
+        // Gunakan rekamScan() — sudah handle siswa, guru, duplikat, tidak_dikenal
+        $scan = AbsensiGerbang::rekamScan($sesi, $request->kode_scan);
 
-        $tipe = $sesi->tipe;
+        // Refresh relasi untuk response
+        $scan->loadMissing(['siswa.kelas', 'guru']);
 
-        // Cek duplikat
-        if ($siswa) {
-            $duplikat = AbsensiGerbang::where('sesi_gerbang_id', $sesi->id)
-                ->where('siswa_id', $siswa->id)
-                ->where('tipe', $tipe)
-                ->whereIn('status', ['normal', 'manual', 'koreksi'])
-                ->exists();
+        // Bangun label nama & kelas berdasarkan tipe pemilik
+        $namaPemilik = $scan->nama_pemilik;
+        $kelasPemilik = match ($scan->tipe_pemilik) {
+            'siswa'  => $scan->siswa?->kelas?->nama_kelas ?? '-',
+            'guru'   => 'Guru',
+            default  => '-',
+        };
+        $nisPemilik = match ($scan->tipe_pemilik) {
+            'siswa'  => $scan->siswa?->nis ?? '-',
+            'guru'   => $scan->guru?->nip ?? '-',
+            default  => '-',
+        };
 
-            if ($duplikat) {
-                // Tetap rekam sebagai duplikat untuk audit trail
-                AbsensiGerbang::create([
-                    'sesi_gerbang_id' => $sesi->id,
-                    'siswa_id'        => $siswa->id,
-                    'kode_scan'       => $request->kode_scan,
-                    'tipe'            => $tipe,
-                    'tanggal_scan'    => now()->toDateString(),
-                    'waktu_scan'      => now(),
-                    'status'          => 'duplikat',
-                    'is_manual'       => false,
-                ]);
+        $httpStatus = $scan->status === 'duplikat' ? 200 : 201;
 
-                return response()->json([
-                    'status'     => 'duplikat',
-                    'message'    => "Sudah tercatat {$tipe}: {$siswa->nama_lengkap}",
-                    'nama_siswa' => $siswa->nama_lengkap,
-                    'kelas'      => $siswa->kelas?->nama_kelas,
-                ], 200);
-            }
-        }
-
-        // Simpan scan baru
-        $scan = AbsensiGerbang::create([
-            'sesi_gerbang_id' => $sesi->id,
-            'siswa_id'        => $siswa?->id,
-            'kode_scan'       => $request->kode_scan,
-            'tipe'            => $tipe,
-            'tanggal_scan'    => now()->toDateString(),
-            'waktu_scan'      => now(),
-            'status'          => $siswa ? 'normal' : 'tidak_dikenal',
-            'is_manual'       => false,
-        ]);
+        $message = match ($scan->status) {
+            'normal', 'manual' => "Berhasil: {$namaPemilik} ({$scan->tipe})",
+            'duplikat'         => "Sudah tercatat {$scan->tipe}: {$namaPemilik}",
+            default            => 'Kode tidak dikenal — scan tetap direkam.',
+        };
 
         return response()->json([
             'status'     => $scan->status,
-            'message'    => $siswa
-                ? "Berhasil: {$siswa->nama_lengkap} ({$tipe})"
-                : 'Kode tidak dikenal — scan tetap direkam.',
-            'nama_siswa' => $siswa?->nama_lengkap ?? 'Tidak Dikenal',
-            'nis'        => $siswa?->nis ?? '-',
-            'kelas'      => $siswa?->kelas?->nama_kelas ?? '-',
-            'tipe'       => $tipe,
-            'waktu_scan' => now()->format('H:i:s'),
-        ], 201);
+            'message'    => $message,
+            'nama'       => $namaPemilik,
+            'identitas'  => $nisPemilik,
+            'kelas'      => $kelasPemilik,
+            'tipe_scan'  => $scan->tipe,
+            'waktu_scan' => $scan->waktu_scan->format('H:i:s'),
+        ], $httpStatus);
     }
 
     // ── ajaxLive ──────────────────────────────────────────────────────────────
@@ -553,22 +588,32 @@ class AbsensiGerbangController extends Controller
             ]);
         }
 
-        $lastId = (int) $request->input('last_id', 0);
+        $lastId = max(0, (int) $request->input('last_id', 0));
 
         $scanBaru = AbsensiGerbang::with([
                 'siswa:id,nama_lengkap,nis,kelas_id',
                 'siswa.kelas:id,nama_kelas',
+                'guru:id,nama_lengkap,nip',
             ])
             ->where('sesi_gerbang_id', $sesiAktif->id)
-            ->where('id', '>', $lastId)
+            ->when($lastId > 0, fn ($q) => $q->where('id', '>', $lastId))
             ->orderByDesc('id')
             ->limit(20)
             ->get()
             ->map(fn ($scan) => [
                 'id'           => $scan->id,
-                'nama_siswa'   => $scan->siswa?->nama_lengkap ?? 'Tidak Dikenal',
-                'nis'          => $scan->siswa?->nis ?? '-',
-                'kelas'        => $scan->siswa?->kelas?->nama_kelas ?? '-',
+                'nama'         => $scan->nama_pemilik,
+                'identitas'    => match ($scan->tipe_pemilik) {
+                    'siswa'  => $scan->siswa?->nis ?? '-',
+                    'guru'   => $scan->guru?->nip ?? '-',
+                    default  => '-',
+                },
+                'kelas'        => match ($scan->tipe_pemilik) {
+                    'siswa'  => $scan->siswa?->kelas?->nama_kelas ?? '-',
+                    'guru'   => 'Guru',
+                    default  => '-',
+                },
+                'tipe_pemilik' => $scan->tipe_pemilik,
                 'tipe'         => $scan->tipe,
                 'label_tipe'   => $scan->label_tipe,
                 'status'       => $scan->status,
@@ -579,18 +624,19 @@ class AbsensiGerbangController extends Controller
                 'kode_scan'    => $scan->kode_scan,
             ]);
 
+        // Hitung statistik langsung dari query untuk menghindari N+1
+        $baseQuery = fn () => $sesiAktif->absensiGerbang();
+
         $statistik = [
-            'total_masuk'   => $sesiAktif->absensiGerbang()
-                                  ->where('tipe', 'masuk')
+            'total_masuk'   => $baseQuery()->where('tipe', 'masuk')
                                   ->whereIn('status', ['normal', 'manual', 'koreksi'])
                                   ->count(),
-            'total_pulang'  => $sesiAktif->absensiGerbang()
-                                  ->where('tipe', 'pulang')
+            'total_pulang'  => $baseQuery()->where('tipe', 'pulang')
                                   ->whereIn('status', ['normal', 'manual', 'koreksi'])
                                   ->count(),
-            'duplikat'      => $sesiAktif->absensiGerbang()->where('status', 'duplikat')->count(),
-            'tidak_dikenal' => $sesiAktif->absensiGerbang()->whereNull('siswa_id')->count(),
-            'last_id'       => $sesiAktif->absensiGerbang()->max('id') ?? 0,
+            'duplikat'      => $baseQuery()->where('status', 'duplikat')->count(),
+            'tidak_dikenal' => $baseQuery()->whereNull('siswa_id')->whereNull('guru_id')->count(),
+            'last_id'       => $baseQuery()->max('id') ?? 0,
         ];
 
         return response()->json([
@@ -609,9 +655,15 @@ class AbsensiGerbangController extends Controller
 
     // ── Private Helpers ───────────────────────────────────────────────────────
 
+    /**
+     * Hitung statistik absensi siswa harian.
+     * Catatan: statistik guru tidak dimasukkan di sini karena scope halaman
+     * ini adalah absensi siswa gerbang. Statistik guru ada di AbsensiGuruController.
+     */
     private function hitungStatistikHarian(string $tanggal, ?int $kelasId = null): array
     {
-        $base = AbsensiGerbang::where('tanggal_scan', $tanggal);
+        $base = AbsensiGerbang::where('tanggal_scan', $tanggal)
+            ->untukSiswa(); // hanya scan siswa
 
         if ($kelasId) {
             $base->whereHas('siswa', fn ($q) => $q->where('kelas_id', $kelasId));
@@ -638,7 +690,7 @@ class AbsensiGerbangController extends Controller
             'belum_hadir'      => max(0, $totalSiswa - $masukIds->count()),
             'scan_manual'      => (clone $base)->where('is_manual', true)->count(),
             'scan_duplikat'    => (clone $base)->where('status', 'duplikat')->count(),
-            'tidak_dikenal'    => (clone $base)->whereNull('siswa_id')->count(),
+            'tidak_dikenal'    => (clone $base)->whereNull('siswa_id')->whereNull('guru_id')->count(),
             'total_siswa'      => $totalSiswa,
             'persentase_hadir' => $totalSiswa > 0
                 ? round(($masukIds->count() / $totalSiswa) * 100, 1)

@@ -9,34 +9,27 @@
         --text:#0f172a;--text2:#475569;--text3:#94a3b8;
         --radius:10px;--radius-sm:7px;
     }
-
     .page{padding:28px 28px 40px;max-width:2000px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
     .header-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-
-    /* Breadcrumb */
     .breadcrumb{display:flex;align-items:center;gap:6px;margin-bottom:20px;flex-wrap:wrap}
     .breadcrumb a{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--brand-600);text-decoration:none}
     .breadcrumb a:hover{text-decoration:underline}
     .breadcrumb-sep{color:var(--text3);font-size:12px}
     .breadcrumb-cur{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text3)}
-
-    /* Buttons */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
     .btn:hover{filter:brightness(.93)}
     .btn-primary{background:var(--brand-600);color:#fff}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
-
-    /* Card */
     .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
     .card-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:8px}
     .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:var(--text)}
     .card-body{padding:20px}
 
-    /* Date hero */
+    /* Date banner */
     .date-banner{background:linear-gradient(135deg,var(--brand-600) 0%,var(--brand-700) 100%);border-radius:var(--radius);padding:20px 24px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
     .date-banner-left .hari{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.05em}
     .date-banner-left .tanggal{font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:#fff;line-height:1.2;margin-top:2px}
@@ -45,6 +38,12 @@
     .date-stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:26px;font-weight:800;color:#fff;line-height:1}
     .date-stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:rgba(255,255,255,.65);text-transform:uppercase;letter-spacing:.04em;margin-top:3px}
 
+    /* Log piket strip */
+    .log-strip{display:flex;align-items:center;gap:16px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:20px;flex-wrap:wrap}
+    .log-item{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
+    .log-item span{font-weight:400;color:var(--text3)}
+    .log-sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
+
     /* Detail sections */
     .detail-section{margin-bottom:20px}
     .detail-section:last-child{margin-bottom:0}
@@ -52,43 +51,56 @@
     .detail-content{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);line-height:1.7;white-space:pre-line}
     .detail-empty{font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text3);font-style:italic}
 
-    /* Izin keluar table */
-    .izin-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-    .izin-table thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
-    .izin-table thead th{padding:9px 12px;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase}
-    .izin-table tbody tr{border-bottom:1px solid #f1f5f9}
-    .izin-table tbody tr:last-child{border-bottom:none}
-    .izin-table td{padding:9px 12px;color:var(--text);vertical-align:middle}
+    /* Pelanggaran list */
+    .poin-pill{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:20px;padding:0 7px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:800}
+    .poin-low{background:#dcfce7;color:#15803d}
+    .poin-mid{background:#fef9c3;color:#a16207}
+    .poin-high{background:#fee2e2;color:#dc2626}
+    .mini-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
+    .mini-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px}
+    .mini-item-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:var(--text);flex:1}
+    .mini-item-sub{font-size:12px;color:var(--text3)}
 
-    /* Status badges */
+    /* Status badge */
     .badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;white-space:nowrap}
     .badge-disetujui{background:#dcfce7;color:#15803d}
     .badge-ditolak{background:#fee2e2;color:#dc2626}
     .badge-menunggu{background:#fef9c3;color:#a16207}
     .badge-kembali{background:#eff6ff;color:#1d4ed8}
+    .badge-pending{background:#f1f5f9;color:#475569}
 
-    /* Stat pills for izin summary */
-    .izin-summary{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
-    .izin-pill{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface2)}
-    .izin-pill .num{font-size:16px;font-weight:800}
+    /* Izin table */
+    .table-wrap{overflow-x:auto}
+    .izin-table{width:100%;border-collapse:collapse;font-size:13px}
+    .izin-table thead tr{background:var(--surface2);border-bottom:1px solid var(--border)}
+    .izin-table thead th{padding:9px 12px;text-align:left;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}
+    .izin-table tbody tr{border-bottom:1px solid #f1f5f9;transition:background .1s}
+    .izin-table tbody tr:last-child{border-bottom:none}
+    .izin-table tbody tr:hover{background:#fafbff}
+    .izin-table td{padding:9px 12px;color:var(--text);vertical-align:middle}
 
     /* Meta footer */
     .meta-strip{display:flex;flex-wrap:wrap;gap:16px;padding:14px 20px;background:var(--surface2);border-top:1px solid var(--border)}
     .meta-item{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--text2)}
 
-    @media(max-width:640px){.page{padding:16px}}
+    /* Empty state */
+    .empty-state{padding:32px 20px;text-align:center}
+    .empty-state p{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text3);font-style:italic}
+
+    @media(max-width:640px){
+        .page{padding:16px}
+        .log-sep{display:none}
+    }
 </style>
 
 <div class="page">
 
-    {{-- Breadcrumb --}}
     <div class="breadcrumb">
         <a href="{{ route('piket.laporan.riwayat') }}">Riwayat Laporan</a>
         <span class="breadcrumb-sep">›</span>
         <span class="breadcrumb-cur">{{ \Carbon\Carbon::parse($laporan->tanggal)->translatedFormat('d F Y') }}</span>
     </div>
 
-    {{-- Page Header --}}
     <div class="page-header">
         <div>
             <h1 class="page-title">Detail Laporan Harian</h1>
@@ -108,7 +120,7 @@
         </div>
     </div>
 
-    {{-- Date banner with izin summary stats --}}
+    {{-- Date banner with izin summary --}}
     <div class="date-banner">
         <div class="date-banner-left">
             <p class="hari">{{ \Carbon\Carbon::parse($laporan->tanggal)->translatedFormat('l') }}</p>
@@ -127,8 +139,49 @@
                 <p class="date-stat-val" style="{{ $ringkasanIzin['ditolak'] > 0 ? 'color:#fca5a5' : '' }}">{{ $ringkasanIzin['ditolak'] }}</p>
                 <p class="date-stat-label">Ditolak</p>
             </div>
+            <div class="date-stat">
+                <p class="date-stat-val">{{ $pelanggaranHariItu->count() }}</p>
+                <p class="date-stat-label">Pelanggaran</p>
+            </div>
         </div>
     </div>
+
+    {{-- Log Piket hari itu (FIX: tampilkan $logPiketHariItu yang dikirim controller) --}}
+    @if($logPiketHariItu)
+    <div class="card">
+        <div class="card-header">
+            <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span class="card-title">Log Piket</span>
+        </div>
+        <div class="card-body" style="padding-top:14px;padding-bottom:14px">
+            <div class="log-strip" style="margin-bottom:0">
+                <div class="log-item">
+                    <svg width="13" height="13" fill="none" stroke="#15803d" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Masuk: <span>{{ $logPiketHariItu->masuk_pada ? \Carbon\Carbon::parse($logPiketHariItu->masuk_pada)->format('H:i') : '—' }}</span>
+                </div>
+                <div class="log-sep"></div>
+                <div class="log-item">
+                    <svg width="13" height="13" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Keluar: <span>{{ $logPiketHariItu->keluar_pada ? \Carbon\Carbon::parse($logPiketHariItu->keluar_pada)->format('H:i') : '—' }}</span>
+                </div>
+                @if($logPiketHariItu->getDurasiFormatAttribute())
+                <div class="log-sep"></div>
+                <div class="log-item">
+                    <svg width="13" height="13" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    Durasi: <span>{{ $logPiketHariItu->getDurasiFormatAttribute() }}</span>
+                </div>
+                @endif
+                @if($logPiketHariItu->shift)
+                <div class="log-sep"></div>
+                <div class="log-item">
+                    <svg width="13" height="13" fill="none" stroke="#a16207" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+                    Shift: <span>{{ ucfirst($logPiketHariItu->shift) }}</span>
+                </div>
+                @endif
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Isi laporan --}}
     <div class="card">
@@ -138,7 +191,6 @@
         </div>
         <div class="card-body">
 
-            {{-- Kondisi sekolah --}}
             <div class="detail-section">
                 <p class="detail-section-title">Kondisi Sekolah</p>
                 @if($laporan->kondisi_sekolah)
@@ -148,7 +200,6 @@
                 @endif
             </div>
 
-            {{-- Catatan umum --}}
             <div class="detail-section">
                 <p class="detail-section-title">Catatan Umum</p>
                 @if($laporan->catatan_umum)
@@ -158,7 +209,6 @@
                 @endif
             </div>
 
-            {{-- Tamu penting --}}
             <div class="detail-section">
                 <p class="detail-section-title">Tamu Penting</p>
                 @if($laporan->tamu_penting)
@@ -168,7 +218,6 @@
                 @endif
             </div>
 
-            {{-- Kejadian khusus --}}
             <div class="detail-section">
                 <p class="detail-section-title">Kejadian Khusus</p>
                 @if($laporan->kejadian_khusus)
@@ -180,7 +229,6 @@
 
         </div>
 
-        {{-- Meta footer --}}
         <div class="meta-strip">
             <div class="meta-item">
                 <svg width="13" height="13" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
@@ -199,14 +247,41 @@
         </div>
     </div>
 
+    {{-- Pelanggaran hari itu (FIX: tampilkan $pelanggaranHariItu yang dikirim controller) --}}
+    @if($pelanggaranHariItu->count() > 0)
+    <div class="card">
+        <div class="card-header">
+            <svg width="14" height="14" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            <span class="card-title">Pelanggaran yang Dicatat ({{ $pelanggaranHariItu->count() }})</span>
+        </div>
+        <div class="card-body">
+            <ul class="mini-list">
+                @foreach($pelanggaranHariItu as $p)
+                <li class="mini-item">
+                    <div style="flex:1">
+                        <span class="mini-item-name">{{ $p->siswa->nama_lengkap ?? '—' }}</span>
+                        <span class="mini-item-sub"> · {{ $p->siswa->kelas->nama_kelas ?? '—' }} · {{ $p->kategori->nama ?? '—' }}</span>
+                        @if($p->deskripsi)
+                        <div style="font-size:12px;color:var(--text3);margin-top:2px">{{ \Illuminate\Support\Str::limit($p->deskripsi, 80) }}</div>
+                        @endif
+                    </div>
+                    @php $pc = $p->poin <= 20 ? 'poin-low' : ($p->poin <= 50 ? 'poin-mid' : 'poin-high') @endphp
+                    <span class="poin-pill {{ $pc }}">{{ $p->poin }} poin</span>
+                </li>
+                @endforeach
+            </ul>
+        </div>
+    </div>
+    @endif
+
     {{-- Izin keluar hari itu --}}
     @if($izinHariIni->count() > 0)
     <div class="card">
         <div class="card-header">
             <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-            <span class="card-title">Izin Keluar Siswa pada Hari Ini</span>
+            <span class="card-title">Izin Keluar Siswa ({{ $izinHariIni->count() }})</span>
         </div>
-        <div class="card-body" style="padding-bottom:0">
+        <div class="card-body" style="padding:0">
             <div class="table-wrap">
                 <table class="izin-table">
                     <thead>
@@ -226,15 +301,16 @@
                             <td style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">{{ $izin->siswa->nama_lengkap ?? '—' }}</td>
                             <td style="color:var(--text3);font-size:12.5px">{{ $izin->siswa->kelas->nama_kelas ?? '—' }}</td>
                             <td style="font-size:13px">{{ $izin->jam_keluar ? \Carbon\Carbon::parse($izin->jam_keluar)->format('H:i') : '—' }}</td>
-                            <td style="font-size:12.5px;color:var(--text2);max-width:180px">{{ $izin->keperluan ?? '—' }}</td>
+                            <td style="font-size:12.5px;color:var(--text2);max-width:180px">{{ $izin->keperluan ?? ($izin->keterangan ?? '—') }}</td>
                             <td>
                                 @php
                                     $statusMap = [
                                         \App\Models\IzinKeluarSiswa::STATUS_DISETUJUI      => ['label' => 'Disetujui',      'class' => 'badge-disetujui'],
                                         \App\Models\IzinKeluarSiswa::STATUS_DITOLAK         => ['label' => 'Ditolak',         'class' => 'badge-ditolak'],
                                         \App\Models\IzinKeluarSiswa::STATUS_SUDAH_KEMBALI   => ['label' => 'Sudah Kembali',   'class' => 'badge-kembali'],
+                                        \App\Models\IzinKeluarSiswa::STATUS_MENUNGGU        => ['label' => 'Menunggu',        'class' => 'badge-menunggu'],
                                     ];
-                                    $s = $statusMap[$izin->status] ?? ['label' => ucfirst($izin->status ?? 'Menunggu'), 'class' => 'badge-menunggu'];
+                                    $s = $statusMap[$izin->status] ?? ['label' => ucfirst($izin->status ?? 'Menunggu'), 'class' => 'badge-pending'];
                                 @endphp
                                 <span class="badge {{ $s['class'] }}">{{ $s['label'] }}</span>
                             </td>
@@ -252,7 +328,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 @if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text: @json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2800,showConfirmButton:false,toast:true,position:'top-end'});
 @endif
 </script>
 </x-app-layout>

@@ -14,7 +14,7 @@
     }
     *, *::before, *::after { box-sizing: border-box; }
 
-    .pg { padding: 28px 32px 48px; max-width: 2000px; }
+    .pg { padding: 28px 32px 48px; max-width: 860px; }
 
     .back { display: inline-flex; align-items: center; gap: 6px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--text4); text-decoration: none; margin-bottom: 22px; transition: color .15s; }
     .back:hover { color: var(--brand-600); }
@@ -78,7 +78,7 @@
     <p class="pg-sub">Hanya izin berstatus <strong>Menunggu</strong> yang dapat diedit</p>
 
     <div class="alert-warn">
-        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         <span>Setelah izin disetujui atau ditolak, data tidak dapat diubah lagi.</span>
     </div>
 
@@ -95,8 +95,8 @@
             <div class="fc-body">
                 <div class="fg">
                     <div class="fgroup span2">
-                        <label class="flabel">Siswa <span class="req">*</span></label>
-                        <select name="siswa_id" class="fctl {{ $errors->has('siswa_id') ? 'err' : '' }}" required>
+                        <label class="flabel" for="siswa_id">Siswa <span class="req">*</span></label>
+                        <select id="siswa_id" name="siswa_id" class="fctl {{ $errors->has('siswa_id') ? 'err' : '' }}" required>
                             <option value="">— Pilih Siswa —</option>
                             @foreach($siswas as $s)
                                 <option value="{{ $s->id }}"
@@ -109,8 +109,8 @@
                     </div>
 
                     <div class="fgroup">
-                        <label class="flabel">Tahun Ajaran <span class="req">*</span></label>
-                        <select name="tahun_ajaran_id" class="fctl {{ $errors->has('tahun_ajaran_id') ? 'err' : '' }}" required>
+                        <label class="flabel" for="tahun_ajaran_id">Tahun Ajaran <span class="req">*</span></label>
+                        <select id="tahun_ajaran_id" name="tahun_ajaran_id" class="fctl {{ $errors->has('tahun_ajaran_id') ? 'err' : '' }}" required>
                             <option value="">— Pilih Tahun Ajaran —</option>
                             @foreach($tahunAjarans as $ta)
                                 <option value="{{ $ta->id }}"
@@ -123,8 +123,8 @@
                     </div>
 
                     <div class="fgroup">
-                        <label class="flabel">Tanggal <span class="req">*</span></label>
-                        <input type="date" name="tanggal"
+                        <label class="flabel" for="tanggal">Tanggal <span class="req">*</span></label>
+                        <input type="date" id="tanggal" name="tanggal"
                             value="{{ old('tanggal', $izin->tanggal->toDateString()) }}"
                             class="fctl {{ $errors->has('tanggal') ? 'err' : '' }}" required>
                         @error('tanggal')<p class="ferr">{{ $message }}</p>@enderror
@@ -143,8 +143,8 @@
                 <div class="fg">
 
                     <div class="fgroup span2">
-                        <label class="flabel">Tujuan / Keperluan <span class="req">*</span></label>
-                        <input type="text" name="tujuan"
+                        <label class="flabel" for="tujuan">Tujuan / Keperluan <span class="req">*</span></label>
+                        <input type="text" id="tujuan" name="tujuan"
                             value="{{ old('tujuan', $izin->tujuan) }}"
                             maxlength="255"
                             placeholder="Contoh: Menjenguk orang tua di rumah sakit"
@@ -153,8 +153,8 @@
                     </div>
 
                     <div class="fgroup">
-                        <label class="flabel">Kategori <span class="req">*</span></label>
-                        <select name="kategori" class="fctl {{ $errors->has('kategori') ? 'err' : '' }}" required>
+                        <label class="flabel" for="kategori">Kategori <span class="req">*</span></label>
+                        <select id="kategori" name="kategori" class="fctl {{ $errors->has('kategori') ? 'err' : '' }}" required>
                             <option value="">— Pilih Kategori —</option>
                             @foreach($kategoriList as $val => $label)
                                 <option value="{{ $val }}"
@@ -170,16 +170,16 @@
                     <div class="fgroup"></div>
 
                     <div class="fgroup">
-                        <label class="flabel">Jam Keluar <span class="req">*</span></label>
-                        <input type="time" name="jam_keluar"
+                        <label class="flabel" for="jam_keluar">Jam Keluar <span class="req">*</span></label>
+                        <input type="time" id="jam_keluar" name="jam_keluar"
                             value="{{ old('jam_keluar', $izin->jam_keluar) }}"
                             class="fctl {{ $errors->has('jam_keluar') ? 'err' : '' }}" required>
                         @error('jam_keluar')<p class="ferr">{{ $message }}</p>@enderror
                     </div>
 
                     <div class="fgroup">
-                        <label class="flabel">Jam Kembali (Estimasi)</label>
-                        <input type="time" name="jam_kembali"
+                        <label class="flabel" for="jam_kembali">Jam Kembali (Estimasi)</label>
+                        <input type="time" id="jam_kembali" name="jam_kembali"
                             value="{{ old('jam_kembali', $izin->jam_kembali) }}"
                             class="fctl {{ $errors->has('jam_kembali') ? 'err' : '' }}">
                         <p class="fhint">Opsional — perkiraan siswa akan kembali</p>
@@ -187,8 +187,8 @@
                     </div>
 
                     <div class="fgroup span2">
-                        <label class="flabel">Keterangan Tambahan</label>
-                        <textarea name="keterangan" rows="3" maxlength="1000"
+                        <label class="flabel" for="keterangan">Keterangan Tambahan</label>
+                        <textarea id="keterangan" name="keterangan" rows="3" maxlength="1000"
                             placeholder="Informasi tambahan jika diperlukan…"
                             class="fctl {{ $errors->has('keterangan') ? 'err' : '' }}">{{ old('keterangan', $izin->keterangan) }}</textarea>
                         @error('keterangan')<p class="ferr">{{ $message }}</p>@enderror
@@ -217,7 +217,7 @@ Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), t
 Swal.fire({
     icon: 'warning',
     title: 'Periksa kembali formulir',
-    html: `{{ implode('<br>', array_map('e', $errors->all())) }}`,
+    html: `{!! implode('<br>', array_map('e', $errors->all())) !!}`,
     confirmButtonColor: '#1f63db'
 });
 @endif

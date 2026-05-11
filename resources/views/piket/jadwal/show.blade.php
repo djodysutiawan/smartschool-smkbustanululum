@@ -64,16 +64,16 @@
     /* Pagination */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border);flex-wrap:wrap;gap:8px}
     .pag-info{font-size:12.5px;color:var(--text3)}
-    .pag-btns{display:flex;gap:4px}
+    .pag-btns{display:flex;gap:4px;align-items:center}
     .pag-btn{height:30px;min-width:30px;padding:0 7px;border-radius:6px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none}
     .pag-btn:hover{background:var(--surface2)}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
     .pag-btn.disabled{opacity:.4;pointer-events:none}
-    .pag-ellipsis{color:var(--text3);font-size:12px;padding:0 3px}
+    .pag-ellipsis{color:var(--text3);font-size:12px;padding:0 3px;user-select:none}
 
     .empty-inline{padding:28px;text-align:center;font-size:13px;color:var(--text3)}
 
-    @media(max-width:640px){.page{padding:16px}.header-actions{width:100%}.time-hero{padding:16px 18px}}
+    @media(max-width:640px){.page{padding:16px}.header-actions{width:100%}.time-hero{padding:16px 18px}.time-hero-jam{font-size:26px}}
 </style>
 
 <div class="page">
@@ -81,7 +81,10 @@
     @php
         // Deteksi hari ini via model (aman dari locale mismatch).
         $isToday = $jadwal->hari === \App\Models\JadwalPiketGuru::getNamaHari(now());
-        // Durasi jadwal dalam menit.
+
+        // FIX: Gunakan accessor getDurasiMenitAttribute() dari model jika ada,
+        // atau hitung langsung. Hitung ulang di sini agar view tidak bergantung
+        // pada accessor (defensive programming).
         $durMnt = \Carbon\Carbon::parse($jadwal->jam_mulai)
                       ->diffInMinutes(\Carbon\Carbon::parse($jadwal->jam_selesai));
     @endphp
@@ -112,7 +115,7 @@
     <div class="time-hero">
         <div>
             <p class="time-hero-hari">{{ ucfirst($jadwal->hari) }}</p>
-            <div style="display:flex;align-items:center">
+            <div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">
                 <span class="time-hero-jam">{{ \Carbon\Carbon::parse($jadwal->jam_mulai)->format('H:i') }}</span>
                 <span class="time-hero-sep">–</span>
                 <span class="time-hero-jam">{{ \Carbon\Carbon::parse($jadwal->jam_selesai)->format('H:i') }}</span>
@@ -172,7 +175,15 @@
         </div>
         <div class="info-item">
             <p class="info-label">Durasi</p>
-            <p class="info-val">{{ intdiv($durMnt, 60) }}j {{ $durMnt % 60 }}m</p>
+            {{-- FIX: tampilkan format yang lebih human-readable --}}
+            <p class="info-val">
+                @if($durMnt >= 60)
+                    {{ intdiv($durMnt, 60) }}j
+                    @if($durMnt % 60 > 0) {{ $durMnt % 60 }}m @endif
+                @else
+                    {{ $durMnt }}m
+                @endif
+            </p>
         </div>
     </div>
 
@@ -193,10 +204,12 @@
 
     {{-- ── Riwayat Log ── --}}
     {{--
-        Controller memfilter log hanya di hari yang sama dengan jadwal ini
-        (via DAYOFWEEK MySQL), sehingga semua baris riwayat pasti relevan.
-        $riwayatLog adalah LengthAwarePaginator dengan page key 'log_page'
-        (bukan 'page') agar tidak konflik dengan parameter jadwal index.
+        $riwayatLog adalah LengthAwarePaginator dengan page key 'log_page'.
+        Controller memfilter log hanya di hari yang sama (via DAYOFWEEK MySQL).
+
+        FIX: Nomor urut baris menggunakan $riwayatLog->firstItem() + $loop->index
+        (bukan $index variabel manual) agar Laravel loop variable dipakai konsisten.
+        firstItem() bisa null jika paginator kosong — guard dengan ?? 0.
     --}}
     <div class="panel">
         <div class="panel-header">
@@ -220,30 +233,28 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($riwayatLog as $index => $log)
+                    @forelse($riwayatLog as $log)
                     @php
                         $masukCarbon  = $log->masuk_pada  ? \Carbon\Carbon::parse($log->masuk_pada)  : null;
                         $keluarCarbon = $log->keluar_pada ? \Carbon\Carbon::parse($log->keluar_pada) : null;
-                        $durMntLog    = ($masukCarbon && $keluarCarbon) ? $masukCarbon->diffInMinutes($keluarCarbon) : null;
+                        $durMntLog    = ($masukCarbon && $keluarCarbon)
+                                            ? $masukCarbon->diffInMinutes($keluarCarbon)
+                                            : null;
                         $tglCarbon    = \Carbon\Carbon::parse($log->tanggal);
+
+                        // FIX: firstItem() bisa null jika halaman kosong (edge case).
+                        // Gunakan null-coalescing + $loop->index untuk nomor urut yang aman.
+                        $nomorUrut = ($riwayatLog->firstItem() ?? 1) + $loop->index;
                     @endphp
                     <tr>
                         <td style="color:var(--text3);font-size:12.5px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">
-                            {{--
-                                FIX: firstItem() + $index memberi nomor urut yang benar
-                                bahkan saat pindah halaman (misal hal.2: mulai dari 11).
-                            --}}
-                            {{ $riwayatLog->firstItem() + $index }}
+                            {{ $nomorUrut }}
                         </td>
                         <td>
                             <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:13px;color:var(--text)">
                                 {{ $tglCarbon->locale('id')->isoFormat('D MMM Y') }}
                             </p>
                             <p style="font-size:11.5px;color:var(--text3)">
-                                {{--
-                                    FIX: isoFormat('dddd') untuk nama hari panjang.
-                                    Locale 'id' di Carbon bawaan Laravel sudah tersedia.
-                                --}}
                                 {{ $tglCarbon->locale('id')->isoFormat('dddd') }}
                             </p>
                         </td>
@@ -258,7 +269,16 @@
                             @endif
                         </td>
                         <td class="log-dur-td">
-                            {{ $durMntLog !== null ? intdiv($durMntLog, 60).'j '.($durMntLog % 60).'m' : '—' }}
+                            @if($durMntLog !== null)
+                                @if($durMntLog >= 60)
+                                    {{ intdiv($durMntLog, 60) }}j
+                                    @if($durMntLog % 60 > 0) {{ $durMntLog % 60 }}m @endif
+                                @else
+                                    {{ $durMntLog }}m
+                                @endif
+                            @else
+                                —
+                            @endif
                         </td>
                         <td>
                             <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text2)">
@@ -274,7 +294,7 @@
                     @empty
                     <tr>
                         <td colspan="7" class="empty-inline">
-                            Belum ada riwayat log di hari {{ ucfirst($jadwal->hari) }} dalam 3 bulan terakhir
+                            Belum ada riwayat log di hari {{ ucfirst($jadwal->hari) }} dalam 3 bulan terakhir.
                         </td>
                     </tr>
                     @endforelse
@@ -282,18 +302,17 @@
             </table>
         </div>
 
+        {{--
+            FIX: Pagination dengan ellipsis yang benar (sama seperti di index).
+            $riwayatLog menggunakan page key 'log_page' sehingga URL-nya
+            mengandung ?log_page=N, tidak konflik dengan ?page=N pada jadwal index.
+        --}}
         @if($riwayatLog->hasPages())
         <div class="pag-wrap">
             <p class="pag-info">
                 Menampilkan {{ $riwayatLog->firstItem() }}–{{ $riwayatLog->lastItem() }} dari {{ $riwayatLog->total() }}
             </p>
             <div class="pag-btns">
-                {{--
-                    FIX: $riwayatLog menggunakan page key 'log_page' (didefinisikan
-                    di controller via paginate(10, ['*'], 'log_page')).
-                    withQueryString() sudah dipanggil di controller sehingga semua
-                    query string ikut terbawa otomatis di setiap URL pagination.
-                --}}
                 @if($riwayatLog->onFirstPage())
                     <span class="pag-btn disabled">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
@@ -304,12 +323,25 @@
                     </a>
                 @endif
 
+                @php $lastWasEllipsis = false; @endphp
                 @foreach($riwayatLog->getUrlRange(1, $riwayatLog->lastPage()) as $page => $url)
-                    @if($page == $riwayatLog->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $riwayatLog->lastPage() || abs($page - $riwayatLog->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $riwayatLog->currentPage()) == 2)
+                    @php
+                        $current  = $riwayatLog->currentPage();
+                        $last     = $riwayatLog->lastPage();
+                        $showPage = $page == $current
+                                 || $page == 1
+                                 || $page == $last
+                                 || abs($page - $current) <= 1;
+                    @endphp
+                    @if($showPage)
+                        @php $lastWasEllipsis = false; @endphp
+                        @if($page == $current)
+                            <span class="pag-btn active">{{ $page }}</span>
+                        @else
+                            <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
+                        @endif
+                    @elseif(!$lastWasEllipsis)
+                        @php $lastWasEllipsis = true; @endphp
                         <span class="pag-ellipsis">…</span>
                     @endif
                 @endforeach

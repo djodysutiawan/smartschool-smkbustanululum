@@ -1037,12 +1037,7 @@
         </div>
     </details>
 
-    {{-- ── ABSENSI SISWA GERBANG ─────────────────────────── --}}
-    {{--
-        [BARU] Seksi ini sepenuhnya baru. Guru Piket menjadi operator utama
-        sistem absensi gerbang (masuk & pulang) menggunakan barcode tetap siswa.
-        Alat scanner di pos piket mengirim data ke sini.
-    --}}
+{{-- ── ABSENSI SISWA GERBANG ─────────────────────────── --}}
     <p class="sb-section">Absensi Siswa Gerbang</p>
 
     {{-- Sesi Gerbang — buka/tutup sesi masuk atau pulang --}}
@@ -1057,9 +1052,9 @@
             <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </summary>
         <div class="sb-sub">
-            {{-- Buka sesi masuk pagi / pulang sore --}}
+            {{-- Route: GET piket/sesi-gerbang/create → SesiGerbangController::create() --}}
             <a href="{{ route('piket.sesi-gerbang.create') }}"
-            class="sb-item {{ request()->routeIs('piket.sesi-gerbang.create') ? 'active' : '' }}">
+               class="sb-item {{ request()->routeIs('piket.sesi-gerbang.create') ? 'active' : '' }}">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10"/>
                     <line x1="12" y1="8" x2="12" y2="16"/>
@@ -1067,8 +1062,9 @@
                 </svg>
                 Buka Sesi Baru
             </a>
+            {{-- Route: GET piket/sesi-gerbang → SesiGerbangController::index() --}}
             <a href="{{ route('piket.sesi-gerbang.index') }}"
-            class="sb-item {{ request()->routeIs('piket.sesi-gerbang.index') ? 'active' : '' }}">
+               class="sb-item {{ request()->routeIs('piket.sesi-gerbang.index') ? 'active' : '' }}">
                 Riwayat Sesi
             </a>
         </div>
@@ -1087,15 +1083,18 @@
             <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </summary>
         <div class="sb-sub">
+            {{-- Route: GET piket/absensi-gerbang/live → AbsensiGerbangController::live() --}}
             <a href="{{ route('piket.absensi-gerbang.live') }}"
-            class="sb-item {{ request()->routeIs('piket.absensi-gerbang.live') ? 'active' : '' }}">
+               class="sb-item {{ request()->routeIs('piket.absensi-gerbang.live') ? 'active' : '' }}">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+                    <circle cx="12" cy="12" r="2"/>
+                    <path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
                 </svg>
                 Live Monitor
             </a>
+            {{-- Route: GET piket/absensi-gerbang/scan-manual → AbsensiGerbangController::scanManual() --}}
             <a href="{{ route('piket.absensi-gerbang.scan-manual') }}"
-            class="sb-item {{ request()->routeIs('piket.absensi-gerbang.scan-manual') ? 'active' : '' }}">
+               class="sb-item {{ request()->routeIs('piket.absensi-gerbang.scan-manual') ? 'active' : '' }}">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <rect x="3" y="3" width="5" height="5"/>
                     <rect x="16" y="3" width="5" height="5"/>
@@ -1104,12 +1103,14 @@
                 </svg>
                 Scan Manual
             </a>
+            {{-- Route: GET piket/absensi-gerbang/rekap → AbsensiGerbangController::rekap() --}}
             <a href="{{ route('piket.absensi-gerbang.rekap') }}"
-            class="sb-item {{ request()->routeIs('piket.absensi-gerbang.rekap') ? 'active' : '' }}">
+               class="sb-item {{ request()->routeIs('piket.absensi-gerbang.rekap') ? 'active' : '' }}">
                 Rekap Harian
             </a>
+            {{-- Route: GET piket/absensi-gerbang/belum-hadir → AbsensiGerbangController::belumHadir() --}}
             <a href="{{ route('piket.absensi-gerbang.belum-hadir') }}"
-            class="sb-item {{ request()->routeIs('piket.absensi-gerbang.belum-hadir') ? 'active' : '' }}">
+               class="sb-item {{ request()->routeIs('piket.absensi-gerbang.belum-hadir') ? 'active' : '' }}">
                 Belum Hadir
             </a>
         </div>
@@ -1118,8 +1119,9 @@
     {{-- ── ABSENSI GURU ──────────────────────────────────── --}}
     <p class="sb-section">Absensi Guru</p>
 
+    {{-- Route: GET piket/absensi-guru/dashboard → AbsensiGuruController::dashboard() --}}
     <a href="{{ route('piket.absensi-guru.dashboard') }}"
-    class="sb-item {{ request()->routeIs('piket.absensi-guru.dashboard') ? 'active' : '' }}">
+       class="sb-item {{ request()->routeIs('piket.absensi-guru.dashboard') ? 'active' : '' }}">
         <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
             <rect x="3" y="3" width="7" height="7" rx="1"/>
             <rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -1129,37 +1131,36 @@
         Dashboard Absensi
     </a>
 
-    {{-- [BARU] Sesi QR Guru — piket bisa membuat sesi QR untuk guru --}}
-    <details class="sb-group" {{ request()->routeIs('piket.sesi-qr-guru.*') ? 'open' : '' }}>
-        <summary class="sb-group-header">
-            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-                <rect x="3" y="3" width="5" height="5"/>
-                <rect x="16" y="3" width="5" height="5"/>
-                <rect x="3" y="16" width="5" height="5"/>
-                <path d="M21 16h-3v3"/>
-                <path d="M21 21h-3"/>
-                <path d="M16 21v-3"/>
-            </svg>
-            Sesi QR Guru
-            <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-        </summary>
-        <div class="sb-sub">
-            <a href="{{ route('piket.sesi-qr-guru.create') }}"
-            class="sb-item {{ request()->routeIs('piket.sesi-qr-guru.create') ? 'active' : '' }}">
-                + Buat Sesi QR Baru
-            </a>
-            <a href="{{ route('piket.sesi-qr-guru.aktif') }}"
-            class="sb-item {{ request()->routeIs('piket.sesi-qr-guru.aktif') ? 'active' : '' }}">
-                Sesi Aktif / Tampilkan QR
-            </a>
-            <a href="{{ route('piket.sesi-qr-guru.index') }}"
-            class="sb-item {{ request()->routeIs('piket.sesi-qr-guru.index') ? 'active' : '' }}">
-                Riwayat Sesi
-            </a>
-        </div>
-    </details>
+    {{--
+        Sesi QR Guru — piket mengelola sesi QR dari satu halaman (index).
+        Aksi buka/tutup/refresh dilakukan via form POST langsung dari halaman index,
+        bukan halaman terpisah. Routes yang tersedia:
+          GET  piket/sesi-qr-guru          → index (tampilkan status + QR aktif)
+          POST piket/sesi-qr-guru/buka     → buka sesi baru
+          POST piket/sesi-qr-guru/tutup    → tutup sesi aktif
+          POST piket/sesi-qr-guru/refresh  → refresh kode QR sesi aktif
+          GET  piket/sesi-qr-guru/status   → JSON polling (dipakai JS, bukan nav)
+    --}}
+    <a href="{{ route('piket.sesi-qr-guru.index') }}"
+       class="sb-item {{ request()->routeIs('piket.sesi-qr-guru.*') ? 'active' : '' }}">
+        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <rect x="3" y="3" width="5" height="5"/>
+            <rect x="16" y="3" width="5" height="5"/>
+            <rect x="3" y="16" width="5" height="5"/>
+            <path d="M21 16h-3v3"/>
+            <path d="M21 21h-3"/>
+            <path d="M16 21v-3"/>
+        </svg>
+        Sesi QR Guru
+        {{-- Badge indikator jika sesi sedang aktif --}}
+        @php $adaSesiQrAktif = \App\Models\SesiQrGuru::aktif()->exists(); @endphp
+        @if($adaSesiQrAktif)
+            <span class="sb-badge sb-badge--success">Aktif</span>
+        @endif
+    </a>
 
-    <details class="sb-group" {{ request()->routeIs('piket.absensi-guru.massal*','piket.absensi-guru.riwayat','piket.absensi-guru.scan-qr') ? 'open' : '' }}>
+    {{-- Input Absensi Guru --}}
+    <details class="sb-group" {{ request()->routeIs('piket.absensi-guru.massal*', 'piket.absensi-guru.riwayat', 'piket.absensi-guru.scan-qr') ? 'open' : '' }}>
         <summary class="sb-group-header">
             <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                 <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -1169,8 +1170,14 @@
             <svg class="sb-chevron" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
         </summary>
         <div class="sb-sub">
-            <a href="{{ route('piket.absensi-guru.massal.form') }}" class="sb-item {{ request()->routeIs('piket.absensi-guru.massal*') ? 'active' : '' }}">Absen Massal</a>
-            <a href="{{ route('piket.absensi-guru.scan-qr') }}"     class="sb-item {{ request()->routeIs('piket.absensi-guru.scan-qr') ? 'active' : '' }}">
+            {{-- Route: GET piket/absensi-guru/massal/form → AbsensiGuruController::massalForm() --}}
+            <a href="{{ route('piket.absensi-guru.massal.form') }}"
+               class="sb-item {{ request()->routeIs('piket.absensi-guru.massal*') ? 'active' : '' }}">
+                Absen Massal
+            </a>
+            {{-- Route: GET piket/absensi-guru/scan-qr → AbsensiGuruController::scanQr() --}}
+            <a href="{{ route('piket.absensi-guru.scan-qr') }}"
+               class="sb-item {{ request()->routeIs('piket.absensi-guru.scan-qr') ? 'active' : '' }}">
                 <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
                     <rect x="3" y="3" width="5" height="5"/>
                     <rect x="16" y="3" width="5" height="5"/>
@@ -1179,7 +1186,11 @@
                 </svg>
                 Scan QR Guru
             </a>
-            <a href="{{ route('piket.absensi-guru.riwayat') }}" class="sb-item {{ request()->routeIs('piket.absensi-guru.riwayat') ? 'active' : '' }}">Riwayat Saya</a>
+            {{-- Route: GET piket/absensi-guru/riwayat → AbsensiGuruController::riwayat() --}}
+            <a href="{{ route('piket.absensi-guru.riwayat') }}"
+               class="sb-item {{ request()->routeIs('piket.absensi-guru.riwayat') ? 'active' : '' }}">
+                Riwayat Absensi
+            </a>
         </div>
     </details>
 

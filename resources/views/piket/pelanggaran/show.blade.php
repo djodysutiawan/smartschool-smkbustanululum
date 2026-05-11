@@ -51,9 +51,8 @@
 
     .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
     .detail-item{padding:12px 0;border-bottom:1px solid var(--border)}
-    .detail-item:nth-last-child(-n+2){border-bottom:none}
+    .detail-item:last-child{border-bottom:none}
     .detail-item.col-span-2{grid-column:span 2}
-    .detail-item.col-span-2:last-child{border-bottom:none}
     .detail-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase;margin-bottom:5px}
     .detail-value{font-family:'DM Sans',sans-serif;font-size:13.5px;color:var(--text);font-weight:500}
     .detail-value.bold{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700}
@@ -89,16 +88,28 @@
     .tl-dot.yellow{background:#fefce8;border-color:#fde68a}
     .tl-dot.green{background:#dcfce7;border-color:#bbf7d0}
     .tl-dot.purple{background:#fdf4ff;border-color:#e9d5ff}
+    .tl-dot.gray{background:var(--surface3);border-color:var(--border2)}
     .tl-content{flex:1;padding-top:4px}
     .tl-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
     .tl-time{font-size:11.5px;color:var(--text3);margin-top:1px}
     .tl-desc{font-size:12.5px;color:var(--text2);margin-top:4px;padding:8px 10px;background:var(--surface2);border-radius:6px;border:1px solid var(--border)}
 
+    /* Riwayat pelanggaran lain */
+    .riwayat-list{display:flex;flex-direction:column;gap:0}
+    .riwayat-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border)}
+    .riwayat-item:last-child{border-bottom:none}
+    .riwayat-poin{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;flex-shrink:0}
+    .riwayat-info{flex:1;min-width:0}
+    .riwayat-kategori{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .riwayat-tanggal{font-size:11.5px;color:var(--text3);margin-top:2px}
+    .riwayat-empty{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text3);font-style:italic;padding:8px 0}
+
     @media(max-width:640px){
         .page{padding:16px}
         .detail-grid{grid-template-columns:1fr}
         .detail-item.col-span-2{grid-column:span 1}
-        .detail-item:nth-last-child(-n+2){border-bottom:1px solid var(--border)}
+        /* Di mobile semua item punya border-bottom kecuali yang terakhir */
+        .detail-item{border-bottom:1px solid var(--border)}
         .detail-item:last-child{border-bottom:none}
     }
 </style>
@@ -107,7 +118,6 @@
 
     {{-- Breadcrumb --}}
     <div class="breadcrumb">
-        {{-- piket.pelanggaran.index → GET /piket/pelanggaran --}}
         <a href="{{ route('piket.pelanggaran.index') }}">Riwayat Pelanggaran</a>
         <span class="breadcrumb-sep">›</span>
         <span class="breadcrumb-cur">Detail #{{ $pelanggaran->id }}</span>
@@ -119,8 +129,13 @@
             <p class="page-sub">Dicatat pada {{ \Carbon\Carbon::parse($pelanggaran->tanggal)->translatedFormat('l, d F Y') }}</p>
         </div>
         <div class="header-actions">
-            {{-- Edit: piket.pelanggaran.edit → GET /piket/pelanggaran/{pelanggaran}/edit --}}
-            @if($pelanggaran->status === 'pending')
+            {{--
+                FIX: Tombol Edit hanya tampil jika:
+                  1. User adalah pencatat asli ($isOwner dari controller)
+                  2. Status masih 'pending' (satu-satunya status yang boleh diedit piket)
+                Sebelumnya hanya cek status → guru lain bisa lihat tombol Edit.
+            --}}
+            @if($isOwner && $pelanggaran->status === 'pending')
                 <a href="{{ route('piket.pelanggaran.edit', $pelanggaran->id) }}" class="btn btn-edit">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -130,7 +145,12 @@
                 </a>
             @endif
 
-            @if(in_array($pelanggaran->status, ['pending', 'diproses']))
+            {{--
+                FIX: Tombol Selesaikan juga harus cek $isOwner.
+                Controller selesaikan() sudah punya authorizeOwnership() — tapi
+                menampilkan tombol ke non-owner tetap misleading & bad UX.
+            --}}
+            @if($isOwner && in_array($pelanggaran->status, ['pending', 'diproses']))
                 <button type="button" class="btn btn-selesai" onclick="toggleSelesaiCard()">
                     <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <polyline points="20 6 9 17 4 12"/>
@@ -139,7 +159,6 @@
                 </button>
             @endif
 
-            {{-- Kembali: piket.pelanggaran.index → GET /piket/pelanggaran --}}
             <a href="{{ route('piket.pelanggaran.index') }}" class="btn btn-secondary">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                     <polyline points="15 18 9 12 15 6"/>
@@ -150,7 +169,7 @@
     </div>
 
     {{-- ── Selesaikan Form ── --}}
-    @if(in_array($pelanggaran->status, ['pending', 'diproses']))
+    @if($isOwner && in_array($pelanggaran->status, ['pending', 'diproses']))
     <div class="selesai-card" id="selesaiCard" style="display:none">
         <div class="selesai-card-header">
             <svg width="14" height="14" fill="none" stroke="#a16207" stroke-width="2.5" viewBox="0 0 24 24">
@@ -159,16 +178,31 @@
             <span class="selesai-card-title">Selesaikan Pelanggaran Ini</span>
         </div>
         <div class="selesai-card-body">
-            {{-- piket.pelanggaran.selesaikan → PATCH /piket/pelanggaran/{pelanggaran}/selesaikan --}}
             <form action="{{ route('piket.pelanggaran.selesaikan', $pelanggaran->id) }}" method="POST">
                 @csrf
                 @method('PATCH')
+
+                {{--
+                    FIX: Jika tindakan sudah terisi, tampilkan nilai yang ada
+                    bukan textarea kosong. User bisa langsung konfirmasi tanpa
+                    mengetik ulang — tapi tetap bisa mengubah jika perlu.
+                --}}
                 <label style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">
                     Catatan Tindakan
+                    <span style="font-weight:400;color:var(--text3)">(opsional)</span>
                 </label>
-                <textarea name="tindakan" class="form-control"
-                    placeholder="Tuliskan tindakan yang telah diambil sebagai tindak lanjut pelanggaran ini…">{{ $pelanggaran->tindakan }}</textarea>
-                <p class="form-hint">Kolom ini opsional. Jika sudah terisi di atas, bisa langsung dikonfirmasi.</p>
+                <textarea
+                    name="tindakan"
+                    class="form-control"
+                    placeholder="Tuliskan tindakan yang telah diambil sebagai tindak lanjut pelanggaran ini…"
+                >{{ old('tindakan', $pelanggaran->tindakan) }}</textarea>
+
+                @if($pelanggaran->tindakan)
+                    <p class="form-hint">Catatan tindakan sudah terisi. Anda bisa mengubahnya atau langsung konfirmasi.</p>
+                @else
+                    <p class="form-hint">Kolom ini opsional. Klik konfirmasi untuk langsung menyelesaikan tanpa catatan.</p>
+                @endif
+
                 <div class="selesai-actions">
                     <button type="button" class="btn btn-secondary" onclick="toggleSelesaiCard()">Batal</button>
                     <button type="submit" class="btn btn-primary" style="background:#15803d">
@@ -268,10 +302,6 @@
 
                 <div class="detail-item">
                     <p class="detail-label">Dicatat Oleh</p>
-                    {{--
-                        Relasi dicatatOleh() → belongsTo(User::class, 'dicatat_oleh')
-                        Kolom di DB: dicatat_oleh (bukan dicatat_oleh_guru_id)
-                    --}}
                     <p class="detail-value bold">{{ $pelanggaran->dicatatOleh->name ?? '—' }}</p>
                 </div>
 
@@ -293,6 +323,57 @@
         </div>
     </div>
 
+    {{-- ── Riwayat Pelanggaran Lain ── --}}
+    {{--
+        FIX: $riwayatPelanggaran dikirim dari controller tapi tidak pernah
+        dirender di view asli. Ditambahkan di sini.
+    --}}
+    <div class="card">
+        <div class="card-header">
+            <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+            <span class="card-title">Pelanggaran Lain Siswa Ini</span>
+            <span style="margin-left:auto;font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3)">
+                10 terakhir
+            </span>
+        </div>
+        <div class="card-body">
+            @if($riwayatPelanggaran->isEmpty())
+                <p class="riwayat-empty">Tidak ada riwayat pelanggaran lain untuk siswa ini.</p>
+            @else
+                <div class="riwayat-list">
+                    @foreach($riwayatPelanggaran as $r)
+                        @php
+                            $rPoinClass = $r->poin <= 20 ? 'poin-low' : ($r->poin <= 50 ? 'poin-mid' : 'poin-high');
+                        @endphp
+                        <div class="riwayat-item">
+                            <span class="riwayat-poin {{ $rPoinClass }}">{{ $r->poin }}</span>
+                            <div class="riwayat-info">
+                                <p class="riwayat-kategori">{{ $r->kategori->nama ?? '—' }}</p>
+                                <p class="riwayat-tanggal">
+                                    {{ \Carbon\Carbon::parse($r->tanggal)->translatedFormat('d F Y') }}
+                                </p>
+                            </div>
+                            <span class="badge badge-{{ $r->status }}">
+                                <span class="badge-dot"></span>
+                                {{ ucfirst($r->status) }}
+                            </span>
+                            <a href="{{ route('piket.pelanggaran.show', $r->id) }}"
+                               style="flex-shrink:0;color:var(--text3);display:flex;align-items:center"
+                               title="Lihat detail">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                    <polyline points="9 18 15 12 9 6"/>
+                                </svg>
+                            </a>
+                        </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
+
     {{-- ── Timeline Status ── --}}
     <div class="card">
         <div class="card-header">
@@ -304,6 +385,7 @@
         <div class="card-body">
             <div class="timeline">
 
+                {{-- Step 1: Selalu ada --}}
                 <div class="tl-item">
                     <div class="tl-dot blue">
                         <svg width="13" height="13" fill="none" stroke="#1d4ed8" stroke-width="2.5" viewBox="0 0 24 24">
@@ -320,7 +402,13 @@
                     </div>
                 </div>
 
-                @if(in_array($pelanggaran->status, ['diproses', 'selesai', 'banding']))
+                {{--
+                    FIX: Sebelumnya step "Sedang Diproses" muncul juga untuk
+                    status 'banding', padahal banding tidak melewati jalur diproses.
+                    Sekarang dipisah: 'diproses' dan 'selesai' adalah satu jalur,
+                    'banding' adalah jalur tersendiri dari 'pending'.
+                --}}
+                @if(in_array($pelanggaran->status, ['diproses', 'selesai']))
                 <div class="tl-item">
                     <div class="tl-dot yellow">
                         <svg width="13" height="13" fill="none" stroke="#a16207" stroke-width="2" viewBox="0 0 24 24">
@@ -372,10 +460,15 @@
                 </div>
                 @endif
 
+                {{--
+                    Step "Menunggu tindak lanjut" hanya untuk status pending.
+                    Tampilkan versi berbeda tergantung apakah user adalah owner
+                    (bisa action) atau bukan (read-only).
+                --}}
                 @if($pelanggaran->status === 'pending')
                 <div class="tl-item">
-                    <div class="tl-dot yellow">
-                        <svg width="13" height="13" fill="none" stroke="#a16207" stroke-width="2" viewBox="0 0 24 24">
+                    <div class="tl-dot gray">
+                        <svg width="13" height="13" fill="none" stroke="var(--text3)" stroke-width="2" viewBox="0 0 24 24">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="12" y1="8" x2="12" y2="12"/>
                             <line x1="12" y1="16" x2="12.01" y2="16"/>
@@ -383,7 +476,11 @@
                     </div>
                     <div class="tl-content">
                         <p class="tl-title" style="color:var(--text3)">Menunggu tindak lanjut…</p>
-                        <p class="tl-time">Klik <strong>Selesaikan</strong> untuk menyelesaikan pelanggaran ini</p>
+                        @if($isOwner)
+                            <p class="tl-time">Klik <strong>Selesaikan</strong> di atas untuk menyelesaikan pelanggaran ini</p>
+                        @else
+                            <p class="tl-time">Menunggu tindak lanjut dari pencatat pelanggaran</p>
+                        @endif
                     </div>
                 </div>
                 @endif

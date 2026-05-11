@@ -29,9 +29,8 @@ class JadwalPiketGuru extends Model
         ];
     }
 
-    // ─── Hari mapping (Carbon/PHP dayOfWeek → nama hari Indonesia) ────────────
-    // Diperlukan karena Carbon::dayName bergantung pada locale system yang tidak
-    // selalu bisa di-set secara konsisten di semua environment.
+    // ─── Hari mapping (Carbon dayOfWeek → nama hari Indonesia) ───────────────
+    // Tidak bergantung pada locale system — aman di semua environment.
 
     private static array $hariMap = [
         0 => 'minggu',
@@ -44,11 +43,13 @@ class JadwalPiketGuru extends Model
     ];
 
     /**
-     * Dapatkan nama hari Indonesia berdasarkan tanggal.
+     * Dapatkan nama hari Indonesia berdasarkan tanggal Carbon.
+     * Fallback ke 'senin' jika dayOfWeek tidak dikenali (harusnya tidak terjadi).
      */
     public static function getNamaHari(?Carbon $tanggal = null): string
     {
-        $tanggal = $tanggal ?? now();
+        $tanggal ??= now();
+
         return self::$hariMap[$tanggal->dayOfWeek] ?? 'senin';
     }
 
@@ -61,14 +62,15 @@ class JadwalPiketGuru extends Model
 
     public function scopeHari($query, string $hari)
     {
-        return $query->where('hari', $hari);
+        return $query->where('hari', strtolower(trim($hari)));
     }
 
     // ─── Static helpers ───────────────────────────────────────────────────────
 
     /**
-     * Ambil jadwal piket yang aktif untuk hari ini.
-     * Menggunakan mapping manual agar tidak bergantung locale Carbon.
+     * Ambil semua jadwal piket aktif untuk hari ini, eager-load guru.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection
      */
     public static function getPiketHariIni()
     {
@@ -85,15 +87,43 @@ class JadwalPiketGuru extends Model
 
     /**
      * Durasi piket dalam menit.
+     * Null jika jam_mulai atau jam_selesai kosong.
      */
     public function getDurasiMenitAttribute(): ?int
     {
         if (! $this->jam_mulai || ! $this->jam_selesai) {
             return null;
         }
+
         $mulai   = Carbon::parse($this->jam_mulai);
         $selesai = Carbon::parse($this->jam_selesai);
-        return (int) $mulai->diffInMinutes($selesai);
+
+        $menit = (int) $mulai->diffInMinutes($selesai);
+
+        // Jika selesai < mulai (melewati tengah malam), diffInMinutes masih benar
+        // karena diffInMinutes selalu absolut — aman.
+        return $menit;
+    }
+
+    /**
+     * Durasi dalam format "Xj Ym" (ringkas, cocok untuk badge/chip).
+     */
+    public function getDurasiFormatPendekAttribute(): ?string
+    {
+        $menit = $this->durasiMenit;
+
+        if ($menit === null) {
+            return null;
+        }
+
+        $jam  = intdiv($menit, 60);
+        $sisa = $menit % 60;
+
+        if ($jam > 0 && $sisa > 0) {
+            return "{$jam}j {$sisa}m";
+        }
+
+        return $jam > 0 ? "{$jam}j" : "{$sisa}m";
     }
 
     // ─── Relationships ────────────────────────────────────────────────────────

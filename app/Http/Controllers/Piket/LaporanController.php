@@ -9,7 +9,6 @@ use App\Models\LogPiket;
 use App\Models\Pelanggaran;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -26,14 +25,14 @@ class LaporanController extends Controller
         $userId   = Auth::id();
         $logAktif = $this->getLogAktif($userId);
 
-        // Wajib check-in untuk membuat laporan — berbeda dengan riwayat & show
+        // Wajib check-in untuk membuat/mengedit laporan hari ini
         if (! $logAktif) {
             return redirect()
-                ->route('piket.log.checkin')
-                ->with('error', 'Check-in terlebih dahulu untuk membuat laporan harian.');
+                ->route('piket.laporan.riwayat')
+                ->with('error', 'Anda harus check-in terlebih dahulu untuk membuat laporan harian.');
         }
 
-        // Laporan hari ini jika sudah pernah dibuat (untuk mode edit)
+        // Laporan hari ini jika sudah pernah dibuat (mode edit)
         $laporanHariIni = LaporanHarianPiket::where('dibuat_oleh', $userId)
             ->whereDate('tanggal', today())
             ->first();
@@ -44,7 +43,7 @@ class LaporanController extends Controller
             ->whereDate('tanggal', today())
             ->get();
 
-        // Semua izin keluar yang diajukan hari ini (bukan hanya milik piket ini)
+        // Semua izin keluar yang diajukan hari ini
         $izinHariIni = IzinKeluarSiswa::with('siswa.kelas')
             ->whereDate('tanggal', today())
             ->orderBy('jam_keluar')
@@ -56,8 +55,11 @@ class LaporanController extends Controller
             $izinHariIni,
         );
 
+        // Alias agar view bisa pakai $logHariIni (konsisten dengan nama di view)
+        $logHariIni = $logAktif;
+
         return view('piket.laporan.harian', compact(
-            'logAktif',
+            'logHariIni',
             'laporanHariIni',
             'pelanggaranHariIni',
             'izinHariIni',
@@ -76,8 +78,8 @@ class LaporanController extends Controller
 
         if (! $logAktif) {
             return redirect()
-                ->route('piket.log.checkin')
-                ->with('error', 'Check-in terlebih dahulu untuk menyimpan laporan.');
+                ->route('piket.laporan.riwayat')
+                ->with('error', 'Anda harus check-in terlebih dahulu untuk menyimpan laporan.');
         }
 
         $validated = $request->validate([
@@ -87,10 +89,10 @@ class LaporanController extends Controller
             'kejadian_khusus' => ['nullable', 'string', 'max:2000'],
             'tamu_penting'    => ['nullable', 'string', 'max:1000'],
         ], [
-            'tanggal.required'             => 'Tanggal laporan wajib diisi.',
-            'tanggal.before_or_equal'      => 'Tanggal laporan tidak boleh melebihi hari ini.',
-            'kondisi_sekolah.required'     => 'Kondisi sekolah wajib diisi.',
-            'kondisi_sekolah.max'          => 'Kondisi sekolah maksimal 2000 karakter.',
+            'tanggal.required'         => 'Tanggal laporan wajib diisi.',
+            'tanggal.before_or_equal'  => 'Tanggal laporan tidak boleh melebihi hari ini.',
+            'kondisi_sekolah.required' => 'Kondisi sekolah wajib diisi.',
+            'kondisi_sekolah.max'      => 'Kondisi sekolah maksimal 2.000 karakter.',
         ]);
 
         $validated['dibuat_oleh'] = $userId;
@@ -110,8 +112,7 @@ class LaporanController extends Controller
 
     // =========================================================================
     // RIWAYAT LAPORAN
-    // Tidak perlu check-in — piket boleh lihat riwayat laporan miliknya
-    // kapan saja (termasuk setelah checkout)
+    // Tidak perlu check-in — piket boleh lihat riwayat kapan saja
     // =========================================================================
 
     public function riwayat(Request $request): View
@@ -119,15 +120,21 @@ class LaporanController extends Controller
         $userId = Auth::id();
 
         $query = LaporanHarianPiket::where('dibuat_oleh', $userId)
-            ->withCount('pelanggaran') // pakai relasi HasMany di model
             ->orderByDesc('tanggal');
 
+        // FIX: withCount via relasi HasMany yang pakai whereColumn + DB::raw
+        // bisa bermasalah di beberapa driver. Kita hitung manual via subquery
+        // yang lebih portabel.
+        $query->withCount([
+            'pelanggaran as pelanggaran_count',
+        ]);
+
         if ($request->filled('bulan')) {
-            $query->whereMonth('tanggal', $request->bulan);
+            $query->whereMonth('tanggal', (int) $request->bulan);
         }
 
         if ($request->filled('tahun')) {
-            $query->whereYear('tanggal', $request->tahun);
+            $query->whereYear('tanggal', (int) $request->tahun);
         }
 
         $laporan = $query->paginate(15)->withQueryString();
@@ -139,19 +146,9 @@ class LaporanController extends Controller
             ->orderByDesc('tahun')
             ->pluck('tahun');
 
-        // Daftar bulan 1-12 — untuk dropdown filter
-        $bulanList = collect(range(1, 12))->mapWithKeys(fn ($b) => [
-            $b => Carbon::create()->month($b)->translatedFormat('F'),
-        ]);
-
-        // Apakah sedang aktif piket hari ini — untuk tampilkan tombol "Buat Laporan"
-        $guruAktifId = $this->getLogAktif($userId) ? $userId : null;
-
         return view('piket.laporan.riwayat', compact(
             'laporan',
             'tahunList',
-            'bulanList',
-            'guruAktifId',
         ));
     }
 
@@ -170,7 +167,7 @@ class LaporanController extends Controller
 
         $laporan->load('dibuatOleh');
 
-        // Izin keluar pada hari yang sama via helper model
+        // Izin keluar pada hari yang sama
         $izinHariIni   = $laporan->getIzinKeluarSiswa();
         $ringkasanIzin = $laporan->getRingkasanIzinKeluar();
 
@@ -197,7 +194,6 @@ class LaporanController extends Controller
 
     // =========================================================================
     // EXPORT PDF
-    // Route: piket.laporan.export-pdf (terdaftar di sidebar)
     // =========================================================================
 
     public function exportPdf(Request $request)
@@ -209,17 +205,16 @@ class LaporanController extends Controller
             ->orderByDesc('tanggal');
 
         if ($request->filled('bulan')) {
-            $query->whereMonth('tanggal', $request->bulan);
+            $query->whereMonth('tanggal', (int) $request->bulan);
         }
 
         if ($request->filled('tahun')) {
-            $query->whereYear('tanggal', $request->tahun);
+            $query->whereYear('tanggal', (int) $request->tahun);
         }
 
         // Batasi 100 baris agar PDF tidak timeout
         $laporan = $query->limit(100)->get();
 
-        // Data pendukung untuk setiap laporan (izin + pelanggaran)
         $detailPerLaporan = $laporan->mapWithKeys(function ($lap) {
             return [
                 $lap->id => [
@@ -247,8 +242,6 @@ class LaporanController extends Controller
 
     /**
      * Ambil log piket aktif hari ini (sudah check-in, belum checkout).
-     * Konsisten dengan PelanggaranController & IzinKeluarSiswaController:
-     * pakai 'pengguna_id' sesuai kolom di tabel log_piket.
      */
     private function getLogAktif(int $userId): ?LogPiket
     {
@@ -261,7 +254,6 @@ class LaporanController extends Controller
 
     /**
      * Buat ringkasan otomatis sebagai isian awal form laporan.
-     * Handle semua edge case: log null, masuk_pada null, koleksi kosong.
      */
     private function buatRingkasanOtomatis(
         ?LogPiket $log,
@@ -271,13 +263,10 @@ class LaporanController extends Controller
         $parts = [];
 
         if ($log) {
-            // masuk_pada selalu ada jika log aktif (sudah check-in)
-            // tapi kita handle null untuk keamanan
             $masuk = $log->masuk_pada
                 ? Carbon::parse($log->masuk_pada)->format('H:i')
                 : '-';
 
-            // keluar_pada null artinya belum checkout — wajar saat form dibuka
             $keluar = $log->keluar_pada
                 ? Carbon::parse($log->keluar_pada)->format('H:i')
                 : 'belum selesai';
@@ -290,7 +279,6 @@ class LaporanController extends Controller
         }
 
         if ($izin->isNotEmpty()) {
-            // Hitung izin yang disetujui (termasuk yang sudah kembali)
             $disetujui = $izin->whereIn('status', [
                 IzinKeluarSiswa::STATUS_DISETUJUI,
                 IzinKeluarSiswa::STATUS_SUDAH_KEMBALI,
@@ -303,14 +291,14 @@ class LaporanController extends Controller
     }
 
     /**
-     * Label filter untuk header PDF — dipakai buildFilterLabel().
+     * Label filter untuk header PDF.
      */
     private function buildFilterLabel(Request $request): string
     {
         $parts = [];
 
         if ($request->filled('bulan')) {
-            $parts[] = 'Bulan: ' . Carbon::create()->month($request->bulan)->translatedFormat('F');
+            $parts[] = 'Bulan: ' . Carbon::create()->month((int) $request->bulan)->translatedFormat('F');
         }
 
         if ($request->filled('tahun')) {

@@ -9,33 +9,24 @@
         --text:#0f172a;--text2:#475569;--text3:#94a3b8;
         --radius:10px;--radius-sm:7px;
     }
-
     .page{padding:28px 28px 40px;max-width:2000px}
     .page-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
     .page-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:20px;font-weight:800;color:var(--text);line-height:1.2}
     .page-sub{font-size:12.5px;color:var(--text3);margin-top:3px}
     .header-actions{display:flex;gap:8px;align-items:center}
-
-    /* Buttons */
     .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;text-decoration:none;transition:filter .15s,background .15s;white-space:nowrap}
     .btn:hover{filter:brightness(.93)}
     .btn-primary{background:var(--brand-600);color:#fff}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
-
-    /* Alert */
     .alert{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);margin-bottom:16px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:600}
     .alert-warning{background:#fffbeb;border:1px solid #fde68a;color:#92400e}
     .alert-success{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
-
-    /* Card */
     .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px}
     .card-header{padding:14px 20px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:8px}
     .card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:var(--text)}
     .card-body{padding:20px}
-
-    /* Summary strip */
-    .summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:0}
+    .summary-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
     .summary-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:center;gap:10px}
     .summary-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .summary-icon.blue{background:#eff6ff}
@@ -43,14 +34,10 @@
     .summary-icon.yellow{background:#fefce8}
     .summary-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em}
     .summary-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:17px;font-weight:800;color:var(--text);line-height:1.1;margin-top:1px}
-
-    /* Log strip */
     .log-strip{display:flex;align-items:center;gap:16px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:16px;flex-wrap:wrap}
     .log-item{display:flex;align-items:center;gap:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
     .log-item span{font-weight:400;color:var(--text3)}
     .log-sep{width:1px;height:20px;background:var(--border);flex-shrink:0}
-
-    /* Form */
     .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .form-grid .col-span-2{grid-column:span 2}
     .form-group{display:flex;flex-direction:column;gap:5px}
@@ -63,12 +50,8 @@
     textarea.form-control{resize:vertical;min-height:90px}
     .form-hint{font-size:11.5px;color:var(--text3);margin-top:2px}
     .form-error{font-size:11.5px;color:#dc2626;margin-top:2px}
-
-    /* Ringkasan otomatis */
-    .ringkasan-box{background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius-sm);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:4px}
+    .ringkasan-box{background:var(--brand-50);border:1px solid var(--brand-100);border-radius:var(--radius-sm);padding:12px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:8px}
     .ringkasan-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:11px;font-weight:700;color:var(--brand-700);letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:5px}
-
-    /* Pelanggaran mini list */
     .mini-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:6px}
     .mini-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px}
     .mini-item-name{font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:var(--text);flex:1}
@@ -77,15 +60,16 @@
     .poin-low{background:#dcfce7;color:#15803d}
     .poin-mid{background:#fef9c3;color:#a16207}
     .poin-high{background:#fee2e2;color:#dc2626}
-
-    /* Form footer */
     .form-footer{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:16px 20px;border-top:1px solid var(--border);background:var(--surface2)}
-
+    .char-counter{font-size:11px;color:var(--text3);text-align:right;margin-top:3px;transition:color .15s}
+    .char-counter.near-limit{color:#a16207}
+    .char-counter.at-limit{color:#dc2626;font-weight:700}
     @media(max-width:640px){
         .page{padding:16px}
         .form-grid{grid-template-columns:1fr}
         .form-grid .col-span-2{grid-column:span 1}
         .summary-strip{grid-template-columns:1fr}
+        .log-sep{display:none}
     }
 </style>
 
@@ -104,18 +88,13 @@
         </div>
     </div>
 
-    {{-- Banner laporan sudah ada --}}
     @if($laporanHariIni)
     <div class="alert alert-success">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <div>
-            Laporan hari ini <strong>sudah dibuat</strong> pada pukul {{ \Carbon\Carbon::parse($laporanHariIni->created_at)->format('H:i') }}.
-            Anda dapat memperbarui isinya di bawah.
-        </div>
+        <div>Laporan hari ini <strong>sudah dibuat</strong> pada pukul {{ \Carbon\Carbon::parse($laporanHariIni->created_at)->format('H:i') }}. Anda dapat memperbarui isinya di bawah.</div>
     </div>
     @endif
 
-    {{-- Ringkasan aktivitas hari ini --}}
     <div class="card">
         <div class="card-header">
             <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
@@ -123,7 +102,8 @@
         </div>
         <div class="card-body">
 
-            {{-- Log piket --}}
+            {{-- FIX: $logHariIni dikirim dari controller sebagai alias $logAktif.
+                 Kolom 'lokasi' tidak ada di fillable LogPiket — diganti dengan shift & catatan. --}}
             @if($logHariIni)
             <div class="log-strip">
                 <div class="log-item">
@@ -135,11 +115,11 @@
                     <svg width="13" height="13" fill="none" stroke="#dc2626" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
                     Keluar: <span>{{ $logHariIni->keluar_pada ? \Carbon\Carbon::parse($logHariIni->keluar_pada)->format('H:i') : 'Belum checkout' }}</span>
                 </div>
-                @if($logHariIni->lokasi)
+                @if($logHariIni->shift)
                 <div class="log-sep"></div>
                 <div class="log-item">
-                    <svg width="13" height="13" fill="none" stroke="#1d4ed8" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                    Lokasi: <span>{{ $logHariIni->lokasi }}</span>
+                    <svg width="13" height="13" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+                    Shift: <span>{{ ucfirst($logHariIni->shift) }}</span>
                 </div>
                 @endif
             </div>
@@ -150,7 +130,6 @@
             </div>
             @endif
 
-            {{-- Stats strip --}}
             <div class="summary-strip">
                 <div class="summary-item">
                     <div class="summary-icon red">
@@ -186,7 +165,6 @@
                 </div>
             </div>
 
-            {{-- Mini list pelanggaran --}}
             @if($pelanggaranHariIni->count() > 0)
             <div style="margin-top:16px">
                 <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:11.5px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Pelanggaran Tercatat Hari Ini</p>
@@ -208,7 +186,6 @@
         </div>
     </div>
 
-    {{-- Form Laporan --}}
     <div class="card">
         <div class="card-header">
             <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
@@ -220,20 +197,18 @@
             <div class="card-body">
                 <div class="form-grid">
 
-                    {{-- Tanggal --}}
                     <div class="form-group col-span-2">
                         <label class="form-label">Tanggal Laporan <span class="req">*</span></label>
                         <input type="date" name="tanggal"
                             class="form-control {{ $errors->has('tanggal') ? 'is-invalid' : '' }}"
                             value="{{ old('tanggal', today()->format('Y-m-d')) }}"
+                            max="{{ today()->format('Y-m-d') }}"
                             style="max-width:220px">
                         @error('tanggal')<p class="form-error">{{ $message }}</p>@enderror
                     </div>
 
-                    {{-- Kondisi sekolah --}}
                     <div class="form-group col-span-2">
                         <label class="form-label">Kondisi Sekolah <span class="req">*</span></label>
-
                         @if($ringkasanOtomatis)
                         <div>
                             <p class="ringkasan-label">
@@ -243,38 +218,38 @@
                             <div class="ringkasan-box">{{ $ringkasanOtomatis }}</div>
                         </div>
                         @endif
-
-                        <textarea name="kondisi_sekolah" rows="4"
+                        <textarea name="kondisi_sekolah" rows="4" id="ta_kondisi" maxlength="2000"
                             class="form-control {{ $errors->has('kondisi_sekolah') ? 'is-invalid' : '' }}"
                             placeholder="Deskripsikan kondisi umum sekolah hari ini…">{{ old('kondisi_sekolah', $laporanHariIni->kondisi_sekolah ?? $ringkasanOtomatis) }}</textarea>
+                        <div class="char-counter" id="cc_kondisi"></div>
                         @error('kondisi_sekolah')<p class="form-error">{{ $message }}</p>@enderror
                         <p class="form-hint">Ringkasan otomatis di atas dapat dijadikan referensi. Silakan edit sesuai kebutuhan.</p>
                     </div>
 
-                    {{-- Catatan umum --}}
                     <div class="form-group col-span-2">
                         <label class="form-label">Catatan Umum</label>
-                        <textarea name="catatan_umum" rows="3"
+                        <textarea name="catatan_umum" rows="3" id="ta_catatan" maxlength="2000"
                             class="form-control {{ $errors->has('catatan_umum') ? 'is-invalid' : '' }}"
                             placeholder="Catatan umum kegiatan piket hari ini (opsional)…">{{ old('catatan_umum', $laporanHariIni->catatan_umum ?? '') }}</textarea>
+                        <div class="char-counter" id="cc_catatan"></div>
                         @error('catatan_umum')<p class="form-error">{{ $message }}</p>@enderror
                     </div>
 
-                    {{-- Tamu penting --}}
                     <div class="form-group col-span-2">
                         <label class="form-label">Tamu Penting</label>
-                        <textarea name="tamu_penting" rows="2"
+                        <textarea name="tamu_penting" rows="2" id="ta_tamu" maxlength="1000"
                             class="form-control {{ $errors->has('tamu_penting') ? 'is-invalid' : '' }}"
                             placeholder="Catat tamu penting yang hadir hari ini, jika ada (opsional)…">{{ old('tamu_penting', $laporanHariIni->tamu_penting ?? '') }}</textarea>
+                        <div class="char-counter" id="cc_tamu"></div>
                         @error('tamu_penting')<p class="form-error">{{ $message }}</p>@enderror
                     </div>
 
-                    {{-- Kejadian khusus --}}
                     <div class="form-group col-span-2">
                         <label class="form-label">Kejadian Khusus</label>
-                        <textarea name="kejadian_khusus" rows="3"
+                        <textarea name="kejadian_khusus" rows="3" id="ta_kejadian" maxlength="2000"
                             class="form-control {{ $errors->has('kejadian_khusus') ? 'is-invalid' : '' }}"
                             placeholder="Tuliskan kejadian di luar kebiasaan jika ada (opsional)…">{{ old('kejadian_khusus', $laporanHariIni->kejadian_khusus ?? '') }}</textarea>
+                        <div class="char-counter" id="cc_kejadian"></div>
                         @error('kejadian_khusus')<p class="form-error">{{ $message }}</p>@enderror
                     </div>
 
@@ -296,10 +271,30 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 @if(session('success'))
-Swal.fire({ icon:'success', title:'Berhasil!', text: @json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
+Swal.fire({icon:'success',title:'Berhasil!',text:@json(session('success')),timer:2800,showConfirmButton:false,toast:true,position:'top-end'});
+@endif
+@if(session('error'))
+Swal.fire({icon:'error',title:'Gagal!',text:@json(session('error')),confirmButtonColor:'#1f63db'});
 @endif
 @if($errors->any())
-Swal.fire({ icon:'warning', title:'Periksa Formulir', html: @json(implode('<br>', $errors->all())), confirmButtonColor:'#1f63db' });
+Swal.fire({icon:'warning',title:'Periksa Formulir',html:@json(implode('<br>',$errors->all())),confirmButtonColor:'#1f63db'});
 @endif
+
+function initCharCounter(taId, ccId, max) {
+    const ta = document.getElementById(taId);
+    const cc = document.getElementById(ccId);
+    if (!ta || !cc) return;
+    function update() {
+        const n = ta.value.length;
+        cc.textContent = n.toLocaleString('id-ID') + ' / ' + max.toLocaleString('id-ID') + ' karakter';
+        cc.className = 'char-counter' + (n >= max ? ' at-limit' : (n >= max * 0.85 ? ' near-limit' : ''));
+    }
+    ta.addEventListener('input', update);
+    update();
+}
+initCharCounter('ta_kondisi','cc_kondisi',2000);
+initCharCounter('ta_catatan','cc_catatan',2000);
+initCharCounter('ta_tamu',   'cc_tamu',   1000);
+initCharCounter('ta_kejadian','cc_kejadian',2000);
 </script>
 </x-app-layout>

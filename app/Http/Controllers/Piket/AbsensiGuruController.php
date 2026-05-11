@@ -24,8 +24,7 @@ use Illuminate\View\View;
  *  - Piket tidak bisa edit/delete data yang sudah ada (hanya admin)
  *  - Piket tidak bisa input untuk tanggal jauh ke belakang / depan (max H-1)
  *  - Piket melihat semua absensi hari ini (bukan hanya yang dia catat sendiri)
- *    karena satu hari bisa ada pergantian shift piket
- *  - Scan QR divalidasi lewat token SesiQrGuru, bukan raw guru_id
+ *  - Scan QR divalidasi lewat SesiQrGuru (kode_qr + masihBerlaku())
  *  - Export PDF harian ada — untuk diserahkan ke TU / kepala sekolah
  *
  * Views: resources/views/piket/absensi-guru/
@@ -34,13 +33,16 @@ class AbsensiGuruController extends Controller
 {
     private const VIEW_PREFIX = 'piket.absensi-guru.';
 
-    /*
-    |--------------------------------------------------------------------------
-    | Batas tanggal input — piket hanya boleh input H-1 s/d hari ini.
-    | Tanggal lebih lama = wewenang admin untuk koreksi.
-    |--------------------------------------------------------------------------
-    */
+    /**
+     * Batas tanggal input — piket hanya boleh input H-1 s/d hari ini.
+     * Tanggal lebih lama = wewenang admin untuk koreksi.
+     */
     private const BATAS_HARI_LALU = 1;
+
+    /**
+     * Jam batas telat default. Idealnya diambil dari config/setting sekolah.
+     */
+    private const JAM_BATAS_TELAT = '07:15';
 
     // ── DASHBOARD ─────────────────────────────────────────────────────────────
 
@@ -51,15 +53,14 @@ class AbsensiGuruController extends Controller
      *  - Rekap status (hadir, izin, sakit, alfa)
      *  - Daftar guru yang belum tercatat hari ini
      *  - Daftar guru piket yang berjaga hari ini (dari JadwalPiketGuru)
-     *  - Semua absensi yang sudah masuk hari ini (bukan hanya milik piket ini)
-     *  - Sesi QR aktif (jika ada) — agar piket tahu apakah QR sudah dibuka
+     *  - Semua absensi yang sudah masuk hari ini
+     *  - Sesi QR aktif (jika ada)
      */
     public function dashboard(): View
     {
         $hariIni = today();
 
         // ── Rekap status hari ini ─────────────────────────────────────────────
-        // Konsisten dengan cara admin: hadir + telat digabung sebagai "hadir"
         $rekapRaw = AbsensiGuru::whereDate('tanggal', $hariIni)
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
@@ -92,16 +93,13 @@ class AbsensiGuruController extends Controller
             ->get();
 
         // ── Semua absensi yang sudah tercatat hari ini ────────────────────────
-        // Tampilkan semua (bukan hanya dicatat_oleh piket ini) karena
-        // bisa ada piket shift pagi yang sudah input sebagian
         $absensiHariIni = AbsensiGuru::with(['guru', 'pencatat'])
             ->whereDate('tanggal', $hariIni)
             ->orderBy('jam_masuk')
             ->get();
 
         // ── Sesi QR guru aktif ────────────────────────────────────────────────
-        // Piket perlu tahu apakah sesi QR sudah dibuka agar guru bisa scan mandiri
-        $sesiQrAktif = SesiQrGuru::aktif()->first() ?? null;
+        $sesiQrAktif = SesiQrGuru::aktif()->first();
 
         return view(self::VIEW_PREFIX . 'dashboard', compact(
             'rekapHariIni',
@@ -117,11 +115,6 @@ class AbsensiGuruController extends Controller
 
     /**
      * Form absensi massal — semua guru dalam satu halaman.
-     *
-     * Realistis:
-     *  - Hanya izinkan input untuk hari ini atau H-1 (bukan tanggal sembarang)
-     *  - Tampilkan data yang sudah ada agar piket tahu mana yang perlu diisi
-     *  - Tampilkan info guru piket hari ini untuk konteks
      */
     public function massalForm(Request $request): View
     {
@@ -130,9 +123,9 @@ class AbsensiGuruController extends Controller
             : today()->toDateString();
 
         // Guard: jangan izinkan tanggal terlalu jauh ke belakang atau ke depan
-        $tanggalCarbon  = Carbon::parse($tanggal);
-        $batasMinimum   = today()->subDays(self::BATAS_HARI_LALU);
-        $batasMaksimum  = today();
+        $tanggalCarbon = Carbon::parse($tanggal);
+        $batasMinimum  = today()->subDays(self::BATAS_HARI_LALU);
+        $batasMaksimum = today();
 
         if ($tanggalCarbon->lt($batasMinimum) || $tanggalCarbon->gt($batasMaksimum)) {
             $tanggal = today()->toDateString();
@@ -141,21 +134,19 @@ class AbsensiGuruController extends Controller
         $guruList   = Guru::aktif()->orderBy('nama_lengkap')->get();
         $statusList = AbsensiGuru::STATUS_LIST;
 
-        // Data absensi yang sudah ada untuk tanggal ini
-        // Ditampilkan agar piket tidak double-input
+        // Data absensi yang sudah ada — agar piket tidak double-input
         $absensiExisting = AbsensiGuru::with('pencatat')
             ->whereDate('tanggal', $tanggal)
             ->get()
             ->keyBy('guru_id');
 
-        // Info guru piket hari ini (untuk header halaman)
+        // Info guru piket hari ini
         $namaHariIni      = strtolower(Carbon::parse($tanggal)->locale('id')->isoFormat('dddd'));
         $guruPiketHariIni = JadwalPiketGuru::with('guru')
             ->where('hari', $namaHariIni)
             ->where('is_active', true)
             ->get();
 
-        // Rentang tanggal yang boleh dipilih
         $tanggalMin = today()->subDays(self::BATAS_HARI_LALU)->toDateString();
         $tanggalMax = today()->toDateString();
 
@@ -177,7 +168,7 @@ class AbsensiGuruController extends Controller
      *  - Jika guru belum absen → buat baru
      *  - Jika sudah ada (misal dari QR) → update (piket bisa koreksi keterangan)
      *
-     * Guard tanggal: hanya H-1 s/d hari ini.
+     * Khusus record dari QR: hanya jam_keluar & keterangan yang diupdate.
      */
     public function massalStore(Request $request): RedirectResponse
     {
@@ -203,34 +194,32 @@ class AbsensiGuruController extends Controller
                 'nullable',
                 'date_format:H:i',
                 function ($attribute, $value, $fail) use ($request) {
-                    // Ambil index dari nama field (absensi.0.jam_keluar → 0)
+                    if (! $value) return;
                     preg_match('/absensi\.(\d+)\.jam_keluar/', $attribute, $matches);
-                    $index     = $matches[1] ?? null;
-                    $jamMasuk  = $index !== null
-                        ? ($request->input("absensi.{$index}.jam_masuk"))
+                    $index    = $matches[1] ?? null;
+                    $jamMasuk = $index !== null
+                        ? $request->input("absensi.{$index}.jam_masuk")
                         : null;
-                    if ($value && $jamMasuk && $value <= $jamMasuk) {
+                    if ($jamMasuk && $value <= $jamMasuk) {
                         $fail('Jam keluar harus setelah jam masuk.');
                     }
                 },
             ],
             'absensi.*.keterangan' => ['nullable', 'string', 'max:500'],
         ], [
-            'tanggal.required'            => 'Tanggal absensi wajib diisi.',
-            'absensi.required'            => 'Data absensi tidak boleh kosong.',
-            'absensi.*.guru_id.required'  => 'Data guru tidak valid.',
-            'absensi.*.status.required'   => 'Status absensi wajib diisi.',
-            'absensi.*.status.in'         => 'Status absensi tidak valid.',
+            'tanggal.required'           => 'Tanggal absensi wajib diisi.',
+            'absensi.required'           => 'Data absensi tidak boleh kosong.',
+            'absensi.*.guru_id.required' => 'Data guru tidak valid.',
+            'absensi.*.status.required'  => 'Status absensi wajib diisi.',
+            'absensi.*.status.in'        => 'Status absensi tidak valid.',
         ]);
 
         $dicatatOleh = Auth::id();
         $tanggal     = $request->tanggal;
         $berhasil    = 0;
-        $dilewati    = 0; // guru yang sudah absen via QR — tetap update keterangan
+        $dilewati    = 0;
 
         foreach ($request->absensi as $data) {
-            // Jika sudah ada record dari QR (metode = 'qr'), piket hanya boleh
-            // update keterangan & jam_keluar — tidak override status/metode
             $existing = AbsensiGuru::where('guru_id', $data['guru_id'])
                 ->whereDate('tanggal', $tanggal)
                 ->first();
@@ -238,9 +227,9 @@ class AbsensiGuruController extends Controller
             if ($existing && $existing->metode === 'qr') {
                 // Hanya update jam_keluar dan keterangan, pertahankan status QR
                 $existing->update([
-                    'jam_keluar'  => $data['jam_keluar']  ?? $existing->jam_keluar,
-                    'keterangan'  => $data['keterangan']  ?? $existing->keterangan,
-                    'dicatat_oleh'=> $dicatatOleh,
+                    'jam_keluar'   => $data['jam_keluar']  ?? $existing->jam_keluar,
+                    'keterangan'   => $data['keterangan']  ?? $existing->keterangan,
+                    'dicatat_oleh' => $dicatatOleh,
                 ]);
                 $dilewati++;
             } else {
@@ -274,11 +263,7 @@ class AbsensiGuruController extends Controller
     // ── RIWAYAT ───────────────────────────────────────────────────────────────
 
     /**
-     * Riwayat absensi guru — semua yang tercatat, bukan hanya milik piket ini.
-     *
-     * Realistis: piket shift siang perlu lihat apa yang sudah diinput piket
-     * shift pagi, dan kepala sekolah bisa tanya ke piket soal data apapun.
-     *
+     * Riwayat absensi guru — semua yang tercatat, termasuk milik piket shift lain.
      * Filter tambahan: dicatat_oleh (opsional, untuk filter "saya saja").
      */
     public function riwayat(Request $request): View
@@ -287,7 +272,7 @@ class AbsensiGuruController extends Controller
             ->orderByDesc('tanggal')
             ->orderBy('jam_masuk');
 
-        // Default: tampilkan 7 hari terakhir agar tidak overwhelming
+        // Default: tampilkan 7 hari terakhir
         if (! $request->filled('tanggal_dari')) {
             $query->whereDate('tanggal', '>=', today()->subDays(6));
         } else {
@@ -299,14 +284,13 @@ class AbsensiGuruController extends Controller
         }
 
         if ($request->filled('guru_id')) {
-            $query->where('guru_id', $request->guru_id);
+            $query->where('guru_id', (int) $request->guru_id);
         }
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && in_array($request->status, AbsensiGuru::STATUS_LIST)) {
             $query->where('status', $request->status);
         }
 
-        // Filter "hanya yang saya catat" — opsional
         if ($request->boolean('saya_saja')) {
             $query->where('dicatat_oleh', Auth::id());
         }
@@ -327,17 +311,13 @@ class AbsensiGuruController extends Controller
     /**
      * Halaman scan QR guru.
      *
-     * Piket yang scan QR di sini adalah piket yang memverifikasi guru
-     * yang scan QR dari ponsel mereka, atau jika piket scan langsung
-     * menggunakan kamera di pos piket.
-     *
-     * Tampilkan sesi QR aktif agar piket tahu token / QR mana yang valid.
+     * Piket memverifikasi guru yang scan QR dari ponsel,
+     * atau scan langsung menggunakan kamera di pos piket.
      */
     public function scanQr(): View
     {
-        // Cari sesi QR guru yang sedang aktif
         $sesiQrAktif = SesiQrGuru::aktif()
-            ->with('dibukaOleh:id,name')
+            ->with('pembuat:id,name')
             ->first();
 
         // Absensi yang sudah masuk hari ini via QR (untuk live feedback)
@@ -357,55 +337,45 @@ class AbsensiGuruController extends Controller
     /**
      * Proses hasil scan QR guru.
      *
-     * Realistis: QR divalidasi lewat token SesiQrGuru, bukan raw guru_id.
-     * Token berisi payload terenkripsi yang hanya valid selama sesi aktif.
-     *
+     * Model SesiQrGuru menyimpan kode_qr (UUID) — bukan token terpisah.
      * Flow:
-     *  1. Piket scan QR → frontend kirim qr_payload ke sini
-     *  2. Decode payload → ambil guru_id + sesi_id + timestamp
-     *  3. Validasi sesi masih aktif
-     *  4. Catat absensi guru (hadir/telat otomatis berdasarkan jam)
+     *  1. Piket scan QR → frontend kirim kode_qr ke sini
+     *  2. Cari SesiQrGuru berdasarkan kode_qr yang masih aktif (masihBerlaku())
+     *  3. Catat absensi guru (hadir/telat otomatis berdasarkan jam)
+     *
+     * kode_qr di-rotate oleh SesiQrGuruController::refreshKodeQr()
+     * sehingga QR lama tidak bisa dipakai ulang setelah di-refresh.
      */
     public function prosesQr(Request $request): RedirectResponse
     {
         $request->validate([
-            'qr_payload' => ['required', 'string'],
-            'status'     => ['nullable', Rule::in(AbsensiGuru::STATUS_LIST)],
+            'kode_qr'  => ['required', 'string', 'uuid'],
+            'guru_id'  => ['required', 'exists:guru,id'],
+            'status'   => ['nullable', Rule::in(AbsensiGuru::STATUS_LIST)],
         ], [
-            'qr_payload.required' => 'Data QR tidak boleh kosong.',
+            'kode_qr.required' => 'Data QR tidak boleh kosong.',
+            'kode_qr.uuid'     => 'Format kode QR tidak valid.',
+            'guru_id.required' => 'Data guru tidak boleh kosong.',
         ]);
 
-        // ── Decode QR payload ─────────────────────────────────────────────────
-        // Format payload: "{sesi_id}:{guru_id}:{token}"
-        // SesiQrGuru menyimpan token unik tiap sesi yang di-refresh berkala
-        $parts = explode(':', trim($request->qr_payload));
-
-        if (count($parts) !== 3) {
-            return back()
-                ->with('error', 'Format QR tidak valid. Pastikan guru scan QR yang benar.')
-                ->withInput();
-        }
-
-        [$sesiId, $guruId, $token] = $parts;
-
         // ── Validasi sesi QR ──────────────────────────────────────────────────
-        $sesiQr = SesiQrGuru::find((int) $sesiId);
+        // Cari sesi berdasarkan kode_qr yang masih berlaku
+        $sesiQr = SesiQrGuru::where('kode_qr', $request->kode_qr)->first();
 
-        if (! $sesiQr || ! $sesiQr->isAktif()) {
+        if (! $sesiQr) {
             return back()
-                ->with('error', 'Sesi QR sudah tidak aktif. Minta piket membuka sesi QR baru.')
+                ->with('error', 'Kode QR tidak ditemukan. Pastikan guru scan QR yang benar.')
                 ->withInput();
         }
 
-        // Validasi token cocok dengan yang ada di sesi
-        if (! hash_equals($sesiQr->token, $token)) {
+        if (! $sesiQr->masihBerlaku()) {
             return back()
-                ->with('error', 'Token QR tidak valid atau sudah kedaluwarsa. Minta guru scan ulang QR terbaru.')
+                ->with('error', 'Sesi QR sudah tidak aktif atau telah kedaluwarsa. Minta piket membuka sesi QR baru.')
                 ->withInput();
         }
 
         // ── Validasi guru ─────────────────────────────────────────────────────
-        $guru = Guru::find((int) $guruId);
+        $guru = Guru::find((int) $request->guru_id);
 
         if (! $guru || ! $guru->isAktif()) {
             return back()
@@ -423,15 +393,12 @@ class AbsensiGuruController extends Controller
         }
 
         // ── Tentukan status otomatis berdasarkan jam ──────────────────────────
-        // Jika piket tidak override status, sistem tentukan hadir/telat
-        // berdasarkan jam masuk yang dikonfigurasi sekolah (default 07:00)
-        $jamMasukSekarang  = now()->format('H:i');
-        $batasTelatDefault = '07:15'; // bisa dijadikan config/setting sekolah
+        $jamMasukSekarang = now()->format('H:i');
 
         if ($request->filled('status')) {
             $status = $request->status;
         } else {
-            $status = ($jamMasukSekarang > $batasTelatDefault) ? 'telat' : 'hadir';
+            $status = ($jamMasukSekarang > self::JAM_BATAS_TELAT) ? 'telat' : 'hadir';
         }
 
         // ── Simpan absensi ────────────────────────────────────────────────────
@@ -453,14 +420,15 @@ class AbsensiGuruController extends Controller
 
     /**
      * Export rekap absensi guru harian ke PDF.
-     * Digunakan piket untuk diserahkan ke TU / kepala sekolah.
-     *
-     * Piket hanya bisa export per tanggal (bukan multi-bulan) —
-     * export rekap periode panjang ada di sisi admin.
+     * Piket hanya bisa export per tanggal — export multi-periode ada di admin.
      */
     public function exportPdf(Request $request): mixed
     {
         $tanggal = $request->input('tanggal', today()->toDateString());
+
+        if (! preg_match('/^\d{4}-\d{2}-\d{2}$/', $tanggal)) {
+            $tanggal = today()->toDateString();
+        }
 
         // Guard: tidak bisa export tanggal mendatang
         if (Carbon::parse($tanggal)->gt(today())) {
@@ -469,18 +437,16 @@ class AbsensiGuruController extends Controller
 
         $absensiList = AbsensiGuru::with(['guru', 'pencatat'])
             ->whereDate('tanggal', $tanggal)
-            ->orderBy('status') // hadir dulu, lalu telat, izin, sakit, alfa
+            ->orderByRaw("FIELD(status, 'hadir', 'telat', 'izin', 'sakit', 'alfa')")
             ->orderBy('jam_masuk')
             ->get();
 
-        // Guru yang belum tercatat (untuk dilampirkan di PDF)
         $sudahAbsenIds = $absensiList->pluck('guru_id');
         $belumAbsen    = Guru::aktif()
             ->whereNotIn('id', $sudahAbsenIds)
             ->orderBy('nama_lengkap')
             ->get();
 
-        // Rekap ringkas
         $rekap = [
             'hadir' => $absensiList->whereIn('status', ['hadir', 'telat'])->count(),
             'telat' => $absensiList->where('status', 'telat')->count(),

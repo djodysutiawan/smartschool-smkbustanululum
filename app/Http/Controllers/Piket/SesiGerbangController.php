@@ -31,7 +31,7 @@ class SesiGerbangController extends Controller
                     $q->whereIn('status', ['normal', 'manual', 'koreksi']),
             ]);
 
-        // Default: tampilkan seminggu terakhir agar tidak overwhelming
+        // Default: tampilkan seminggu terakhir
         if ($request->filled('tanggal_dari')) {
             $query->where('tanggal', '>=', $request->tanggal_dari);
         } else {
@@ -42,11 +42,11 @@ class SesiGerbangController extends Controller
             $query->where('tanggal', '<=', $request->tanggal_sampai);
         }
 
-        if ($request->filled('tipe')) {
+        if ($request->filled('tipe') && in_array($request->tipe, ['masuk', 'pulang'])) {
             $query->where('tipe', $request->tipe);
         }
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && in_array($request->status, ['aktif', 'ditutup'])) {
             $query->where('status', $request->status);
         }
 
@@ -55,7 +55,6 @@ class SesiGerbangController extends Controller
                           ->paginate(20)
                           ->withQueryString();
 
-        // Sesi aktif sekarang — ditampilkan sebagai banner di atas tabel
         $sesiAktif = SesiGerbang::sesiAktifSekarang();
 
         return view('piket.sesi-gerbang.index', compact('sesiList', 'sesiAktif'));
@@ -121,40 +120,53 @@ class SesiGerbangController extends Controller
 
     /**
      * Detail sesi + log scan yang masuk di sesi ini.
-     * Piket bisa filter per tipe scan, status, dan kelas siswa.
      */
     public function show(SesiGerbang $sesiGerbang, Request $request): View
     {
         $sesiGerbang->load(['dibukaOleh', 'ditutupOleh']);
 
         $scanQuery = $sesiGerbang->absensiGerbang()
-            ->with(['siswa.kelas', 'inputOleh:id,name'])
+            ->with([
+                'siswa.kelas',
+                'guru',
+                'inputOleh:id,name',
+            ])
             ->orderByDesc('waktu_scan');
 
         if ($request->filled('status_scan')) {
             $scanQuery->where('status', $request->status_scan);
         }
 
-        if ($request->filled('tipe_scan')) {
+        if ($request->filled('tipe_scan') && in_array($request->tipe_scan, ['masuk', 'pulang'])) {
             $scanQuery->where('tipe', $request->tipe_scan);
         }
 
         if ($request->filled('kelas_id')) {
             $scanQuery->whereHas('siswa', fn ($q) =>
-                $q->where('kelas_id', $request->kelas_id)
+                $q->where('kelas_id', (int) $request->kelas_id)
             );
         }
 
         $scanList  = $scanQuery->paginate(30)->withQueryString();
         $kelasList = Kelas::aktif()->orderBy('tingkat')->orderBy('nama_kelas')->get();
 
+        // Gunakan satu query agregat untuk menghindari multiple query N+1
+        $statsRaw = $sesiGerbang->absensiGerbang()
+            ->selectRaw("
+                COUNT(*) as total_scan,
+                SUM(CASE WHEN status IN ('normal','manual','koreksi') THEN 1 ELSE 0 END) as scan_valid,
+                SUM(CASE WHEN status = 'duplikat' THEN 1 ELSE 0 END) as scan_duplikat,
+                SUM(CASE WHEN is_manual = 1 THEN 1 ELSE 0 END) as scan_manual,
+                SUM(CASE WHEN siswa_id IS NULL AND guru_id IS NULL THEN 1 ELSE 0 END) as tidak_dikenal
+            ")
+            ->first();
+
         $statistik = [
-            'total_scan'    => $sesiGerbang->absensiGerbang()->count(),
-            'scan_valid'    => $sesiGerbang->absensiGerbang()
-                                ->whereIn('status', ['normal', 'manual', 'koreksi'])->count(),
-            'scan_duplikat' => $sesiGerbang->absensiGerbang()->where('status', 'duplikat')->count(),
-            'scan_manual'   => $sesiGerbang->absensiGerbang()->where('is_manual', true)->count(),
-            'tidak_dikenal' => $sesiGerbang->absensiGerbang()->whereNull('siswa_id')->count(),
+            'total_scan'    => (int) ($statsRaw->total_scan    ?? 0),
+            'scan_valid'    => (int) ($statsRaw->scan_valid    ?? 0),
+            'scan_duplikat' => (int) ($statsRaw->scan_duplikat ?? 0),
+            'scan_manual'   => (int) ($statsRaw->scan_manual   ?? 0),
+            'tidak_dikenal' => (int) ($statsRaw->tidak_dikenal ?? 0),
         ];
 
         return view('piket.sesi-gerbang.show', compact(
@@ -240,7 +252,8 @@ class SesiGerbangController extends Controller
     /**
      * Buka kembali sesi yang sudah ditutup.
      * Berguna jika piket salah menutup sesi terlalu cepat.
-     * Guard: tidak boleh ada sesi aktif lain dengan tipe yang sama hari ini.
+     * Guard: tidak boleh ada sesi aktif lain dengan tipe yang sama hari ini,
+     *        dan hanya bisa untuk sesi hari ini.
      */
     public function buka(SesiGerbang $sesiGerbang): RedirectResponse
     {
@@ -248,8 +261,8 @@ class SesiGerbangController extends Controller
             return back()->with('error', 'Sesi ini masih aktif, tidak perlu dibuka ulang.');
         }
 
-        // Hanya bisa buka kembali sesi hari ini — sesi lama tidak boleh dibuka
-        if ($sesiGerbang->tanggal !== now()->toDateString()) {
+        // Hanya bisa buka kembali sesi hari ini
+        if ($sesiGerbang->tanggal->toDateString() !== now()->toDateString()) {
             return back()->with('error', 'Hanya sesi hari ini yang bisa dibuka kembali. Hubungi admin untuk sesi tanggal lain.');
         }
 
@@ -277,28 +290,38 @@ class SesiGerbangController extends Controller
 
     /**
      * Export detail satu sesi ke PDF — untuk arsip laporan harian piket.
-     * Piket butuh ini untuk keperluan administrasi fisik / tanda tangan.
-     *
-     * Berbeda dengan admin yang export daftar banyak sesi,
-     * piket hanya export SATU sesi sekaligus (lebih praktis di lapangan).
+     * Piket export SATU sesi sekaligus (bukan daftar banyak sesi seperti admin).
      */
     public function exportPdf(SesiGerbang $sesiGerbang): mixed
     {
         $sesiGerbang->load(['dibukaOleh', 'ditutupOleh']);
 
         $scanList = $sesiGerbang->absensiGerbang()
-            ->with(['siswa.kelas', 'inputOleh:id,name'])
+            ->with([
+                'siswa.kelas',
+                'guru',
+                'inputOleh:id,name',
+            ])
             ->whereIn('status', ['normal', 'manual', 'koreksi'])
             ->orderBy('tipe')
             ->orderBy('waktu_scan')
             ->get();
 
+        $statsRaw = $sesiGerbang->absensiGerbang()
+            ->selectRaw("
+                COUNT(*) as total_scan,
+                SUM(CASE WHEN is_manual = 1 THEN 1 ELSE 0 END) as scan_manual,
+                SUM(CASE WHEN status = 'duplikat' THEN 1 ELSE 0 END) as scan_duplikat,
+                SUM(CASE WHEN siswa_id IS NULL AND guru_id IS NULL THEN 1 ELSE 0 END) as tidak_dikenal
+            ")
+            ->first();
+
         $statistik = [
-            'total_scan'    => $sesiGerbang->absensiGerbang()->count(),
+            'total_scan'    => (int) ($statsRaw->total_scan    ?? 0),
             'scan_valid'    => $scanList->count(),
-            'scan_duplikat' => $sesiGerbang->absensiGerbang()->where('status', 'duplikat')->count(),
-            'scan_manual'   => $sesiGerbang->absensiGerbang()->where('is_manual', true)->count(),
-            'tidak_dikenal' => $sesiGerbang->absensiGerbang()->whereNull('siswa_id')->count(),
+            'scan_duplikat' => (int) ($statsRaw->scan_duplikat ?? 0),
+            'scan_manual'   => (int) ($statsRaw->scan_manual   ?? 0),
+            'tidak_dikenal' => (int) ($statsRaw->tidak_dikenal ?? 0),
         ];
 
         /** @var \App\Models\User $authUser */
@@ -318,7 +341,7 @@ class SesiGerbangController extends Controller
 
         $namaFile = 'sesi-gerbang-'
             . $sesiGerbang->tipe . '-'
-            . $sesiGerbang->tanggal . '.pdf';
+            . $sesiGerbang->tanggal->toDateString() . '.pdf';
 
         return $pdf->download($namaFile);
     }

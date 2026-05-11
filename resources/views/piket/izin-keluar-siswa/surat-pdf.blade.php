@@ -45,8 +45,8 @@
         .penutup  { margin-bottom: 14px; }
 
         /* ── Tabel Data ── */
-        .data-tbl           { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 9.5pt; }
-        .data-tbl td        { padding: 3.5px 5px; vertical-align: top; line-height: 1.5; }
+        .data-tbl             { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 9.5pt; }
+        .data-tbl td          { padding: 3.5px 5px; vertical-align: top; line-height: 1.5; }
         .data-tbl td.col-key  { width: 38mm; color: #444; }
         .data-tbl td.col-sep  { width: 6mm; text-align: center; }
         .data-tbl td.col-val  { font-weight: bold; }
@@ -78,12 +78,34 @@
 <body>
 <div class="page">
 
-    {{-- ── Kop Surat ── --}}
+    {{--
+        $profil  = App\Models\ProfilSekolah::instance()  — dikirim dari cetakSurat()
+        $izin    = IzinKeluarSiswa dengan relasi siswa.kelas, tahunAjaran, diprosesOleh
+        Guru piket diambil dari $izin->diprosesOleh (User yang menyetujui),
+        bukan variabel terpisah $guruPiketAktif yang tidak dikirim controller.
+    --}}
+
+    {{-- ── Kop Surat (dari ProfilSekolah) ── --}}
     <div class="kop">
-        <span class="kop-instansi">PEMERINTAH DAERAH</span>
-        <span class="kop-nama">SEKOLAH MENENGAH ATAS NEGERI</span>
-        <span class="kop-alamat">Jl. Contoh No. 1, Kota, Provinsi &nbsp;·&nbsp; Telp. (021) 000-0000</span>
-        <span class="kop-kontak">Email: info@sekolah.sch.id &nbsp;·&nbsp; Website: www.sekolah.sch.id</span>
+        @if($profil && $profil->instansi)
+            <span class="kop-instansi">{{ strtoupper($profil->instansi) }}</span>
+        @endif
+        <span class="kop-nama">{{ $profil->nama_sekolah ?? 'NAMA SEKOLAH' }}</span>
+        @if($profil && ($profil->alamat || $profil->kota))
+            <span class="kop-alamat">
+                {{ $profil->alamat ?? '' }}
+                @if($profil->alamat && $profil->kota) &nbsp;·&nbsp; @endif
+                {{ $profil->kota ?? '' }}
+                @if($profil->telepon) &nbsp;·&nbsp; Telp. {{ $profil->telepon }} @endif
+            </span>
+        @endif
+        @if($profil && ($profil->email || $profil->website))
+            <span class="kop-kontak">
+                @if($profil->email) Email: {{ $profil->email }} @endif
+                @if($profil->email && $profil->website) &nbsp;·&nbsp; @endif
+                @if($profil->website) Website: {{ $profil->website }} @endif
+            </span>
+        @endif
     </div>
 
     {{-- ── Judul ── --}}
@@ -94,9 +116,12 @@
     <hr class="divider">
 
     {{-- ── Pembuka ── --}}
+    @php
+        $namaGuru = optional($izin->diprosesOleh)->name ?? 'Guru Piket';
+    @endphp
     <p class="pembuka">
         Yang bertanda tangan di bawah ini, guru piket
-        <strong>{{ $guruPiketAktif?->nama_lengkap ?? 'Guru Piket' }}</strong>,
+        <strong>{{ $namaGuru }}</strong>,
         menerangkan bahwa siswa tersebut di bawah telah mendapat izin untuk meninggalkan lingkungan sekolah:
     </p>
 
@@ -105,12 +130,12 @@
         <tr>
             <td class="col-key">Nama Siswa</td>
             <td class="col-sep">:</td>
-            <td class="col-val">{{ $izin->siswa->nama_lengkap ?? '—' }}</td>
+            <td class="col-val">{{ optional($izin->siswa)->nama_lengkap ?? '—' }}</td>
         </tr>
         <tr>
             <td class="col-key">Kelas</td>
             <td class="col-sep">:</td>
-            <td class="col-val">{{ $izin->siswa->kelas->nama_kelas ?? '—' }}</td>
+            <td class="col-val">{{ optional(optional($izin->siswa)->kelas)->nama_kelas ?? '—' }}</td>
         </tr>
         <tr>
             <td class="col-key">Tanggal</td>
@@ -186,18 +211,33 @@
         Siswa yang bersangkutan diharapkan kembali ke sekolah tepat waktu sesuai ketentuan yang berlaku.
     </p>
 
-    {{-- ── Tanda Tangan — satu TTD, rata kanan ── --}}
+    {{-- ── Tanda Tangan ── --}}
+    {{--
+        Sumber data TTD: $izin->diprosesOleh (relasi ke User).
+        NIP tidak ada di User model — hanya ada di Guru model.
+        Jika ingin tampilkan NIP, perlu load relasi guru:
+        $izin->diprosesOleh->guru->nip (pastikan relasi ada di User model).
+        Untuk sekarang hanya tampilkan nama dari User.
+    --}}
     <div class="ttd-wrap">
         <span class="ttd-role">Guru Piket,</span>
-        <span class="ttd-kota">{{ $izin->tanggal->translatedFormat('d F Y') }}</span>
-        @if($guruPiketAktif)
-            <span class="ttd-nama">{{ $guruPiketAktif->nama_lengkap }}</span>
-            @if(!empty($guruPiketAktif->nip))
-                <span class="ttd-nip">NIP. {{ $guruPiketAktif->nip }}</span>
-            @endif
+        <span class="ttd-kota">
+            {{ $profil->kota ?? '' }}{{ ($profil->kota ?? false) ? ', ' : '' }}{{ $izin->tanggal->translatedFormat('d F Y') }}
+        </span>
+
+        @if($izin->diprosesOleh)
+            <span class="ttd-nama">{{ $izin->diprosesOleh->name }}</span>
+            {{--
+                Uncomment baris berikut jika User punya relasi guru()
+                dan ingin tampilkan NIP:
+                @if(optional($izin->diprosesOleh->guru)->nip)
+                    <span class="ttd-nip">NIP. {{ $izin->diprosesOleh->guru->nip }}</span>
+                @endif
+            --}}
         @else
             <span class="ttd-nama">( _________________________ )</span>
         @endif
+
         <span class="ttd-jabatan">Guru Piket</span>
     </div>
 

@@ -105,12 +105,12 @@
     /* Pagination */
     .pag-wrap{display:flex;align-items:center;justify-content:space-between;padding:14px 0;flex-wrap:wrap;gap:10px}
     .pag-info{font-size:12.5px;color:var(--text3)}
-    .pag-btns{display:flex;gap:4px}
+    .pag-btns{display:flex;gap:4px;align-items:center}
     .pag-btn{height:32px;min-width:32px;padding:0 8px;border-radius:7px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border);background:var(--surface);color:var(--text2);font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s;text-decoration:none}
     .pag-btn:hover{background:var(--surface2)}
     .pag-btn.active{background:var(--brand-600);border-color:var(--brand-600);color:#fff}
     .pag-btn.disabled{opacity:.4;pointer-events:none}
-    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 4px}
+    .pag-ellipsis{color:var(--text3);font-size:13px;padding:0 2px;user-select:none}
 
     @media(max-width:768px){
         .stats-strip{grid-template-columns:1fr 1fr}
@@ -118,15 +118,18 @@
         .jadwal-grid{grid-template-columns:1fr}
         .checkin-banner{flex-direction:column}
     }
+    @media(max-width:480px){
+        .stats-strip{grid-template-columns:1fr}
+    }
 </style>
 
 <div class="page">
 
     @php
         // Mapping statis dayOfWeek → nama hari Indonesia via model
-        // (sama persis dengan JadwalPiketGuru::getNamaHari())
         $hariIniStr = \App\Models\JadwalPiketGuru::getNamaHari(now());
 
+        // Singkatan hari untuk badge di card
         $hariMap = [
             'senin'  => 'SEN',
             'selasa' => 'SEL',
@@ -144,13 +147,6 @@
             <h1 class="page-title">Jadwal Piket Saya</h1>
             <p class="page-sub">Daftar hari dan jam piket yang dijadwalkan untuk Anda</p>
         </div>
-        {{--
-            FIX: tombol Check-In hanya ditampilkan saat sudah check-in ($belumCheckin = false),
-            karena kalau belum check-in ada banner khusus di bawah yang meminta check-in.
-            Kode lama memakai !$belumCheckin yang logikanya terbalik untuk konteks ini —
-            sebenarnya sudah benar: tombol di header = shortcut bagi yang sudah login aktif.
-            Biarkan sesuai desain asli.
-        --}}
         @if(!$belumCheckin)
         <a href="{{ route('piket.log.checkin') }}" class="btn btn-primary">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
@@ -190,9 +186,8 @@
             <div>
                 <p class="stat-label">Total Jadwal</p>
                 {{--
-                    FIX: saat belumCheckin, controller mengirim LengthAwarePaginator kosong
-                    sehingga $jadwal->total() aman dipanggil (return 0).
-                    Tampilkan '—' jika belumCheckin agar tidak membingungkan.
+                    FIX: saat belumCheckin, $jadwal adalah LengthAwarePaginator kosong
+                    (total = 0). Tampilkan '—' agar tidak membingungkan.
                 --}}
                 <p class="stat-val">{{ $belumCheckin ? '—' : $jadwal->total() }}</p>
                 <p class="stat-sub">aktif &amp; nonaktif</p>
@@ -215,10 +210,6 @@
             <div>
                 <p class="stat-label">Jadwal Hari Ini</p>
                 @if($jadwalHariIni)
-                    {{--
-                        FIX: jam_mulai & jam_selesai adalah string time dari DB.
-                        Carbon::parse() aman untuk format 'H:i:s' maupun 'H:i'.
-                    --}}
                     <p class="stat-val">{{ \Carbon\Carbon::parse($jadwalHariIni->jam_mulai)->format('H:i') }}</p>
                     <p class="stat-sub">s/d {{ \Carbon\Carbon::parse($jadwalHariIni->jam_selesai)->format('H:i') }}</p>
                 @else
@@ -236,12 +227,6 @@
     <div class="today-card">
         <div>
             <p class="today-label">Jadwal Piket Hari Ini</p>
-            {{--
-                FIX: now()->locale('id')->isoFormat('j F Y') tidak valid.
-                Gunakan Carbon dengan locale 'id' dan format isoFormat yang benar,
-                atau translatedFormat() — keduanya aman selama locale ID tersedia.
-                Pakai isoFormat('D MMMM Y') yang sudah terbukti stabil di Carbon.
-            --}}
             <p class="today-val">{{ ucfirst($jadwalHariIni->hari) }}, {{ now()->locale('id')->isoFormat('D MMMM Y') }}</p>
             <p class="today-sub">
                 {{ \Carbon\Carbon::parse($jadwalHariIni->jam_mulai)->format('H:i') }}
@@ -266,10 +251,6 @@
     <div class="filter-card">
         <form method="GET" action="{{ route('piket.jadwal.index') }}">
             <div class="filter-row">
-                {{--
-                    FIX: $tahunAjaranList dari controller adalah Collection (bukan null),
-                    cukup cek isNotEmpty(). Tidak perlu isset() karena selalu dikirim.
-                --}}
                 @if($tahunAjaranList->isNotEmpty())
                 <div class="filter-field">
                     <label for="tahun_ajaran_id">Tahun Ajaran</label>
@@ -289,8 +270,8 @@
                     <select id="is_active" name="is_active">
                         <option value="">Semua Status</option>
                         {{--
-                            FIX: request() selalu mengembalikan string, bandingkan dengan '==='
-                            agar '0' tidak dievaluasi falsy oleh PHP.
+                            FIX: request() mengembalikan string, bandingkan dengan '===' string
+                            agar '0' tidak dievaluasi falsy.
                         --}}
                         <option value="1" {{ request('is_active') === '1' ? 'selected' : '' }}>Aktif</option>
                         <option value="0" {{ request('is_active') === '0' ? 'selected' : '' }}>Nonaktif</option>
@@ -304,21 +285,33 @@
     </div>
     @endif
 
+    {{--
+        ════════════════════════════════════════════════════════════════
+        FIX STRUKTUR @if PALING KRUSIAL:
+
+        Versi lama menempatkan rekap log bulan ini DI DALAM blok
+        `@if(!$belumCheckin && $jadwal->count())` yang sama dengan jadwal grid,
+        sehingga rekap tidak pernah muncul jika jadwal kosong (karena `@elseif`
+        menangkapnya). Selain itu `@elseif(!$belumCheckin)` di sana memunculkan
+        empty state, namun posisinya sebagai @elseif dari kondisi jadwal->count()
+        berarti hanya tampil jika $jadwal->count() == 0.
+
+        Perbaikan: pisahkan tiga blok menjadi kondisi independen:
+          1. Grid jadwal + pagination  → @if(!$belumCheckin && $jadwal->count())
+          2. Empty state               → @if(!$belumCheckin && !$jadwal->count())
+          3. Rekap log bulan ini       → @if(!$belumCheckin && $logBulanIni->isNotEmpty())
+        ════════════════════════════════════════════════════════════════
+    --}}
+
     {{-- ── Jadwal Grid ── --}}
     @if(!$belumCheckin && $jadwal->count())
     <div class="jadwal-grid">
         @foreach($jadwal as $j)
         @php
-            // $hariIniStr sudah dihitung via getNamaHari() di @php atas — tidak diulang.
-            $isToday = $j->hari === $hariIniStr;
-
-            // Ambil singkatan hari; fallback ke 3 huruf kapital pertama jika tidak ada di map.
+            $isToday   = $j->hari === $hariIniStr;
             $hariBadge = $hariMap[$j->hari] ?? strtoupper(substr($j->hari, 0, 3));
-
-            // Hitung durasi menit langsung dari jam_mulai & jam_selesai.
-            // Menggunakan diffInMinutes agar akurat meski melewati tengah malam.
-            $durMenit = \Carbon\Carbon::parse($j->jam_mulai)
-                            ->diffInMinutes(\Carbon\Carbon::parse($j->jam_selesai));
+            $durMenit  = \Carbon\Carbon::parse($j->jam_mulai)
+                             ->diffInMinutes(\Carbon\Carbon::parse($j->jam_selesai));
         @endphp
         <div class="jadwal-card {{ $isToday ? 'today-jadwal' : '' }} {{ !$j->is_active ? 'inactive' : '' }}">
             <div class="jadwal-card-header">
@@ -328,10 +321,6 @@
                 <div style="flex:1">
                     <p class="jadwal-card-hari">{{ ucfirst($j->hari) }}</p>
                     <p class="jadwal-card-tanggal">
-                        {{--
-                            FIX: relasi tahunAjaran sudah di-eager load via with('tahunAjaran')
-                            di controller. Null-safe operator (?->) mencegah error jika null.
-                        --}}
                         {{ $j->tahunAjaran?->tahun ?? '—' }}
                         @if($j->tahunAjaran?->semester)
                             / {{ $j->tahunAjaran->semester }}
@@ -355,7 +344,6 @@
                     <span class="meta-chip {{ $j->is_active ? 'aktif' : 'nonaktif' }}">
                         {{ $j->is_active ? '● Aktif' : '○ Nonaktif' }}
                     </span>
-                    {{-- Tampilkan durasi jika lebih dari 0 menit --}}
                     @if($durMenit > 0)
                     <span class="meta-chip nonaktif" style="border-color:var(--border2)">
                         {{ intdiv($durMenit, 60) }}j {{ $durMenit % 60 }}m
@@ -391,13 +379,32 @@
                 </a>
             @endif
 
-            {{-- Page numbers dengan ellipsis --}}
+            {{--
+                FIX: Pagination dengan ellipsis yang benar.
+                Logika lama bisa menghasilkan double-ellipsis berturutan (misal halaman
+                3 dari 10 → "1 … 2 3 4 … 10" benar, tapi halaman 1 dari 10 → "1 2 … 10"
+                bisa menjadi "1 2 … … 10" jika abs(page - current) == 2 untuk dua halaman
+                berbeda. Perbaiki dengan tracking apakah ellipsis terakhir sudah ditulis.
+            --}}
+            @php $lastWasEllipsis = false; @endphp
             @foreach($jadwal->getUrlRange(1, $jadwal->lastPage()) as $page => $url)
-                @if($page == $jadwal->currentPage())
-                    <span class="pag-btn active">{{ $page }}</span>
-                @elseif($page == 1 || $page == $jadwal->lastPage() || abs($page - $jadwal->currentPage()) <= 1)
-                    <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                @elseif(abs($page - $jadwal->currentPage()) == 2)
+                @php
+                    $current    = $jadwal->currentPage();
+                    $last       = $jadwal->lastPage();
+                    $showPage   = $page == $current
+                               || $page == 1
+                               || $page == $last
+                               || abs($page - $current) <= 1;
+                @endphp
+                @if($showPage)
+                    @php $lastWasEllipsis = false; @endphp
+                    @if($page == $current)
+                        <span class="pag-btn active">{{ $page }}</span>
+                    @else
+                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
+                    @endif
+                @elseif(!$lastWasEllipsis)
+                    @php $lastWasEllipsis = true; @endphp
                     <span class="pag-ellipsis">…</span>
                 @endif
             @endforeach
@@ -415,14 +422,32 @@
         </div>
     </div>
     @endif
+    @endif
+    {{-- /Jadwal Grid --}}
 
-    {{-- ── Rekap Log Bulan Ini ── --}}
+    {{-- ── Empty state: sudah check-in tapi tidak ada jadwal ── --}}
+    @if(!$belumCheckin && !$jadwal->count())
+    <div class="empty-state">
+        <div class="empty-icon">
+            <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        </div>
+        <p class="empty-title">Belum ada jadwal piket</p>
+        <p class="empty-sub">
+            @if(request()->hasAny(['tahun_ajaran_id', 'is_active']))
+                Tidak ada jadwal yang sesuai dengan filter. <a href="{{ route('piket.jadwal.index') }}" style="color:var(--brand-600);text-decoration:none;font-weight:600">Reset filter</a>
+            @else
+                Jadwal piket Anda akan muncul di sini setelah ditambahkan oleh admin.
+            @endif
+        </p>
+    </div>
+    @endif
+
     {{--
-        FIX: $logBulanIni adalah Collection (bukan paginator) karena controller
-        memakai ->get(). Gunakan ->isNotEmpty() dan ->take() yang merupakan method
-        Collection, bukan paginator.
+        FIX: Rekap log bulan ini sekarang berdiri sebagai blok independen,
+        bukan di dalam blok jadwal grid. Akan tampil selama sudah check-in
+        dan ada log bulan ini — tidak peduli apakah ada jadwal atau tidak.
     --}}
-    @if($logBulanIni->isNotEmpty())
+    @if(!$belumCheckin && $logBulanIni->isNotEmpty())
     <div class="rekap-card">
         <p class="rekap-title">
             <svg width="14" height="14" fill="none" stroke="var(--brand-600)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -431,7 +456,6 @@
         <div class="log-list">
             @foreach($logBulanIni->take(10) as $log)
             @php
-                // Carbon::parse() aman baik untuk Carbon object maupun string datetime dari DB.
                 $masuk       = $log->masuk_pada  ? \Carbon\Carbon::parse($log->masuk_pada)  : null;
                 $keluar      = $log->keluar_pada ? \Carbon\Carbon::parse($log->keluar_pada) : null;
                 $durMenitLog = ($masuk && $keluar) ? $masuk->diffInMinutes($keluar) : null;
@@ -448,7 +472,7 @@
                     @if($keluar)
                         → Keluar {{ $keluar->format('H:i') }}
                     @else
-                        Belum checkout
+                        <span style="color:var(--piket-700);font-weight:600">Belum checkout</span>
                     @endif
                 </p>
                 @if($durMenitLog !== null)
@@ -457,17 +481,6 @@
             </div>
             @endforeach
         </div>
-    </div>
-    @endif
-
-    @elseif(!$belumCheckin)
-    {{-- Sudah check-in tapi tidak ada jadwal --}}
-    <div class="empty-state">
-        <div class="empty-icon">
-            <svg width="24" height="24" fill="none" stroke="#94a3b8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-        </div>
-        <p class="empty-title">Belum ada jadwal piket</p>
-        <p class="empty-sub">Jadwal piket Anda akan muncul di sini setelah ditambahkan oleh admin</p>
     </div>
     @endif
 

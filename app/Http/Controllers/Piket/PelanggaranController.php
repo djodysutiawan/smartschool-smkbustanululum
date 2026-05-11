@@ -9,76 +9,82 @@ use App\Models\LogPiket;
 use App\Models\Pelanggaran;
 use App\Models\Siswa;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use Illuminate\View\View;
 
 class PelanggaranController extends Controller
 {
-    // -------------------------------------------------------------------------
-    // Piket hanya boleh input/edit: pending | diproses
-    // selesai, banding, dibatalkan → hanya Admin
-    // -------------------------------------------------------------------------
-    private const STATUS_INPUT = ['pending', 'diproses'];
-    private const STATUS_LIST  = ['pending', 'diproses', 'selesai', 'banding', 'dibatalkan'];
+    /**
+     * Status yang boleh diinput/diedit oleh piket.
+     */
+    private const STATUS_INPUT = [
+        Pelanggaran::STATUS_PENDING,
+        Pelanggaran::STATUS_DIPROSES,
+    ];
 
     // =========================================================================
     // INDEX
     // =========================================================================
 
-    public function index(Request $request)
+    public function index(Request $request): View
     {
         $userId      = Auth::id();
-        $logAktif    = $this->getLogAktif($userId);
-        $guruAktifId = $logAktif ? $userId : null;
+        $guruAktifId = $this->resolveGuruAktifId($userId);
 
-        // Aktif piket  → tampilkan milik sendiri
-        // Tidak aktif  → tampilkan semua pelanggaran hari ini (read-only)
-        $query = Pelanggaran::with(['siswa.kelas', 'kategori', 'dicatatOleh'])
-            ->when($guruAktifId,   fn (Builder $q) => $q->where('dicatat_oleh', $userId))
-            ->when(! $guruAktifId, fn (Builder $q) => $q->whereDate('tanggal', today()));
+        $query = Pelanggaran::with(['siswa.kelas', 'kategori', 'dicatatOleh']);
 
-        if ($request->filled('kategori_id')) {
-            $query->where('kategori_pelanggaran_id', $request->kategori_id);
+        if ($guruAktifId) {
+            $query->where('dicatat_oleh', $userId);
+        } else {
+            $query->whereDate('tanggal', today());
         }
-        if ($request->filled('status')) {
+
+        // ── Filter ──────────────────────────────────────────────────────────
+        if ($request->filled('kategori_id')) {
+            $query->where('kategori_pelanggaran_id', $request->integer('kategori_id'));
+        }
+
+        if ($request->filled('status') && in_array($request->status, Pelanggaran::STATUSES, true)) {
             $query->where('status', $request->status);
         }
+
         if ($request->filled('kelas_id')) {
-            $query->whereHas('siswa', fn (Builder $q) => $q->where('kelas_id', $request->kelas_id));
+            $query->whereHas('siswa', fn (Builder $q) =>
+                $q->where('kelas_id', $request->integer('kelas_id'))
+            );
         }
+
         if ($request->filled('tanggal_dari')) {
             $query->whereDate('tanggal', '>=', $request->tanggal_dari);
         }
+
         if ($request->filled('tanggal_sampai')) {
             $query->whereDate('tanggal', '<=', $request->tanggal_sampai);
         }
+
         if ($request->filled('search')) {
-            $s = $request->search;
-            $query->whereHas('siswa', fn (Builder $q) => $q
-                ->where('nama_lengkap', 'like', "%{$s}%")
-                ->orWhere('nis', 'like', "%{$s}%"));
+            $s = trim($request->search);
+            $query->whereHas('siswa', fn (Builder $q) =>
+                $q->where('nama_lengkap', 'like', "%{$s}%")
+                  ->orWhere('nis', 'like', "%{$s}%")
+            );
         }
 
-        $pelanggaran = $query->latest('tanggal')->paginate(20)->withQueryString();
+        $pelanggaran = $query->latest('tanggal')->latest('id')->paginate(20)->withQueryString();
 
-        $statsBase = $guruAktifId
-            ? Pelanggaran::where('dicatat_oleh', $userId)
-            : Pelanggaran::whereDate('tanggal', today());
+        // ── Stats ────────────────────────────────────────────────────────────
+        $stats = $this->buildStats($userId, (bool) $guruAktifId);
 
-        $stats = [
-            'total'     => (clone $statsBase)->count(),
-            'diproses'  => (clone $statsBase)->where('status', 'diproses')->count(),
-            'bulan_ini' => (clone $statsBase)
-                ->whereMonth('tanggal', now()->month)
-                ->whereYear('tanggal', now()->year)
-                ->count(),
-            'selesai'   => (clone $statsBase)->where('status', 'selesai')->count(),
-        ];
-
-        $kategoriList = KategoriPelanggaran::orderBy('nama')->get();
+        // ── Lookup data untuk filter ─────────────────────────────────────────
+        // FIX: Assign semua variabel SEBELUM compact() dipanggil.
+        // Bug asal: compact() dipanggil dulu, lalu ->with([...]) assign variabel
+        // setelahnya — PHP sudah mengeksekusi compact() dengan variabel undefined.
+        $kategoriList = KategoriPelanggaran::aktif()->orderBy('nama')->get();
         $kelasList    = Kelas::aktif()->orderBy('nama_kelas')->get();
-        $statusList   = self::STATUS_LIST;
+        $statusList   = Pelanggaran::STATUSES;
 
         return view('piket.pelanggaran.index', compact(
             'pelanggaran',
@@ -91,33 +97,36 @@ class PelanggaranController extends Controller
     }
 
     // =========================================================================
-    // CREATE & STORE
-    // — Tidak diblokir meski belum check-in.
-    //   View akan tampilkan banner peringatan via $guruAktifId === null.
+    // CREATE
     // =========================================================================
 
-    public function create()
+    public function create(): View
     {
         $userId      = Auth::id();
-        $guruAktifId = $this->getLogAktif($userId) ? $userId : null;
+        $guruAktifId = $this->resolveGuruAktifId($userId);
 
+        // FIX: assign variabel dulu, baru compact — konsisten dengan index()
         $siswaList    = Siswa::aktif()->with('kelas')->orderBy('nama_lengkap')->get();
         $kategoriList = KategoriPelanggaran::aktif()->orderBy('nama')->get();
 
         return view('piket.pelanggaran.create', compact(
             'siswaList',
             'kategoriList',
-            'guruAktifId', // null = belum check-in → view tampilkan banner peringatan
+            'guruAktifId',
         ));
     }
 
-    public function store(Request $request)
+    // =========================================================================
+    // STORE
+    // =========================================================================
+
+    public function store(Request $request): RedirectResponse
     {
-        $validated = $request->validate($this->rules(), $this->messages());
+        $validated = $request->validate($this->storeRules(), $this->messages());
 
-        $validated['dicatat_oleh'] = Auth::id();
-
-        Pelanggaran::create($validated);
+        Pelanggaran::create(array_merge($validated, [
+            'dicatat_oleh' => Auth::id(),
+        ]));
 
         return redirect()
             ->route('piket.pelanggaran.index')
@@ -126,19 +135,16 @@ class PelanggaranController extends Controller
 
     // =========================================================================
     // SHOW
-    // — Semua piket boleh lihat, tidak ada ownership check.
     // =========================================================================
 
-    public function show(Pelanggaran $pelanggaran)
+    public function show(Pelanggaran $pelanggaran): View
     {
         $pelanggaran->load(['siswa.kelas', 'kategori', 'dicatatOleh']);
 
-        // Konsisten dengan AdminController: exclude dibatalkan & banding
         $totalPoinSiswa = Pelanggaran::where('siswa_id', $pelanggaran->siswa_id)
-            ->whereNotIn('status', ['dibatalkan', 'banding'])
+            ->whereNotIn('status', [Pelanggaran::STATUS_DIBATALKAN, Pelanggaran::STATUS_BANDING])
             ->sum('poin');
 
-        // Riwayat lain milik siswa yang sama (limit 10, sama dengan Admin)
         $riwayatPelanggaran = Pelanggaran::where('siswa_id', $pelanggaran->siswa_id)
             ->where('id', '!=', $pelanggaran->id)
             ->with('kategori')
@@ -146,28 +152,26 @@ class PelanggaranController extends Controller
             ->limit(10)
             ->get();
 
+        $isOwner = $pelanggaran->dicatat_oleh === Auth::id();
+
         return view('piket.pelanggaran.show', compact(
             'pelanggaran',
             'totalPoinSiswa',
             'riwayatPelanggaran',
+            'isOwner',
         ));
     }
 
     // =========================================================================
-    // EDIT & UPDATE
-    // — Hanya pencatat asli, hanya saat status masih 'pending'.
+    // EDIT
     // =========================================================================
 
-    public function edit(Pelanggaran $pelanggaran)
+    public function edit(Pelanggaran $pelanggaran): View
     {
         $this->authorizeOwnership($pelanggaran);
+        $this->authorizeEditableStatus($pelanggaran);
 
-        abort_unless(
-            $pelanggaran->status === 'pending',
-            403,
-            'Pelanggaran yang sudah diproses tidak dapat diedit. Hubungi Admin.'
-        );
-
+        // FIX: assign dulu baru compact, sama polanya dengan method lain
         $siswaList    = Siswa::aktif()->with('kelas')->orderBy('nama_lengkap')->get();
         $kategoriList = KategoriPelanggaran::aktif()->orderBy('nama')->get();
         $statusList   = self::STATUS_INPUT;
@@ -180,18 +184,18 @@ class PelanggaranController extends Controller
         ));
     }
 
-    public function update(Request $request, Pelanggaran $pelanggaran)
+    // =========================================================================
+    // UPDATE
+    // =========================================================================
+
+    public function update(Request $request, Pelanggaran $pelanggaran): RedirectResponse
     {
         $this->authorizeOwnership($pelanggaran);
+        $this->authorizeEditableStatus($pelanggaran);
 
-        abort_unless(
-            $pelanggaran->status === 'pending',
-            403,
-            'Pelanggaran yang sudah diproses tidak dapat diedit. Hubungi Admin.'
-        );
+        $validated = $request->validate($this->storeRules(), $this->messages());
 
-        $validated = $request->validate($this->rules(), $this->messages());
-
+        unset($validated['dicatat_oleh']);
         $pelanggaran->update($validated);
 
         return redirect()
@@ -201,27 +205,29 @@ class PelanggaranController extends Controller
 
     // =========================================================================
     // SELESAIKAN
-    // — Hanya pencatat asli, hanya saat pending | diproses.
-    //   Selaras penuh dengan AdminController::selesaikan().
     // =========================================================================
 
-    public function selesaikan(Request $request, Pelanggaran $pelanggaran)
+    public function selesaikan(Request $request, Pelanggaran $pelanggaran): RedirectResponse
     {
         $this->authorizeOwnership($pelanggaran);
 
-        if (! in_array($pelanggaran->status, ['pending', 'diproses'])) {
+        if (! in_array($pelanggaran->status, [Pelanggaran::STATUS_PENDING, Pelanggaran::STATUS_DIPROSES], true)) {
             return back()->with(
                 'error',
-                'Pelanggaran tidak dapat diselesaikan karena statusnya sudah ' . $pelanggaran->status . '.'
+                'Pelanggaran tidak dapat diselesaikan karena statusnya sudah ' . ucfirst($pelanggaran->status) . '.'
             );
         }
 
         $request->validate(
             ['tindakan' => ['nullable', 'string', 'max:500']],
-            ['tindakan.max' => 'Tindakan maksimal 500 karakter.']
+            ['tindakan.max' => 'Catatan tindakan maksimal 500 karakter.']
         );
 
-        $pelanggaran->selesaikan($request->tindakan ?? $pelanggaran->tindakan ?? '-');
+        $tindakan = $request->filled('tindakan')
+            ? $request->tindakan
+            : ($pelanggaran->tindakan ?? '-');
+
+        $pelanggaran->selesaikan($tindakan);
 
         return back()->with('success', 'Pelanggaran berhasil diselesaikan.');
     }
@@ -230,23 +236,32 @@ class PelanggaranController extends Controller
     // PRIVATE HELPERS
     // =========================================================================
 
-    /**
-     * Cek log piket aktif hari ini (sudah check-in, belum checkout).
-     * Dipakai untuk konteks tampilan — bukan hard-block akses.
-     */
-    private function getLogAktif(int $userId): ?object
+    private function resolveGuruAktifId(int $userId): ?int
     {
-        return LogPiket::where('pengguna_id', $userId)
-            ->whereDate('tanggal', today())
-            ->whereNotNull('masuk_pada')
-            ->whereNull('keluar_pada')
-            ->first();
+        $aktif = LogPiket::where('pengguna_id', $userId)
+            ->aktifHariIni()
+            ->exists();
+
+        return $aktif ? $userId : null;
     }
 
-    /**
-     * Hanya pencatat asli (dicatat_oleh) yang boleh mutasi data.
-     * show() tidak melewati ini — semua piket boleh lihat.
-     */
+    private function buildStats(int $userId, bool $isAktif): array
+    {
+        $base = fn () => $isAktif
+            ? Pelanggaran::where('dicatat_oleh', $userId)
+            : Pelanggaran::whereDate('tanggal', today());
+
+        return [
+            'total'     => $base()->count(),
+            'diproses'  => $base()->where('status', Pelanggaran::STATUS_DIPROSES)->count(),
+            'bulan_ini' => $base()
+                ->whereMonth('tanggal', now()->month)
+                ->whereYear('tanggal', now()->year)
+                ->count(),
+            'selesai'   => $base()->where('status', Pelanggaran::STATUS_SELESAI)->count(),
+        ];
+    }
+
     private function authorizeOwnership(Pelanggaran $pelanggaran): void
     {
         abort_unless(
@@ -256,15 +271,20 @@ class PelanggaranController extends Controller
         );
     }
 
-    /**
-     * Validasi — diselaraskan penuh dengan AdminController.
-     * Status dibatasi hanya STATUS_INPUT (pending | diproses).
-     */
-    private function rules(): array
+    private function authorizeEditableStatus(Pelanggaran $pelanggaran): void
+    {
+        abort_unless(
+            $pelanggaran->status === Pelanggaran::STATUS_PENDING,
+            403,
+            'Pelanggaran yang sudah diproses tidak dapat diedit. Hubungi Admin.'
+        );
+    }
+
+    private function storeRules(): array
     {
         return [
-            'siswa_id'                => ['required', 'exists:siswa,id'],
-            'kategori_pelanggaran_id' => ['required', 'exists:kategori_pelanggaran,id'],
+            'siswa_id'                => ['required', 'integer', 'exists:siswa,id'],
+            'kategori_pelanggaran_id' => ['required', 'integer', 'exists:kategori_pelanggaran,id'],
             'poin'                    => ['required', 'integer', 'min:1', 'max:100'],
             'deskripsi'               => ['required', 'string', 'max:1000'],
             'tanggal'                 => ['required', 'date', 'before_or_equal:today'],
@@ -281,11 +301,11 @@ class PelanggaranController extends Controller
             'kategori_pelanggaran_id.required' => 'Kategori pelanggaran wajib dipilih.',
             'kategori_pelanggaran_id.exists'   => 'Kategori tidak valid.',
             'poin.required'                    => 'Poin wajib diisi.',
-            'poin.integer'                     => 'Poin harus berupa angka.',
+            'poin.integer'                     => 'Poin harus berupa angka bulat.',
             'poin.min'                         => 'Poin minimal 1.',
             'poin.max'                         => 'Poin maksimal 100.',
             'deskripsi.required'               => 'Deskripsi pelanggaran wajib diisi.',
-            'deskripsi.max'                    => 'Deskripsi maksimal 1000 karakter.',
+            'deskripsi.max'                    => 'Deskripsi maksimal 1.000 karakter.',
             'tanggal.required'                 => 'Tanggal wajib diisi.',
             'tanggal.date'                     => 'Format tanggal tidak valid.',
             'tanggal.before_or_equal'          => 'Tanggal tidak boleh melebihi hari ini.',

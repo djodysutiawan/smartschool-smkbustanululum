@@ -13,46 +13,47 @@ use Illuminate\View\View;
  * Guru piket hanya bisa MEMBACA pengumuman — tidak bisa membuat,
  * mengedit, menghapus, atau mempublikasikan (itu wewenang admin).
  *
- * Batasan akses:
- *  - Hanya tampilkan pengumuman yang sudah dipublikasikan
- *  - Hanya tampilkan target_role 'semua' atau 'guru_piket'
- *  - Pengumuman yang sudah kadaluarsa tidak ditampilkan (index)
- *    dan tidak bisa diakses langsung via URL (show) → 404
+ * Batasan akses (berlaku di index DAN show):
+ *  1. Sudah dipublikasikan (dipublikasikan_pada NOT NULL dan <= now())
+ *  2. Target role: 'semua' atau 'guru_piket'
+ *  3. Belum kadaluarsa (kadaluarsa_pada NULL atau masih di masa depan)
+ *
+ * Semua filter di atas di-compose via scope Pengumuman::untukPiket()
+ * agar tidak ada inkonsistensi antara index dan show.
  *
  * Views: resources/views/piket/pengumuman/
  */
 class PengumumanController extends Controller
 {
-    private const VIEW_PREFIX       = 'piket.pengumuman.';
-    private const TARGET_ROLE_PIKET = ['semua', 'guru_piket'];
+    private const VIEW_PREFIX  = 'piket.pengumuman.';
+    private const SIDEBAR_LIMIT = 5;
 
     // ── INDEX ─────────────────────────────────────────────────────────────────
 
     /**
      * Daftar pengumuman yang relevan dan masih berlaku untuk guru piket.
      *
-     * Urutan tampil:
-     *  1. Pengumuman yang di-pin (dipinned = true) paling atas
-     *  2. Setelah itu urut terbaru (dipublikasikan_pada DESC)
+     * Urutan: pinned dulu → terbaru (via scopeUrutan).
+     * Pencarian: judul LIKE atau isi LIKE jika ada query 'search'.
+     *
+     * FIX: Gunakan scope untukPiket() agar kondisi filter konsisten dengan show().
+     * Versi sebelumnya menuliskan kondisi filter secara manual di sini sehingga
+     * berbeda dengan kondisi di show() dan rentan drift ketika salah satu diubah.
      */
     public function index(Request $request): View
     {
         $query = Pengumuman::with('dibuatOleh')
-            ->whereNotNull('dipublikasikan_pada')
-            ->whereIn('target_role', self::TARGET_ROLE_PIKET)
-            ->where(function ($q) {
-                // Pengumuman yang belum kadaluarsa atau tidak ada batas kadaluarsa
-                $q->whereNull('kadaluarsa_pada')
-                  ->orWhere('kadaluarsa_pada', '>', now());
-            })
-            ->orderByDesc('dipinned')
-            ->orderByDesc('dipublikasikan_pada');
+            ->untukPiket()
+            ->urutan();
 
+        // Filter pencarian — hanya diaplikasikan jika ada keyword
         if ($request->filled('search')) {
-            $keyword = $request->search;
+            // trim() untuk menghapus spasi terdepan/terbelakang dari input user
+            $keyword = trim($request->string('search'));
+
             $query->where(function ($q) use ($keyword) {
-                $q->where('judul', 'like', "%{$keyword}%")
-                  ->orWhere('isi', 'like', "%{$keyword}%");
+                $q->where('judul', 'like', '%' . $keyword . '%')
+                  ->orWhere('isi', 'like', '%' . $keyword . '%');
             });
         }
 
@@ -61,57 +62,47 @@ class PengumumanController extends Controller
         return view(self::VIEW_PREFIX . 'index', compact('pengumuman'));
     }
 
-    // ── SHOW ─────────────────────────────────────────────────────────────────
+    // ── SHOW ──────────────────────────────────────────────────────────────────
 
     /**
      * Detail satu pengumuman.
      *
-     * Guard (semua harus terpenuhi, jika tidak → 404):
-     *  1. Sudah dipublikasikan (dipublikasikan_pada tidak null)
-     *  2. Target role sesuai ('semua' atau 'guru_piket')
-     *  3. Belum kadaluarsa (kadaluarsa_pada null atau masih di masa depan)
+     * Guard: semua kondisi dari scope untukPiket() harus terpenuhi.
+     * Jika tidak → 404 (tidak membocorkan info pengumuman yang ada tapi
+     * belum/tidak boleh ditampilkan).
      *
-     * Tampilkan juga 5 pengumuman lain yang masih aktif di sidebar
-     * agar piket bisa berpindah tanpa harus kembali ke daftar.
+     * FIX versi sebelumnya:
+     *  1. Hanya cek dipublikasikan_pada !== null, tidak cek <= now()
+     *     → pengumuman terjadwal masa depan bisa diakses via URL langsung.
+     *  2. Kondisi guard berbeda dari index → inkonsistensi akses.
+     *  3. abort_if(null !== null && null->isPast()) rentan logical error
+     *     pada PHP versi tertentu jika short-circuit berubah semantik.
+     *
+     * FIX sekarang: re-query dengan scope yang sama persis dengan index()
+     * menggunakan findOrFail agar auto-404 jika tidak lolos semua kondisi.
      */
-    public function show(Pengumuman $pengumuman): View
+    public function show(int $id): View
     {
-        // Guard: belum dipublikasikan
-        abort_unless(
-            $pengumuman->dipublikasikan_pada !== null,
-            404,
-            'Pengumuman tidak ditemukan.'
-        );
-
-        // Guard: target role tidak sesuai
-        abort_unless(
-            in_array($pengumuman->target_role, self::TARGET_ROLE_PIKET, true),
-            404,
-            'Pengumuman tidak ditemukan.'
-        );
-
-        // Guard: sudah kadaluarsa
-        // (berbeda dengan index yang otomatis filter — di sini akses langsung via URL)
-        abort_if(
-            $pengumuman->kadaluarsa_pada !== null && $pengumuman->kadaluarsa_pada->isPast(),
-            404,
-            'Pengumuman ini sudah tidak berlaku.'
-        );
+        /**
+         * Re-query dengan scope untukPiket() untuk memastikan pengumuman
+         * yang diakses memenuhi semua syarat yang sama dengan index().
+         * Ini adalah pola "scope-guarded show" yang aman dan konsisten:
+         * jika suatu pengumuman tidak muncul di index, ia juga tidak bisa
+         * diakses di show — tidak ada celah bypass via URL langsung.
+         */
+        $pengumuman = Pengumuman::untukPiket()
+            ->where('id', $id)
+            ->firstOrFail();
 
         $pengumuman->load('dibuatOleh');
 
-        // 5 pengumuman lain yang masih aktif (untuk sidebar / navigasi)
-        $pengumumanLain = Pengumuman::whereNotNull('dipublikasikan_pada')
-            ->whereIn('target_role', self::TARGET_ROLE_PIKET)
-            ->where(function ($q) {
-                $q->whereNull('kadaluarsa_pada')
-                  ->orWhere('kadaluarsa_pada', '>', now());
-            })
+        // Sidebar: pengumuman lain yang masih aktif (kecuali yang sedang dibuka)
+        // Gunakan scope yang sama agar sidebar konsisten dengan daftar utama.
+        $pengumumanLain = Pengumuman::untukPiket()
+            ->urutan()
             ->where('id', '!=', $pengumuman->id)
-            ->orderByDesc('dipinned')
-            ->orderByDesc('dipublikasikan_pada')
-            ->limit(5)
-            ->get();
+            ->limit(self::SIDEBAR_LIMIT)
+            ->get(['id', 'judul', 'dipublikasikan_pada', 'dipinned']); // select minimal
 
         return view(self::VIEW_PREFIX . 'show', compact('pengumuman', 'pengumumanLain'));
     }

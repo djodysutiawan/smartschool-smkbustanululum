@@ -21,7 +21,6 @@
     .btn-sm{padding:5px 11px;font-size:12px;border-radius:6px}
     .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
     .btn-secondary:hover{background:var(--surface3);filter:none}
-    .btn-detail{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
 
     /* Main card */
     .main-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
@@ -47,6 +46,12 @@
     .peng-isi strong{color:var(--text);font-weight:700}
     .peng-isi a{color:var(--brand-600);text-decoration:underline}
 
+    /* Lampiran */
+    .lampiran-card{margin-top:20px;padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;gap:10px;background:var(--surface2)}
+    .lampiran-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .lampiran-link{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--brand-600);text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+    .lampiran-link:hover{text-decoration:underline}
+
     .main-card-footer{padding:14px 30px;border-top:1px solid var(--border);background:var(--surface2);display:flex;gap:8px}
 
     /* Sidebar */
@@ -56,7 +61,7 @@
     .sidebar-item{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-bottom:1px solid #f1f5f9;text-decoration:none;transition:background .1s}
     .sidebar-item:last-child{border-bottom:none}
     .sidebar-item:hover{background:var(--surface2)}
-    .sidebar-item-icon{width:30px;height:30px;border-radius:7px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px}
+    .sidebar-item-icon{width:30px;height:30px;border-radius:7px;background:var(--surface3);display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .sidebar-item-icon.pin{background:var(--piket-50)}
     .sidebar-item-judul{font-family:'Plus Jakarta Sans',sans-serif;font-size:12.5px;font-weight:700;color:var(--text);line-height:1.3;margin-bottom:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
     .sidebar-item-tanggal{font-size:11px;color:var(--text3)}
@@ -71,21 +76,28 @@
 
 <div class="page">
 
-    {{-- Header --}}
+    {{-- ── Header ── --}}
     <div class="page-header">
         <div>
             <h1 class="page-title">Detail Pengumuman</h1>
-            <p class="page-sub">{{ $pengumuman->dipublikasikan_pada->locale('id')->isoFormat('dddd, D MMMM Y') }}</p>
+            {{--
+                FIX: optional() untuk defensive guard meskipun controller sudah
+                menjamin dipublikasikan_pada tidak null dan sudah lewat.
+                Ini mencegah fatal error jika ada bug di layer lain.
+            --}}
+            <p class="page-sub">
+                {{ optional($pengumuman->dipublikasikan_pada)->locale('id')->isoFormat('dddd, D MMMM Y') ?? '—' }}
+            </p>
         </div>
         <a href="{{ route('piket.pengumuman.index') }}" class="btn btn-secondary">
-            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
             Kembali
         </a>
     </div>
 
     <div class="page-inner">
 
-        {{-- Konten Utama --}}
+        {{-- ── Konten Utama ── --}}
         <div>
             <div class="main-card">
                 <div class="main-card-top">
@@ -94,7 +106,7 @@
                     <div class="peng-badges">
                         @if($pengumuman->dipinned)
                             <span class="peng-badge pin">
-                                <svg width="10" height="10" fill="var(--piket-600)" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                                <svg width="10" height="10" fill="var(--piket-600)" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
                                 Disematkan
                             </span>
                         @endif
@@ -109,62 +121,98 @@
                     {{-- Meta --}}
                     <div class="peng-meta-row">
                         <span class="peng-meta-item">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                            {{ $pengumuman->dipublikasikan_pada->locale('id')->isoFormat('D MMMM Y, H:mm') }}
+                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            {{ optional($pengumuman->dipublikasikan_pada)->locale('id')->isoFormat('D MMMM Y, H:mm') ?? '—' }}
                         </span>
                         @if($pengumuman->dibuatOleh)
-                        <span class="peng-meta-item">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-                            <strong>{{ $pengumuman->dibuatOleh->name }}</strong>
-                        </span>
+                            <span class="peng-meta-item">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                                <strong>{{ $pengumuman->dibuatOleh->name }}</strong>
+                            </span>
                         @endif
                         @if($pengumuman->kadaluarsa_pada)
-                        <span class="peng-meta-item">
-                            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-                            Berlaku hingga <strong>{{ $pengumuman->kadaluarsa_pada->locale('id')->isoFormat('D MMM Y') }}</strong>
-                        </span>
+                            <span class="peng-meta-item">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                                Berlaku hingga
+                                <strong>{{ $pengumuman->kadaluarsa_pada->locale('id')->isoFormat('D MMM Y') }}</strong>
+                            </span>
                         @endif
                     </div>
                 </div>
 
-                {{-- Isi --}}
+                {{-- ── Isi ── --}}
                 <div class="main-card-body">
                     <div class="peng-isi">
-                        {!! nl2br(e($pengumuman->isi)) !!}
+                        {{--
+                            FIX: {!! nl2br(e($pengumuman->isi)) !!} sudah benar untuk
+                            plain-text content (escape dulu, baru nl2br).
+
+                            Catatan untuk developer:
+                            - Jika `isi` menyimpan HTML dari rich-text editor (Quill, TipTap, dll),
+                              ganti dengan: {!! $pengumuman->isi !!}
+                              DAN pastikan isi sudah di-sanitize di sisi input (misal: HTMLPurifier)
+                              sebelum disimpan ke DB. JANGAN {!! $raw !!} tanpa sanitasi.
+                            - Saat ini menggunakan nl2br(e()) yang aman untuk plain-text.
+                        --}}
+                        {!! nl2br(e($pengumuman->isi ?? '')) !!}
                     </div>
+
+                    {{-- Lampiran (jika ada) --}}
+                    @if($pengumuman->lampiran_url)
+                        <div class="lampiran-card">
+                            <svg width="16" height="16" fill="none" stroke="var(--text3)" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                            <span class="lampiran-label">Lampiran terlampir</span>
+                            <a href="{{ $pengumuman->lampiran_url }}"
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               class="lampiran-link">
+                                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                Unduh
+                            </a>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="main-card-footer">
                     <a href="{{ route('piket.pengumuman.index') }}" class="btn btn-secondary btn-sm">
-                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+                        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
                         Kembali ke Daftar
                     </a>
                 </div>
             </div>
         </div>
 
-        {{-- Sidebar --}}
+        {{-- ── Sidebar ── --}}
         <div>
             <div class="sidebar-card">
                 <div class="sidebar-card-header">
                     <p class="sidebar-card-title">Pengumuman Lainnya</p>
                 </div>
                 @forelse($pengumumanLain as $lain)
-                <a href="{{ route('piket.pengumuman.show', $lain->id) }}" class="sidebar-item">
-                    <div class="sidebar-item-icon {{ $lain->dipinned ? 'pin' : '' }}">
-                        @if($lain->dipinned)
-                            <svg width="13" height="13" fill="var(--piket-600)" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                        @else
-                            <svg width="13" height="13" fill="none" stroke="var(--text3)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        @endif
-                    </div>
-                    <div style="flex:1;min-width:0">
-                        <p class="sidebar-item-judul">{{ $lain->judul }}</p>
-                        <p class="sidebar-item-tanggal">{{ $lain->dipublikasikan_pada->locale('id')->isoFormat('D MMM Y') }}</p>
-                    </div>
-                </a>
+                    <a href="{{ route('piket.pengumuman.show', $lain->id) }}"
+                       class="sidebar-item"
+                       aria-label="{{ $lain->judul }}">
+                        <div class="sidebar-item-icon {{ $lain->dipinned ? 'pin' : '' }}" aria-hidden="true">
+                            @if($lain->dipinned)
+                                <svg width="13" height="13" fill="var(--piket-600)" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                            @else
+                                <svg width="13" height="13" fill="none" stroke="var(--text3)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                            @endif
+                        </div>
+                        <div style="flex:1;min-width:0">
+                            <p class="sidebar-item-judul">{{ $lain->judul }}</p>
+                            {{--
+                                FIX: optional() sebagai defensive guard.
+                                Sidebar query pakai get(['id','judul','dipublikasikan_pada','dipinned'])
+                                sehingga kolom dipublikasikan_pada tersedia, tapi tetap guard.
+                            --}}
+                            <p class="sidebar-item-tanggal">
+                                {{ optional($lain->dipublikasikan_pada)->locale('id')->isoFormat('D MMM Y') ?? '—' }}
+                            </p>
+                        </div>
+                    </a>
                 @empty
-                <p class="sidebar-empty">Tidak ada pengumuman lain</p>
+                    <p class="sidebar-empty">Tidak ada pengumuman lain</p>
                 @endforelse
             </div>
         </div>

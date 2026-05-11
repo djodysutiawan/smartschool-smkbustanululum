@@ -24,19 +24,18 @@
         --r-sm:7px;
         --shadow-sm:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
         --shadow:0 4px 12px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.04);
-        --shadow-md:0 8px 24px rgba(0,0,0,.09),0 2px 8px rgba(0,0,0,.05);
     }
 
     *, *::before, *::after { box-sizing: border-box; }
 
-    /* ─── Layout ─── */
+    /* ── Layout ── */
     .pg { padding: 28px 32px 48px; }
     .pg-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
     .pg-title { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 21px; font-weight: 800; color: var(--text); letter-spacing: -.3px; line-height: 1.2; }
     .pg-sub { font-size: 13px; color: var(--text4); margin-top: 4px; font-family: 'Plus Jakarta Sans', sans-serif; }
     .hdr-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
-    /* ─── Banner belum check-in ─── */
+    /* ── Banner belum check-in ── */
     .banner-checkin {
         display: flex; align-items: center; gap: 12px;
         background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
@@ -46,7 +45,7 @@
     }
     .banner-checkin a { color: var(--brand-600); text-decoration: underline; }
 
-    /* ─── Stats ─── */
+    /* ── Stats ── */
     .stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; margin-bottom: 20px; }
     .stat {
         background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
@@ -55,14 +54,14 @@
     }
     .stat:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
     .stat-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .stat-icon.amber { background: #fef9c3; }
+    .stat-icon.amber   { background: #fef9c3; }
     .stat-icon.emerald { background: #dcfce7; }
-    .stat-icon.sky { background: #e0f2fe; }
+    .stat-icon.sky     { background: #e0f2fe; }
     .stat-lbl { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10.5px; font-weight: 700; color: var(--text4); text-transform: uppercase; letter-spacing: .06em; }
     .stat-val { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 26px; font-weight: 800; color: var(--text); line-height: 1.1; margin-top: 1px; }
     .stat-sub { font-size: 11.5px; color: var(--text4); margin-top: 2px; font-family: 'Plus Jakarta Sans', sans-serif; }
 
-    /* ─── Filter ─── */
+    /* ── Filter ── */
     .filter-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
     .filter-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .f-input, .f-select {
@@ -80,22 +79,24 @@
     .btn-reset { height: 36px; padding: 0 14px; background: var(--surface2); color: var(--text3); border: 1px solid var(--border); border-radius: var(--r-sm); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; transition: background .15s; }
     .btn-reset:hover { background: var(--surface3); }
 
-    /* ─── Buttons ─── */
+    /* ── Buttons ── */
     .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--r-sm); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; cursor: pointer; border: none; text-decoration: none; transition: filter .15s, box-shadow .15s; white-space: nowrap; }
     .btn:hover { filter: brightness(.93); }
     .btn-primary { background: var(--brand-600); color: #fff; box-shadow: 0 1px 4px rgba(31,99,219,.25); }
     .btn-primary:hover { filter: none; background: var(--brand-700); }
     .btn-sm { padding: 5px 12px; font-size: 12px; border-radius: 6px; }
-    .btn-detail { background: var(--brand-50); color: var(--brand-700); border: 1px solid var(--brand-100); }
+    .btn-detail   { background: var(--brand-50); color: var(--brand-700); border: 1px solid var(--brand-100); }
     .btn-detail:hover { background: var(--brand-100); filter: none; }
-    .btn-approve { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+    .btn-approve  { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
     .btn-approve:hover { background: #dcfce7; filter: none; }
-    .btn-tolak { background: #fff0f0; color: #dc2626; border: 1px solid #fecaca; }
+    .btn-tolak    { background: #fff0f0; color: #dc2626; border: 1px solid #fecaca; }
     .btn-tolak:hover { background: #fee2e2; filter: none; }
     .btn-konfirmasi { background: #fdf4ff; color: #7c3aed; border: 1px solid #e9d5ff; }
     .btn-konfirmasi:hover { background: #f3e8ff; filter: none; }
+    /* Disabled state untuk tombol aksi saat belum check-in */
+    .btn-disabled { opacity: .45; cursor: not-allowed; pointer-events: none; }
 
-    /* ─── Table card ─── */
+    /* ── Table card ── */
     .tbl-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); overflow: hidden; box-shadow: var(--shadow-sm); }
     .tbl-topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; border-bottom: 1px solid var(--border); }
     .tbl-info { font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 700; color: var(--text); }
@@ -111,21 +112,17 @@
     td { padding: 10px 14px; color: var(--text); vertical-align: middle; }
     .td-muted { color: var(--text4); font-size: 12px; }
 
-    /* Two-line cell */
     .twoline .pri { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 13.5px; color: var(--text); }
     .twoline .sec { font-size: 11.5px; color: var(--text4); margin-top: 2px; }
 
-    /* Nomor surat */
     .nsurat { font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; color: var(--text3); background: var(--surface3); padding: 2px 8px; border-radius: 5px; letter-spacing: .02em; display: inline-block; }
 
-    /* Jam */
     .jam-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13px; }
     .jam-sub { font-size: 10.5px; color: var(--text4); margin-top: 1px; }
 
-    /* Action group */
     .act-group { display: flex; align-items: center; gap: 5px; justify-content: center; flex-wrap: wrap; }
 
-    /* ─── Badges ─── */
+    /* ── Badges ── */
     .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 99px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 11px; font-weight: 700; white-space: nowrap; letter-spacing: .02em; }
     .bdot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
     .b-menunggu      { background: #fefce8; color: #92400e; border: 1px solid #fde68a; } .b-menunggu .bdot      { background: #d97706; }
@@ -133,16 +130,15 @@
     .b-ditolak       { background: #fee2e2; color: #7f1d1d; border: 1px solid #fca5a5; } .b-ditolak .bdot       { background: #dc2626; }
     .b-sudah_kembali { background: #dbeafe; color: #1e3a8a; border: 1px solid #93c5fd; } .b-sudah_kembali .bdot { background: #2563eb; }
 
-    /* ─── Row no ─── */
     .no-col { font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 500; color: var(--text4); }
 
-    /* ─── Empty state ─── */
+    /* ── Empty state ── */
     .empty { padding: 60px 24px; text-align: center; }
     .empty-ico { width: 56px; height: 56px; background: var(--surface3); border-radius: 14px; display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
     .empty-title { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; font-size: 15px; color: var(--text); margin-bottom: 5px; }
     .empty-sub { font-size: 13px; color: var(--text4); }
 
-    /* ─── Pagination ─── */
+    /* ── Pagination ── */
     .pag { display: flex; align-items: center; justify-content: space-between; padding: 13px 20px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; }
     .pag-info { font-size: 12px; color: var(--text4); font-family: 'Plus Jakarta Sans', sans-serif; }
     .pag-btns { display: flex; gap: 4px; align-items: center; }
@@ -150,12 +146,13 @@
     .pag-btn:hover { background: var(--surface2); border-color: var(--border2); }
     .pag-btn.active { background: var(--brand-600); border-color: var(--brand-600); color: #fff; }
     .pag-btn.disabled { opacity: .35; cursor: not-allowed; pointer-events: none; }
-    .pag-dots { color: var(--text4); font-size: 13px; padding: 0 4px; display: flex; align-items: center; }
+    .pag-dots { color: var(--text4); font-size: 14px; padding: 0 2px; display: flex; align-items: center; }
 
-    @media(max-width:768px) {
+    @media(max-width: 768px) {
         .stats { grid-template-columns: 1fr; }
         .pg { padding: 16px; }
         .hdr-actions { width: 100%; }
+        .f-input.wide { min-width: 150px; }
     }
 </style>
 
@@ -165,12 +162,14 @@
     @if(! $guruAktifId)
     <div class="banner-checkin">
         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        Anda belum check-in sebagai petugas piket. Beberapa aksi (buat, setujui, tolak, konfirmasi) memerlukan check-in terlebih dahulu.
-        <a href="{{ route('piket.absensi.index') }}">Check-in sekarang →</a>
+        <span>
+            Anda belum check-in sebagai petugas piket. Beberapa aksi (setujui, tolak, konfirmasi kembali) memerlukan check-in terlebih dahulu.
+            <a href="{{ route('piket.log.checkin') }}">Check-in sekarang →</a>
+        </span>
     </div>
     @endif
 
-    {{-- ── Header ── --}}
+    {{-- ── Header ── }}
     <div class="pg-header">
         <div>
             <h1 class="pg-title">Izin Keluar Siswa</h1>
@@ -184,7 +183,7 @@
         </div>
     </div>
 
-    {{-- ── Stats ── --}}
+    {{-- ── Stats Hari Ini ── --}}
     <div class="stats">
         <div class="stat">
             <div class="stat-icon amber">
@@ -275,7 +274,7 @@
                         <th class="center">Jam Kembali</th>
                         <th class="center">Status</th>
                         <th>No. Surat</th>
-                        <th class="center" style="width:210px">Aksi</th>
+                        <th class="center" style="width:220px">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -286,7 +285,7 @@
                     <td>
                         <div class="twoline">
                             <p class="pri">{{ $izin->siswa->nama_lengkap ?? '—' }}</p>
-                            <p class="sec">{{ $izin->siswa->kelas->nama_kelas ?? '—' }}</p>
+                            <p class="sec">{{ optional($izin->siswa->kelas)->nama_kelas ?? '—' }}</p>
                         </div>
                     </td>
 
@@ -296,7 +295,7 @@
 
                     <td>
                         <div class="twoline">
-                            <p class="pri" style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+                            <p class="pri" style="max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="{{ $izin->tujuan }}">
                                 {{ $izin->tujuan }}
                             </p>
                             <p class="sec">{{ $izin->kategori_label }}</p>
@@ -338,17 +337,37 @@
                             <a href="{{ route('piket.izin-keluar-siswa.show', $izin) }}" class="btn btn-sm btn-detail">Detail</a>
 
                             @if($izin->isMenunggu())
-                                <button type="button" class="btn btn-sm btn-approve"
-                                    onclick="doApprove({{ $izin->id }}, '{{ addslashes($izin->siswa->nama_lengkap ?? '') }}')">
+                                {{--
+                                    Tombol aksi hanya aktif jika guru sudah check-in.
+                                    Jika belum, tombol tetap ditampilkan tapi disabled
+                                    dengan tooltip agar UX jelas (bukan dihilangkan).
+                                --}}
+                                <button type="button"
+                                    class="btn btn-sm btn-approve {{ $guruAktifId ? '' : 'btn-disabled' }}"
+                                    @if($guruAktifId)
+                                        onclick="doApprove({{ $izin->id }}, '{{ addslashes($izin->siswa->nama_lengkap ?? '') }}')"
+                                    @else
+                                        title="Check-in terlebih dahulu untuk menyetujui izin"
+                                    @endif>
                                     Setujui
                                 </button>
-                                <button type="button" class="btn btn-sm btn-tolak"
-                                    onclick="doTolak({{ $izin->id }}, '{{ addslashes($izin->siswa->nama_lengkap ?? '') }}')">
+                                <button type="button"
+                                    class="btn btn-sm btn-tolak {{ $guruAktifId ? '' : 'btn-disabled' }}"
+                                    @if($guruAktifId)
+                                        onclick="doTolak({{ $izin->id }}, '{{ addslashes($izin->siswa->nama_lengkap ?? '') }}')"
+                                    @else
+                                        title="Check-in terlebih dahulu untuk menolak izin"
+                                    @endif>
                                     Tolak
                                 </button>
                             @elseif($izin->isDisetujui())
-                                <button type="button" class="btn btn-sm btn-konfirmasi"
-                                    onclick="doKembali({{ $izin->id }}, '{{ addslashes($izin->siswa->nama_lengkap ?? '') }}')">
+                                <button type="button"
+                                    class="btn btn-sm btn-konfirmasi {{ $guruAktifId ? '' : 'btn-disabled' }}"
+                                    @if($guruAktifId)
+                                        onclick="doKembali({{ $izin->id }}, '{{ addslashes($izin->siswa->nama_lengkap ?? '') }}')"
+                                    @else
+                                        title="Check-in terlebih dahulu untuk mencatat kembali"
+                                    @endif>
                                     Kembali
                                 </button>
                             @endif
@@ -372,36 +391,61 @@
             </table>
         </div>
 
+        {{-- ── Pagination (dengan logic dots yang benar) ── --}}
         @if($izins->hasPages())
         <div class="pag">
             <p class="pag-info">Menampilkan {{ $izins->firstItem() }}–{{ $izins->lastItem() }} dari {{ $izins->total() }} izin</p>
             <div class="pag-btns">
+                {{-- Prev --}}
                 @if($izins->onFirstPage())
-                    <span class="pag-btn disabled">
+                    <span class="pag-btn disabled" aria-disabled="true">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                     </span>
                 @else
-                    <a href="{{ $izins->previousPageUrl() }}" class="pag-btn">
+                    <a href="{{ $izins->previousPageUrl() }}" class="pag-btn" aria-label="Halaman sebelumnya">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
                     </a>
                 @endif
 
-                @foreach($izins->getUrlRange(1, $izins->lastPage()) as $page => $url)
-                    @if($page == $izins->currentPage())
-                        <span class="pag-btn active">{{ $page }}</span>
-                    @elseif($page == 1 || $page == $izins->lastPage() || abs($page - $izins->currentPage()) <= 1)
-                        <a href="{{ $url }}" class="pag-btn">{{ $page }}</a>
-                    @elseif(abs($page - $izins->currentPage()) == 2)
-                        <span class="pag-dots">…</span>
-                    @endif
-                @endforeach
+                {{-- Pages dengan dots yang benar ── --}}
+                @php
+                    $current  = $izins->currentPage();
+                    $last     = $izins->lastPage();
+                    $showDots = ['left' => false, 'right' => false];
+                @endphp
 
+                @for($page = 1; $page <= $last; $page++)
+                    @php
+                        $near = abs($page - $current) <= 1;
+                        $edge = $page === 1 || $page === $last;
+                        $show = $near || $edge;
+                    @endphp
+
+                    @if($show)
+                        @if($page === $current)
+                            <span class="pag-btn active" aria-current="page">{{ $page }}</span>
+                        @else
+                            <a href="{{ $izins->url($page) }}" class="pag-btn">{{ $page }}</a>
+                        @endif
+                        @php $showDots = ['left' => false, 'right' => false]; @endphp
+                    @else
+                        @if($page < $current && !$showDots['left'])
+                            <span class="pag-dots">…</span>
+                            @php $showDots['left'] = true; @endphp
+                        @elseif($page > $current && !$showDots['right'])
+                            <span class="pag-dots">…</span>
+                            @php $showDots['right'] = true; @endphp
+                        @endif
+                    @endif
+                @endfor
+
+                {{-- Next --}}
                 @if($izins->hasMorePages())
-                    <a href="{{ $izins->nextPageUrl() }}" class="pag-btn">
+                    <a href="{{ $izins->nextPageUrl() }}" class="pag-btn" aria-label="Halaman berikutnya">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </a>
                 @else
-                    <span class="pag-btn disabled">
+                    <span class="pag-btn disabled" aria-disabled="true">
                         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
                     </span>
                 @endif
@@ -428,6 +472,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+/* ── Route base untuk JS — hindari hardcode URL ── */
+const BASE_URL = '{{ rtrim(url('/'), '/') }}';
+
 /* ── Toast flash ── */
 @if(session('success'))
 Swal.fire({ icon:'success', title:'Berhasil!', text:@json(session('success')), timer:2800, showConfirmButton:false, toast:true, position:'top-end' });
@@ -440,7 +487,7 @@ Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmB
 function doApprove(id, nama) {
     Swal.fire({
         title: 'Setujui Izin?',
-        html: `Izin keluar <strong>${nama}</strong> akan disetujui dan nomor surat akan digenerate.`,
+        html: `Izin keluar <strong>${escHtml(nama)}</strong> akan disetujui dan nomor surat akan digenerate.`,
         icon: 'question',
         input: 'textarea',
         inputLabel: 'Catatan Piket (opsional)',
@@ -454,7 +501,7 @@ function doApprove(id, nama) {
     }).then(r => {
         if (!r.isConfirmed) return;
         const form = document.getElementById('formApprove');
-        form.action = `/piket/izin-keluar-siswa/${id}/approve`;
+        form.action = `${BASE_URL}/piket/izin-keluar-siswa/${id}/approve`;
         document.getElementById('catatanApprove').value = r.value || '';
         form.submit();
     });
@@ -464,13 +511,13 @@ function doApprove(id, nama) {
 function doTolak(id, nama) {
     Swal.fire({
         title: 'Tolak Izin?',
-        html: `Izin keluar <strong>${nama}</strong> akan ditolak.`,
+        html: `Izin keluar <strong>${escHtml(nama)}</strong> akan ditolak.`,
         icon: 'warning',
         input: 'textarea',
         inputLabel: 'Alasan Penolakan (wajib diisi)',
         inputPlaceholder: 'Tulis alasan penolakan…',
         inputAttributes: { rows: 2, maxlength: 500 },
-        inputValidator: v => !v?.trim() ? 'Alasan penolakan wajib diisi.' : null,
+        inputValidator: v => (!v || !v.trim()) ? 'Alasan penolakan wajib diisi.' : null,
         showCancelButton: true,
         confirmButtonColor: '#dc2626',
         cancelButtonColor: '#64748b',
@@ -479,7 +526,7 @@ function doTolak(id, nama) {
     }).then(r => {
         if (!r.isConfirmed) return;
         const form = document.getElementById('formTolak');
-        form.action = `/piket/izin-keluar-siswa/${id}/tolak`;
+        form.action = `${BASE_URL}/piket/izin-keluar-siswa/${id}/tolak`;
         document.getElementById('catatanTolak').value = r.value;
         form.submit();
     });
@@ -488,25 +535,26 @@ function doTolak(id, nama) {
 /* ── Konfirmasi Kembali ── */
 function doKembali(id, nama) {
     const now = new Date();
-    const hh  = String(now.getHours()).padStart(2,'0');
-    const mm  = String(now.getMinutes()).padStart(2,'0');
+    const hh  = String(now.getHours()).padStart(2, '0');
+    const mm  = String(now.getMinutes()).padStart(2, '0');
+
     Swal.fire({
         title: 'Konfirmasi Kembali',
         html: `
             <p style="font-size:13.5px;color:#475569;margin-bottom:14px">
-                Catat bahwa <strong>${nama}</strong> telah kembali ke sekolah.
+                Catat bahwa <strong>${escHtml(nama)}</strong> telah kembali ke sekolah.
             </p>
             <div style="text-align:left;margin-bottom:10px">
                 <label style="font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:4px">
                     Jam Kembali Aktual <span style="color:#dc2626">*</span>
                 </label>
                 <input type="time" id="swalJam" value="${hh}:${mm}"
-                    style="width:100%;height:38px;padding:0 12px;border:1px solid #e2e8f0;border-radius:7px;font-size:14px">
+                    style="width:100%;height:38px;padding:0 12px;border:1px solid #e2e8f0;border-radius:7px;font-size:14px;font-family:inherit">
             </div>
             <div style="text-align:left">
                 <label style="font-size:12px;font-weight:700;color:#475569;display:block;margin-bottom:4px">Catatan (opsional)</label>
                 <textarea id="swalCatatan" rows="2" maxlength="500" placeholder="Tulis catatan jika perlu…"
-                    style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;resize:none"></textarea>
+                    style="width:100%;padding:8px 12px;border:1px solid #e2e8f0;border-radius:7px;font-size:13px;resize:none;font-family:inherit"></textarea>
             </div>`,
         showCancelButton: true,
         confirmButtonColor: '#7c3aed',
@@ -515,17 +563,29 @@ function doKembali(id, nama) {
         cancelButtonText: 'Batal',
         preConfirm: () => {
             const jam = document.getElementById('swalJam').value;
-            if (!jam) { Swal.showValidationMessage('Jam kembali wajib diisi.'); return false; }
+            if (!jam) {
+                Swal.showValidationMessage('Jam kembali wajib diisi.');
+                return false;
+            }
             return { jam, catatan: document.getElementById('swalCatatan').value };
         }
     }).then(r => {
         if (!r.isConfirmed) return;
         const form = document.getElementById('formKembali');
-        form.action = `/piket/izin-keluar-siswa/${id}/konfirmasi-kembali`;
+        form.action = `${BASE_URL}/piket/izin-keluar-siswa/${id}/konfirmasi-kembali`;
         document.getElementById('jamKembaliInput').value = r.value.jam;
         document.getElementById('catatanKembali').value  = r.value.catatan;
         form.submit();
     });
+}
+
+/* ── Util: escape HTML untuk dipakai di innerHTML ── */
+function escHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }
 </script>
 </x-app-layout>

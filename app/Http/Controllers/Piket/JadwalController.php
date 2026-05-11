@@ -7,7 +7,6 @@ use App\Http\Controllers\Piket\Concerns\PiketActiveGuru;
 use App\Models\JadwalPiketGuru;
 use App\Models\LogPiket;
 use App\Models\TahunAjaran;
-use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -28,7 +27,7 @@ class JadwalController extends Controller
                 'jadwalHariIni'   => null,
                 'logBulanIni'     => collect(),
                 'rekapBulanIni'   => ['hadir' => 0, 'total' => 0],
-                'tahunAjaranList' => collect(),   // view butuh ini untuk dropdown filter
+                'tahunAjaranList' => collect(),
                 'belumCheckin'    => true,
             ]);
         }
@@ -45,9 +44,9 @@ class JadwalController extends Controller
         }
 
         // Filter status aktif/nonaktif
-        // request('is_active') bisa '1', '0', atau '' (kosong = semua)
+        // Gunakan strict string check; (bool)'0' === true sehingga casting langsung berbahaya
         if ($request->filled('is_active')) {
-            $query->where('is_active', (bool) $request->input('is_active'));
+            $query->where('is_active', $request->input('is_active') === '1');
         }
 
         $jadwal = $query->paginate(15)->withQueryString();
@@ -61,8 +60,7 @@ class JadwalController extends Controller
             ->with('tahunAjaran')
             ->first();
 
-        // ── Log bulan ini (paginate agar tidak berat jika banyak) ──────────
-        // Diambil sebagai Collection karena view hanya menampilkan 10 teratas
+        // ── Log bulan ini ──────────────────────────────────────────────────
         $logBulanIni = LogPiket::where('guru_id', $guruId)
             ->whereMonth('tanggal', now()->month)
             ->whereYear('tanggal', now()->year)
@@ -101,22 +99,19 @@ class JadwalController extends Controller
             );
         }
 
-        // Guru hanya bisa lihat jadwal miliknya sendiri
-        // Gunakan strict comparison (===) karena keduanya int
-        if ($jadwal->guru_id !== $guruId) {
+        // FIX: Gunakan == (loose) bukan === (strict) karena guru_id dari model
+        // bisa bertipe int sedangkan $guruId dari resolveActiveGuruId() juga int,
+        // tapi untuk keamanan gunakan cast eksplisit untuk memastikan konsistensi.
+        if ((int) $jadwal->guru_id !== (int) $guruId) {
             abort(403, 'Anda tidak berhak mengakses jadwal ini.');
         }
 
         $jadwal->load('tahunAjaran', 'guru');
 
-        // ── Riwayat log 3 bulan terakhir ───────────────────────────────────
-        // Filter per hari yang sama dengan jadwal ini agar relevan dengan
-        // kolom "Hari" yang ditampilkan di tabel view show.
+        // ── Riwayat log 3 bulan terakhir, difilter per hari yang sama ──────
         //
-        // Catatan: LogPiket tidak punya kolom 'hari', filter dilakukan via
-        // DAYOFWEEK MySQL yang dipetakan ke nama hari Indonesia.
-        //
-        // Mapping DAYOFWEEK MySQL: 1=Minggu, 2=Senin, …, 7=Sabtu
+        // LogPiket tidak punya kolom 'hari'; filter via DAYOFWEEK() MySQL.
+        // Mapping DAYOFWEEK MySQL: 1=Minggu, 2=Senin, …, 7=Sabtu.
         $mysqlDayMap = [
             'minggu'  => 1,
             'senin'   => 2,
@@ -127,19 +122,18 @@ class JadwalController extends Controller
             'sabtu'   => 7,
         ];
 
-        $mysqlDay = $mysqlDayMap[strtolower($jadwal->hari)] ?? null;
+        $mysqlDay = $mysqlDayMap[strtolower((string) $jadwal->hari)] ?? null;
 
         $riwayatQuery = LogPiket::where('guru_id', $guruId)
             ->whereDate('tanggal', '>=', now()->subMonths(3)->startOfDay());
 
-        // Jika hari jadwal valid, filter hanya log di hari yang sama
         if ($mysqlDay !== null) {
             $riwayatQuery->whereRaw('DAYOFWEEK(tanggal) = ?', [$mysqlDay]);
         }
 
         $riwayatLog = $riwayatQuery
             ->orderByDesc('tanggal')
-            ->paginate(10, ['*'], 'log_page')  // page key unik agar tidak konflik dengan ?page jadwal
+            ->paginate(10, ['*'], 'log_page')
             ->withQueryString();
 
         return view('piket.jadwal.show', compact('jadwal', 'riwayatLog'));
