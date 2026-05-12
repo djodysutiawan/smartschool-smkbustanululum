@@ -11,60 +11,113 @@ use Illuminate\Support\Facades\Auth;
 
 class JadwalController extends Controller
 {
+    private const HARI_MAP = [
+        'Sunday'    => 'minggu',
+        'Monday'    => 'senin',
+        'Tuesday'   => 'selasa',
+        'Wednesday' => 'rabu',
+        'Thursday'  => 'kamis',
+        'Friday'    => 'jumat',
+        'Saturday'  => 'sabtu',
+    ];
+
+    private const HARI_LIST = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+
     private function getSiswa(): \App\Models\Siswa
     {
-        $siswa = Auth::user()->siswa;
+        $siswa = Auth::user()?->siswa;
         abort_if(! $siswa, 403, 'Akun Anda tidak terhubung dengan data siswa.');
         return $siswa;
     }
 
+    private function formatJadwal(JadwalPelajaran $j): array
+    {
+        return [
+            'id'             => $j->id,
+            'hari'           => $j->hari,
+            'jam_mulai'      => $j->jam_mulai,
+            'jam_selesai'    => $j->jam_selesai,
+            'mata_pelajaran' => $j->relationLoaded('mataPelajaran') ? [
+                'id'   => $j->mataPelajaran?->id,
+                'nama' => $j->mataPelajaran?->nama,
+                'kode' => $j->mataPelajaran?->kode ?? null,
+            ] : null,
+            'guru'           => $j->relationLoaded('guru') ? [
+                'id'           => $j->guru?->id,
+                'nama_lengkap' => $j->guru?->nama_lengkap,
+            ] : null,
+            'ruang'          => $j->relationLoaded('ruang') ? [
+                'id'        => $j->ruang?->id,
+                'nama_ruang'=> $j->ruang?->nama_ruang ?? null,
+            ] : null,
+            'tahun_ajaran'   => $j->relationLoaded('tahunAjaran')
+                ? ($j->tahunAjaran?->nama ?? null)
+                : null,
+        ];
+    }
+
     /**
      * GET /api/siswa/jadwal
-     * Jadwal pelajaran dikelompokkan per hari.
+     *
+     * Query string:
+     *   hari → senin|selasa|rabu|kamis|jumat|sabtu (opsional, filter per hari)
      */
     public function index(Request $request): JsonResponse
     {
-        $siswa    = $this->getSiswa();
-        $hariList = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
+        $siswa = $this->getSiswa();
 
-        $query = JadwalPelajaran::with(['mataPelajaran', 'guru', 'ruang', 'tahunAjaran'])
-            ->where('kelas_id', $siswa->kelas_id);
+        abort_if(! $siswa->kelas_id, 403, 'Anda belum terdaftar di kelas manapun.');
 
-        if ($request->filled('hari') && in_array($request->hari, $hariList)) {
-            $query->where('hari', $request->hari);
-        }
+        $request->validate([
+            'hari' => ['nullable', 'in:' . implode(',', self::HARI_LIST)],
+        ]);
 
-        $jadwal = $query
+        $allJadwal = JadwalPelajaran::with(['mataPelajaran', 'guru', 'ruang', 'tahunAjaran'])
+            ->where('kelas_id', $siswa->kelas_id)
+            ->where('is_active', true)
             ->orderByRaw("FIELD(hari, 'senin','selasa','rabu','kamis','jumat','sabtu')")
             ->orderBy('jam_mulai')
             ->get();
 
-        $hariIni       = strtolower(Carbon::now()->locale('id')->isoFormat('dddd'));
-        $jamSekarang   = Carbon::now()->format('H:i:s');
-        $jadwalPerHari = $jadwal->groupBy('hari');
+        $hariIni     = self::HARI_MAP[Carbon::now()->format('l')] ?? 'senin';
+        $jamSekarang = Carbon::now()->format('H:i:s');
+
+        // Filter hari jika diminta
+        $filterHari = $request->filled('hari') ? $request->hari : null;
+        $jadwal     = $filterHari
+            ? $allJadwal->where('hari', $filterHari)->values()
+            : $allJadwal;
+
+        // Kelompokkan per hari untuk weekly view
+        $jadwalPerHari = $allJadwal
+            ->groupBy('hari')
+            ->map(fn ($items) => $items->map(fn ($j) => $this->formatJadwal($j))->values());
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'jadwal_per_hari' => $jadwalPerHari,
-                'hari_list'       => $hariList,
-                'hari_ini'        => $hariIni,
-                'jadwal_hari_ini' => $jadwalPerHari->get($hariIni, collect()),
-                'jam_sekarang'    => $jamSekarang,
-                'siswa'           => $siswa->only(['id', 'nama', 'kelas_id']),
+                'hari_ini'       => $hariIni,
+                'jam_sekarang'   => $jamSekarang,
+                'filter_hari'    => $filterHari,
+                'hari_list'      => self::HARI_LIST,
+                'jadwal'         => $jadwal->map(fn ($j) => $this->formatJadwal($j))->values(),
+                'jadwal_per_hari'=> $jadwalPerHari,
             ],
         ]);
     }
 
     /**
      * GET /api/siswa/jadwal/{jadwal}
-     * Detail satu slot jadwal pelajaran.
      */
     public function show(JadwalPelajaran $jadwal): JsonResponse
     {
         $siswa = $this->getSiswa();
 
-        abort_if($jadwal->kelas_id !== $siswa->kelas_id, 403, 'Jadwal ini bukan untuk kelas Anda.');
+        abort_if(
+            $jadwal->kelas_id !== $siswa->kelas_id,
+            403,
+            'Jadwal ini bukan untuk kelas Anda.'
+        );
 
         $jadwal->load(['mataPelajaran', 'guru', 'ruang', 'kelas', 'tahunAjaran']);
 
@@ -72,16 +125,25 @@ class JadwalController extends Controller
             ->where('kelas_id', $siswa->kelas_id)
             ->where('mata_pelajaran_id', $jadwal->mata_pelajaran_id)
             ->where('id', '!=', $jadwal->id)
+            ->where('is_active', true)
             ->orderByRaw("FIELD(hari, 'senin','selasa','rabu','kamis','jumat','sabtu')")
             ->orderBy('jam_mulai')
-            ->get();
+            ->get()
+            ->map(fn ($j) => [
+                'id'          => $j->id,
+                'hari'        => $j->hari,
+                'jam_mulai'   => $j->jam_mulai,
+                'jam_selesai' => $j->jam_selesai,
+                'ruang'       => $j->ruang?->nama_ruang ?? null,
+            ]);
+
+        $data                    = $this->formatJadwal($jadwal);
+        $data['kelas']           = $jadwal->kelas?->nama_kelas ?? null;
+        $data['jadwal_sam_mapel'] = $jadwalSamMapel;
 
         return response()->json([
             'success' => true,
-            'data'    => [
-                'jadwal'           => $jadwal,
-                'jadwal_sam_mapel' => $jadwalSamMapel,
-            ],
+            'data'    => $data,
         ]);
     }
 }

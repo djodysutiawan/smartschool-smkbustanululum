@@ -10,7 +10,6 @@ use App\Models\Nilai;
 use App\Models\Notifikasi;
 use App\Models\PengumpulanTugas;
 use App\Models\Pelanggaran;
-use App\Models\SesiUjian;
 use App\Models\Tugas;
 use App\Models\Ujian;
 use Carbon\Carbon;
@@ -19,16 +18,25 @@ use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
+    private const HARI_MAP = [
+        'Sunday'    => 'minggu',
+        'Monday'    => 'senin',
+        'Tuesday'   => 'selasa',
+        'Wednesday' => 'rabu',
+        'Thursday'  => 'kamis',
+        'Friday'    => 'jumat',
+        'Saturday'  => 'sabtu',
+    ];
+
     private function getSiswa(): \App\Models\Siswa
     {
-        $siswa = Auth::user()->siswa;
+        $siswa = Auth::user()?->siswa;
         abort_if(! $siswa, 403, 'Akun Anda tidak terhubung dengan data siswa.');
         return $siswa;
     }
 
     /**
      * GET /api/siswa/dashboard
-     * Data lengkap dashboard siswa.
      */
     public function index(): JsonResponse
     {
@@ -36,130 +44,202 @@ class DashboardController extends Controller
         $user  = Auth::user();
         $siswa = $this->getSiswa();
 
-        // ── Jadwal hari ini ──────────────────────────────────────────────
-        $hariIni       = strtolower(Carbon::now()->locale('id')->isoFormat('dddd'));
+        $now     = Carbon::now();
+        $hariIni = self::HARI_MAP[$now->format('l')] ?? 'senin';
+
+        // ── Jadwal hari ini ──────────────────────────────────────────────────
         $jadwalHariIni = JadwalPelajaran::with(['mataPelajaran', 'guru', 'ruang'])
             ->where('kelas_id', $siswa->kelas_id)
             ->where('hari', $hariIni)
             ->where('is_active', true)
             ->orderBy('jam_mulai')
-            ->get();
+            ->get()
+            ->map(fn ($j) => [
+                'id'             => $j->id,
+                'mata_pelajaran' => $j->mataPelajaran?->nama,
+                'guru'           => $j->guru?->nama_lengkap,
+                'ruang'          => $j->ruang?->nama_ruang ?? null,
+                'jam_mulai'      => $j->jam_mulai,
+                'jam_selesai'    => $j->jam_selesai,
+            ]);
 
-        // ── Absensi hari ini ─────────────────────────────────────────────
+        // ── Absensi hari ini ─────────────────────────────────────────────────
         $absensiHariIni = Absensi::where('siswa_id', $siswa->id)
             ->whereDate('tanggal', today())
             ->first();
 
-        // ── Statistik kehadiran bulan ini ────────────────────────────────
-        $bulan = now()->month;
-        $tahun = now()->year;
+        // ── Rekap absensi bulan ini ──────────────────────────────────────────
+        $baseAbsensi = Absensi::where('siswa_id', $siswa->id)
+            ->whereMonth('tanggal', $now->month)
+            ->whereYear('tanggal', $now->year);
+
+        $totalHariEfektif = (clone $baseAbsensi)->count();
 
         $rekapBulanIni = [
-            'hadir' => Absensi::where('siswa_id', $siswa->id)
-                ->whereIn('status', ['hadir', 'telat'])
-                ->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun)->count(),
-            'izin'  => Absensi::where('siswa_id', $siswa->id)
-                ->where('status', 'izin')
-                ->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun)->count(),
-            'sakit' => Absensi::where('siswa_id', $siswa->id)
-                ->where('status', 'sakit')
-                ->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun)->count(),
-            'alfa'  => Absensi::where('siswa_id', $siswa->id)
-                ->where('status', 'alfa')
-                ->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun)->count(),
+            'hadir' => (clone $baseAbsensi)->whereIn('status', ['hadir', 'telat'])->count(),
+            'izin'  => (clone $baseAbsensi)->where('status', 'izin')->count(),
+            'sakit' => (clone $baseAbsensi)->where('status', 'sakit')->count(),
+            'alfa'  => (clone $baseAbsensi)->where('status', 'alfa')->count(),
         ];
-
-        $totalHariEfektif = Absensi::where('siswa_id', $siswa->id)
-            ->whereMonth('tanggal', $bulan)->whereYear('tanggal', $tahun)->count();
 
         $persentaseHadir = $totalHariEfektif > 0
             ? round(($rekapBulanIni['hadir'] / $totalHariEfektif) * 100)
             : 0;
 
-        // ── Tugas belum dikumpulkan ──────────────────────────────────────
+        // ── Tugas belum dikumpulkan ──────────────────────────────────────────
         $tugasBelumDikumpulkan = Tugas::with(['mataPelajaran', 'guru'])
             ->dipublikasikan()
             ->where('kelas_id', $siswa->kelas_id)
             ->whereDoesntHave('pengumpulan', fn ($q) => $q->where('siswa_id', $siswa->id))
             ->where(function ($q) {
-                $q->where('batas_waktu', '>=', now())->orWhere('izinkan_terlambat', true);
+                $q->where('batas_waktu', '>=', now())
+                  ->orWhere('izinkan_terlambat', true);
             })
             ->orderBy('batas_waktu')
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(fn ($t) => [
+                'id'             => $t->id,
+                'judul'          => $t->judul,
+                'mata_pelajaran' => $t->mataPelajaran?->nama,
+                'guru'           => $t->guru?->nama_lengkap,
+                'batas_waktu'    => $t->batas_waktu?->toIso8601String(),
+                'terlambat_ok'   => (bool) $t->izinkan_terlambat,
+            ]);
 
         $totalTugasDikumpulkan = PengumpulanTugas::where('siswa_id', $siswa->id)
-            ->whereMonth('created_at', now()->month)->count();
+            ->whereMonth('created_at', $now->month)
+            ->count();
 
-        // ── Ujian aktif & mendatang ──────────────────────────────────────
-        $now        = Carbon::now();
+        // ── Ujian ────────────────────────────────────────────────────────────
         $ujianKelas = Ujian::with(['mataPelajaran', 'sesi' => fn ($q) =>
                 $q->where('siswa_id', $siswa->id)
             ])
             ->where('kelas_id', $siswa->kelas_id)
             ->whereDate('tanggal', '>=', $now->toDateString())
             ->whereDate('tanggal', '<=', $now->copy()->addDays(30)->toDateString())
-            ->orderBy('tanggal')->orderBy('jam_mulai')
+            ->orderBy('tanggal')
+            ->orderBy('jam_mulai')
             ->get();
+
+        $formatUjian = fn ($u) => [
+            'id'             => $u->id,
+            'judul'          => $u->judul ?? $u->nama ?? null,
+            'mata_pelajaran' => $u->mataPelajaran?->nama,
+            'tanggal'        => $u->tanggal?->format('Y-m-d'),
+            'jam_mulai'      => $u->jam_mulai,
+            'durasi_menit'   => $u->durasi_menit,
+        ];
 
         $ujianAktif = $ujianKelas
             ->filter(fn ($u) =>
-                $u->sudahDimulai() && ! $u->sudahBerakhir()
+                $u->sudahDimulai()
+                && ! $u->sudahBerakhir()
                 && $u->bolehIkut($siswa->id)
                 && ! $u->sesi->whereIn('status', ['selesai', 'habis_waktu'])->count()
-            )->take(5)->values();
+            )
+            ->take(5)
+            ->values()
+            ->map($formatUjian);
 
         $ujianMendatang = $ujianKelas
             ->filter(fn ($u) => ! $u->sudahDimulai())
-            ->take(3)->values();
+            ->take(3)
+            ->values()
+            ->map($formatUjian);
 
-        // ── Materi terbaru ───────────────────────────────────────────────
+        // ── Materi terbaru ───────────────────────────────────────────────────
         $materiTerbaru = Materi::with('mataPelajaran')
             ->where('kelas_id', $siswa->kelas_id)
             ->dipublikasikan()
             ->orderByDesc('created_at')
-            ->limit(5)->get();
+            ->limit(5)
+            ->get()
+            ->map(fn ($m) => [
+                'id'             => $m->id,
+                'judul'          => $m->judul,
+                'mata_pelajaran' => $m->mataPelajaran?->nama,
+                'created_at'     => $m->created_at?->toIso8601String(),
+            ]);
 
-        // ── Nilai terbaru ────────────────────────────────────────────────
+        // ── Nilai terbaru ─────────────────────────────────────────────────────
         $nilaiTerbaru = Nilai::with('mataPelajaran')
             ->where('siswa_id', $siswa->id)
             ->orderByDesc('created_at')
-            ->limit(5)->get();
+            ->limit(5)
+            ->get()
+            ->map(fn ($n) => [
+                'id'             => $n->id,
+                'mata_pelajaran' => $n->mataPelajaran?->nama,
+                'nilai_akhir'    => $n->nilai_akhir,
+                'created_at'     => $n->created_at?->toIso8601String(),
+            ]);
 
         $rataRataNilai = Nilai::where('siswa_id', $siswa->id)
-            ->whereMonth('created_at', now()->month)
-            ->whereYear('created_at', now()->year)
+            ->whereMonth('created_at', $now->month)
+            ->whereYear('created_at', $now->year)
             ->avg('nilai_akhir') ?? 0;
 
-        // ── Pelanggaran & notifikasi ─────────────────────────────────────
+        // ── Pelanggaran ───────────────────────────────────────────────────────
         $totalPelanggaran = Pelanggaran::where('siswa_id', $siswa->id)
-            ->whereYear('tanggal', now()->year)->count();
+            ->whereYear('tanggal', $now->year)
+            ->count();
 
+        // ── Notifikasi ────────────────────────────────────────────────────────
         $unreadNotifikasi = Notifikasi::where('pengguna_id', $user->id)
-            ->where('sudah_dibaca', false)->count();
+            ->where('sudah_dibaca', false)
+            ->count();
 
         $notifikasiTerbaru = Notifikasi::where('pengguna_id', $user->id)
-            ->orderByDesc('created_at')->limit(3)->get();
+            ->orderByDesc('created_at')
+            ->limit(3)
+            ->get()
+            ->map(fn ($n) => [
+                'id'           => $n->id,
+                'judul'        => $n->judul,
+                'pesan'        => $n->pesan,
+                'sudah_dibaca' => (bool) $n->sudah_dibaca,
+                'created_at'   => $n->created_at?->toIso8601String(),
+            ]);
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'siswa'                  => $siswa,
+                'siswa' => [
+                    'id'            => $siswa->id,
+                    'nama_lengkap'  => $siswa->nama_lengkap,
+                    'nis'           => $siswa->nis,
+                    'kelas'         => $siswa->kelas?->nama_kelas,
+                ],
                 'jadwal_hari_ini'        => $jadwalHariIni,
-                'absensi_hari_ini'       => $absensiHariIni,
-                'rekap_bulan_ini'        => $rekapBulanIni,
-                'total_hari_efektif'     => $totalHariEfektif,
-                'persentase_hadir'       => $persentaseHadir,
-                'tugas_belum_dikumpulkan'=> $tugasBelumDikumpulkan,
-                'total_tugas_dikumpulkan'=> $totalTugasDikumpulkan,
-                'ujian_aktif'            => $ujianAktif,
-                'ujian_mendatang'        => $ujianMendatang,
-                'materi_terbaru'         => $materiTerbaru,
-                'nilai_terbaru'          => $nilaiTerbaru,
-                'rata_rata_nilai'        => round($rataRataNilai, 2),
-                'total_pelanggaran'      => $totalPelanggaran,
-                'unread_notifikasi'      => $unreadNotifikasi,
-                'notifikasi_terbaru'     => $notifikasiTerbaru,
+                'hari_ini'               => $hariIni,
+                'absensi_hari_ini'       => $absensiHariIni ? [
+                    'status'    => $absensiHariIni->status,
+                    'tanggal'   => $absensiHariIni->tanggal?->format('Y-m-d'),
+                    'keterangan'=> $absensiHariIni->keterangan ?? null,
+                ] : null,
+                'rekap_bulan_ini'        => array_merge($rekapBulanIni, [
+                    'total_hari_efektif' => $totalHariEfektif,
+                    'persentase_hadir'   => $persentaseHadir,
+                ]),
+                'tugas' => [
+                    'belum_dikumpulkan'      => $tugasBelumDikumpulkan,
+                    'total_dikumpulkan_bulan_ini' => $totalTugasDikumpulkan,
+                ],
+                'ujian' => [
+                    'aktif'     => $ujianAktif,
+                    'mendatang' => $ujianMendatang,
+                ],
+                'materi_terbaru'    => $materiTerbaru,
+                'nilai' => [
+                    'terbaru'          => $nilaiTerbaru,
+                    'rata_rata_bulan_ini' => round((float) $rataRataNilai, 2),
+                ],
+                'total_pelanggaran_tahun_ini' => $totalPelanggaran,
+                'notifikasi' => [
+                    'unread'  => $unreadNotifikasi,
+                    'terbaru' => $notifikasiTerbaru,
+                ],
             ],
         ]);
     }

@@ -218,7 +218,7 @@ class GuruController extends Controller
             'tanggal_lahir'       => ['nullable', 'date'],
             'alamat'              => ['nullable', 'string'],
             'no_hp'               => ['nullable', 'string', 'max:20'],
-            'email'               => ['nullable', 'email', 'max:100'],
+            'email'               => ['nullable', 'email', 'max:100', Rule::unique('users', 'email')->ignore($guru->pengguna_id)],
             'foto'                => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'pendidikan_terakhir' => ['nullable', 'string', 'max:20'],
             'jurusan_pendidikan'  => ['nullable', 'string', 'max:100'],
@@ -228,7 +228,9 @@ class GuruController extends Controller
             'tanggal_masuk'       => ['nullable', 'date'],
             'adalah_guru_piket'   => ['boolean'],
             'status'              => ['required', 'in:aktif,tidak_aktif,cuti'],
-        ], $this->validasiPesan());
+        ], array_merge($this->validasiPesan(), [
+            'email.unique' => 'Email sudah digunakan oleh akun lain.',
+        ]));
 
         if ($request->hasFile('foto')) {
             if ($guru->foto) {

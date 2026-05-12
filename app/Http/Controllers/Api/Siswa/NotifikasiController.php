@@ -10,62 +10,76 @@ use Illuminate\Support\Facades\Auth;
 
 class NotifikasiController extends Controller
 {
+    // ── Index ──────────────────────────────────────────────────────────────────
+
     /**
      * GET /api/siswa/notifikasi
-     * Daftar notifikasi milik siswa.
-     * Query: ?status=belum_dibaca|dibaca&per_page=
+     * Daftar notifikasi milik siswa, terbaru di atas.
+     *
+     * Query params:
+     *   - status    (string) : 'belum_dibaca' | 'dibaca'
+     *   - per_page  (int)    : default 20, max 50
      */
     public function index(Request $request): JsonResponse
     {
-        $user  = Auth::user();
+        $user        = Auth::user();
+        $status      = $request->input('status');
+        $statusValid = ['belum_dibaca', 'dibaca'];
+
         $query = Notifikasi::where('pengguna_id', $user->id);
 
-        if ($request->filled('status')) {
-            if ($request->status === 'belum_dibaca') {
-                $query->where('sudah_dibaca', false);
-            } elseif ($request->status === 'dibaca') {
-                $query->where('sudah_dibaca', true);
-            }
+        if (in_array($status, $statusValid, true)) {
+            $status === 'belum_dibaca'
+                ? $query->belumDibaca()
+                : $query->sudahDibaca();
         }
 
-        $perPage     = min((int) $request->get('per_page', 20), 50);
-        $notifikasis = $query->orderByDesc('created_at')->paginate($perPage);
+        $perPage      = min((int) ($request->per_page ?? 20), 50);
+        $notifikasis  = $query
+            ->orderByDesc('created_at')
+            ->paginate($perPage)
+            ->withQueryString();
 
+        // Hitung unread dari keseluruhan (bukan subset filter)
         $unread = Notifikasi::where('pengguna_id', $user->id)
-            ->where('sudah_dibaca', false)
+            ->belumDibaca()
             ->count();
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'notifikasi' => $notifikasis,
-                'unread'     => $unread,
-                'jenis_list' => ['info', 'peringatan', 'nilai', 'absensi', 'tugas', 'pengumuman'],
+                'notifikasi'  => $notifikasis->map(fn ($n) => $this->formatNotifikasi($n)),
+                'unread'      => $unread,
+                'jenis_list'  => Notifikasi::JENIS_VALID,
+                'meta'        => [
+                    'current_page' => $notifikasis->currentPage(),
+                    'last_page'    => $notifikasis->lastPage(),
+                    'per_page'     => $notifikasis->perPage(),
+                    'total'        => $notifikasis->total(),
+                ],
             ],
         ]);
     }
 
+    // ── Show ───────────────────────────────────────────────────────────────────
+
     /**
      * GET /api/siswa/notifikasi/{notifikasi}
-     * Detail notifikasi; otomatis ditandai dibaca.
+     * Detail notifikasi & otomatis tandai dibaca.
      */
     public function show(Notifikasi $notifikasi): JsonResponse
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        abort_if((int) $notifikasi->pengguna_id !== (int) Auth::id(), 403);
 
-        if (! $notifikasi->sudah_dibaca) {
-            $notifikasi->update([
-                'sudah_dibaca' => true,
-                'dibaca_pada'  => now(),
-            ]);
-        }
+        $notifikasi->tandaiDibaca();
 
         return response()->json([
             'success' => true,
-            'data'    => ['notifikasi' => $notifikasi],
+            'data'    => ['notifikasi' => $this->formatNotifikasi($notifikasi)],
         ]);
     }
+
+    // ── Mark Read ──────────────────────────────────────────────────────────────
 
     /**
      * PATCH /api/siswa/notifikasi/{notifikasi}/read
@@ -73,19 +87,18 @@ class NotifikasiController extends Controller
      */
     public function markRead(Notifikasi $notifikasi): JsonResponse
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        abort_if((int) $notifikasi->pengguna_id !== (int) Auth::id(), 403);
 
-        $notifikasi->update([
-            'sudah_dibaca' => true,
-            'dibaca_pada'  => now(),
-        ]);
+        $notifikasi->tandaiDibaca();
 
         return response()->json([
             'success' => true,
             'message' => 'Notifikasi telah ditandai sebagai dibaca.',
+            'data'    => ['notifikasi' => $this->formatNotifikasi($notifikasi)],
         ]);
     }
+
+    // ── Mark All Read ──────────────────────────────────────────────────────────
 
     /**
      * PATCH /api/siswa/notifikasi/read-all
@@ -93,18 +106,24 @@ class NotifikasiController extends Controller
      */
     public function markAllRead(): JsonResponse
     {
-        Notifikasi::where('pengguna_id', Auth::id())
-            ->where('sudah_dibaca', false)
-            ->update([
+        $query = Notifikasi::where('pengguna_id', Auth::id())->belumDibaca();
+
+        $jumlah = 0;
+        if ($query->exists()) {
+            $jumlah = $query->count();
+            $query->update([
                 'sudah_dibaca' => true,
                 'dibaca_pada'  => now(),
             ]);
+        }
 
         return response()->json([
             'success' => true,
-            'message' => 'Semua notifikasi telah ditandai sebagai dibaca.',
+            'message' => "Semua notifikasi ({$jumlah}) telah ditandai sebagai dibaca.",
         ]);
     }
+
+    // ── Destroy ────────────────────────────────────────────────────────────────
 
     /**
      * DELETE /api/siswa/notifikasi/{notifikasi}
@@ -112,8 +131,7 @@ class NotifikasiController extends Controller
      */
     public function destroy(Notifikasi $notifikasi): JsonResponse
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        abort_if((int) $notifikasi->pengguna_id !== (int) Auth::id(), 403);
 
         $notifikasi->delete();
 
@@ -121,5 +139,21 @@ class NotifikasiController extends Controller
             'success' => true,
             'message' => 'Notifikasi berhasil dihapus.',
         ]);
+    }
+
+    // ── Helper ─────────────────────────────────────────────────────────────────
+
+    private function formatNotifikasi(Notifikasi $n): array
+    {
+        return [
+            'id'           => $n->id,
+            'judul'        => $n->judul,
+            'pesan'        => $n->pesan,
+            'jenis'        => $n->jenis,
+            'sudah_dibaca' => (bool) $n->sudah_dibaca,
+            'dibaca_pada'  => $n->dibaca_pada?->toIso8601String(),
+            'created_at'   => $n->created_at?->toIso8601String(),
+            'data'         => $n->data ?? null, // payload tambahan (JSON)
+        ];
     }
 }

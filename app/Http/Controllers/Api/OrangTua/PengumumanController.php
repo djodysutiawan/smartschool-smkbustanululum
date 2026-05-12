@@ -6,18 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\Pengumuman;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str; // FIX (P1009): tambah import Str agar \Str::limit() dikenali
 
 class PengumumanController extends Controller
 {
     /**
      * GET /api/ortu/pengumuman
-     *
-     * Daftar pengumuman untuk orang_tua atau semua role.
-     * Hanya yang sudah dipublikasikan dan belum kadaluarsa.
-     *
-     * Query params:
-     *   - cari     (optional) pencarian judul
-     *   - per_page (optional, default 15)
+     * Query: ?cari= &page=
      */
     public function index(Request $request): JsonResponse
     {
@@ -25,49 +20,96 @@ class PengumumanController extends Controller
             ->untukRole('orang_tua')
             ->where(function ($q) {
                 $q->whereNull('kadaluarsa_pada')
-                  ->orWhere('kadaluarsa_pada', '>=', now());
-            });
+                  ->orWhere('kadaluarsa_pada', '>', now());
+            })
+            ->with('dibuatOleh');
 
         if ($request->filled('cari')) {
-            $query->where('judul', 'like', '%' . $request->cari . '%');
+            $cari = $request->string('cari')->trim()->value();
+            $query->where(function ($q) use ($cari) {
+                $q->where('judul', 'like', "%{$cari}%")
+                  ->orWhere('isi', 'like', "%{$cari}%");
+            });
         }
 
-        $perPage    = $request->get('per_page', 15);
         $pengumuman = $query
             ->orderByDesc('dipinned')
             ->orderByDesc('dipublikasikan_pada')
-            ->paginate($perPage)
+            ->paginate(10)
             ->withQueryString();
 
         return response()->json([
-            'pengumuman' => $pengumuman,
+            'success' => true,
+            'data'    => [
+                'pengumuman' => $pengumuman->map(fn ($p) => [
+                    'id'                  => $p->id,
+                    'judul'               => $p->judul,
+                    // FIX: gunakan Str::limit() (FQCN via import) bukan \Str::limit()
+                    'ringkasan'           => $p->ringkasan ?? Str::limit(strip_tags($p->isi), 120),
+                    'dipinned'            => (bool) $p->dipinned,
+                    'dipublikasikan_pada' => $p->dipublikasikan_pada?->toIso8601String(),
+                    'kadaluarsa_pada'     => $p->kadaluarsa_pada?->toIso8601String(),
+                    'dibuat_oleh'         => $p->dibuatOleh?->name,
+                ])->values(),
+                'pagination' => [
+                    'current_page' => $pengumuman->currentPage(),
+                    'last_page'    => $pengumuman->lastPage(),
+                    'per_page'     => $pengumuman->perPage(),
+                    'total'        => $pengumuman->total(),
+                ],
+            ],
         ]);
     }
 
     /**
      * GET /api/ortu/pengumuman/{pengumuman}
-     *
-     * Detail pengumuman beserta 5 pengumuman terkait terbaru.
      */
     public function show(Pengumuman $pengumuman): JsonResponse
     {
-        abort_if(
-            ! in_array($pengumuman->target_role, ['orang_tua', 'semua'])
-            || ! $pengumuman->dipublikasikan,
-            403,
-            'Pengumuman ini tidak tersedia untuk Anda.'
-        );
+        if ($pengumuman->dipublikasikan_pada === null) {
+            return response()->json(['success' => false, 'message' => 'Pengumuman tidak ditemukan.'], 404);
+        }
+
+        if (! in_array($pengumuman->target_role, ['orang_tua', 'semua'])) {
+            return response()->json(['success' => false, 'message' => 'Anda tidak memiliki akses ke pengumuman ini.'], 403);
+        }
 
         $terkait = Pengumuman::dipublikasikan()
             ->untukRole('orang_tua')
+            ->where(function ($q) {
+                $q->whereNull('kadaluarsa_pada')
+                  ->orWhere('kadaluarsa_pada', '>', now());
+            })
             ->where('id', '!=', $pengumuman->id)
+            ->with('dibuatOleh')
+            ->orderByDesc('dipinned')
             ->orderByDesc('dipublikasikan_pada')
             ->limit(5)
             ->get();
 
+        $sudahKadaluarsa = $pengumuman->kadaluarsa_pada !== null
+            && $pengumuman->kadaluarsa_pada->isPast();
+
         return response()->json([
-            'pengumuman' => $pengumuman,
-            'terkait'    => $terkait,
+            'success' => true,
+            'data'    => [
+                'pengumuman' => [
+                    'id'                  => $pengumuman->id,
+                    'judul'               => $pengumuman->judul,
+                    'isi'                 => $pengumuman->isi,
+                    'dipinned'            => (bool) $pengumuman->dipinned,
+                    'sudah_kadaluarsa'    => $sudahKadaluarsa,
+                    'dipublikasikan_pada' => $pengumuman->dipublikasikan_pada?->toIso8601String(),
+                    'kadaluarsa_pada'     => $pengumuman->kadaluarsa_pada?->toIso8601String(),
+                    'dibuat_oleh'         => $pengumuman->dibuatOleh?->name,
+                ],
+                'terkait' => $terkait->map(fn ($p) => [
+                    'id'                  => $p->id,
+                    'judul'               => $p->judul,
+                    'dipublikasikan_pada' => $p->dipublikasikan_pada?->toIso8601String(),
+                    'dibuat_oleh'         => $p->dibuatOleh?->name,
+                ])->values(),
+            ],
         ]);
     }
 }

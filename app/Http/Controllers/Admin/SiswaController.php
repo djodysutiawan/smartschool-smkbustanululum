@@ -224,7 +224,7 @@ class SiswaController extends Controller
             'agama'           => ['nullable', 'string', 'max:20'],
             'alamat'          => ['nullable', 'string'],
             'no_hp'           => ['nullable', 'string', 'max:20'],
-            'email'           => ['nullable', 'email', 'max:100'],
+            'email' => ['nullable', 'email', 'max:100', Rule::unique('users', 'email')->ignore($siswa->pengguna_id)],
             'foto'            => ['nullable', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
             'nama_ayah'       => ['nullable', 'string', 'max:150'],
             'pekerjaan_ayah'  => ['nullable', 'string', 'max:100'],
@@ -243,6 +243,7 @@ class SiswaController extends Controller
             'tanggal_keluar'  => ['nullable', 'date', 'after_or_equal:tanggal_masuk'],
         ], array_merge($this->validasiPesan(), [
             'tanggal_keluar.after_or_equal' => 'Tanggal keluar harus setelah atau sama dengan tanggal masuk.',
+            'email.unique' => 'Email sudah digunakan oleh akun lain.',
         ]));
 
         if ($request->hasFile('foto')) {

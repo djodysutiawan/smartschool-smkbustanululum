@@ -40,6 +40,7 @@
     .btn-primary:hover { filter: brightness(.93); }
     .btn-primary:disabled { opacity: .6; cursor: not-allowed; filter: none; }
 
+    /* .alert hanya untuk session('error') dari controller, bukan $errors validasi */
     .alert { display: flex; align-items: flex-start; gap: 10px; padding: 12px 16px; border-radius: var(--radius-sm); margin-bottom: 20px; font-size: 13.5px; background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
 
     .form-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 16px; }
@@ -128,21 +129,15 @@
         </a>
     </div>
 
+    {{--
+        PERUBAHAN 1: Blok @if($errors->any()) .alert DIHAPUS dari sini.
+        Error validasi sekarang HANYA ditampilkan via SweetAlert di bagian <script>.
+        .alert di bawah ini hanya untuk session('error') dari controller (misal: kelas penuh).
+    --}}
     @if(session('error'))
         <div class="alert">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             {{ session('error') }}
-        </div>
-    @endif
-    @if($errors->any())
-        <div class="alert">
-            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            <div>
-                <strong style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700">Terdapat {{ $errors->count() }} kesalahan:</strong>
-                <ul style="margin:6px 0 0 16px;display:flex;flex-direction:column;gap:2px">
-                    @foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach
-                </ul>
-            </div>
         </div>
     @endif
 
@@ -378,39 +373,111 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // ─── Session error dari controller (bukan validasi) ──────────────────────────
     @if(session('error'))
-    Swal.fire({ icon:'error', title:'Gagal!', text:@json(session('error')), confirmButtonColor:'#1f63db' });
-    @endif
-    @if($errors->any())
     Swal.fire({
-        icon:'error', title:'Terdapat {{ $errors->count() }} Kesalahan',
-        html:`<ul style="text-align:left;padding-left:16px;margin:0;display:flex;flex-direction:column;gap:4px">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>`,
-        confirmButtonColor:'#1f63db',
+        icon: 'error',
+        title: 'Gagal!',
+        text: @json(session('error')),
+        confirmButtonColor: '#1f63db',
     });
     @endif
 
-    // Toggle akun panel
-    document.getElementById('buatAkunToggle').addEventListener('change', function() {
+    {{--
+        PERUBAHAN 2: Ganti Swal.fire tunggal dengan logic pemisah
+        error duplikat vs error biasa.
+        - Error duplikat  → popup merah "Data Sudah Terdaftar"
+        - Error biasa     → popup kuning "Periksa Isian Form"
+        - Keduanya ada    → popup merah dulu, setelah klik baru popup kuning
+    --}}
+    @if($errors->any())
+    (function () {
+        const semuaError = @json($errors->toArray());
+        const kataDuplikat = ['sudah digunakan', 'sudah terdaftar', 'sudah ada'];
+
+        let pesanDuplikat = [];
+        let pesanLain     = [];
+
+        for (const [field, messages] of Object.entries(semuaError)) {
+            messages.forEach(function (msg) {
+                const isDuplikat = kataDuplikat.some(function (k) {
+                    return msg.toLowerCase().includes(k);
+                });
+                if (isDuplikat) {
+                    pesanDuplikat.push('<li style="margin-bottom:5px">⚠️ ' + msg + '</li>');
+                } else {
+                    pesanLain.push('<li style="margin-bottom:5px">' + msg + '</li>');
+                }
+            });
+        }
+
+        const listStyle = 'text-align:left;padding-left:18px;margin:4px 0 0';
+
+        if (pesanDuplikat.length > 0 && pesanLain.length === 0) {
+            // Hanya ada error duplikat
+            Swal.fire({
+                icon: 'error',
+                title: 'Data Sudah Terdaftar!',
+                html: '<ul style="' + listStyle + '">' + pesanDuplikat.join('') + '</ul>',
+                confirmButtonText: 'Periksa Kembali',
+                confirmButtonColor: '#dc2626',
+            });
+
+        } else if (pesanDuplikat.length === 0 && pesanLain.length > 0) {
+            // Hanya ada error biasa
+            Swal.fire({
+                icon: 'warning',
+                title: 'Periksa Isian Form',
+                html: '<ul style="' + listStyle + '">' + pesanLain.join('') + '</ul>',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#1f63db',
+            });
+
+        } else if (pesanDuplikat.length > 0 && pesanLain.length > 0) {
+            // Ada keduanya — tampilkan duplikat dulu, lalu error lain setelah klik
+            Swal.fire({
+                icon: 'error',
+                title: 'Data Sudah Terdaftar!',
+                html: '<ul style="' + listStyle + '">' + pesanDuplikat.join('') + '</ul>',
+                confirmButtonText: 'Lihat Error Lainnya →',
+                confirmButtonColor: '#dc2626',
+            }).then(function () {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Periksa Isian Form',
+                    html: '<ul style="' + listStyle + '">' + pesanLain.join('') + '</ul>',
+                    confirmButtonText: 'OK',
+                    confirmButtonColor: '#1f63db',
+                });
+            });
+        }
+    })();
+    @endif
+
+    // ─── Toggle akun panel ───────────────────────────────────────────────────────
+    document.getElementById('buatAkunToggle').addEventListener('change', function () {
         document.getElementById('akunPanel').classList.toggle('show', this.checked);
     });
 
-    // Foto preview
-    document.getElementById('fotoInput').addEventListener('change', function(e) {
+    // ─── Foto preview ────────────────────────────────────────────────────────────
+    document.getElementById('fotoInput').addEventListener('change', function (e) {
         const file = e.target.files[0];
         if (!file) return;
         if (file.size > 2 * 1024 * 1024) {
-            Swal.fire({ icon:'warning', title:'File Terlalu Besar', text:'Ukuran file melebihi 2 MB.', confirmButtonColor:'#1f63db' });
-            this.value = ''; return;
+            Swal.fire({ icon: 'warning', title: 'File Terlalu Besar', text: 'Ukuran file melebihi 2 MB.', confirmButtonColor: '#1f63db' });
+            this.value = '';
+            return;
         }
         document.getElementById('previewImage').src = URL.createObjectURL(file);
         document.getElementById('previewImage').style.display = 'block';
         document.getElementById('fotoPlaceholder').style.display = 'none';
         document.getElementById('fotoFilename').textContent = file.name;
         document.getElementById('fotoFilename').style.color = 'var(--text2)';
-        document.getElementById('fotoFilesize').textContent = (file.size / (1024*1024)).toFixed(2) + ' MB';
+        document.getElementById('fotoFilesize').textContent = (file.size / (1024 * 1024)).toFixed(2) + ' MB';
         document.getElementById('fotoFilesize').style.display = 'inline';
         document.getElementById('btnRemoveFoto').style.display = 'inline-flex';
     });
+
     function removeFoto() {
         document.getElementById('fotoInput').value = '';
         document.getElementById('previewImage').style.display = 'none';
@@ -422,10 +489,11 @@
         document.getElementById('btnRemoveFoto').style.display = 'none';
     }
 
-    document.getElementById('siswaForm').addEventListener('submit', function() {
+    // ─── Loading state saat submit ───────────────────────────────────────────────
+    document.getElementById('siswaForm').addEventListener('submit', function () {
         const btn = document.getElementById('btnSubmit');
         btn.disabled = true;
-        btn.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…`;
+        btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="animation:spin .7s linear infinite"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Menyimpan…';
     });
 </script>
 </x-app-layout>

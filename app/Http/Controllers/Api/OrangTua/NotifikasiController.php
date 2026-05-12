@@ -10,15 +10,11 @@ use Illuminate\Support\Facades\Auth;
 
 class NotifikasiController extends Controller
 {
+    private const JENIS_LIST = ['info', 'peringatan', 'nilai', 'absensi', 'pelanggaran', 'pengumuman'];
+
     /**
      * GET /api/ortu/notifikasi
-     *
-     * Daftar notifikasi milik orang tua, terbaru di atas.
-     *
-     * Query params:
-     *   - status   (optional) dibaca|belum
-     *   - jenis    (optional) info|peringatan|nilai|absensi|pelanggaran|pengumuman
-     *   - per_page (optional, default 20)
+     * Query: ?status=dibaca|belum &jenis= &page=
      */
     public function index(Request $request): JsonResponse
     {
@@ -29,53 +25,92 @@ class NotifikasiController extends Controller
             $query->where('sudah_dibaca', $request->status === 'dibaca');
         }
 
-        if ($request->filled('jenis')) {
+        if ($request->filled('jenis') && in_array($request->jenis, self::JENIS_LIST)) {
             $query->where('jenis', $request->jenis);
         }
 
-        $perPage     = $request->get('per_page', 20);
-        $notifikasis = $query->orderByDesc('created_at')->paginate($perPage)->withQueryString();
+        $notifikasis = $query
+            ->orderByDesc('created_at')
+            ->paginate(20)
+            ->withQueryString();
 
-        $unread    = Notifikasi::where('pengguna_id', $user->id)->where('sudah_dibaca', false)->count();
-        $jenisList = ['info', 'peringatan', 'nilai', 'absensi', 'pelanggaran', 'pengumuman'];
+        $unread = Notifikasi::where('pengguna_id', $user->id)
+            ->where('sudah_dibaca', false)
+            ->count();
 
         return response()->json([
-            'notifikasi' => $notifikasis,
-            'unread'     => $unread,
-            'jenis_list' => $jenisList,
+            'success' => true,
+            'data'    => [
+                'unread'      => $unread,
+                'jenis_list'  => self::JENIS_LIST,
+                'notifikasi'  => $notifikasis->map(fn ($n) => [
+                    'id'           => $n->id,
+                    'judul'        => $n->judul,
+                    'isi'          => $n->isi,
+                    'jenis'        => $n->jenis,
+                    'sudah_dibaca' => (bool) $n->sudah_dibaca,
+                    'dibaca_pada'  => $n->dibaca_pada?->toIso8601String(),
+                    'created_at'   => $n->created_at?->toIso8601String(),
+                ])->values(),
+                'pagination'  => [
+                    'current_page' => $notifikasis->currentPage(),
+                    'last_page'    => $notifikasis->lastPage(),
+                    'per_page'     => $notifikasis->perPage(),
+                    'total'        => $notifikasis->total(),
+                ],
+            ],
         ]);
     }
 
     /**
      * GET /api/ortu/notifikasi/{notifikasi}
-     *
-     * Detail notifikasi — otomatis ditandai sudah dibaca.
+     * Otomatis ditandai sudah dibaca saat dibuka.
      */
     public function show(Notifikasi $notifikasi): JsonResponse
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        if ($notifikasi->pengguna_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
 
         if (! $notifikasi->sudah_dibaca) {
-            $notifikasi->update(['sudah_dibaca' => true, 'dibaca_pada' => now()]);
+            $notifikasi->update([
+                'sudah_dibaca' => true,
+                'dibaca_pada'  => now(),
+            ]);
         }
 
         return response()->json([
-            'notifikasi' => $notifikasi,
+            'success' => true,
+            'data'    => [
+                'notifikasi' => [
+                    'id'           => $notifikasi->id,
+                    'judul'        => $notifikasi->judul,
+                    'isi'          => $notifikasi->isi,
+                    'jenis'        => $notifikasi->jenis,
+                    'sudah_dibaca' => true,
+                    'dibaca_pada'  => $notifikasi->dibaca_pada?->toIso8601String(),
+                    'created_at'   => $notifikasi->created_at?->toIso8601String(),
+                ],
+            ],
         ]);
     }
 
     /**
      * PATCH /api/ortu/notifikasi/{notifikasi}/read
-     *
      * Tandai satu notifikasi sebagai sudah dibaca.
      */
     public function markRead(Notifikasi $notifikasi): JsonResponse
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        if ($notifikasi->pengguna_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
 
-        $notifikasi->update(['sudah_dibaca' => true, 'dibaca_pada' => now()]);
+        if (! $notifikasi->sudah_dibaca) {
+            $notifikasi->update([
+                'sudah_dibaca' => true,
+                'dibaca_pada'  => now(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -85,14 +120,16 @@ class NotifikasiController extends Controller
 
     /**
      * PATCH /api/ortu/notifikasi/read-all
-     *
      * Tandai semua notifikasi sebagai sudah dibaca.
      */
     public function markAllRead(): JsonResponse
     {
         Notifikasi::where('pengguna_id', Auth::id())
             ->where('sudah_dibaca', false)
-            ->update(['sudah_dibaca' => true, 'dibaca_pada' => now()]);
+            ->update([
+                'sudah_dibaca' => true,
+                'dibaca_pada'  => now(),
+            ]);
 
         return response()->json([
             'success' => true,
@@ -102,13 +139,12 @@ class NotifikasiController extends Controller
 
     /**
      * DELETE /api/ortu/notifikasi/{notifikasi}
-     *
-     * Hapus notifikasi.
      */
     public function destroy(Notifikasi $notifikasi): JsonResponse
     {
-        $user = Auth::user();
-        abort_if($notifikasi->pengguna_id !== $user->id, 403);
+        if ($notifikasi->pengguna_id !== Auth::id()) {
+            return response()->json(['success' => false, 'message' => 'Akses ditolak.'], 403);
+        }
 
         $notifikasi->delete();
 

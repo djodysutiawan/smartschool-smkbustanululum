@@ -9,12 +9,9 @@ use App\Models\Tugas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rule;
 
 class TugasController extends Controller
 {
-    private const JENIS_PENGUMPULAN = ['file', 'teks', 'link', 'foto'];
-
     private function getSiswa()
     {
         $siswa = Auth::user()->siswa;
@@ -22,10 +19,17 @@ class TugasController extends Controller
         return $siswa;
     }
 
+    private function statusDikumpulkan(): array
+    {
+        return [
+            PengumpulanTugas::STATUS_DIKUMPULKAN,
+            PengumpulanTugas::STATUS_TERLAMBAT,
+            PengumpulanTugas::STATUS_DINILAI,
+        ];
+    }
+
     /**
      * GET /api/siswa/tugas
-     * Daftar tugas untuk kelas siswa.
-     * Query: ?status=sudah|belum|terlambat&mapel_id=&per_page=
      */
     public function index(Request $request): JsonResponse
     {
@@ -33,59 +37,81 @@ class TugasController extends Controller
 
         $query = Tugas::with(['mataPelajaran', 'guru'])
             ->where('kelas_id', $siswa->kelas_id)
-            ->where('dipublikasikan', true);
+            ->dipublikasikan();
 
         if ($request->filled('status')) {
-            if ($request->status === 'sudah') {
-                $query->whereHas('pengumpulan', fn ($q) => $q->where('siswa_id', $siswa->id));
-            } elseif ($request->status === 'belum') {
-                $query->whereDoesntHave('pengumpulan', fn ($q) => $q->where('siswa_id', $siswa->id))
-                    ->where('batas_waktu', '>=', now());
-            } elseif ($request->status === 'terlambat') {
-                $query->whereDoesntHave('pengumpulan', fn ($q) => $q->where('siswa_id', $siswa->id))
-                    ->where('batas_waktu', '<', now());
-            }
+            match ($request->status) {
+                'sudah'     => $query->whereHas('pengumpulan', fn($q) =>
+                                    $q->where('siswa_id', $siswa->id)
+                                      ->whereIn('status', $this->statusDikumpulkan())),
+
+                'belum'     => $query->whereDoesntHave('pengumpulan', fn($q) =>
+                                    $q->where('siswa_id', $siswa->id)
+                                      ->whereIn('status', $this->statusDikumpulkan()))
+                                     ->where('batas_waktu', '>=', now()),
+
+                'terlambat' => $query->whereDoesntHave('pengumpulan', fn($q) =>
+                                    $q->where('siswa_id', $siswa->id)
+                                      ->whereIn('status', $this->statusDikumpulkan()))
+                                     ->where('batas_waktu', '<', now()),
+
+                default     => null,
+            };
         }
 
         if ($request->filled('mapel_id')) {
-            $query->where('mata_pelajaran_id', $request->mapel_id);
+            $query->where('mata_pelajaran_id', (int) $request->mapel_id);
         }
 
-        $perPage = min((int) $request->get('per_page', 15), 50);
-        $tugas   = $query->orderBy('batas_waktu')->paginate($perPage);
+        $tugas = $query->orderBy('batas_waktu')->paginate(15)->withQueryString();
 
-        $sudahDikumpulkan = PengumpulanTugas::where('siswa_id', $siswa->id)
+        $sudahDikumpulkanIds = PengumpulanTugas::where('siswa_id', $siswa->id)
+            ->whereIn('status', $this->statusDikumpulkan())
             ->pluck('tugas_id')
             ->toArray();
 
-        $mapelList = MataPelajaran::whereHas('jadwalPelajaran', fn ($q) =>
-            $q->where('kelas_id', $siswa->kelas_id)->where('is_active', true)
-        )->orderBy('nama_mapel')->get(['id', 'nama_mapel']);
+        $mapelList = MataPelajaran::whereHas('tugas', function ($q) use ($siswa) {
+                $q->where('kelas_id', $siswa->kelas_id)->where('dipublikasikan', true);
+            })
+            ->orderBy('nama_mapel')
+            ->get(['id', 'nama_mapel']);
+
+        // Tandai setiap tugas apakah sudah dikumpulkan
+        $tugas->getCollection()->transform(function ($t) use ($sudahDikumpulkanIds) {
+            $t->sudah_dikumpulkan = in_array($t->id, $sudahDikumpulkanIds);
+            return $t;
+        });
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'tugas'             => $tugas,
-                'sudah_dikumpulkan' => $sudahDikumpulkan,
-                'mapel_list'        => $mapelList,
+                'tugas'      => $tugas,
+                'mapel_list' => $mapelList,
             ],
         ]);
     }
 
     /**
      * GET /api/siswa/tugas/{tugas}
-     * Detail tugas beserta status pengumpulan.
      */
     public function show(Tugas $tugas): JsonResponse
     {
         $siswa = $this->getSiswa();
 
-        abort_if($tugas->kelas_id !== $siswa->kelas_id, 403, 'Tugas ini bukan untuk kelas Anda.');
+        if ((int) $tugas->kelas_id !== (int) $siswa->kelas_id) {
+            return response()->json(['success' => false, 'message' => 'Tugas ini bukan untuk kelas Anda.'], 403);
+        }
 
-        $tugas->load(['mataPelajaran', 'guru', 'kelas']);
+        if (! $tugas->dipublikasikan) {
+            return response()->json(['success' => false, 'message' => 'Tugas ini tidak tersedia.'], 403);
+        }
 
-        $pengumpulan = PengumpulanTugas::where('tugas_id', $tugas->id)
+        $tugas->load(['mataPelajaran', 'guru', 'kelas', 'tahunAjaran']);
+
+        $pengumpulan = PengumpulanTugas::with('tugas')
+            ->where('tugas_id', $tugas->id)
             ->where('siswa_id', $siswa->id)
+            ->whereIn('status', $this->statusDikumpulkan())
             ->first();
 
         return response()->json([
@@ -94,7 +120,7 @@ class TugasController extends Controller
                 'tugas'            => $tugas,
                 'pengumpulan'      => $pengumpulan,
                 'sudah_dikumpulkan'=> ! is_null($pengumpulan),
-                'terlambat'        => now()->gt($tugas->batas_waktu),
+                'terlambat'        => $tugas->isTelahBerakhir(),
                 'masih_bisa_kumpul'=> $tugas->isMasihBisaDikumpulkan(),
             ],
         ]);
@@ -102,79 +128,78 @@ class TugasController extends Controller
 
     /**
      * POST /api/siswa/tugas/{tugas}/kumpul
-     * Pengumpulan tugas.
-     * Body: multipart/form-data
-     *   - jenis_pengumpulan: file|teks|link|foto
-     *   - konten_teks (jika jenis=teks)
-     *   - link_pengumpulan (jika jenis=link)
-     *   - file_pengumpulan (jika jenis=file|foto)
-     *   - catatan (opsional)
      */
     public function kumpul(Request $request, Tugas $tugas): JsonResponse
     {
         $siswa = $this->getSiswa();
 
-        abort_if($tugas->kelas_id !== $siswa->kelas_id, 403, 'Tugas ini bukan untuk kelas Anda.');
-        abort_if(! $tugas->dipublikasikan, 403, 'Tugas ini sudah tidak aktif.');
-        abort_if(! $tugas->isMasihBisaDikumpulkan(), 422, 'Batas waktu pengumpulan sudah habis.');
+        if ((int) $tugas->kelas_id !== (int) $siswa->kelas_id) {
+            return response()->json(['success' => false, 'message' => 'Tugas ini bukan untuk kelas Anda.'], 403);
+        }
+        if (! $tugas->dipublikasikan) {
+            return response()->json(['success' => false, 'message' => 'Tugas ini sudah tidak aktif.'], 403);
+        }
+        if (! $tugas->isMasihBisaDikumpulkan()) {
+            return response()->json(['success' => false, 'message' => 'Batas waktu pengumpulan sudah habis.'], 422);
+        }
 
         $sudahDikumpulkan = PengumpulanTugas::where('tugas_id', $tugas->id)
             ->where('siswa_id', $siswa->id)
+            ->whereIn('status', $this->statusDikumpulkan())
             ->exists();
 
         if ($sudahDikumpulkan) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Anda sudah mengumpulkan tugas ini.',
-            ], 422);
+            return response()->json(['success' => false, 'message' => 'Anda sudah mengumpulkan tugas ini.'], 422);
         }
 
-        $validated = $request->validate([
-            'jenis_pengumpulan' => ['required', Rule::in(self::JENIS_PENGUMPULAN)],
-            'konten_teks'       => ['nullable', 'string', 'required_if:jenis_pengumpulan,teks'],
-            'link_pengumpulan'  => ['nullable', 'url', 'required_if:jenis_pengumpulan,link'],
-            'file_pengumpulan'  => [
-                'nullable',
-                'file',
-                'mimes:pdf,doc,docx,jpg,jpeg,png,zip',
-                'max:10240',
-                Rule::requiredIf(fn () => in_array($request->jenis_pengumpulan, ['file', 'foto'])),
-            ],
-            'catatan' => ['nullable', 'string', 'max:1000'],
-        ], [
-            'jenis_pengumpulan.required'  => 'Jenis pengumpulan wajib dipilih.',
-            'konten_teks.required_if'     => 'Teks jawaban wajib diisi.',
-            'link_pengumpulan.required_if'=> 'Link wajib diisi.',
-            'link_pengumpulan.url'        => 'Format link tidak valid.',
-            'file_pengumpulan.mimes'      => 'Format file tidak didukung (pdf, doc, docx, jpg, png, zip).',
-            'file_pengumpulan.max'        => 'Ukuran file maksimal 10MB.',
+        $jenisTugas = $tugas->jenis_pengumpulan;
+
+        $rules = [
+            'jawaban_teks' => ['nullable', 'string', 'max:10000'],
+            'url_link'     => ['nullable', 'url', 'max:255'],
+            'path_file'    => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png,zip', 'max:10240'],
+        ];
+
+        if (in_array($jenisTugas, ['teks', 'semua']))  $rules['jawaban_teks'][] = 'required';
+        if (in_array($jenisTugas, ['link', 'semua']))  $rules['url_link'][]     = 'required';
+        if (in_array($jenisTugas, ['file', 'semua']))  $rules['path_file'][]    = 'required';
+
+        $validated = $request->validate($rules, [
+            'jawaban_teks.required' => 'Jawaban teks wajib diisi.',
+            'jawaban_teks.max'      => 'Jawaban teks terlalu panjang (maks 10.000 karakter).',
+            'url_link.required'     => 'Link wajib diisi.',
+            'url_link.url'          => 'Format link tidak valid.',
+            'url_link.max'          => 'URL terlalu panjang (maks 255 karakter).',
+            'path_file.required'    => 'File wajib diunggah.',
+            'path_file.mimes'       => 'Format file tidak didukung (PDF, Word, JPG, PNG, ZIP).',
+            'path_file.max'         => 'Ukuran file maksimal 10MB.',
         ]);
 
-        if ($request->hasFile('file_pengumpulan')) {
-            $validated['file_pengumpulan'] = $request->file('file_pengumpulan')
-                ->store('pengumpulan-tugas', 'public');
+        $pathFile = null;
+        if ($request->hasFile('path_file') && $request->file('path_file')->isValid()) {
+            $pathFile = $request->file('path_file')->store('pengumpulan-tugas', 'public');
         }
 
-        $status = now()->gt($tugas->batas_waktu) ? 'terlambat' : 'dikumpulkan';
+        $status = $tugas->isTelahBerakhir()
+            ? PengumpulanTugas::STATUS_TERLAMBAT
+            : PengumpulanTugas::STATUS_DIKUMPULKAN;
 
         $pengumpulan = PengumpulanTugas::create([
-            'tugas_id'          => $tugas->id,
-            'siswa_id'          => $siswa->id,
-            'jenis_pengumpulan' => $validated['jenis_pengumpulan'],
-            'konten_teks'       => $validated['konten_teks'] ?? null,
-            'link_pengumpulan'  => $validated['link_pengumpulan'] ?? null,
-            'file_pengumpulan'  => $validated['file_pengumpulan'] ?? null,
-            'catatan'           => $validated['catatan'] ?? null,
-            'status'            => $status,
-            'dikumpulkan_pada'  => now(),
+            'tugas_id'         => $tugas->id,
+            'siswa_id'         => $siswa->id,
+            'path_file'        => $pathFile,
+            'jawaban_teks'     => $validated['jawaban_teks'] ?? null,
+            'url_link'         => $validated['url_link'] ?? null,
+            'status'           => $status,
+            'dikumpulkan_pada' => now(),
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => $status === 'terlambat'
+            'message' => $status === PengumpulanTugas::STATUS_TERLAMBAT
                 ? 'Tugas berhasil dikumpulkan (terlambat).'
                 : 'Tugas berhasil dikumpulkan tepat waktu!',
-            'data'    => ['pengumpulan' => $pengumpulan, 'status' => $status],
+            'data'    => ['pengumpulan' => $pengumpulan],
         ], 201);
     }
 }

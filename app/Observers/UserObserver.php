@@ -8,30 +8,25 @@ class UserObserver
 {
     public function updated(User $user): void
     {
-        // Sync email ke tabel guru
-        if ($user->isDirty('email') || $user->isDirty('name')) {
-            if ($guru = $user->guru) {
-                $guru->withoutObserver(function () use ($guru, $user) {
-                    $data = [];
-                    if ($user->isDirty('email')) $data['email'] = $user->email;
-                    if ($user->isDirty('name'))  $data['nama_lengkap'] = $user->name;
-                    $guru->updateQuietly($data);
-                });
-            }
+        if (! $user->isDirty('email') && ! $user->isDirty('name')) return;
 
-            if ($siswa = $user->siswa) {
-                $data = [];
-                if ($user->isDirty('email')) $data['email'] = $user->email;
-                if ($user->isDirty('name'))  $data['nama_lengkap'] = $user->name;
-                $siswa->updateQuietly($data);
-            }
+        $data = [];
+        if ($user->isDirty('name'))  $data['nama_lengkap'] = $user->name;
+        if ($user->isDirty('email')) $data['email']        = $user->email;
 
-            if ($orangTua = $user->orangTua) {
-                $data = [];
-                if ($user->isDirty('email')) $data['email'] = $user->email;
-                if ($user->isDirty('name'))  $data['nama_lengkap'] = $user->name;
-                $orangTua->updateQuietly($data);
-            }
+        // Sync ke guru
+        if ($guru = $user->guru) {
+            $guru->withoutObservers(fn () => $guru->updateQuietly($data));
+        }
+
+        // Sync ke siswa
+        if ($siswa = $user->siswa) {
+            $siswa->withoutObservers(fn () => $siswa->updateQuietly($data));
+        }
+
+        // Sync ke orang tua
+        if ($orangTua = $user->orangTua) {
+            $orangTua->withoutObservers(fn () => $orangTua->updateQuietly($data));
         }
     }
 }

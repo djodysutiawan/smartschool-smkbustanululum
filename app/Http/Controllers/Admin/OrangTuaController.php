@@ -8,6 +8,7 @@ use App\Models\OrangTua;
 use App\Models\Siswa;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -135,10 +136,14 @@ class OrangTuaController extends Controller
 
     public function update(Request $request, OrangTua $orangTua)
     {
+        // ─── PERBAIKAN: tambah validasi user_email unique ignore ID akun saat ini ───
+        // Ambil ID user yang terhubung (jika ada) untuk di-ignore saat cek unique
+        $userId = $orangTua->pengguna_id;
+
         $validated = $request->validate([
             'nama_lengkap' => ['required', 'string', 'max:150'],
             'no_hp'        => ['required', 'string', 'max:20'],
-            'email'        => ['nullable', 'email', 'max:100'],
+            'email' => ['nullable', 'email', 'max:100', Rule::unique('users', 'email')->ignore($orangTua->pengguna_id)],
             'alamat'       => ['nullable', 'string'],
             'pekerjaan'    => ['nullable', 'string', 'max:100'],
             'siswa_ids'    => ['nullable', 'array'],
@@ -146,30 +151,58 @@ class OrangTuaController extends Controller
             'hubungan'     => ['nullable', 'array'],
             'hubungan.*'   => ['in:ayah,ibu,wali,orang_tua'],
             'kontak_utama' => ['nullable', 'integer', 'exists:siswa,id'],
-        ], $this->validasiPesan());
 
-        DB::transaction(function () use ($request, $validated, $orangTua) {
-            $orangTua->update([
-                'nama_lengkap' => $validated['nama_lengkap'],
-                'no_hp'        => $validated['no_hp'],
-                'email'        => $validated['email'] ?? null,
-                'alamat'       => $validated['alamat'] ?? null,
-                'pekerjaan'    => $validated['pekerjaan'] ?? null,
-            ]);
+            // ── TAMBAHAN: validasi email akun user jika ada di form ──────────────
+            // Ignore email milik user yang sudah terhubung agar tidak false-positive
+            'user_email'   => [
+                'nullable',
+                'email',
+                $userId
+                    ? Rule::unique('users', 'email')->ignore($userId)
+                    : Rule::unique('users', 'email'),
+            ],
+        ], array_merge($this->validasiPesan(), [
+            'user_email.unique' => 'Email akun sudah terdaftar di sistem.',
+            'user_email.email'  => 'Format email akun tidak valid.',
+            'email.unique' => 'Email sudah digunakan oleh akun lain.',
+        ]));
 
-            if (!empty($validated['siswa_ids'])) {
-                $syncData = [];
-                foreach ($validated['siswa_ids'] as $siswaId) {
-                    $syncData[$siswaId] = [
-                        'hubungan'     => $request->hubungan[$siswaId] ?? 'orang_tua',
-                        'kontak_utama' => ($request->kontak_utama == $siswaId),
-                    ];
+        // ─── PERBAIKAN: wrap dalam try-catch untuk tangkap UniqueConstraintViolationException
+        // sebagai fallback jika ada race condition atau field lain yang tidak tercover validasi
+        try {
+            DB::transaction(function () use ($request, $validated, $orangTua) {
+                $orangTua->update([
+                    'nama_lengkap' => $validated['nama_lengkap'],
+                    'no_hp'        => $validated['no_hp'],
+                    'email'        => $validated['email'] ?? null,
+                    'alamat'       => $validated['alamat'] ?? null,
+                    'pekerjaan'    => $validated['pekerjaan'] ?? null,
+                ]);
+
+                // Update email akun user jika ada dan field user_email dikirim
+                if ($orangTua->pengguna && !empty($validated['user_email'])) {
+                    $orangTua->pengguna->update(['email' => $validated['user_email']]);
                 }
-                $orangTua->siswa()->sync($syncData);
-            } else {
-                $orangTua->siswa()->detach();
-            }
-        });
+
+                if (!empty($validated['siswa_ids'])) {
+                    $syncData = [];
+                    foreach ($validated['siswa_ids'] as $siswaId) {
+                        $syncData[$siswaId] = [
+                            'hubungan'     => $request->hubungan[$siswaId] ?? 'orang_tua',
+                            'kontak_utama' => ($request->kontak_utama == $siswaId),
+                        ];
+                    }
+                    $orangTua->siswa()->sync($syncData);
+                } else {
+                    $orangTua->siswa()->detach();
+                }
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            // Tangkap duplicate entry dari DB dan redirect back dengan pesan yang jelas
+            return back()
+                ->withInput()
+                ->withErrors(['user_email' => 'Email akun sudah terdaftar di sistem.']);
+        }
 
         return redirect()->route('admin.orang-tua.show', $orangTua)
             ->with('success', 'Data orang tua berhasil diperbarui.');
@@ -195,9 +228,9 @@ class OrangTuaController extends Controller
     public function forceDelete(int $id)
     {
         $orangTua = OrangTua::onlyTrashed()->findOrFail($id);
-        
+
         DB::transaction(function () use ($orangTua) {
-            $orangTua->siswa()->detach();  // bersihkan pivot table dulu
+            $orangTua->siswa()->detach();
             $orangTua->forceDelete();
         });
 

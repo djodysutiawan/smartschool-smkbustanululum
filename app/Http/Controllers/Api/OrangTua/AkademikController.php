@@ -14,21 +14,32 @@ use Illuminate\Support\Facades\Auth;
 
 class AkademikController extends Controller
 {
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
     private function getOrangTua()
     {
         $orangTua = Auth::user()->orangTua;
-        abort_if(! $orangTua, 403, 'Akun Anda tidak terhubung dengan data orang tua.');
+        if (! $orangTua) {
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Akun Anda tidak terhubung dengan data orang tua.',
+            ], 403));
+        }
         return $orangTua;
     }
 
     private function resolveAnak(Request $request, $orangTua)
     {
         $anakList = $orangTua->siswa()->with('kelas')->get();
-        abort_if($anakList->isEmpty(), 404, 'Data anak tidak ditemukan.');
+        if ($anakList->isEmpty()) {
+            abort(response()->json(['success' => false, 'message' => 'Data anak tidak ditemukan.'], 404));
+        }
 
         if ($request->filled('siswa_id')) {
-            $anak = $anakList->firstWhere('id', $request->siswa_id);
-            abort_if(! $anak, 403, 'Siswa ini bukan anak Anda.');
+            $anak = $anakList->firstWhere('id', (int) $request->siswa_id);
+            if (! $anak) {
+                abort(response()->json(['success' => false, 'message' => 'Siswa ini bukan anak Anda.'], 403));
+            }
             return $anak;
         }
 
@@ -44,22 +55,17 @@ class AkademikController extends Controller
             ?? TahunAjaran::orderByDesc('tahun')->first();
     }
 
+    // ── Nilai ─────────────────────────────────────────────────────────────────
+
     /**
      * GET /api/ortu/akademik/nilai
-     *
-     * Nilai per mata pelajaran anak.
-     *
-     * Query params:
-     *   - siswa_id       (optional)
-     *   - tahun_ajaran_id (optional)
-     *   - mapel_id       (optional)
+     * Query: ?siswa_id= &tahun_ajaran_id= &mapel_id=
      */
     public function nilai(Request $request): JsonResponse
     {
-        $orangTua = $this->getOrangTua();
-        $anak     = $this->resolveAnak($request, $orangTua);
-        $anakList = $orangTua->siswa()->with('kelas')->get();
-
+        $orangTua      = $this->getOrangTua();
+        $anak          = $this->resolveAnak($request, $orangTua);
+        $anakList      = $orangTua->siswa()->with('kelas')->get();
         $tahunAjaran   = $this->resolveTahunAjaran($request);
         $tahunAjaranId = $tahunAjaran?->id;
 
@@ -76,48 +82,69 @@ class AkademikController extends Controller
 
         $tahunList = TahunAjaran::orderByDesc('tahun')->get();
 
-        $statsPerMapel = $nilaiList->groupBy('mata_pelajaran_id')->map(function ($group) {
+        $avgField = fn ($group, string $field) => $group->whereNotNull($field)->avg($field);
+
+        $statsPerMapel = $nilaiList->groupBy('mata_pelajaran_id')->map(function ($group) use ($avgField) {
             $row = $group->first();
             return [
-                'nama'         => $row->mataPelajaran->nama_mapel ?? '-',
-                'nilai_tugas'  => round($group->avg('nilai_tugas') ?? 0, 1),
-                'nilai_harian' => round($group->avg('nilai_harian') ?? 0, 1),
-                'nilai_uts'    => round($group->avg('nilai_uts') ?? 0, 1),
-                'nilai_uas'    => round($group->avg('nilai_uas') ?? 0, 1),
-                'nilai_akhir'  => round($group->avg('nilai_akhir') ?? 0, 1),
+                'mapel_id'     => $row->mata_pelajaran_id,
+                'nama'         => $row->mataPelajaran?->nama_mapel ?? '-',
+                'nilai_tugas'  => round((float) ($avgField($group, 'nilai_tugas') ?? 0), 1),
+                'nilai_harian' => round((float) ($avgField($group, 'nilai_harian') ?? 0), 1),
+                'nilai_uts'    => round((float) ($avgField($group, 'nilai_uts') ?? 0), 1),
+                'nilai_uas'    => round((float) ($avgField($group, 'nilai_uas') ?? 0), 1),
+                'nilai_akhir'  => round((float) ($avgField($group, 'nilai_akhir') ?? 0), 1),
                 'predikat'     => $row->predikat ?? '-',
             ];
-        });
+        })->values();
 
-        $rataRataAkhir = $nilaiList->avg('nilai_akhir');
+        $rataRataAkhir  = round((float) ($nilaiList->whereNotNull('nilai_akhir')->avg('nilai_akhir') ?? 0), 1);
+        $nilaiTertinggi = $statsPerMapel->isNotEmpty() ? $statsPerMapel->max('nilai_akhir') : null;
+        $nilaiTerendah  = $statsPerMapel->isNotEmpty() ? $statsPerMapel->min('nilai_akhir') : null;
 
         return response()->json([
-            'anak'           => $anak,
-            'anak_list'      => $anakList,
-            'nilai_list'     => $nilaiList,
-            'mapel_list'     => $mapelList,
-            'tahun_list'     => $tahunList,
-            'tahun_ajaran'   => $tahunAjaran,
-            'stats_per_mapel'=> $statsPerMapel->values(),
-            'rata_rata_akhir'=> round($rataRataAkhir ?? 0, 1),
+            'success' => true,
+            'data'    => [
+                'anak'           => [
+                    'id'           => $anak->id,
+                    'nama_lengkap' => $anak->nama_lengkap,
+                    'kelas'        => $anak->kelas?->nama_kelas,
+                ],
+                'anak_list'      => $anakList->map(fn ($a) => [
+                    'id'           => $a->id,
+                    'nama_lengkap' => $a->nama_lengkap,
+                ])->values(),
+                'tahun_ajaran'   => $tahunAjaran ? [
+                    'id'    => $tahunAjaran->id,
+                    'tahun' => $tahunAjaran->tahun,
+                ] : null,
+                'tahun_list'     => $tahunList->map(fn ($t) => [
+                    'id'    => $t->id,
+                    'tahun' => $t->tahun,
+                ])->values(),
+                'mapel_list'     => $mapelList->map(fn ($m) => [
+                    'id'        => $m->id,
+                    'nama_mapel' => $m->nama_mapel,
+                ])->values(),
+                'stats_per_mapel' => $statsPerMapel,
+                'rata_rata_akhir' => $rataRataAkhir,
+                'nilai_tertinggi' => $nilaiTertinggi,
+                'nilai_terendah'  => $nilaiTerendah,
+            ],
         ]);
     }
 
+    // ── Rapor ─────────────────────────────────────────────────────────────────
+
     /**
      * GET /api/ortu/akademik/rapor
-     *
-     * Rekap rapor anak per tahun ajaran.
-     *
-     * Query params:
-     *   - siswa_id        (optional)
-     *   - tahun_ajaran_id (optional)
+     * Query: ?siswa_id= &tahun_ajaran_id=
      */
     public function rapor(Request $request): JsonResponse
     {
-        $orangTua = $this->getOrangTua();
-        $anak     = $this->resolveAnak($request, $orangTua);
-        $anakList = $orangTua->siswa()->with('kelas')->get();
-
+        $orangTua      = $this->getOrangTua();
+        $anak          = $this->resolveAnak($request, $orangTua);
+        $anakList      = $orangTua->siswa()->with('kelas')->get();
         $tahunAjaran   = $this->resolveTahunAjaran($request);
         $tahunAjaranId = $tahunAjaran?->id;
 
@@ -131,8 +158,9 @@ class AkademikController extends Controller
             ->map(function ($group) {
                 $latest = $group->sortByDesc('updated_at')->first();
                 return [
-                    'mapel'        => $latest->mataPelajaran,
-                    'guru'         => $latest->guru,
+                    'mapel_id'     => $latest->mata_pelajaran_id,
+                    'nama_mapel'   => $latest->mataPelajaran?->nama_mapel,
+                    'guru'         => $latest->guru?->nama_lengkap,
                     'nilai_tugas'  => $latest->nilai_tugas,
                     'nilai_harian' => $latest->nilai_harian,
                     'nilai_uts'    => $latest->nilai_uts,
@@ -142,52 +170,100 @@ class AkademikController extends Controller
                     'catatan'      => $latest->catatan,
                 ];
             })
-            ->sortBy('mapel.nama_mapel')
+            ->sortBy('nama_mapel')
             ->values();
 
-        $rataRata        = $raporData->avg('nilai_akhir');
-        $tahunList       = TahunAjaran::orderByDesc('tahun')->get();
-        $sebaranPredikat = $raporData->groupBy('predikat')->map->count();
-        $nilaiTertinggi  = $raporData->sortByDesc('nilai_akhir')->first();
-        $nilaiTerendah   = $raporData->sortBy('nilai_akhir')->first();
+        $rataRata = $raporData->isNotEmpty()
+            ? $raporData->whereNotNull('nilai_akhir')
+                ->pipe(fn ($col) => $col->isNotEmpty()
+                    ? round($col->sum(fn ($r) => (float) $r['nilai_akhir']) / $col->count(), 1)
+                    : null)
+            : null;
+
+        $sebaranPredikat = $raporData
+            ->whereNotNull('predikat')
+            ->groupBy('predikat')
+            ->map->count();
+
+        $raporFiltered  = $raporData->whereNotNull('nilai_akhir');
+        $nilaiTertinggi = $raporFiltered->isNotEmpty()
+            ? $raporFiltered->sortByDesc('nilai_akhir')->first()
+            : null;
+        $nilaiTerendah  = $raporFiltered->isNotEmpty()
+            ? $raporFiltered->sortBy('nilai_akhir')->first()
+            : null;
 
         return response()->json([
-            'anak'             => $anak,
-            'anak_list'        => $anakList,
-            'rapor_data'       => $raporData,
-            'rata_rata'        => round($rataRata ?? 0, 1),
-            'tahun_list'       => $tahunList,
-            'tahun_ajaran'     => $tahunAjaran,
-            'sebaran_predikat' => $sebaranPredikat,
-            'nilai_tertinggi'  => $nilaiTertinggi,
-            'nilai_terendah'   => $nilaiTerendah,
+            'success' => true,
+            'data'    => [
+                'anak'             => [
+                    'id'           => $anak->id,
+                    'nama_lengkap' => $anak->nama_lengkap,
+                    'kelas'        => $anak->kelas?->nama_kelas,
+                ],
+                'anak_list'        => $anakList->map(fn ($a) => [
+                    'id'           => $a->id,
+                    'nama_lengkap' => $a->nama_lengkap,
+                ])->values(),
+                'tahun_ajaran'     => $tahunAjaran ? [
+                    'id'    => $tahunAjaran->id,
+                    'tahun' => $tahunAjaran->tahun,
+                ] : null,
+                'rapor_data'       => $raporData,
+                'rata_rata'        => $rataRata,
+                'sebaran_predikat' => $sebaranPredikat,
+                'nilai_tertinggi'  => $nilaiTertinggi,
+                'nilai_terendah'   => $nilaiTerendah,
+            ],
         ]);
     }
 
+    // ── Tugas ─────────────────────────────────────────────────────────────────
+
     /**
      * GET /api/ortu/akademik/tugas
+     * Query: ?siswa_id= &status= &tahun_ajaran_id= &page=
      *
-     * Progress tugas anak.
-     *
-     * Query params:
-     *   - siswa_id  (optional)
-     *   - status    (optional) belum|sudah|terlambat
-     *   - per_page  (optional, default 15)
+     * status: belum | sudah | terlambat | dinilai
      */
     public function tugas(Request $request): JsonResponse
     {
-        $orangTua = $this->getOrangTua();
-        $anak     = $this->resolveAnak($request, $orangTua);
-        $anakList = $orangTua->siswa()->with('kelas')->get();
-
-        $perPage = $request->get('per_page', 15);
+        $orangTua      = $this->getOrangTua();
+        $anak          = $this->resolveAnak($request, $orangTua);
+        $anakList      = $orangTua->siswa()->with('kelas')->get();
+        $filterStatus  = $request->get('status');
+        $tahunAjaran   = $this->resolveTahunAjaran($request);
+        $tahunAjaranId = $tahunAjaran?->id;
 
         $tugasQuery = Tugas::with(['mataPelajaran', 'guru'])
             ->where('kelas_id', $anak->kelas_id)
             ->where('dipublikasikan', true)
+            ->when($tahunAjaranId, fn ($q) => $q->where('tahun_ajaran_id', $tahunAjaranId))
             ->orderByDesc('batas_waktu');
 
-        $tugasAll = $tugasQuery->paginate($perPage)->withQueryString();
+        if ($filterStatus === 'sudah') {
+            $tugasQuery->whereHas('pengumpulan', fn ($q) =>
+                $q->where('siswa_id', $anak->id)
+                  ->whereNotNull('dikumpulkan_pada')
+                  ->where('status', '!=', PengumpulanTugas::STATUS_TERLAMBAT)
+            );
+        } elseif ($filterStatus === 'terlambat') {
+            $tugasQuery->whereHas('pengumpulan', fn ($q) =>
+                $q->where('siswa_id', $anak->id)
+                  ->where('status', PengumpulanTugas::STATUS_TERLAMBAT)
+            );
+        } elseif ($filterStatus === 'dinilai') {
+            $tugasQuery->whereHas('pengumpulan', fn ($q) =>
+                $q->where('siswa_id', $anak->id)
+                  ->where('status', PengumpulanTugas::STATUS_DINILAI)
+            );
+        } elseif ($filterStatus === 'belum') {
+            $tugasQuery->whereDoesntHave('pengumpulan', fn ($q) =>
+                $q->where('siswa_id', $anak->id)->whereNotNull('dikumpulkan_pada')
+            );
+        }
+
+        $tugasAll = $tugasQuery->paginate(15)->withQueryString();
 
         $pengumpulanMap = PengumpulanTugas::with('tugas')
             ->where('siswa_id', $anak->id)
@@ -195,32 +271,59 @@ class AkademikController extends Controller
             ->get()
             ->keyBy('tugas_id');
 
-        $semuaTugas = Tugas::where('kelas_id', $anak->kelas_id)
+        $semuaTugasIds = Tugas::where('kelas_id', $anak->kelas_id)
             ->where('dipublikasikan', true)
+            ->when($tahunAjaranId, fn ($q) => $q->where('tahun_ajaran_id', $tahunAjaranId))
             ->pluck('id');
 
         $semuaPengumpulan = PengumpulanTugas::where('siswa_id', $anak->id)
-            ->whereIn('tugas_id', $semuaTugas)
+            ->whereIn('tugas_id', $semuaTugasIds)
             ->get();
 
         $statTugas = [
-            'total'       => $semuaTugas->count(),
+            'total'       => $semuaTugasIds->count(),
             'dikumpulkan' => $semuaPengumpulan->whereNotNull('dikumpulkan_pada')->count(),
-            'dinilai'     => $semuaPengumpulan->where('status', 'sudah_dinilai')->count(),
-            'rata_nilai'  => round($semuaPengumpulan->whereNotNull('nilai')->avg('nilai') ?? 0, 1),
+            'dinilai'     => $semuaPengumpulan->where('status', PengumpulanTugas::STATUS_DINILAI)->count(),
+            'rata_nilai'  => round((float) ($semuaPengumpulan->whereNotNull('nilai')->avg('nilai') ?? 0), 1),
         ];
 
-        // Merge pengumpulan into tugas items for convenience
-        $tugasItems = $tugasAll->getCollection()->map(function ($tugas) use ($pengumpulanMap) {
-            $tugas->pengumpulan = $pengumpulanMap->get($tugas->id);
-            return $tugas;
-        });
-
         return response()->json([
-            'anak'           => $anak,
-            'anak_list'      => $anakList,
-            'tugas'          => $tugasAll->setCollection($tugasItems),
-            'stat_tugas'     => $statTugas,
+            'success' => true,
+            'data'    => [
+                'anak'          => [
+                    'id'           => $anak->id,
+                    'nama_lengkap' => $anak->nama_lengkap,
+                    'kelas'        => $anak->kelas?->nama_kelas,
+                ],
+                'anak_list'     => $anakList->map(fn ($a) => [
+                    'id'           => $a->id,
+                    'nama_lengkap' => $a->nama_lengkap,
+                ])->values(),
+                'stat_tugas'    => $statTugas,
+                'filter_status' => $filterStatus,
+                'tugas'         => $tugasAll->map(function ($t) use ($pengumpulanMap) {
+                    $p = $pengumpulanMap->get($t->id);
+                    return [
+                        'id'              => $t->id,
+                        'judul'           => $t->judul,
+                        'deskripsi'       => $t->deskripsi,
+                        'mata_pelajaran'  => $t->mataPelajaran?->nama_mapel,
+                        'guru'            => $t->guru?->nama_lengkap,
+                        'batas_waktu'     => $t->batas_waktu?->toIso8601String(),
+                        'pengumpulan'     => $p ? [
+                            'status'           => $p->status,
+                            'dikumpulkan_pada' => $p->dikumpulkan_pada?->toIso8601String(),
+                            'nilai'            => $p->nilai,
+                        ] : null,
+                    ];
+                })->values(),
+                'pagination'    => [
+                    'current_page' => $tugasAll->currentPage(),
+                    'last_page'    => $tugasAll->lastPage(),
+                    'per_page'     => $tugasAll->perPage(),
+                    'total'        => $tugasAll->total(),
+                ],
+            ],
         ]);
     }
 }
