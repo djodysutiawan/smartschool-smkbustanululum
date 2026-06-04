@@ -29,7 +29,29 @@ class AppServiceProvider extends ServiceProvider
     {
         User::observe(UserObserver::class);
         Guru::observe(GuruObserver::class);
+        Siswa::observe(SiswaObserver::class);use Illuminate\Auth\Notifications\ResetPassword; // ← tambah
+use Illuminate\Support\ServiceProvider;
+
+class AppServiceProvider extends ServiceProvider
+{
+    public function register(): void
+    {
+        //
+    }
+
+    public function boot(): void
+    {
+        User::observe(UserObserver::class);
+        Guru::observe(GuruObserver::class);
         Siswa::observe(SiswaObserver::class);
+        OrangTua::observe(OrangTuaObserver::class);
+
+        // ← tambah
+        ResetPassword::createUrlUsing(function ($user, string $token) {
+            return config('app.frontend_url') . '/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+        });
+    }
+}
         OrangTua::observe(OrangTuaObserver::class);
     }
 }

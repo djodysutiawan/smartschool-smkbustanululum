@@ -1,20 +1,21 @@
 <?php
 
 use App\Http\Controllers\Api\Auth\AuthController;
+use App\Http\Controllers\Api\ProfilSekolahController;
 
 // ── Siswa ──────────────────────────────────────────────────────────────────
-use App\Http\Controllers\Api\Siswa\AbsensiController       as SiswaAbsensiController;
-use App\Http\Controllers\Api\Siswa\BarcodeController       as SiswaBarcodeController;
-use App\Http\Controllers\Api\Siswa\DashboardController     as SiswaDashboardController;
-use App\Http\Controllers\Api\Siswa\JadwalController        as SiswaJadwalController;
-use App\Http\Controllers\Api\Siswa\MateriController        as SiswaMateriController;
-use App\Http\Controllers\Api\Siswa\NilaiController         as SiswaNilaiController;
-use App\Http\Controllers\Api\Siswa\NotifikasiController    as SiswaNotifikasiController;
-use App\Http\Controllers\Api\Siswa\PelanggaranController   as SiswaPelanggaranController;
-use App\Http\Controllers\Api\Siswa\PengumumanController    as SiswaPengumumanController;
-use App\Http\Controllers\Api\Siswa\TugasController         as SiswaTugasController;
-use App\Http\Controllers\Api\Siswa\UjianController         as SiswaUjianController;
-use App\Http\Controllers\Api\Siswa\AbsensiGerbangController as SiswaAbsensiGerbangController;
+use App\Http\Controllers\Api\Siswa\AbsensiController          as SiswaAbsensiController;
+use App\Http\Controllers\Api\Siswa\AbsensiGerbangController   as SiswaAbsensiGerbangController;
+use App\Http\Controllers\Api\Siswa\BarcodeController          as SiswaBarcodeController;
+use App\Http\Controllers\Api\Siswa\DashboardController        as SiswaDashboardController;
+use App\Http\Controllers\Api\Siswa\JadwalController           as SiswaJadwalController;
+use App\Http\Controllers\Api\Siswa\MateriController           as SiswaMateriController;
+use App\Http\Controllers\Api\Siswa\NilaiController            as SiswaNilaiController;
+use App\Http\Controllers\Api\Siswa\NotifikasiController       as SiswaNotifikasiController;
+use App\Http\Controllers\Api\Siswa\PelanggaranController      as SiswaPelanggaranController;
+use App\Http\Controllers\Api\Siswa\PengumumanController       as SiswaPengumumanController;
+use App\Http\Controllers\Api\Siswa\TugasController            as SiswaTugasController;
+use App\Http\Controllers\Api\Siswa\UjianController            as SiswaUjianController;
 
 // ── Orang Tua ──────────────────────────────────────────────────────────────
 use App\Http\Controllers\Api\OrangTua\AbsensiController          as OrangTuaAbsensiController;
@@ -42,10 +43,15 @@ Route::get('ping', fn () => response()->json([
     'time'    => now()->toIso8601String(),
 ]));
 
+// ── Profil Sekolah (publik, read-only) ────────────────────────────────────
+Route::get('profil-sekolah', [ProfilSekolahController::class, 'show'])->name('api.profil-sekolah.show');
+
 // ── Auth publik ────────────────────────────────────────────────────────────
 Route::prefix('auth')->name('api.auth.')->group(function () {
     Route::post('login',    [AuthController::class, 'login'])->name('login');
     Route::post('register', [AuthController::class, 'register'])->name('register');
+    Route::post('forgot-password', [AuthController::class, 'forgotPassword'])->name('forgot-password');
+    Route::post('reset-password',  [AuthController::class, 'resetPassword'])->name('reset-password');
 });
 
 // ── Auth butuh token ───────────────────────────────────────────────────────
@@ -59,25 +65,26 @@ Route::prefix('auth')->name('api.auth.')->middleware('auth:sanctum')->group(func
 });
 
 // ── Serve file storage via API ─────────────────────────────────────────────
-Route::middleware(['throttle:120,1'])->group(function () {
-
-    Route::get('/file/{path}', [AuthController::class, 'serveFile'])
+Route::middleware('throttle:120,1')->group(function () {
+    Route::get('file/{path}', [AuthController::class, 'serveFile'])
         ->where('path', '.*')
         ->name('api.file.serve');
 
-    Route::options('/file/{path}', function () {
-        return response('', 204, [
-            'Access-Control-Allow-Origin'  => '*',
-            'Access-Control-Allow-Methods' => 'GET, OPTIONS',
-            'Access-Control-Allow-Headers' => '*',
-            'Access-Control-Max-Age'       => '86400',
-        ]);
-    })->where('path', '.*');
-
+    Route::options('file/{path}', fn () => response('', 204, [
+        'Access-Control-Allow-Origin'  => '*',
+        'Access-Control-Allow-Methods' => 'GET, OPTIONS',
+        'Access-Control-Allow-Headers' => '*',
+        'Access-Control-Max-Age'       => '86400',
+    ]))->where('path', '.*');
 });
 
 // ── Protected routes ───────────────────────────────────────────────────────
 Route::middleware('auth:sanctum')->group(function () {
+
+    // Profil Sekolah update — hanya admin
+    Route::put('profil-sekolah', [ProfilSekolahController::class, 'update'])
+        ->middleware('role:admin')
+        ->name('api.profil-sekolah.update');
 
     // ══════════════════════════════════════════════════════════════════════
     // SISWA
@@ -96,31 +103,21 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('jadwal',          [SiswaAbsensiController::class, 'jadwalHariIni'])->name('jadwal');
         });
 
-        // ── Absensi Gerbang (read-only) ────────────────────────────────────
-        // CATATAN: route statis ({status-hari-ini}, {riwayat}) harus di atas
-        // wildcard {id} agar tidak tertangkap route parameter.
+        // ── Absensi Gerbang ────────────────────────────────────────────────
+        // CATATAN: route statis harus di atas wildcard {absensiGerbangId}
         Route::prefix('absensi-gerbang')->name('absensi-gerbang.')->group(function () {
-            Route::get('status-hari-ini', [SiswaBarcodeController::class, 'statusGerbangHariIni'])->name('status-hari-ini');
-            Route::get('riwayat',         [SiswaBarcodeController::class, 'riwayatGerbang'])->name('riwayat');
-            Route::get('{absensiGerbangId}', [SiswaBarcodeController::class, 'showGerbang'])->name('show')
-                ->where('absensiGerbangId', '[0-9]+');
-        });
-
-        // ── Absensi Gerbang ─────────────────────────────────────────────────────────
-        // PENTING: route statis (status-hari-ini, riwayat) HARUS di atas wildcard {absensiGerbangId}
-        Route::prefix('absensi-gerbang')->name('absensi-gerbang.')->group(function () {
-            Route::get('status-hari-ini', [SiswaAbsensiGerbangController::class, 'statusHariIni'])->name('status-hari-ini');
-            Route::get('riwayat',         [SiswaAbsensiGerbangController::class, 'riwayat'])->name('riwayat');
+            Route::get('status-hari-ini',    [SiswaAbsensiGerbangController::class, 'statusHariIni'])->name('status-hari-ini');
+            Route::get('riwayat',            [SiswaAbsensiGerbangController::class, 'riwayat'])->name('riwayat');
             Route::get('{absensiGerbangId}', [SiswaAbsensiGerbangController::class, 'show'])->name('show')
                 ->where('absensiGerbangId', '[0-9]+');
         });
 
         // ── Barcode ────────────────────────────────────────────────────────
-        // CATATAN: route statis (gerbang, mapel) harus di atas wildcard.
+        // CATATAN: route statis (gerbang, mapel) harus di atas wildcard
         Route::prefix('barcode')->name('barcode.')->group(function () {
-            Route::get('/',        [SiswaBarcodeController::class, 'index'])->name('index');
-            Route::get('gerbang',  [SiswaBarcodeController::class, 'gerbang'])->name('gerbang');
-            Route::get('mapel',    [SiswaBarcodeController::class, 'mapel'])->name('mapel');
+            Route::get('/',       [SiswaBarcodeController::class, 'index'])->name('index');
+            Route::get('gerbang', [SiswaBarcodeController::class, 'gerbang'])->name('gerbang');
+            Route::get('mapel',   [SiswaBarcodeController::class, 'mapel'])->name('mapel');
         });
 
         // ── Jadwal ─────────────────────────────────────────────────────────
@@ -129,16 +126,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('{jadwal}', [SiswaJadwalController::class, 'show'])->name('show');
         });
 
-        // ── Jadwal ──────────────────────────────────────────────────────────────────
-        Route::prefix('jadwal')->name('jadwal.')->group(function () {
-            Route::get('/',        [SiswaJadwalController::class, 'index'])->name('index');
-            Route::get('{jadwal}', [SiswaJadwalController::class, 'show'])->name('show');
-        });
-
-        // ── Materi ─────────────────────────────────────────────────────────
+        // ── Materi ─────────────────────────────────────────────────────────────────
         Route::prefix('materi')->name('materi.')->group(function () {
-            Route::get('/',        [SiswaMateriController::class, 'index'])->name('index');
-            Route::get('{materi}', [SiswaMateriController::class, 'show'])->name('show');
+            Route::get('/',                          [SiswaMateriController::class, 'index'])->name('index');
+            Route::get('{materi}/download-url',      [SiswaMateriController::class, 'getDownloadUrl'])->name('download-url');
+            Route::get('{materi}/download',          [SiswaMateriController::class, 'download'])->name('download');
+            Route::get('{materi}',                   [SiswaMateriController::class, 'show'])->name('show');
         });
 
         // ── Nilai ──────────────────────────────────────────────────────────
@@ -178,7 +171,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // ── Pelanggaran ────────────────────────────────────────────────────
         Route::prefix('pelanggaran')->name('pelanggaran.')->group(function () {
-            Route::get('/',              [SiswaPelanggaranController::class, 'index'])->name('index');
+            Route::get('/',             [SiswaPelanggaranController::class, 'index'])->name('index');
             Route::get('{pelanggaran}', [SiswaPelanggaranController::class, 'show'])->name('show');
         });
 
@@ -197,29 +190,35 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('dashboard', [OrangTuaDashboardController::class, 'index'])->name('dashboard');
 
+        // ── Profil Anak ────────────────────────────────────────────────────
         Route::get('anak',           [ProfilAnakController::class, 'index'])->name('anak.index');
         Route::get('anak/{siswaId}', [ProfilAnakController::class, 'show'])->name('anak.show');
 
+        // ── Absensi ────────────────────────────────────────────────────────
         Route::prefix('absensi')->name('absensi.')->group(function () {
             Route::get('hari-ini', [OrangTuaAbsensiController::class, 'statusHariIni'])->name('hari-ini');
             Route::get('riwayat',  [OrangTuaAbsensiController::class, 'riwayat'])->name('riwayat');
             Route::get('rekap',    [OrangTuaAbsensiController::class, 'rekap'])->name('rekap');
         });
 
+        // ── Kehadiran Gerbang ──────────────────────────────────────────────
         Route::prefix('kehadiran-gerbang')->name('kehadiran-gerbang.')->group(function () {
             Route::get('status-hari-ini', [OrangTuaKehadiranGerbangController::class, 'statusHariIni'])->name('status-hari-ini');
             Route::get('riwayat',         [OrangTuaKehadiranGerbangController::class, 'riwayat'])->name('riwayat');
             Route::get('rekap',           [OrangTuaKehadiranGerbangController::class, 'rekap'])->name('rekap');
         });
 
+        // ── Akademik ───────────────────────────────────────────────────────
         Route::prefix('akademik')->name('akademik.')->group(function () {
             Route::get('nilai', [OrangTuaAkademikController::class, 'nilai'])->name('nilai');
             Route::get('rapor', [OrangTuaAkademikController::class, 'rapor'])->name('rapor');
             Route::get('tugas', [OrangTuaAkademikController::class, 'tugas'])->name('tugas');
         });
 
+        // ── Kedisiplinan ───────────────────────────────────────────────────
         Route::get('kedisiplinan/riwayat', [KedisiplinanController::class, 'riwayat'])->name('kedisiplinan.riwayat');
 
+        // ── Notifikasi ─────────────────────────────────────────────────────
         Route::prefix('notifikasi')->name('notifikasi.')->group(function () {
             Route::get('/',                   [OrangTuaNotifikasiController::class, 'index'])->name('index');
             Route::patch('read-all',          [OrangTuaNotifikasiController::class, 'markAllRead'])->name('read-all');
@@ -228,6 +227,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('{notifikasi}',     [OrangTuaNotifikasiController::class, 'destroy'])->name('destroy');
         });
 
+        // ── Pengumuman ─────────────────────────────────────────────────────
         Route::prefix('pengumuman')->name('pengumuman.')->group(function () {
             Route::get('/',            [OrangTuaPengumumanController::class, 'index'])->name('index');
             Route::get('{pengumuman}', [OrangTuaPengumumanController::class, 'show'])->name('show');

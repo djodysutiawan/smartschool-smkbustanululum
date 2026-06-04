@@ -13,11 +13,22 @@ use App\Http\Controllers\Siswa\NilaiController;
 use App\Http\Controllers\Siswa\PelanggaranController;
 use App\Http\Controllers\Siswa\NotifikasiController;
 use App\Http\Controllers\Siswa\PengumumanController;
-
-// ── [BARU] Controllers yang belum ada sebelumnya ──────────────────────────────
 use App\Http\Controllers\Siswa\BarcodeController;
 use App\Http\Controllers\Siswa\AbsensiGerbangController;
 
+// ── [FIX] API MateriController untuk signed download (diakses browser tanpa auth) ──
+use App\Http\Controllers\Api\Siswa\MateriController as ApiMateriController;
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SIGNED DOWNLOAD — di luar grup auth, diakses browser langsung tanpa token
+// Keamanan dijaga oleh signature + expiry 60 detik dari temporarySignedRoute()
+// ══════════════════════════════════════════════════════════════════════════════
+Route::get('/materi/{materi}/download-signed', [ApiMateriController::class, 'downloadSigned'])
+    ->name('materi.download.signed');
+
+// ══════════════════════════════════════════════════════════════════════════════
+// SISWA — semua route butuh auth & role:siswa
+// ══════════════════════════════════════════════════════════════════════════════
 Route::prefix('siswa')
     ->name('siswa.')
     ->middleware(['auth', 'role:siswa'])
@@ -32,40 +43,37 @@ Route::prefix('siswa')
         // JADWAL PELAJARAN (read-only)
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('jadwal')->name('jadwal.')->group(function () {
-            Route::get('/',          [JadwalController::class, 'index'])->name('index');
-            Route::get('/{jadwal}',  [JadwalController::class, 'show'])->name('show');
+            Route::get('/',         [JadwalController::class, 'index'])->name('index');
+            Route::get('/{jadwal}', [JadwalController::class, 'show'])->name('show');
         });
 
         // ──────────────────────────────────────────────────────────────────────
-        // [BARU] BARCODE SAYA
-        // Sidebar: "Barcode Saya" — akses cepat dari menu Utama, dipakai tiap hari.
-        // Menampilkan 2 jenis:
-        //   1. Barcode Tetap  → scan alat gerbang (masuk & pulang), tidak berubah
-        //   2. QR Kelas       → absensi per pelajaran (berganti tiap sesi, dibuat guru)
+        // BARCODE SAYA
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('barcode')->name('barcode.')->group(function () {
-            Route::get('/',                [BarcodeController::class, 'index'])->name('index');
-            Route::get('/gerbang',         [BarcodeController::class, 'gerbang'])->name('gerbang');
-            Route::get('/gerbang/download',[BarcodeController::class, 'downloadGerbang'])->name('downloadGerbang');
-            Route::get('/mapel',           [BarcodeController::class, 'mapel'])->name('mapel');
-            Route::get('/mapel/download',  [BarcodeController::class, 'downloadMapel'])->name('downloadMapel');
+            Route::get('/',                 [BarcodeController::class, 'index'])->name('index');
+            Route::get('/gerbang',          [BarcodeController::class, 'gerbang'])->name('gerbang');
+            Route::get('/gerbang/download', [BarcodeController::class, 'downloadGerbang'])->name('downloadGerbang');
+            Route::get('/mapel',            [BarcodeController::class, 'mapel'])->name('mapel');
+            Route::get('/mapel/download',   [BarcodeController::class, 'downloadMapel'])->name('downloadMapel');
         });
 
         // ──────────────────────────────────────────────────────────────────────
         // MATERI PELAJARAN (read-only)
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('materi')->name('materi.')->group(function () {
-            Route::get('/',          [MateriController::class, 'index'])->name('index');
-            Route::get('/{materi}',  [MateriController::class, 'show'])->name('show');
+            Route::get('/',                  [MateriController::class, 'index'])->name('index');
+            Route::get('/{materi}',          [MateriController::class, 'show'])->name('show');
+            Route::get('/{materi}/download', [MateriController::class, 'download'])->name('download');
         });
 
         // ──────────────────────────────────────────────────────────────────────
         // TUGAS & PENGUMPULAN
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('tugas')->name('tugas.')->group(function () {
-            Route::get('/',                  [TugasController::class, 'index'])->name('index');
-            Route::get('/{tugas}',           [TugasController::class, 'show'])->name('show');
-            Route::post('/{tugas}/kumpul',   [TugasController::class, 'kumpul'])->name('kumpul');
+            Route::get('/',                [TugasController::class, 'index'])->name('index');
+            Route::get('/{tugas}',         [TugasController::class, 'show'])->name('show');
+            Route::post('/{tugas}/kumpul', [TugasController::class, 'kumpul'])->name('kumpul');
         });
 
         // ──────────────────────────────────────────────────────────────────────
@@ -73,70 +81,53 @@ Route::prefix('siswa')
         // PENTING: route statis didaftarkan SEBELUM route dengan parameter
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('ujian')->name('ujian.')->group(function () {
-            Route::get('/',                             [UjianController::class, 'index'])->name('index');
-            Route::get('/riwayat',                      [UjianController::class, 'riwayat'])->name('riwayat');
-            Route::get('/{ujian}/mulai',                [UjianController::class, 'mulai'])->name('mulai');
-            Route::post('/{ujian}/start',               [UjianController::class, 'start'])->name('start');
-            Route::get('/{ujian}/kerjakan',             [UjianController::class, 'kerjakan'])->name('kerjakan');
-            Route::post('/{ujian}/soal/{soal}/jawab',   [UjianController::class, 'jawab'])->name('soal.jawab');
-            Route::post('/{ujian}/selesai',             [UjianController::class, 'selesai'])->name('selesai');
-            Route::get('/{ujian}/hasil',                [UjianController::class, 'hasil'])->name('hasil');
+            Route::get('/',                           [UjianController::class, 'index'])->name('index');
+            Route::get('/riwayat',                    [UjianController::class, 'riwayat'])->name('riwayat');
+            Route::get('/{ujian}/mulai',              [UjianController::class, 'mulai'])->name('mulai');
+            Route::post('/{ujian}/start',             [UjianController::class, 'start'])->name('start');
+            Route::get('/{ujian}/kerjakan',           [UjianController::class, 'kerjakan'])->name('kerjakan');
+            Route::post('/{ujian}/soal/{soal}/jawab', [UjianController::class, 'jawab'])->name('jawab');
+            Route::post('/{ujian}/selesai',           [UjianController::class, 'selesai'])->name('selesai');
+            Route::get('/{ujian}/hasil',              [UjianController::class, 'hasil'])->name('hasil');
         });
 
         // ──────────────────────────────────────────────────────────────────────
-        // [BARU] ABSENSI GERBANG
-        // Sidebar: "Status Hari Ini", "Riwayat Masuk & Pulang"
-        // Read-only — siswa hanya melihat data scan gerbangnya sendiri
+        // ABSENSI GERBANG (read-only)
+        // PENTING: route statis di atas wildcard
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('absensi-gerbang')->name('absensi-gerbang.')->group(function () {
-            // Status scan masuk & pulang hari ini
-            Route::get('/status-hari-ini',   [AbsensiGerbangController::class, 'statusHariIni'])->name('status-hari-ini');
-
-            // Riwayat seluruh log masuk & pulang (dengan filter tanggal)
-            Route::get('/riwayat',           [AbsensiGerbangController::class, 'riwayat'])->name('riwayat');
-
-            // Detail satu entri scan (opsional — untuk modal/popup)
-            Route::get('/{absensiGerbang}',  [AbsensiGerbangController::class, 'show'])->name('show');
+            Route::get('/status-hari-ini',  [AbsensiGerbangController::class, 'statusHariIni'])->name('status-hari-ini');
+            Route::get('/riwayat',          [AbsensiGerbangController::class, 'riwayat'])->name('riwayat');
+            Route::get('/{absensiGerbang}', [AbsensiGerbangController::class, 'show'])->name('show');
         });
 
         // ──────────────────────────────────────────────────────────────────────
         // ABSENSI KELAS (scan QR & riwayat)
-        // Sidebar: Scan QR Pelajaran, QR Per Pelajaran, Riwayat Absensi Kelas
-        // PENTING: semua static routes di atas wildcard
+        // PENTING: route statis di atas wildcard
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('absensi')->name('absensi.')->group(function () {
-            // [BARU] Status absensi kelas hari ini — sidebar "Status Kelas Hari Ini"
-            // (dipakai juga oleh ortu.absensi.status-hari-ini)
-            Route::get('/status-hari-ini',   [AbsensiController::class, 'statusHariIni'])->name('status-hari-ini');
-
-            // Scan QR yang ditampilkan guru di layar saat pelajaran
-            Route::get('/scan',              [AbsensiController::class, 'scan'])->name('scan');
-            Route::post('/scan',             [AbsensiController::class, 'doScan'])->name('do-scan');
-
-            // QR Per Pelajaran — daftar sesi QR aktif hari ini per jadwal
-            Route::get('/jadwal',            [AbsensiController::class, 'jadwalHariIni'])->name('jadwal');
-
-            // Riwayat absensi kelas (semua pertemuan)
-            Route::get('/riwayat',           [AbsensiController::class, 'riwayat'])->name('riwayat');
-
-            // Rekap kehadiran per bulan / per mapel
-            Route::get('/rekap',             [AbsensiController::class, 'rekap'])->name('rekap');
+            Route::get('/status-hari-ini', [AbsensiController::class, 'statusHariIni'])->name('status-hari-ini');
+            Route::get('/scan',            [AbsensiController::class, 'scan'])->name('scan');
+            Route::post('/scan',           [AbsensiController::class, 'doScan'])->name('do-scan');
+            Route::get('/jadwal',          [AbsensiController::class, 'jadwalHariIni'])->name('jadwal');
+            Route::get('/riwayat',         [AbsensiController::class, 'riwayat'])->name('riwayat');
+            Route::get('/rekap',           [AbsensiController::class, 'rekap'])->name('rekap');
         });
 
         // ──────────────────────────────────────────────────────────────────────
         // NILAI & RAPOR (read-only)
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('nilai')->name('nilai.')->group(function () {
-            Route::get('/',          [NilaiController::class, 'index'])->name('index');
-            Route::get('/rapor',     [NilaiController::class, 'rapor'])->name('rapor');
+            Route::get('/',      [NilaiController::class, 'index'])->name('index');
+            Route::get('/rapor', [NilaiController::class, 'rapor'])->name('rapor');
         });
 
         // ──────────────────────────────────────────────────────────────────────
         // KEDISIPLINAN / PELANGGARAN SAYA (read-only)
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('pelanggaran')->name('pelanggaran.')->group(function () {
-            Route::get('/',                  [PelanggaranController::class, 'index'])->name('index');
-            Route::get('/{pelanggaran}',     [PelanggaranController::class, 'show'])->name('show');
+            Route::get('/',              [PelanggaranController::class, 'index'])->name('index');
+            Route::get('/{pelanggaran}', [PelanggaranController::class, 'show'])->name('show');
         });
 
         // ──────────────────────────────────────────────────────────────────────
@@ -144,18 +135,19 @@ Route::prefix('siswa')
         // PENTING: 'mark-all-read' harus di atas '/{notifikasi}'
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('notifikasi')->name('notifikasi.')->group(function () {
-            Route::patch('/mark-all-read',           [NotifikasiController::class, 'markAllRead'])->name('mark-all-read');
-            Route::get('/',                          [NotifikasiController::class, 'index'])->name('index');
-            Route::get('/{notifikasi}',              [NotifikasiController::class, 'show'])->name('show');
-            Route::patch('/{notifikasi}/mark-read',  [NotifikasiController::class, 'markRead'])->name('mark-read');
-            Route::delete('/{notifikasi}',           [NotifikasiController::class, 'destroy'])->name('destroy');
+            Route::patch('/mark-all-read',          [NotifikasiController::class, 'markAllRead'])->name('mark-all-read');
+            Route::get('/',                         [NotifikasiController::class, 'index'])->name('index');
+            Route::get('/{notifikasi}',             [NotifikasiController::class, 'show'])->name('show');
+            Route::patch('/{notifikasi}/mark-read', [NotifikasiController::class, 'markRead'])->name('mark-read');
+            Route::delete('/{notifikasi}',          [NotifikasiController::class, 'destroy'])->name('destroy');
         });
 
         // ──────────────────────────────────────────────────────────────────────
         // PENGUMUMAN (read-only)
         // ──────────────────────────────────────────────────────────────────────
         Route::prefix('pengumuman')->name('pengumuman.')->group(function () {
-            Route::get('/',              [PengumumanController::class, 'index'])->name('index');
-            Route::get('/{pengumuman}',  [PengumumanController::class, 'show'])->name('show');
+            Route::get('/',             [PengumumanController::class, 'index'])->name('index');
+            Route::get('/{pengumuman}', [PengumumanController::class, 'show'])->name('show');
         });
+
     });

@@ -88,16 +88,16 @@
             @endif
         </p>
         @if($tampilkanNilai)
-        <p class="hasil-nilai">{{ number_format($nilaiAkhir, 1) }}</p>
-        @if(isset($semuaSesi) && $semuaSesi->count() > 1)
-        <p style="color:rgba(255,255,255,.8);font-family:'DM Sans',sans-serif;font-size:13px;margin-top:-4px;margin-bottom:4px">
-            ★ Nilai Tertinggi dari {{ $semuaSesi->count() }} percobaan
-        </p>
-        @endif
+            <p class="hasil-nilai">{{ number_format($nilaiAkhir, 1) }}</p>
+            @if(isset($semuaSesi) && $semuaSesi->count() > 1)
+                <p style="color:rgba(255,255,255,.8);font-family:'DM Sans',sans-serif;font-size:13px;margin-top:-4px;margin-bottom:4px">
+                    ★ Nilai Tertinggi dari {{ $semuaSesi->count() }} percobaan
+                </p>
+            @endif
         @endif
         <p class="hasil-judul">{{ $ujian->judul }}</p>
         @if($ujian->nilai_kkm && $tampilkanNilai)
-        <p style="color:rgba(255,255,255,.75);font-family:'DM Sans',sans-serif;font-size:13px;margin-top:6px">KKM: {{ $ujian->nilai_kkm }}</p>
+            <p style="color:rgba(255,255,255,.75);font-family:'DM Sans',sans-serif;font-size:13px;margin-top:6px">KKM: {{ $ujian->nilai_kkm }}</p>
         @endif
     </div>
 
@@ -146,7 +146,7 @@
         </div>
     </div>
 
-    {{-- ── Riwayat semua percobaan (hanya tampil jika >1 percobaan) ── --}}
+    {{-- Riwayat semua percobaan (hanya tampil jika lebih dari 1 percobaan) --}}
     @if(isset($semuaSesi) && $semuaSesi->count() > 1)
     <div class="section-card" style="margin-bottom:20px">
         <div class="section-header">
@@ -215,24 +215,16 @@
 
         @foreach($soalList as $idx => $soal)
         @php
+            /*
+             * Gunakan perbandingan langsung terhadap kolom jenis_soal
+             * agar tidak bergantung pada method helper di model SoalUjian.
+             * Tambahkan method berikut ke SoalUjian jika belum ada:
+             *   public function isEssay(): bool { return $this->jenis_soal === 'essay'; }
+             *   public function isPilihanGanda(): bool { return $this->jenis_soal === 'pilihan_ganda'; }
+             */
             $jawabanSiswa = $jawabanMap[$soal->id] ?? null;
             $adalahBenar  = $isBenarMap[$soal->id] ?? null;
 
-            {{--
-                FIX [Risk]: Sebelumnya memanggil $soal->isEssay() dan $soal->isPilihanGanda()
-                tanpa memastikan method ini ada di SoalUjian. Jika method tidak didefinisikan,
-                blade akan crash dengan BadMethodCallException.
-
-                Perbaikan: gunakan perbandingan langsung terhadap kolom jenis_soal yang
-                merupakan string database. Ini tidak bergantung pada keberadaan method helper
-                di model, sehingga aman meskipun method belum didefinisikan.
-
-                Catatan untuk developer: tambahkan method berikut ke SoalUjian jika belum ada:
-                    public function isEssay(): bool { return $this->jenis_soal === 'essay'; }
-                    public function isPilihanGanda(): bool { return $this->jenis_soal === 'pilihan_ganda'; }
-                    public function isBenarSalah(): bool { return $this->jenis_soal === 'benar_salah'; }
-                    public function bisaAutoCorrect(): bool { return in_array($this->jenis_soal, ['pilihan_ganda', 'benar_salah']); }
-            --}}
             $isEssay   = $soal->jenis_soal === 'essay';
             $isPilihan = in_array($soal->jenis_soal, ['pilihan_ganda', 'benar_salah']);
 
@@ -240,20 +232,25 @@
             $essayDijawab     = $jawabanSiswa['jawaban_essay'] ?? null;
 
             if ($isEssay) {
-                // Essay yang sudah dikoreksi dan benar
                 if ($adalahBenar === true) {
-                    $badgeClass = 'bh-benar'; $badgeLabel = 'Benar (Essay)';
+                    $badgeClass = 'bh-benar';
+                    $badgeLabel = 'Benar (Essay)';
                 } elseif ($adalahBenar === false) {
-                    $badgeClass = 'bh-salah'; $badgeLabel = 'Kurang (Essay)';
+                    $badgeClass = 'bh-salah';
+                    $badgeLabel = 'Kurang (Essay)';
                 } else {
-                    $badgeClass = 'bh-essay'; $badgeLabel = 'Essay — Menunggu Koreksi';
+                    $badgeClass = 'bh-essay';
+                    $badgeLabel = 'Essay — Menunggu Koreksi';
                 }
             } elseif ($adalahBenar === true) {
-                $badgeClass = 'bh-benar'; $badgeLabel = 'Benar';
+                $badgeClass = 'bh-benar';
+                $badgeLabel = 'Benar';
             } elseif ($adalahBenar === false) {
-                $badgeClass = 'bh-salah'; $badgeLabel = 'Salah';
+                $badgeClass = 'bh-salah';
+                $badgeLabel = 'Salah';
             } else {
-                $badgeClass = 'bh-kosong'; $badgeLabel = 'Kosong';
+                $badgeClass = 'bh-kosong';
+                $badgeLabel = 'Kosong';
             }
         @endphp
         <div class="soal-review-item">
@@ -274,8 +271,8 @@
                 @php
                     $dipilih   = $pilihanDipilihId !== null && (int)$pilihanDipilihId === (int)$p->id;
                     $isBenarP  = (bool)$p->adalah_benar;
-                    $itemClass = $isBenarP ? 'pr-benar' : ($dipilih && !$isBenarP ? 'pr-salah-pilih' : 'pr-normal');
-                    $kodeClass = $isBenarP ? 'pkode-benar' : ($dipilih && !$isBenarP ? 'pkode-salah' : 'pkode-normal');
+                    $itemClass = $isBenarP ? 'pr-benar' : ($dipilih && ! $isBenarP ? 'pr-salah-pilih' : 'pr-normal');
+                    $kodeClass = $isBenarP ? 'pkode-benar' : ($dipilih && ! $isBenarP ? 'pkode-salah' : 'pkode-normal');
                 @endphp
                 <div class="pilihan-review-item {{ $itemClass }}">
                     <div class="pilihan-review-kode {{ $kodeClass }}">{{ $p->kode_pilihan }}</div>
@@ -284,7 +281,7 @@
                         @if($isBenarP)
                             <span style="margin-left:6px;font-size:11.5px;color:#15803d;font-weight:700">✓ Jawaban Benar</span>
                         @endif
-                        @if($dipilih && !$isBenarP)
+                        @if($dipilih && ! $isBenarP)
                             <span style="margin-left:6px;font-size:11.5px;color:#dc2626;font-weight:700">← Jawaban Anda</span>
                         @endif
                         @if($dipilih && $isBenarP)
@@ -300,13 +297,11 @@
                 <p style="font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.04em">Jawaban Anda:</p>
                 <div class="essay-display">{{ $essayDijawab ?? '(tidak dijawab)' }}</div>
                 @if($adalahBenar === null)
-                    {{-- Essay belum dikoreksi --}}
                     <p style="font-size:12px;color:#1d4ed8;margin-top:8px;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:5px">
                         <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                         Soal essay akan dikoreksi oleh guru
                     </p>
                 @else
-                    {{-- Essay sudah dikoreksi — tampilkan poin dan catatan jika ada --}}
                     @php $poinEssay = $jawabanSiswa['poin_didapat'] ?? null; @endphp
                     <p style="font-size:12px;color:{{ $adalahBenar ? '#15803d' : '#dc2626' }};margin-top:8px;font-family:'DM Sans',sans-serif;font-weight:600">
                         Poin diberikan: {{ $poinEssay !== null ? number_format($poinEssay, 1) : '—' }} / {{ $soal->bobot }}
@@ -317,7 +312,7 @@
         </div>
         @endforeach
     </div>
-    @elseif(!$tampilkanNilai)
+    @elseif(! $tampilkanNilai)
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:32px;text-align:center;margin-bottom:16px">
         <svg width="40" height="40" fill="none" stroke="#94a3b8" stroke-width="1.5" viewBox="0 0 24 24" style="margin:0 auto 12px;display:block"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <p style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:var(--text);margin-bottom:4px">Nilai belum ditampilkan</p>

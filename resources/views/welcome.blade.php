@@ -90,7 +90,7 @@
     .nav-scrolled .nl:hover { background:#f1f5f9 !important; }
     .nav-scrolled .nbrand { color:#1e293b !important; }
     .nav-scrolled .nsubb  { color:#64748b !important; }
-    .nav-scrolled .nring  { background:#eef6ff !important; border-color:#bfdbfe !important; }
+    .nav-scrolled .nring  { background:transparent !important; border-color:transparent !important; }
     .nav-scrolled .nrtext { color:#1750c0 !important; }
     .nav-scrolled .ncta   { background:#1f63db !important; color:#fff !important; border-color:#1f63db !important; }
     .nav-scrolled .hbar   { background:#334155 !important; }
@@ -109,9 +109,20 @@
     }
 
     /* ── Slider ── */
-    .slider-wrapper { position:relative; overflow:hidden; }
-    .slider-track { display:flex; transition:transform .6s cubic-bezier(.4,0,.2,1); }
-    .slider-slide { min-width:100%; }
+    .slider-wrapper {
+      position:relative; overflow:hidden;
+      min-height:calc(100vh - 64px);
+      display:flex; flex-direction:column;
+    }
+    .slider-track {
+      display:flex; flex:1; align-items:stretch;
+      transition:transform .6s cubic-bezier(.4,0,.2,1);
+    }
+    .slider-slide {
+      min-width:100%; flex-shrink:0;
+      position:relative;
+      display:flex; flex-direction:column; justify-content:center;
+    }
 
     /* ── News card hover ── */
     .news-card { transition:transform .2s ease,box-shadow .2s ease; }
@@ -242,7 +253,7 @@
 
     {{-- Brand --}}
     <a href="{{ url('/') }}" class="flex items-center gap-2.5 shrink-0">
-      <div class="nring w-9 h-9 rounded-xl border border-white/20 bg-white/10 flex items-center justify-center transition-all duration-300 overflow-hidden">
+      <div class="nring w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 overflow-hidden">
         @if($profil->logo_path)
           <img src="{{ asset('storage/'.$profil->logo_path) }}" alt="Logo" class="w-full h-full object-contain">
         @elseif($profil->logo_url)
@@ -299,26 +310,26 @@
 </header>
 
 {{-- ═══════ HERO / SLIDER ═══════ --}}
-<section class="hero-bg min-h-screen flex flex-col justify-center pt-16">
+<section class="hero-bg flex flex-col pt-16" style="min-height:100svh;min-height:100vh">
 
   @if($sliders->count() > 0)
   {{-- Slider mode --}}
-  <div class="slider-wrapper flex-1 flex flex-col justify-center" id="heroSlider">
+  <div class="slider-wrapper flex-1" id="heroSlider">
     <div class="slider-track" id="sliderTrack">
       @foreach($sliders as $i => $slide)
-      <div class="slider-slide relative z-10">
+      <div class="slider-slide">
 
         {{-- Background image overlay --}}
         @if($slide->foto_path || $slide->foto_url)
         <div class="absolute inset-0 z-0">
           <img src="{{ $slide->foto_path ? asset('storage/'.$slide->foto_path) : $slide->foto_url }}"
                alt="{{ $slide->foto_alt ?? $slide->judul }}"
-               class="w-full h-full object-cover opacity-25">
-          <div class="absolute inset-0 bg-gradient-to-t from-[#0d1f4e]/80 via-transparent to-transparent"></div>
+               class="w-full h-full object-cover object-center opacity-40">
+          <div class="absolute inset-0" style="background:linear-gradient(to top,rgba(13,31,78,.88) 0%,rgba(13,31,78,.5) 40%,rgba(13,31,78,.15) 100%)"></div>
         </div>
         @endif
 
-        <div class="max-w-4xl mx-auto px-5 py-28 relative z-10 text-center">
+        <div class="max-w-4xl mx-auto px-5 py-28 relative z-10 text-center w-full">
           <div class="animate-fade-up inline-flex items-center gap-2 glass text-white/85 text-[11px] font-display font-semibold px-4 py-2 rounded-full mb-8 tracking-wider uppercase">
             <span class="animate-live-pulse w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
             Platform Aktif · Tahun Ajaran 2025/2026
@@ -358,7 +369,7 @@
 
     {{-- Slider controls --}}
     @if($sliders->count() > 1)
-    <div class="absolute bottom-28 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
+    <div class="absolute bottom-36 left-1/2 -translate-x-1/2 flex items-center gap-3 z-20">
       @foreach($sliders as $i => $slide)
       <button onclick="goSlide({{ $i }})"
               class="slider-dot w-2 h-2 rounded-full bg-white/40 hover:bg-white transition-all duration-200 {{ $i === 0 ? '!bg-white !w-6' : '' }}"
@@ -376,27 +387,29 @@
 
   @else
   {{-- Default hero tanpa slider --}}
-  <div class="max-w-4xl mx-auto px-5 py-28 relative z-10 text-center">
-    <div class="animate-fade-up inline-flex items-center gap-2 glass text-white/85 text-[11px] font-display font-semibold px-4 py-2 rounded-full mb-8 tracking-wider uppercase">
-      <span class="animate-live-pulse w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
-      Platform Aktif · Tahun Ajaran 2025/2026
-    </div>
-    <h1 class="animate-fade-up [animation-delay:.1s] font-display font-extrabold text-4xl sm:text-5xl md:text-6xl leading-[1.15] text-white mb-5">
-      Sistem Informasi Digital<br>
-      <span class="text-grad">{{ $profil->nama_sekolah ?? 'SMK Bustanul Ulum' }}</span>
-    </h1>
-    <p class="animate-fade-up [animation-delay:.2s] text-white/60 text-base sm:text-lg leading-relaxed mb-10 max-w-xl mx-auto">
-      {{ $profil->deskripsi_singkat ?? 'Satu platform terpadu untuk pembelajaran, absensi, monitoring kedisiplinan, dan komunikasi sekolah yang lebih cerdas.' }}
-    </p>
-    <div class="animate-fade-up [animation-delay:.3s] flex flex-col sm:flex-row gap-3 justify-center mb-16">
-      <a href="{{ route('login') }}" class="inline-flex items-center justify-center gap-2 bg-white text-brand-700 font-display font-bold text-sm px-8 py-3.5 rounded-xl hover:bg-blue-50 shadow-[0_8px_40px_rgba(19,38,81,.4)] transition-all duration-200">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-        Masuk ke Sistem
-      </a>
-      <a href="#jurusan" class="inline-flex items-center justify-center gap-2 glass text-white font-display font-semibold text-sm px-8 py-3.5 rounded-xl hover:bg-white/15 transition-all duration-200">
-        Lihat Jurusan
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-      </a>
+  <div class="flex-1 flex flex-col justify-center">
+    <div class="max-w-4xl mx-auto px-5 py-28 relative z-10 text-center w-full">
+      <div class="animate-fade-up inline-flex items-center gap-2 glass text-white/85 text-[11px] font-display font-semibold px-4 py-2 rounded-full mb-8 tracking-wider uppercase">
+        <span class="animate-live-pulse w-2 h-2 rounded-full bg-emerald-400 shrink-0"></span>
+        Platform Aktif · Tahun Ajaran 2025/2026
+      </div>
+      <h1 class="animate-fade-up [animation-delay:.1s] font-display font-extrabold text-4xl sm:text-5xl md:text-6xl leading-[1.15] text-white mb-5">
+        Sistem Informasi Digital<br>
+        <span class="text-grad">{{ $profil->nama_sekolah ?? 'SMK Bustanul Ulum' }}</span>
+      </h1>
+      <p class="animate-fade-up [animation-delay:.2s] text-white/60 text-base sm:text-lg leading-relaxed mb-10 max-w-xl mx-auto">
+        {{ $profil->deskripsi_singkat ?? 'Satu platform terpadu untuk pembelajaran, absensi, monitoring kedisiplinan, dan komunikasi sekolah yang lebih cerdas.' }}
+      </p>
+      <div class="animate-fade-up [animation-delay:.3s] flex flex-col sm:flex-row gap-3 justify-center mb-16">
+        <a href="{{ route('login') }}" class="inline-flex items-center justify-center gap-2 bg-white text-brand-700 font-display font-bold text-sm px-8 py-3.5 rounded-xl hover:bg-blue-50 shadow-[0_8px_40px_rgba(19,38,81,.4)] transition-all duration-200">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Masuk ke Sistem
+        </a>
+        <a href="#jurusan" class="inline-flex items-center justify-center gap-2 glass text-white font-display font-semibold text-sm px-8 py-3.5 rounded-xl hover:bg-white/15 transition-all duration-200">
+          Lihat Jurusan
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </a>
+      </div>
     </div>
   </div>
   @endif
@@ -1051,7 +1064,6 @@
         </div>
         @endif
 
-        {{-- Info cards --}}
         @if($profil->alamat_lengkap)
         <div class="flex items-start gap-4 bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
           <div class="w-10 h-10 rounded-xl bg-brand-50 border border-brand-100 flex items-center justify-center shrink-0">
@@ -1097,7 +1109,6 @@
         </div>
         @endif
 
-        {{-- Jam operasional --}}
         <div class="flex items-start gap-4 bg-white rounded-2xl p-5 border border-slate-100 shadow-sm">
           <div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center shrink-0">
             <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
@@ -1133,91 +1144,41 @@
             @csrf
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {{-- Nama --}}
               <div>
                 <label class="form-label" for="nama_pengirim">Nama Lengkap <span class="text-red-500">*</span></label>
-                <input type="text"
-                       id="nama_pengirim"
-                       name="nama_pengirim"
-                       value="{{ old('nama_pengirim') }}"
-                       placeholder="Nama Anda"
-                       class="form-input {{ $errors->has('nama_pengirim') ? 'error' : '' }}"
-                       required>
-                @error('nama_pengirim')
-                <p class="form-error">{{ $message }}</p>
-                @enderror
+                <input type="text" id="nama_pengirim" name="nama_pengirim" value="{{ old('nama_pengirim') }}" placeholder="Nama Anda" class="form-input {{ $errors->has('nama_pengirim') ? 'error' : '' }}" required>
+                @error('nama_pengirim')<p class="form-error">{{ $message }}</p>@enderror
               </div>
-
-              {{-- Email --}}
               <div>
                 <label class="form-label" for="email_pengirim">Alamat Email <span class="text-red-500">*</span></label>
-                <input type="email"
-                       id="email_pengirim"
-                       name="email_pengirim"
-                       value="{{ old('email_pengirim') }}"
-                       placeholder="email@contoh.com"
-                       class="form-input {{ $errors->has('email_pengirim') ? 'error' : '' }}"
-                       required>
-                @error('email_pengirim')
-                <p class="form-error">{{ $message }}</p>
-                @enderror
+                <input type="email" id="email_pengirim" name="email_pengirim" value="{{ old('email_pengirim') }}" placeholder="email@contoh.com" class="form-input {{ $errors->has('email_pengirim') ? 'error' : '' }}" required>
+                @error('email_pengirim')<p class="form-error">{{ $message }}</p>@enderror
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              {{-- No. Telepon --}}
               <div>
                 <label class="form-label" for="no_telepon">No. Telepon <span class="text-slate-400 font-normal normal-case tracking-normal">(opsional)</span></label>
-                <input type="tel"
-                       id="no_telepon"
-                       name="no_telepon"
-                       value="{{ old('no_telepon') }}"
-                       placeholder="08xxxxxxxxxx"
-                       class="form-input {{ $errors->has('no_telepon') ? 'error' : '' }}">
-                @error('no_telepon')
-                <p class="form-error">{{ $message }}</p>
-                @enderror
+                <input type="tel" id="no_telepon" name="no_telepon" value="{{ old('no_telepon') }}" placeholder="08xxxxxxxxxx" class="form-input {{ $errors->has('no_telepon') ? 'error' : '' }}">
+                @error('no_telepon')<p class="form-error">{{ $message }}</p>@enderror
               </div>
-
-              {{-- Subjek --}}
               <div>
                 <label class="form-label" for="subjek">Subjek <span class="text-red-500">*</span></label>
-                <input type="text"
-                       id="subjek"
-                       name="subjek"
-                       value="{{ old('subjek') }}"
-                       placeholder="Topik pesan Anda"
-                       class="form-input {{ $errors->has('subjek') ? 'error' : '' }}"
-                       required>
-                @error('subjek')
-                <p class="form-error">{{ $message }}</p>
-                @enderror
+                <input type="text" id="subjek" name="subjek" value="{{ old('subjek') }}" placeholder="Topik pesan Anda" class="form-input {{ $errors->has('subjek') ? 'error' : '' }}" required>
+                @error('subjek')<p class="form-error">{{ $message }}</p>@enderror
               </div>
             </div>
 
-            {{-- Pesan --}}
             <div>
               <label class="form-label" for="pesan">Pesan <span class="text-red-500">*</span></label>
-              <textarea id="pesan"
-                        name="pesan"
-                        rows="5"
-                        placeholder="Tuliskan pesan atau pertanyaan Anda di sini..."
-                        class="form-input resize-none {{ $errors->has('pesan') ? 'error' : '' }}"
-                        required>{{ old('pesan') }}</textarea>
-              @error('pesan')
-              <p class="form-error">{{ $message }}</p>
-              @enderror
+              <textarea id="pesan" name="pesan" rows="5" placeholder="Tuliskan pesan atau pertanyaan Anda di sini..." class="form-input resize-none {{ $errors->has('pesan') ? 'error' : '' }}" required>{{ old('pesan') }}</textarea>
+              @error('pesan')<p class="form-error">{{ $message }}</p>@enderror
               <p class="text-slate-400 text-[11px] mt-1.5" id="pesanCount">0 / 3000 karakter</p>
             </div>
 
-            {{-- Submit --}}
             <div class="flex items-center justify-between pt-1">
-              <p class="text-slate-400 text-xs">
-                <span class="text-red-400">*</span> Wajib diisi
-              </p>
-              <button type="submit"
-                      id="submitBtn"
-                      class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-display font-bold text-sm px-7 py-3 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
+              <p class="text-slate-400 text-xs"><span class="text-red-400">*</span> Wajib diisi</p>
+              <button type="submit" id="submitBtn" class="inline-flex items-center gap-2 bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-display font-bold text-sm px-7 py-3 rounded-xl transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-60 disabled:cursor-not-allowed">
                 <svg class="w-4 h-4" id="submitIcon" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                 <svg class="w-4 h-4 animate-spin hidden" id="submitSpinner" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
                 <span id="submitLabel">Kirim Pesan</span>
@@ -1228,7 +1189,6 @@
       </div>
     </div>
 
-    {{-- Maps embed --}}
     @if($profil->embed_maps_url)
     <div class="mt-12 sr rounded-2xl overflow-hidden border border-slate-200 shadow-sm" style="height:280px">
       <iframe src="{{ $profil->embed_maps_url }}" width="100%" height="280" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
@@ -1245,7 +1205,7 @@
 
       <div class="md:col-span-2">
         <div class="flex items-center gap-2.5 mb-5">
-          <div class="w-10 h-10 rounded-xl bg-brand-700 flex items-center justify-center overflow-hidden">
+          <div class="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center">
             @if($profil->logo_path)
               <img src="{{ asset('storage/'.$profil->logo_path) }}" alt="Logo" class="w-full h-full object-contain">
             @else

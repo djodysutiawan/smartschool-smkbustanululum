@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Models\Guru;
+use App\Models\Siswa;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
@@ -13,6 +15,9 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Auth\Events\PasswordReset;
+use Illuminate\Support\Str;
 
 class AuthController extends Controller
 {
@@ -21,33 +26,39 @@ class AuthController extends Controller
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'email'       => ['required', 'string', 'email'],
+            'identifier'  => ['required', 'string'],   // email atau NIS
             'password'    => ['required', 'string'],
             'device_name' => ['nullable', 'string', 'max:255'],
         ]);
 
-        if (! Auth::attempt($request->only('email', 'password'))) {
+        // Resolve user dari email atau NIS
+        $user = $this->resolveUser($request->string('identifier')->trim()->toString());
+
+        // Validasi: user ditemukan, password cocok, akun aktif
+        $failed = ! $user
+            || ! Hash::check($request->string('password')->toString(), $user->password)
+            || ! $user->is_active;
+
+        if ($failed) {
             throw ValidationException::withMessages([
-                'email' => ['Email atau password salah.'],
+                'identifier' => ['Email/NIS atau password salah.'],
             ]);
         }
 
-        /** @var User $user */
-        $user = Auth::user();
-
-        // Hanya siswa dan orang_tua yang diizinkan login via aplikasi mobile/web
+        // Hanya siswa dan orang_tua yang boleh login via Flutter
         $allowedRoles = ['siswa', 'orang_tua'];
         if (! in_array($user->role, $allowedRoles)) {
-            Auth::logout();
             throw ValidationException::withMessages([
-                'email' => ['Akun ini tidak memiliki akses ke aplikasi.'],
+                'identifier' => ['Akun ini tidak memiliki akses ke aplikasi.'],
             ]);
         }
 
+        // Revoke token lama dengan nama perangkat yang sama, lalu buat baru
         $deviceName = $request->device_name ?? ($request->userAgent() ?? 'SmartSchool');
         $user->tokens()->where('name', $deviceName)->delete();
         $token = $user->createToken($deviceName)->plainTextToken;
 
+        $user->updateLastLogin();
         $user->load($this->relationsForRole($user->role));
 
         return response()->json([
@@ -61,11 +72,37 @@ class AuthController extends Controller
         ]);
     }
 
+    // ── Resolve User dari identifier (email / NIS) ──────────────────────────
+
+    /**
+     * Cari User berdasarkan:
+     *  1. Email  → langsung di tabel users
+     *  2. NIS    → tabel siswas → pengguna_id
+     *
+     * NIP (guru) sengaja tidak dimasukkan karena guru tidak boleh
+     * login via aplikasi Flutter.
+     */
+    private function resolveUser(string $identifier): ?User
+    {
+        // 1. Coba sebagai email
+        $user = User::where('email', $identifier)->first();
+        if ($user) {
+            return $user;
+        }
+
+        // 2. Coba sebagai NIS (siswa)
+        $siswa = Siswa::where('nis', $identifier)->first();
+        if ($siswa?->pengguna_id) {
+            return User::find($siswa->pengguna_id);
+        }
+
+        return null;
+    }
+
     // ── Register ────────────────────────────────────────────────────────────
 
     public function register(Request $request): JsonResponse
     {
-        // FIX: Blokir registrasi publik jika tidak diaktifkan via env
         if (! config('app.allow_public_register', false)) {
             return response()->json([
                 'success' => false,
@@ -84,7 +121,7 @@ class AuthController extends Controller
             'name'     => $request->name,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'role'     => 'siswa', // Role default, tidak bisa dipilih oleh user
+            'role'     => 'siswa',
         ]);
 
         event(new Registered($user));
@@ -210,7 +247,6 @@ class AuthController extends Controller
             default              => 'avatars',
         };
 
-        // Hapus avatar lama jika ada
         if ($user->avatar && Storage::disk('public')->exists($user->avatar)) {
             Storage::disk('public')->delete($user->avatar);
         }
@@ -234,16 +270,9 @@ class AuthController extends Controller
     }
 
     // ── Serve File ───────────────────────────────────────────────────────────
-    // FIX (P1006): Return type diubah dari \Illuminate\Http\Response menjadi
-    //              StreamedResponse karena response()->stream() mengembalikan
-    //              Symfony\Component\HttpFoundation\StreamedResponse, bukan
-    //              Illuminate\Http\Response. Keduanya extend ResponseBase
-    //              sehingga tetap kompatibel dengan kontrak HTTP Laravel.
 
     public function serveFile(Request $request, string $path): StreamedResponse
     {
-        // Cegah path traversal — normalisasi dan pastikan path
-        // tidak keluar dari direktori storage/app/public/
         $normalizedPath = $this->normalizePath($path);
 
         if ($normalizedPath === null) {
@@ -256,11 +285,9 @@ class AuthController extends Controller
             abort(404, 'File tidak ditemukan.');
         }
 
-        // Gunakan streaming agar file besar tidak dimuat ke memori sekaligus
         $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
         $fileSize = filesize($fullPath);
-
-        $stream = fopen($fullPath, 'rb');
+        $stream   = fopen($fullPath, 'rb');
 
         return response()->stream(function () use ($stream) {
             fpassthru($stream);
@@ -287,10 +314,6 @@ class AuthController extends Controller
         };
     }
 
-    /**
-     * Normalisasi path untuk mencegah path traversal.
-     * Mengembalikan null jika path mencurigakan.
-     */
     private function normalizePath(string $path): ?string
     {
         $path = ltrim($path, '/');
@@ -313,24 +336,18 @@ class AuthController extends Controller
         return $path;
     }
 
-    /**
-     * Konversi path storage relatif ke URL /api/file/{path}.
-     */
     private function toApiFileUrl(?string $storagePath): ?string
     {
         if (! $storagePath) {
             return null;
         }
 
-        $cleanPath = ltrim($storagePath, '/');
-
-        return url('api/file/' . $cleanPath);
+        return url('api/file/' . ltrim($storagePath, '/'));
     }
 
     private function formatUser(User $user): array
     {
-        $role = $user->role ?? 'siswa';
-
+        $role    = $user->role ?? 'siswa';
         $fileUrl = fn (?string $path): ?string => $this->toApiFileUrl($path);
 
         $avatarUrl = null;
@@ -341,14 +358,14 @@ class AuthController extends Controller
 
         if (! $avatarUrl && in_array($role, ['guru', 'guru_piket'])) {
             $guru = $user->relationLoaded('guru') ? $user->guru : null;
-            if ($guru && $guru->foto) {
+            if ($guru?->foto) {
                 $avatarUrl = $fileUrl($guru->foto);
             }
         }
 
         if (! $avatarUrl && $role === 'siswa') {
             $siswa = $user->relationLoaded('siswa') ? $user->siswa : null;
-            if ($siswa && $siswa->foto) {
+            if ($siswa?->foto) {
                 $avatarUrl = $fileUrl($siswa->foto);
             }
         }
@@ -412,5 +429,86 @@ class AuthController extends Controller
         }
 
         return $data;
+    }
+
+    // ── Forgot Password ──────────────────────────────────────────────────────
+
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => ['required', 'string', 'email'],
+        ]);
+
+        // Cek apakah email terdaftar dan role-nya siswa atau orang_tua
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user || ! in_array($user->role, ['siswa', 'orang_tua'])) {
+            // Pesan generik agar tidak mengekspos apakah email terdaftar atau tidak
+            return response()->json([
+                'success' => true,
+                'message' => 'Jika email terdaftar, link reset password telah dikirim.',
+            ]);
+        }
+
+        $status = Password::sendResetLink(
+            ['email' => $request->email]
+        );
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengirim link reset. Coba beberapa saat lagi.',
+            ], 429);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jika email terdaftar, link reset password telah dikirim.',
+        ]);
+    }
+
+    // ── Reset Password ───────────────────────────────────────────────────────
+
+    public function resetPassword(Request $request): JsonResponse
+    {
+        $request->validate([
+            'token'    => ['required', 'string'],
+            'email'    => ['required', 'string', 'email'],
+            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        $status = Password::reset(
+            $request->only('email', 'password', 'password_confirmation', 'token'),
+            function (User $user, string $password) {
+                $user->forceFill([
+                    'password'       => Hash::make($password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                // Cabut semua token Sanctum agar semua sesi lama tidak bisa dipakai
+                $user->tokens()->delete();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status !== Password::PASSWORD_RESET) {
+            $errorMessage = match ($status) {
+                Password::INVALID_TOKEN => 'Token tidak valid atau sudah kadaluarsa.',
+                Password::INVALID_USER  => 'Email tidak ditemukan.',
+                Password::RESET_THROTTLED => 'Terlalu banyak percobaan. Coba beberapa saat lagi.',
+                default                 => 'Reset password gagal.',
+            };
+
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage,
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password berhasil direset. Silakan login dengan password baru.',
+        ]);
     }
 }

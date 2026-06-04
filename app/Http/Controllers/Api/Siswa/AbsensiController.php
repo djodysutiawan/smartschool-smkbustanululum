@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\Siswa;
 
 use App\Http\Controllers\Controller;
 use App\Models\Absensi;
+use App\Models\BarcodeGerbang;
 use App\Models\JadwalPelajaran;
+use App\Models\SesiGerbang;
 use App\Models\SesiQr;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,6 +21,11 @@ use Illuminate\Support\Facades\Auth;
  *   GET  /api/siswa/absensi/riwayat          → riwayat()
  *   GET  /api/siswa/absensi/rekap            → rekap()
  *   GET  /api/siswa/absensi/jadwal           → jadwalHariIni()
+ *
+ * FIX: statusHariIni() sekarang mengembalikan data barcode gerbang,
+ *      barcode mapel, sesi gerbang aktif, dan sesi QR aktif —
+ *      sehingga Flutter tidak perlu hit endpoint /api/siswa/barcode
+ *      secara terpisah hanya untuk menampilkan barcode di tab Hari Ini.
  */
 class AbsensiController extends Controller
 {
@@ -33,18 +40,75 @@ class AbsensiController extends Controller
         return $siswa;
     }
 
+    /**
+     * Ambil barcode gerbang aktif milik siswa.
+     * Selaras dengan BarcodeController::getBarcodeGerbang().
+     */
+    private function getBarcodeGerbang(\App\Models\Siswa $siswa): ?BarcodeGerbang
+    {
+        return BarcodeGerbang::where('siswa_id', $siswa->id)
+            ->aktif()
+            ->berlakuHariIni()
+            ->latest()
+            ->first();
+    }
+
+    /**
+     * Ambil kode barcode mapel siswa.
+     * Selaras dengan BarcodeController::getKodeBarcodeMapel().
+     */
+    private function getKodeBarcodeMapel(\App\Models\Siswa $siswa): ?string
+    {
+        return $siswa->barcode_mapel ?? null;
+    }
+
+    /**
+     * Ambil sesi gerbang yang sedang aktif sekarang.
+     */
+    private function getSesiGerbangAktif(): ?SesiGerbang
+    {
+        return SesiGerbang::sesiAktifSekarang();
+    }
+
+    /**
+     * Ambil semua sesi QR mapel yang aktif untuk kelas siswa.
+     */
+    private function getSesiQrAktif(\App\Models\Siswa $siswa): \Illuminate\Support\Collection
+    {
+        return SesiQr::with('mataPelajaran')
+            ->where('kelas_id', $siswa->kelas_id)
+            ->where('is_active', true)
+            ->whereDate('tanggal', today())
+            ->where('berlaku_mulai', '<=', now())
+            ->where('kadaluarsa_pada', '>=', now())
+            ->orderBy('berlaku_mulai')
+            ->get();
+    }
+
     // ── STATUS HARI INI ───────────────────────────────────────────────────────
 
     /**
      * GET /api/siswa/absensi/status-hari-ini
      *
-     * Status absensi siswa hari ini per jadwal pelajaran.
-     * Menampilkan mapel yang sudah tercatat dan yang belum.
+     * FIX: Sekarang mengembalikan data barcode & sesi aktif
+     *      agar Flutter tidak perlu request terpisah ke /api/siswa/barcode.
+     *
+     * Response structure:
+     * {
+     *   success: true,
+     *   data: {
+     *     tanggal, hari, rekap, jadwal,
+     *     barcode: { kode_gerbang, kode_mapel },
+     *     sesi_gerbang_aktif: { id, tipe, berlaku_mulai, kadaluarsa_pada } | null,
+     *     sesi_qr_aktif: [{ id, mata_pelajaran, berlaku_mulai, kadaluarsa_pada }]
+     *   }
+     * }
      */
     public function statusHariIni(): JsonResponse
     {
         $siswa = $this->getSiswa();
 
+        // ── Absensi & Jadwal ─────────────────────────────────────────────────
         $absensiHariIni = Absensi::with(['jadwalPelajaran.mataPelajaran', 'kelas'])
             ->where('siswa_id', $siswa->id)
             ->whereDate('tanggal', today())
@@ -76,23 +140,52 @@ class AbsensiController extends Controller
             ];
         });
 
-        // Rekap ringkas
         $rekap = [
-            'hadir' => $absensiHariIni->whereIn('status', ['hadir', 'telat'])->count(),
-            'izin'  => $absensiHariIni->where('status', 'izin')->count(),
-            'sakit' => $absensiHariIni->where('status', 'sakit')->count(),
-            'alfa'  => $absensiHariIni->where('status', 'alfa')->count(),
-            'belum' => $jadwalHariIni->count() - $absensiHariIni->count(),
+            'hadir'        => $absensiHariIni->whereIn('status', ['hadir', 'telat'])->count(),
+            'izin'         => $absensiHariIni->where('status', 'izin')->count(),
+            'sakit'        => $absensiHariIni->where('status', 'sakit')->count(),
+            'alfa'         => $absensiHariIni->where('status', 'alfa')->count(),
+            'belum'        => max(0, $jadwalHariIni->count() - $absensiHariIni->count()),
             'total_jadwal' => $jadwalHariIni->count(),
         ];
+
+        // ── FIX: Barcode & Sesi ──────────────────────────────────────────────
+        $barcodeGerbang   = $this->getBarcodeGerbang($siswa);
+        $kodeBarcodeMapel = $this->getKodeBarcodeMapel($siswa);
+        $sesiGerbangAktif = $this->getSesiGerbangAktif();
+        $sesiQrAktif      = $this->getSesiQrAktif($siswa);
 
         return response()->json([
             'success' => true,
             'data'    => [
-                'tanggal'  => today()->toDateString(),
-                'hari'     => $hariIni,
-                'rekap'    => $rekap,
-                'jadwal'   => $jadwalDenganStatus,
+                'tanggal' => today()->toDateString(),
+                'hari'    => $hariIni,
+                'rekap'   => $rekap,
+                'jadwal'  => $jadwalDenganStatus,
+
+                // ── Barcode fields ───────────────────────────────────────────
+                // kode_gerbang: kode barcode gerbang siswa (jangka panjang)
+                // kode_mapel:   kode barcode permapel siswa
+                'barcode' => [
+                    'kode_gerbang' => $barcodeGerbang?->kode,
+                    'kode_mapel'   => $kodeBarcodeMapel,
+                ],
+
+                // ── Sesi gerbang aktif sekarang (masuk / pulang) ─────────────
+                'sesi_gerbang_aktif' => $sesiGerbangAktif ? [
+                    'id'              => $sesiGerbangAktif->id,
+                    'tipe'            => $sesiGerbangAktif->tipe,
+                    'berlaku_mulai'   => $sesiGerbangAktif->berlaku_mulai,
+                    'kadaluarsa_pada' => $sesiGerbangAktif->berlaku_sampai ?? null,
+                ] : null,
+
+                // ── Sesi QR mapel yang sedang aktif untuk kelas siswa ────────
+                'sesi_qr_aktif' => $sesiQrAktif->map(fn ($s) => [
+                    'id'              => $s->id,
+                    'mata_pelajaran'  => $s->mataPelajaran?->nama_mapel,
+                    'berlaku_mulai'   => $s->berlaku_mulai,
+                    'kadaluarsa_pada' => $s->kadaluarsa_pada,
+                ])->values(),
             ],
         ]);
     }
@@ -101,12 +194,6 @@ class AbsensiController extends Controller
 
     /**
      * POST /api/siswa/absensi/scan
-     *
-     * Proses scan QR manual dari aplikasi mobile.
-     *
-     * Body:
-     *   kode_qr (required) — kode dari kamera atau input teks
-     *                        Bisa berformat "SESI-{uuid}" atau "{uuid}" saja
      */
     public function prosesQr(Request $request): JsonResponse
     {
@@ -116,7 +203,6 @@ class AbsensiController extends Controller
 
         $siswa = $this->getSiswa();
 
-        // Normalisasi: hapus prefix "SESI-" jika ada
         $kode = trim($request->kode_qr);
         if (str_starts_with(strtoupper($kode), 'SESI-')) {
             $kode = substr($kode, 5);
@@ -135,7 +221,6 @@ class AbsensiController extends Controller
             $pesan = $sesi->isKadaluarsa()
                 ? 'Sesi QR ini sudah kadaluarsa. Minta guru untuk membuka sesi baru.'
                 : 'Sesi QR ini sudah tidak aktif.';
-
             return response()->json(['success' => false, 'message' => $pesan], 422);
         }
 
@@ -157,7 +242,6 @@ class AbsensiController extends Controller
             ], 422);
         }
 
-        // Tentukan status: hadir atau telat
         $status = Absensi::STATUS_HADIR;
         if ($sesi->jadwalPelajaran) {
             $batasLambat = \Carbon\Carbon::parse($sesi->jadwalPelajaran->jam_mulai)->addMinutes(15);
@@ -198,16 +282,6 @@ class AbsensiController extends Controller
 
     /**
      * GET /api/siswa/absensi/riwayat
-     *
-     * Riwayat absensi mapel dengan filter opsional.
-     *
-     * Query string:
-     *   status         → hadir|telat|izin|sakit|alfa
-     *   tanggal_dari   → YYYY-MM-DD
-     *   tanggal_sampai → YYYY-MM-DD
-     *   bulan          → 1–12
-     *   tahun          → 2000–2100
-     *   per_page       → default 20
      */
     public function riwayat(Request $request): JsonResponse
     {
@@ -231,10 +305,9 @@ class AbsensiController extends Controller
         if ($request->filled('bulan'))          $query->whereMonth('tanggal', (int) $request->bulan);
         if ($request->filled('tahun'))          $query->whereYear('tanggal', (int) $request->tahun);
 
-        $perPage  = (int) ($request->per_page ?? 20);
-        $absensi  = $query->orderByDesc('tanggal')->paginate($perPage);
+        $perPage = (int) ($request->per_page ?? 20);
+        $absensi = $query->orderByDesc('tanggal')->paginate($perPage);
 
-        // Rekap keseluruhan (tidak terpengaruh filter)
         $base  = fn () => Absensi::where('siswa_id', $siswa->id);
         $rekap = [
             'hadir'  => $base()->whereIn('status', ['hadir', 'telat'])->count(),
@@ -250,8 +323,8 @@ class AbsensiController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'rekap'    => $rekap,
-                'absensi'  => $absensi->map(fn ($a) => [
+                'rekap'   => $rekap,
+                'absensi' => $absensi->map(fn ($a) => [
                     'id'             => $a->id,
                     'tanggal'        => $a->tanggal,
                     'mata_pelajaran' => $a->jadwalPelajaran?->mataPelajaran?->nama_mapel,
@@ -260,7 +333,7 @@ class AbsensiController extends Controller
                     'keterangan'     => $a->keterangan,
                     'metode'         => $a->metode,
                 ]),
-                'meta'     => [
+                'meta' => [
                     'current_page' => $absensi->currentPage(),
                     'last_page'    => $absensi->lastPage(),
                     'per_page'     => $absensi->perPage(),
@@ -274,12 +347,6 @@ class AbsensiController extends Controller
 
     /**
      * GET /api/siswa/absensi/rekap
-     *
-     * Rekap kehadiran per bulan dan per mata pelajaran.
-     *
-     * Query string:
-     *   bulan → 1–12  (default: bulan berjalan)
-     *   tahun → 2000–2100 (default: tahun berjalan)
      */
     public function rekap(Request $request): JsonResponse
     {
@@ -332,7 +399,7 @@ class AbsensiController extends Controller
         return response()->json([
             'success' => true,
             'data'    => [
-                'periode'         => [
+                'periode' => [
                     'bulan' => $bulan,
                     'tahun' => $tahun,
                     'label' => \Carbon\Carbon::create($tahun, $bulan)->locale('id')->isoFormat('MMMM YYYY'),
@@ -347,14 +414,10 @@ class AbsensiController extends Controller
 
     /**
      * GET /api/siswa/absensi/jadwal
-     *
-     * Jadwal pelajaran hari ini beserta status sesi QR aktif & status absensi.
-     * Dipakai aplikasi untuk tampilkan tombol "Scan QR" jika sesi sedang aktif.
      */
     public function jadwalHariIni(): JsonResponse
     {
-        $siswa = $this->getSiswa();
-
+        $siswa   = $this->getSiswa();
         $hariIni = strtolower(\Carbon\Carbon::now()->locale('id')->isoFormat('dddd'));
 
         $jadwalList = JadwalPelajaran::with(['mataPelajaran', 'guru'])
@@ -364,9 +427,7 @@ class AbsensiController extends Controller
             ->orderBy('jam_mulai')
             ->get();
 
-        $jadwalIds = $jadwalList->pluck('id');
-
-        // Ambil sesi QR aktif sekaligus (1 query)
+        $jadwalIds      = $jadwalList->pluck('id');
         $sesiQrAktifMap = SesiQr::where('kelas_id', $siswa->kelas_id)
             ->whereIn('jadwal_pelajaran_id', $jadwalIds)
             ->where('is_active', true)
@@ -376,7 +437,6 @@ class AbsensiController extends Controller
             ->get()
             ->keyBy('jadwal_pelajaran_id');
 
-        // Ambil absensi hari ini sekaligus (1 query)
         $absensiMap = Absensi::where('siswa_id', $siswa->id)
             ->whereIn('jadwal_pelajaran_id', $jadwalIds)
             ->whereDate('tanggal', today())
@@ -394,10 +454,10 @@ class AbsensiController extends Controller
                 'jam_mulai'      => $jadwal->jam_mulai,
                 'jam_selesai'    => $jadwal->jam_selesai,
                 'sesi_aktif'     => $sesi ? [
-                    'id'            => $sesi->id,
-                    'kode_qr'       => $sesi->kode_qr,
+                    'id'         => $sesi->id,
+                    'kode_qr'    => $sesi->kode_qr,
                     'berlaku_mulai' => $sesi->berlaku_mulai,
-                    'kadaluarsa'    => $sesi->kadaluarsa_pada,
+                    'kadaluarsa' => $sesi->kadaluarsa_pada,
                 ] : null,
                 'status_absensi' => $absensi?->status ?? 'belum',
                 'jam_masuk'      => $absensi?->jam_masuk,
