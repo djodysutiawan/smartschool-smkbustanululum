@@ -29,7 +29,7 @@ return [
     'allowed_origins_patterns' => [
         '#^http://localhost(:\d+)?$#',
         '#^http://127\.0\.0\.1(:\d+)?$#',
-        '#^http://10\.165\.3\.71(:\d+)?$#',  // IP WiFi laptop — akses dari HP
+        '#^http://10\.16\.80\.71(:\d+)?$#',  // IP WiFi laptop — akses dari HP 10.16.80.71
     ],
 
     'allowed_headers' => ['*'],
