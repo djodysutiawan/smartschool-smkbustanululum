@@ -14,7 +14,7 @@
     }
     *, *::before, *::after { box-sizing: border-box; }
 
-    .pg { padding: 28px 32px 48px; max-width: 900px; }
+    .pg { padding: 28px 32px 48px; max-width: 2000px; }
 
     .back { display: inline-flex; align-items: center; gap: 6px; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; font-weight: 600; color: var(--text4); text-decoration: none; margin-bottom: 22px; transition: color .15s; }
     .back:hover { color: var(--brand-600); }

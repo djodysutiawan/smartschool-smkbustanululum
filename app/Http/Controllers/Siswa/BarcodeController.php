@@ -7,7 +7,7 @@ use App\Models\BarcodeGerbang;
 use App\Models\SesiQr;
 use App\Models\SesiGerbang;
 use App\Models\JadwalPelajaran;
-use Illuminate\Http\Request;
+// use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Response;
 

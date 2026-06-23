@@ -55,7 +55,26 @@ class SesiGerbangController extends Controller
                           ->paginate(20)
                           ->withQueryString();
 
-        $sesiAktif = SesiGerbang::sesiAktifSekarang();
+        /**
+         * PERBAIKAN BUG: "Attempt to read property 'tipe' on true"
+         *
+         * Sebelumnya memakai SesiGerbang::sesiAktifSekarang() yang
+         * mengembalikan boolean/model tunggal, padahal view
+         * (banner sesi aktif) mengasumsikan sebuah Collection yang
+         * bisa di-count() dan di-foreach (mendukung multi-sesi aktif,
+         * misal "masuk" & "pulang" aktif bersamaan).
+         *
+         * Diganti dengan scope aktif()->hariIni()->get() — scope yang
+         * sama yang sudah dipakai & terbukti berfungsi di method
+         * create() dan buka() pada controller ini — sehingga hasilnya
+         * SELALU Collection (0, 1, atau lebih sesi), aman untuk
+         * ->count() dan foreach() di view tanpa error.
+         */
+        $sesiAktif = SesiGerbang::aktif()
+            ->hariIni()
+            ->with('dibukaOleh:id,name')
+            ->orderByDesc('dibuka_pada')
+            ->get();
 
         return view('piket.sesi-gerbang.index', compact('sesiList', 'sesiAktif'));
     }

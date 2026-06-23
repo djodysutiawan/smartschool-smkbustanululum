@@ -72,8 +72,8 @@
 
     /* ── QR Area ── */
     .qr-wrap{display:flex;flex-direction:column;align-items:center;gap:14px}
-    .qr-canvas-wrap{position:relative;width:200px;height:200px;border-radius:var(--radius);overflow:hidden;background:#fff;border:3px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.08)}
-    .qr-canvas-wrap canvas{display:block}
+    .qr-canvas-wrap{position:relative;width:200px;height:200px;border-radius:var(--radius);overflow:hidden;background:#fff;border:3px solid var(--border);box-shadow:0 4px 16px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center}
+    .qr-canvas-wrap canvas, .qr-canvas-wrap img{display:block}
     .qr-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(248,250,252,.95);gap:8px}
     .qr-placeholder-icon{color:var(--text3)}
     .qr-placeholder-text{font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;color:var(--text3);text-align:center;padding:0 12px}
@@ -211,9 +211,17 @@
                     </div>
 
                     {{-- QR Code --}}
+                    {{--
+                        PERBAIKAN BUG: target render QRCode.js HARUS berupa <div>,
+                        bukan <canvas>. QRCode.js (davidshimjs) tidak menggambar
+                        langsung ke elemen yang diberikan — ia membuat elemen
+                        <canvas>/<table> BARU lalu menyisipkannya sebagai child di
+                        dalam elemen target. Browser tidak merender child di dalam
+                        <canvas>, sehingga sebelumnya QR tidak pernah terlihat.
+                    --}}
                     <div class="qr-wrap" style="margin-bottom:22px">
                         <div class="qr-canvas-wrap" id="qrCanvasWrap">
-                            <canvas id="qrCanvas" width="200" height="200"></canvas>
+                            <div id="qrCanvas" style="width:200px;height:200px"></div>
                         </div>
                         <p style="font-size:12px;color:var(--text3);font-family:'Plus Jakarta Sans',sans-serif;font-weight:600;text-align:center">
                             QR ini diperbarui otomatis saat di-refresh.<br>
@@ -397,6 +405,9 @@ function confirmAction(btn, title, text) {
 }
 
 // ── Generate QR dari kode_qr (UUID) ────────────────────────────────────────
+// PERBAIKAN: qrCanvasEl sekarang menunjuk ke <div id="qrCanvas">, bukan
+// <canvas>. QRCode.js akan membuat canvas/table sendiri DI DALAM div ini,
+// dan itu valid karena <div> boleh punya child yang dirender browser.
 const kodeQrEl   = document.getElementById('kodeQrCurrent');
 const qrCanvasEl = document.getElementById('qrCanvas');
 
@@ -404,15 +415,15 @@ let qrInstance = null;
 
 function renderQr(kodeQr) {
     if (!qrCanvasEl || !kodeQr) return;
-    // Bersihkan canvas
-    const ctx = qrCanvasEl.getContext('2d');
-    ctx.clearRect(0, 0, 200, 200);
 
-    // QRCode.js render ke canvas
     if (qrInstance) {
+        // Instance sudah ada — cukup bersihkan & gambar ulang kode baru
         qrInstance.clear();
         qrInstance.makeCode(kodeQr);
     } else {
+        // Pastikan div target benar-benar kosong sebelum instance pertama dibuat,
+        // mencegah duplikasi canvas/table jika renderQr terpanggil lebih dari sekali
+        qrCanvasEl.innerHTML = '';
         qrInstance = new QRCode(qrCanvasEl, {
             text: kodeQr,
             width: 200,

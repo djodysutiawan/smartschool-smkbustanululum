@@ -10,27 +10,6 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-/**
- * BarcodeKelasController
- *
- * Dua fungsi utama:
- *
- * 1. BARCODE TETAP GURU  (format: "GURU-{user_id}")
- *    → Untuk absensi guru di pos piket — nilai tidak pernah berubah.
- *    → Tersedia di halaman index sebagai kartu identitas digital.
- *    → Bisa dicetak via cetakBarcodeGuru().
- *
- * 2. QR SESI PELAJARAN  (generate UUID baru tiap sesi)
- *    → Untuk absensi siswa di kelas — satu sesi per pertemuan.
- *    → Wajib berbasis jadwal hari ini (tidak bisa manual).
- *    → Satu jadwal hanya boleh punya satu sesi aktif per hari.
- *    → Ditampilkan fullscreen di showSesi() untuk disorot ke siswa.
- *    → Real-time polling via statusSesiAjax().
- *
- * Perbedaan dengan SesiQrController:
- *   SesiQrController  → management sesi (list, detail, hapus, cetak PDF)
- *   BarcodeKelasController → aksi cepat hari ini (buat, tayangkan, nonaktifkan)
- */
 class BarcodeKelasController extends Controller
 {
     // ── Helpers ───────────────────────────────────────────────────────────────
@@ -42,9 +21,19 @@ class BarcodeKelasController extends Controller
         return $guru;
     }
 
+    /**
+     * Guru boleh akses sesi apapun selama kelas-nya adalah kelas yang dia ampu.
+     * (Termasuk sesi yang dibuat admin.)
+     */
     private function authorizeSesi(SesiQr $sesiQr): void
     {
-        abort_if($sesiQr->dibuat_oleh !== Auth::id(), 403, 'Anda tidak memiliki akses ke sesi QR ini.');
+        $guru     = $this->getGuru();
+        $kelasIds = JadwalPelajaran::where('guru_id', $guru->id)
+            ->pluck('kelas_id')
+            ->unique()
+            ->toArray();
+
+        abort_if(! in_array($sesiQr->kelas_id, $kelasIds), 403, 'Anda tidak memiliki akses ke sesi QR ini.');
     }
 
     private function hariIni(): string
@@ -60,25 +49,25 @@ class BarcodeKelasController extends Controller
         ][now()->format('l')] ?? 'senin';
     }
 
+    private function getKelasIds(\App\Models\Guru $guru): array
+    {
+        return JadwalPelajaran::where('guru_id', $guru->id)
+            ->pluck('kelas_id')
+            ->unique()
+            ->toArray();
+    }
+
     // ── INDEX ─────────────────────────────────────────────────────────────────
-    /**
-     * Halaman utama Barcode Kelas.
-     *
-     * Menampilkan:
-     * - Barcode tetap guru (untuk piket).
-     * - Jadwal hari ini + status sesi QR masing-masing jadwal.
-     * - Tombol cepat "Mulai Sesi" / "Lihat QR" per jadwal.
-     * - Jadwal semua hari (tab mingguan) untuk referensi.
-     */
+
     public function index()
     {
-        $guru = $this->getGuru();
-        $user = Auth::user();
+        $guru     = $this->getGuru();
+        $user     = Auth::user();
+        $kelasIds = $this->getKelasIds($guru);
 
         $barcodeGuru = 'GURU-' . $user->id;
         $hariIni     = $this->hariIni();
 
-        // Jadwal hari ini
         $jadwalHariIni = JadwalPelajaran::with(['mataPelajaran', 'kelas', 'ruang'])
             ->where('guru_id', $guru->id)
             ->where('hari', $hariIni)
@@ -86,15 +75,14 @@ class BarcodeKelasController extends Controller
             ->orderBy('jam_mulai')
             ->get();
 
-        // Sesi aktif hari ini — map by jadwal_pelajaran_id
-        $sesiPerJadwal = SesiQr::where('dibuat_oleh', $user->id)
+        // Sesi aktif hari ini di kelas yang diampu guru (termasuk buatan admin)
+        $sesiPerJadwal = SesiQr::whereIn('kelas_id', $kelasIds)
             ->whereDate('tanggal', today())
             ->where('is_active', true)
             ->with(['kelas', 'mataPelajaran'])
             ->get()
             ->keyBy('jadwal_pelajaran_id');
 
-        // Semua jadwal per hari (tab mingguan)
         $hariList    = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
         $semuaJadwal = JadwalPelajaran::with(['mataPelajaran', 'kelas'])
             ->where('guru_id', $guru->id)
@@ -112,10 +100,7 @@ class BarcodeKelasController extends Controller
     }
 
     // ── SHOW: Barcode tetap satu kelas ────────────────────────────────────────
-    /**
-     * Barcode tetap satu kelas — untuk ditempel di papan kelas.
-     * Format: "KELAS-{kelas_id}"
-     */
+
     public function show(Kelas $kelas)
     {
         $guru = $this->getGuru();
@@ -132,7 +117,7 @@ class BarcodeKelasController extends Controller
         return view('guru.barcode-kelas.show', compact('kelas', 'barcodeKelas', 'guru'));
     }
 
-    // ── CETAK: Barcode kelas (print-friendly) ─────────────────────────────────
+    // ── CETAK: Barcode kelas ──────────────────────────────────────────────────
 
     public function cetak(Kelas $kelas)
     {
@@ -151,14 +136,12 @@ class BarcodeKelasController extends Controller
     }
 
     // ── BUAT SESI QR ──────────────────────────────────────────────────────────
-    /**
-     * Form pembuatan sesi QR — hanya jadwal hari ini yang tampil.
-     * Bisa pre-filled via ?jadwal_pelajaran_id=X (dari tombol di index).
-     */
+
     public function createSesi(Request $request)
     {
-        $guru    = $this->getGuru();
-        $hariIni = $this->hariIni();
+        $guru     = $this->getGuru();
+        $hariIni  = $this->hariIni();
+        $kelasIds = $this->getKelasIds($guru);
 
         $jadwalHariIni = JadwalPelajaran::with(['mataPelajaran', 'kelas'])
             ->where('guru_id', $guru->id)
@@ -167,9 +150,11 @@ class BarcodeKelasController extends Controller
             ->orderBy('jam_mulai')
             ->get();
 
-        // Jadwal yang sudah punya sesi (aktif maupun nonaktif) hari ini
-        $sesiSudahAda = SesiQr::where('dibuat_oleh', Auth::id())
+        // Jadwal yang sudah punya sesi aktif hari ini (dari siapapun)
+        $sesiSudahAda = SesiQr::whereIn('kelas_id', $kelasIds)
             ->whereDate('tanggal', today())
+            ->where('is_active', true)
+            ->where('kadaluarsa_pada', '>=', now())
             ->pluck('jadwal_pelajaran_id')
             ->toArray();
 
@@ -183,12 +168,10 @@ class BarcodeKelasController extends Controller
         ));
     }
 
-    /**
-     * Simpan sesi QR baru — validasi ketat berbasis jadwal.
-     */
     public function storeSesi(Request $request)
     {
-        $guru = $this->getGuru();
+        $guru     = $this->getGuru();
+        $kelasIds = $this->getKelasIds($guru);
 
         $request->validate([
             'jadwal_pelajaran_id' => ['required', 'exists:jadwal_pelajaran,id'],
@@ -204,7 +187,6 @@ class BarcodeKelasController extends Controller
             'radius_meter.max'             => 'Radius maksimal 1000 meter.',
         ]);
 
-        // Pastikan jadwal milik guru ini & aktif
         $jadwal = JadwalPelajaran::where('id', $request->jadwal_pelajaran_id)
             ->where('guru_id', $guru->id)
             ->where('is_active', true)
@@ -212,24 +194,32 @@ class BarcodeKelasController extends Controller
 
         abort_if(! $jadwal, 403, 'Jadwal tidak ditemukan atau bukan milik Anda.');
 
-        // Harus hari ini
         if ($jadwal->hari !== $this->hariIni()) {
             return back()->withInput()
                 ->with('error', 'Sesi QR hanya bisa dibuat untuk jadwal hari ini (' . ucfirst($this->hariIni()) . ').');
         }
 
-        // Cegah duplikat sesi AKTIF untuk jadwal yang sama hari ini
-        $sudahAda = SesiQr::where('jadwal_pelajaran_id', $jadwal->id)
+        // Cek sesi aktif di kelas yang diampu (dari siapapun pembuatnya)
+        $sesiAktif = SesiQr::whereIn('kelas_id', $kelasIds)
             ->whereDate('tanggal', today())
             ->where('is_active', true)
-            ->exists();
+            ->where('kadaluarsa_pada', '>=', now())
+            ->with(['mataPelajaran', 'kelas'])
+            ->first();
 
-        if ($sudahAda) {
+        if ($sesiAktif) {
+            $namaMapel = $sesiAktif->mataPelajaran->nama_mapel ?? 'suatu pelajaran';
+            $namaKelas = $sesiAktif->kelas->nama_kelas ?? '';
+            $sisaWaktu = now()->diffForHumans($sesiAktif->kadaluarsa_pada, true);
             return back()->withInput()
-                ->with('error', 'Sudah ada sesi QR aktif untuk jadwal ini. Nonaktifkan sesi sebelumnya terlebih dahulu.');
+                ->with('error',
+                    "Masih ada sesi QR aktif untuk {$namaMapel}" .
+                    ($namaKelas ? " ({$namaKelas})" : '') .
+                    " — berakhir dalam {$sisaWaktu}. " .
+                    "Selesaikan atau nonaktifkan sesi tersebut sebelum membuat sesi baru."
+                );
         }
 
-        // Hitung waktu dari jadwal
         $berlakuMulai = Carbon::parse(today()->toDateString() . ' ' . $jadwal->jam_mulai);
 
         $durasiMenit = $request->filled('durasi_menit')
@@ -260,11 +250,7 @@ class BarcodeKelasController extends Controller
     }
 
     // ── SHOW SESI: Fullscreen QR ──────────────────────────────────────────────
-    /**
-     * Tampilkan QR sesi pelajaran secara fullscreen.
-     * Guru menampilkan halaman ini di layar/proyektor.
-     * Ada countdown timer + rekap scan real-time (via AJAX polling).
-     */
+
     public function showSesi(SesiQr $sesiQr)
     {
         $this->authorizeSesi($sesiQr);
@@ -292,10 +278,7 @@ class BarcodeKelasController extends Controller
     }
 
     // ── AJAX: Status scan real-time ───────────────────────────────────────────
-    /**
-     * Polling endpoint untuk halaman showSesi.
-     * Dipanggil setiap beberapa detik via JavaScript.
-     */
+
     public function statusSesiAjax(SesiQr $sesiQr)
     {
         $this->authorizeSesi($sesiQr);
@@ -322,9 +305,7 @@ class BarcodeKelasController extends Controller
     }
 
     // ── CETAK BARCODE GURU ────────────────────────────────────────────────────
-    /**
-     * Print-friendly barcode tetap guru — tanpa layout.
-     */
+
     public function cetakBarcodeGuru()
     {
         $guru        = $this->getGuru();

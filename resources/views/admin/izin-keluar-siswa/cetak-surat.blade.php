@@ -1,171 +1,232 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Surat Izin Keluar — IZN/2025/0004</title>
-    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<title>Surat Izin Keluar — {{ $izin->nomor_surat ?? $izin->id }}</title>
+<style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
-        html, body {
-            width: 100%;
-            max-width: 100%;
-            overflow-x: hidden;
-            background: #fff;
-            font-family: 'DM Sans', sans-serif;
-            color: #111;
-            font-size: 13px;
-        }
+    @page { size: A4; margin: 0; }
 
-        .surat {
-            width: 100%;
-            padding: 20px 16px 24px;
-        }
+    html, body {
+        width: 100%;
+        background: #fff;
+        font-family: 'DejaVu Sans', sans-serif;
+        color: #1a1a1a;
+        font-size: 11.5px;
+        line-height: 1.4;
+    }
 
-        /* KOP */
-        .kop { display: flex; align-items: center; gap: 10px; width: 100%; min-width: 0; }
-        .kop-logo {
-            flex-shrink: 0;
-            width: 46px; height: 46px;
-            border: 1.5px solid #bbb; border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 7px; color: #aaa;
-        }
-        .kop-teks { flex: 1 1 0; min-width: 0; text-align: center; }
-        .kop-instansi { font-size: 8px; color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .kop-nama {
-            font-size: 16px; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 0.3px; color: #000; line-height: 1.2;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .kop-alamat { font-size: 8px; color: #666; margin-top: 2px; word-break: break-word; line-height: 1.5; }
+    .surat { padding: 26px 34px 30px; }
 
-        .hr-tebal { border: none; border-top: 3px solid #000; margin: 7px 0 2px; }
-        .hr-tipis  { border: none; border-top: 1px solid #000; margin-bottom: 12px; }
-        .hr-putus  { border: none; border-top: 1px dashed #ccc; margin: 10px 0 5px; }
+    /* ── KOP ── */
+    .kop { display: table; width: 100%; }
+    .kop-logo-cell { display: table-cell; width: 64px; vertical-align: middle; }
+    .kop-logo { width: 58px; height: 58px; }
+    .kop-logo img { width: 58px; height: 58px; object-fit: contain; }
+    .kop-teks { display: table-cell; vertical-align: middle; text-align: center; padding: 0 6px; }
+    .kop-instansi { font-size: 9px; color: #555; letter-spacing: .2px; }
+    .kop-nama { font-size: 19px; font-weight: bold; text-transform: uppercase; letter-spacing: .4px; color: #000; line-height: 1.25; margin-top: 1px; }
+    .kop-alamat { font-size: 9px; color: #555; margin-top: 3px; line-height: 1.5; }
+    .kop-spacer { display: table-cell; width: 64px; }
 
-        /* JUDUL */
-        .judul { text-align: center; margin-bottom: 12px; }
-        .judul-teks { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; }
-        .judul-garis { border: none; border-top: 1px solid #000; width: 70%; margin: 3px auto 0; }
-        .judul-nomor { font-size: 10px; color: #555; margin-top: 4px; }
+    .garis-tebal { border: none; border-top: 3px solid #000; margin: 9px 0 1.5px; }
+    .garis-tipis { border: none; border-top: .75px solid #000; margin-bottom: 18px; }
 
-        /* PEMBUKA */
-        .pembuka { font-family: 'Source Serif 4', serif; font-size: 11px; line-height: 1.7; text-align: justify; margin-bottom: 10px; }
+    /* ── JUDUL ── */
+    .judul { text-align: center; margin-bottom: 16px; }
+    .judul-teks { font-size: 13px; font-weight: bold; text-transform: uppercase; letter-spacing: 1.2px; display: inline-block; padding-bottom: 3px; border-bottom: 1.25px solid #000; }
+    .judul-nomor { font-size: 10.5px; color: #444; margin-top: 6px; }
 
-        /* TABEL */
-        .tbl { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; }
-        .tbl td { padding: 5px 6px; font-size: 11px; vertical-align: top; word-break: break-word; overflow-wrap: break-word; }
-        .tbl .hdr td { background: #111; color: #fff; font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 5px 7px; }
-        .tbl .ganjil td { background: #f7f9fc; }
-        .tbl .genap  td { background: #fff; }
-        .c-l { width: 35%; font-weight: 600; font-family: 'DM Sans', sans-serif; font-size: 10.5px; }
-        .c-s { width:  7%; text-align: center; }
-        .c-v { width: 58%; font-family: 'Source Serif 4', serif; }
-        .sub-teks { font-size: 9.5px; color: #555; font-style: italic; margin-top: 2px; }
+    /* ── PARAGRAF ── */
+    .par { font-size: 11.5px; line-height: 1.55; text-align: justify; margin-bottom: 12px; }
 
-        .badge { display: inline-block; font-family: 'DM Sans', sans-serif; font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; padding: 2px 7px; border: 1.5px solid #0a52a0; color: #0a52a0; border-radius: 3px; }
+    /* ── TABEL DATA (grid bordered) ── */
+    .tbl { width: 100%; border-collapse: collapse; margin-bottom: 13px; border: .75px solid #cbd5e1; }
+    .tbl-judul td {
+        background: #1a1a1a; color: #fff;
+        font-size: 9.5px; font-weight: bold; text-transform: uppercase; letter-spacing: .5px;
+        padding: 6px 10px;
+    }
+    .tbl tr.row td { padding: 6px 10px; font-size: 11px; border-top: .75px solid #e2e8f0; vertical-align: top; }
+    .tbl tr.row:nth-child(even) td { background: #f8fafc; }
+    .td-label { width: 30%; font-weight: bold; color: #333; }
+    .td-colon { width: 3%; text-align: center; color: #888; }
+    .td-value { width: 67%; }
+    .sub-info { font-size: 9.5px; color: #666; margin-top: 2px; }
 
-        /* KOTAK */
-        .kotak { border-left: 4px solid #111; background: #f7f9fc; padding: 8px 11px; margin-bottom: 10px; font-size: 10.5px; line-height: 1.65; font-family: 'DM Sans', sans-serif; }
-        .kotak-judul { font-weight: 700; font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.2px; margin-bottom: 3px; }
+    .badge {
+        display: inline-block;
+        font-size: 9px; font-weight: bold; text-transform: uppercase; letter-spacing: .3px;
+        padding: 2.5px 9px; border-radius: 3px;
+        border: 1px solid #0a52a0; color: #0a52a0;
+    }
+    .badge.hijau  { border-color: #16a34a; color: #15803d; }
+    .badge.kuning { border-color: #b45309; color: #92400e; }
 
-        /* PENUTUP */
-        .penutup { font-family: 'Source Serif 4', serif; font-size: 11px; line-height: 1.7; text-align: justify; margin-bottom: 16px; }
+    /* ── KOTAK NOTE ── */
+    .kotak { border-left: 3.5px solid #1a1a1a; background: #f8fafc; padding: 9px 13px; margin-bottom: 13px; font-size: 10.5px; line-height: 1.55; }
+    .kotak-judul { font-weight: bold; font-size: 9.5px; text-transform: uppercase; margin-bottom: 4px; letter-spacing: .2px; }
 
-        /* TTD */
-        .ttd { display: flex; width: 100%; }
-        .ttd-col { flex: 1; text-align: center; padding: 0 4px; }
-        .ttd-jabatan { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; line-height: 1.55; }
-        .ttd-spasi { height: 44px; }
-        .ttd-bawah { display: inline-block; min-width: 110px; border-top: 1px solid #444; padding-top: 2px; }
-        .ttd-nama { font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 700; }
+    /* ── TTD ── */
+    .ttd { display: table; width: 100%; margin-top: 8px; }
+    .ttd-col { display: table-cell; width: 50%; text-align: center; vertical-align: top; padding: 0 10px; }
+    .ttd-tgl { font-size: 11px; margin-bottom: 1px; }
+    .ttd-jabatan { font-size: 11px; font-weight: bold; margin-bottom: 46px; }
+    .ttd-nama { font-size: 11px; font-weight: bold; text-decoration: underline; }
+    .ttd-nip { font-size: 9.5px; color: #555; margin-top: 2px; }
 
-        .catatan { font-size: 8.5px; color: #666; line-height: 1.55; }
-        .footer-doc { font-size: 8px; color: #bbb; text-align: center; border-top: 1px solid #eee; padding-top: 4px; margin-top: 8px; }
-
-        @media print {
-            .surat { padding: 10mm 14mm !important; }
-            * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-    </style>
+    .garis-putus { border: none; border-top: .75px dashed #ccc; margin: 16px 0 8px; }
+    .catatan { font-size: 8.5px; color: #777; line-height: 1.5; }
+    .footer-doc { font-size: 8px; color: #aaa; text-align: center; border-top: .5px solid #eee; padding-top: 6px; margin-top: 9px; }
+</style>
 </head>
 <body>
 <div class="surat">
 
+    {{-- ── KOP ── --}}
     <div class="kop">
-        <div class="kop-logo">LOGO</div>
-        <div class="kop-teks">
-            <div class="kop-instansi">Pemerintah Daerah &mdash; Dinas Pendidikan Pamekasan</div>
-            <div class="kop-nama">SMK Bustanul Ulum</div>
-            <div class="kop-alamat">
-                Jl. Pesantren Bustanul Ulum No. 1, Desa Tanjung, Tanjung, Pamekasan 69371
-                &bull; Telp. (0324) 321001 &bull; info@smkbustanululum.sch.id &bull; NPSN: 20580123
+        <div class="kop-logo-cell">
+            <div class="kop-logo">
+                @if(!empty($profil->logo) && file_exists(public_path($profil->logo)))
+                    <img src="{{ public_path($profil->logo) }}" alt="Logo">
+                @endif
             </div>
         </div>
+        <div class="kop-teks">
+            @if(!empty($profil->nama_yayasan))
+                <div class="kop-instansi">{{ $profil->nama_yayasan }}</div>
+            @endif
+            <div class="kop-nama">{{ $profil->nama_sekolah ?? 'SMK Bustanul Ulum Tamansari' }}</div>
+            <div class="kop-alamat">
+                {{ $profil->alamat ?? 'Jl. Tamansari, Kota Tasikmalaya, Jawa Barat' }}
+                @if(!empty($profil->telepon)) &bull; Telp. {{ $profil->telepon }} @endif
+                @if(!empty($profil->email)) &bull; {{ $profil->email }} @endif
+                @if(!empty($profil->npsn)) &bull; NPSN: {{ $profil->npsn }} @endif
+            </div>
+        </div>
+        <div class="kop-spacer"></div>
     </div>
-    <hr class="hr-tebal">
-    <hr class="hr-tipis">
+    <hr class="garis-tebal">
+    <hr class="garis-tipis">
 
+    {{-- ── JUDUL ── --}}
     <div class="judul">
         <div class="judul-teks">Surat Keterangan Izin Keluar</div>
-        <hr class="judul-garis">
-        <div class="judul-nomor">Nomor&nbsp;: <strong>IZN/2025/0004</strong></div>
+        <div class="judul-nomor">Nomor&nbsp;: <strong>{{ $izin->nomor_surat ?? '-' }}</strong></div>
     </div>
 
-    <p class="pembuka">
-        Yang bertanda tangan di bawah ini, Kepala <strong>SMK Bustanul Ulum</strong>,
+    <p class="par">
+        Yang bertanda tangan di bawah ini, Kepala <strong>{{ $profil->nama_sekolah ?? 'SMK Bustanul Ulum Tamansari' }}</strong>,
         menerangkan dengan sesungguhnya bahwa siswa/siswi yang namanya tersebut di bawah ini:
     </p>
 
+    {{-- ── TABEL DATA ── --}}
     <table class="tbl">
-        <tr class="hdr"><td colspan="3">Data Siswa &amp; Keterangan Izin</td></tr>
-        <tr class="ganjil"><td class="c-l">Nama Lengkap</td><td class="c-s">:</td><td class="c-v"><strong>Nabilah Azzahra</strong></td></tr>
-        <tr class="genap"><td class="c-l">NIS / NISN</td><td class="c-s">:</td><td class="c-v">20240014 / 0000100014</td></tr>
-        <tr class="ganjil"><td class="c-l">Kelas</td><td class="c-s">:</td><td class="c-v">X RPL 1</td></tr>
-        <tr class="genap"><td class="c-l">Tahun Ajaran</td><td class="c-s">:</td><td class="c-v">2024/2025 &ndash; Semester Genap</td></tr>
-        <tr class="ganjil"><td class="c-l">Tanggal Keluar</td><td class="c-s">:</td><td class="c-v">Senin, 13 Januari 2025</td></tr>
-        <tr class="genap">
-            <td class="c-l">Jam Keluar</td><td class="c-s">:</td>
-            <td class="c-v"><strong>08:00 WIB</strong><div class="sub-teks">Rencana kembali: <strong>10:00 WIB</strong></div></td>
+        <tr class="tbl-judul"><td colspan="3">Data Siswa &amp; Keterangan Izin</td></tr>
+
+        <tr class="row">
+            <td class="td-label">Nama Lengkap</td><td class="td-colon">:</td>
+            <td class="td-value"><strong>{{ $izin->siswa->nama_lengkap ?? '-' }}</strong></td>
         </tr>
-        <tr class="ganjil"><td class="c-l">Kategori Izin</td><td class="c-s">:</td><td class="c-v">Berobat / Kesehatan</td></tr>
-        <tr class="genap"><td class="c-l">Tujuan / Keperluan</td><td class="c-s">:</td><td class="c-v"><strong>Ambil hasil lab kesehatan di klinik</strong></td></tr>
-        <tr class="ganjil"><td class="c-l">Status Izin</td><td class="c-s">:</td><td class="c-v"><span class="badge">Sudah Kembali</span></td></tr>
+        <tr class="row">
+            <td class="td-label">NIS / NISN</td><td class="td-colon">:</td>
+            <td class="td-value">{{ $izin->siswa->nis ?? '-' }}@if(!empty($izin->siswa->nisn)) / {{ $izin->siswa->nisn }}@endif</td>
+        </tr>
+        <tr class="row">
+            <td class="td-label">Kelas</td><td class="td-colon">:</td>
+            <td class="td-value">{{ optional($izin->siswa->kelas)->nama_kelas ?? '-' }}</td>
+        </tr>
+        <tr class="row">
+            <td class="td-label">Tahun Ajaran</td><td class="td-colon">:</td>
+            <td class="td-value">
+                {{ optional($izin->tahunAjaran)->tahun ?? '-' }}
+                @if(optional($izin->tahunAjaran)->semester) &ndash; Semester {{ ucfirst($izin->tahunAjaran->semester) }} @endif
+            </td>
+        </tr>
+        <tr class="row">
+            <td class="td-label">Tanggal Keluar</td><td class="td-colon">:</td>
+            <td class="td-value">{{ $izin->tanggal->translatedFormat('l, d F Y') }}</td>
+        </tr>
+        <tr class="row">
+            <td class="td-label">Jam Keluar</td><td class="td-colon">:</td>
+            <td class="td-value">
+                <strong>{{ \Carbon\Carbon::parse($izin->jam_keluar)->format('H:i') }} WIB</strong>
+                @if($izin->jam_kembali)
+                    <div class="sub-info">Rencana kembali: <strong>{{ \Carbon\Carbon::parse($izin->jam_kembali)->format('H:i') }} WIB</strong></div>
+                @endif
+            </td>
+        </tr>
+        <tr class="row">
+            <td class="td-label">Kategori Izin</td><td class="td-colon">:</td>
+            <td class="td-value">{{ $izin->kategori_label ?? '-' }}</td>
+        </tr>
+        <tr class="row">
+            <td class="td-label">Tujuan / Keperluan</td><td class="td-colon">:</td>
+            <td class="td-value"><strong>{{ $izin->tujuan }}</strong></td>
+        </tr>
+        <tr class="row">
+            <td class="td-label">Status Izin</td><td class="td-colon">:</td>
+            <td class="td-value">
+                @if($izin->status === \App\Models\IzinKeluarSiswa::STATUS_SUDAH_KEMBALI)
+                    <span class="badge hijau">Sudah Kembali</span>
+                    <div class="sub-info">Jam kembali aktual: <strong>{{ \Carbon\Carbon::parse($izin->jam_kembali_aktual)->format('H:i') }} WIB</strong></div>
+                @elseif($izin->status === \App\Models\IzinKeluarSiswa::STATUS_DISETUJUI)
+                    <span class="badge">Disetujui &mdash; Sedang Keluar</span>
+                @else
+                    <span class="badge kuning">{{ $izin->status_label ?? $izin->status }}</span>
+                @endif
+            </td>
+        </tr>
     </table>
+
+    @if($izin->keterangan)
+    <div class="kotak">
+        <div class="kotak-judul">Keterangan Tambahan</div>
+        {{ $izin->keterangan }}
+    </div>
+    @endif
 
     <div class="kotak">
         <div class="kotak-judul">&#9888; Kepada Yth. Bapak / Ibu Petugas / Aparat Berwenang</div>
         Siswa/siswi tersebut di atas <strong>benar-benar telah mendapat izin resmi</strong>
         dari pihak sekolah untuk meninggalkan lingkungan sekolah pada waktu yang tertera.
-        Verifikasi: <strong>(0324) 321001</strong>.
+        @if(!empty($profil->telepon))
+            Verifikasi: <strong>{{ $profil->telepon }}</strong>.
+        @endif
     </div>
 
-    <p class="penutup">
+    <p class="par" style="margin-bottom:6px">
         Demikian surat keterangan ini dibuat dengan sebenarnya untuk dapat dipergunakan sebagaimana mestinya.
     </p>
 
+    {{-- ── TTD ── --}}
     <div class="ttd">
         <div class="ttd-col">
-            <div class="ttd-jabatan">Mengetahui,<br>Petugas Piket</div>
-            <div class="ttd-spasi"></div>
-            <div class="ttd-bawah"><div class="ttd-nama">( .......................... )</div></div>
+            <div class="ttd-tgl">Mengetahui,</div>
+            <div class="ttd-jabatan">Petugas Piket</div>
+            <div class="ttd-nama">{{ $izin->diprosesOleh->name ?? '( .......................... )' }}</div>
+            @if(!empty($izin->diprosesOleh->nip))
+                <div class="ttd-nip">NIP/NUPTK: {{ $izin->diprosesOleh->nip }}</div>
+            @endif
         </div>
         <div class="ttd-col">
-            <div class="ttd-jabatan">13 Januari 2025,<br>Kepala Sekolah</div>
-            <div class="ttd-spasi"></div>
-            <div class="ttd-bawah"><div class="ttd-nama">( .......................... )</div></div>
+            <div class="ttd-tgl">Tasikmalaya, {{ $izin->diproses_pada ? $izin->diproses_pada->translatedFormat('d F Y') : now()->translatedFormat('d F Y') }},</div>
+            <div class="ttd-jabatan">Kepala Sekolah</div>
+            <div class="ttd-nama">{{ $profil->nama_kepala_sekolah ?? '( .......................... )' }}</div>
+            @if(!empty($profil->nip_kepala_sekolah))
+                <div class="ttd-nip">NIP/NUPTK: {{ $profil->nip_kepala_sekolah }}</div>
+            @endif
         </div>
     </div>
 
-    <hr class="hr-putus">
+    <hr class="garis-putus">
     <div class="catatan">
         <strong>Catatan:</strong> Surat ini diterbitkan melalui Sistem Informasi Manajemen Sekolah
         dan hanya berlaku pada tanggal yang tertera. Tidak berlaku apabila dipalsukan atau digunakan di luar ketentuannya.
     </div>
     <div class="footer-doc">
-        Dicetak: 13 Januari 2025, 08:30 WIB &bull; SMK Bustanul Ulum &bull; Dokumen resmi
+        Dicetak: {{ now()->translatedFormat('d F Y, H:i') }} WIB &bull; {{ $profil->nama_sekolah ?? 'SMK Bustanul Ulum Tamansari' }} &bull; Dokumen resmi
     </div>
 
 </div>

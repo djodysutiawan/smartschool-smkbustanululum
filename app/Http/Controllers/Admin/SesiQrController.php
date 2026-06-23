@@ -17,6 +17,37 @@ use Maatwebsite\Excel\Facades\Excel;
 
 class SesiQrController extends Controller
 {
+    // ── HELPER: Generate barcode_mapel untuk seluruh siswa di kelas ──────────
+
+    /**
+     * Generate barcode_mapel bagi siswa yang belum punya.
+     * Dipanggil setiap kali sesi QR dibuat agar barcode selalu tersedia.
+     *
+     * Format: MAP-{NIS} jika NIS ada, atau MAP-{ID padded 8 digit}
+     */
+    private function generateBarcodeMapelUntukKelas(int $kelasId): void
+    {
+        $siswaTanpaBarcode = Siswa::where('kelas_id', $kelasId)
+            ->whereNull('barcode_mapel')
+            ->get();
+
+        foreach ($siswaTanpaBarcode as $siswa) {
+            $kode = 'MAP-' . ($siswa->nis
+                ? strtoupper($siswa->nis)
+                : str_pad($siswa->id, 8, '0', STR_PAD_LEFT)
+            );
+
+            // Pastikan unik — jika konflik tambahkan suffix
+            $base  = $kode;
+            $index = 1;
+            while (Siswa::where('barcode_mapel', $kode)->where('id', '!=', $siswa->id)->exists()) {
+                $kode = $base . '-' . $index++;
+            }
+
+            $siswa->update(['barcode_mapel' => $kode]);
+        }
+    }
+
     // ── INDEX ─────────────────────────────────────────────────────────────────
 
     public function index(Request $request)
@@ -26,7 +57,7 @@ class SesiQrController extends Controller
                 'mataPelajaran',
                 'guru',
                 'jadwalPelajaran',
-                'dibuatOleh',           // eager-load agar tidak N+1 di kolom "Dibuat Oleh"
+                'dibuatOleh',
             ])
             ->withCount([
                 'riwayatScan',
@@ -66,7 +97,17 @@ class SesiQrController extends Controller
 
         $kelasList = Kelas::aktif()->orderBy('nama_kelas')->get();
 
-        return view('admin.sesi-qr.create', compact('jadwalHariIni', 'kelasList', 'hariIni'));
+        // Sesi aktif hari ini — untuk validasi & info di form
+        $sesiAktifHariIni = SesiQr::with(['mataPelajaran', 'kelas'])
+            ->whereDate('tanggal', today())
+            ->where('is_active', true)
+            ->where('kadaluarsa_pada', '>=', now())
+            ->get()
+            ->keyBy('kelas_id');
+
+        return view('admin.sesi-qr.create', compact(
+            'jadwalHariIni', 'kelasList', 'hariIni', 'sesiAktifHariIni'
+        ));
     }
 
     // ── STORE ─────────────────────────────────────────────────────────────────
@@ -94,7 +135,24 @@ class SesiQrController extends Controller
             'durasi_menit.max'           => 'Durasi maksimal 240 menit.',
         ]);
 
-        // Cegah duplikat: satu jadwal, satu tanggal, satu sesi aktif
+        // ── VALIDASI: Cek apakah kelas ini sudah punya sesi aktif hari ini ──
+        $sesiAktifKelas = SesiQr::where('kelas_id', $validated['kelas_id'])
+            ->whereDate('tanggal', $validated['tanggal'])
+            ->where('is_active', true)
+            ->where('kadaluarsa_pada', '>=', now())
+            ->first();
+
+        if ($sesiAktifKelas) {
+            $namaMapel = $sesiAktifKelas->mataPelajaran->nama_mapel ?? 'suatu pelajaran';
+            return back()
+                ->withInput()
+                ->with('error',
+                    "Kelas ini masih memiliki sesi QR aktif untuk {$namaMapel}. " .
+                    "Tunggu hingga sesi selesai atau nonaktifkan terlebih dahulu sebelum membuat sesi baru."
+                );
+        }
+
+        // ── VALIDASI: Cek duplikat per jadwal (jika jadwal dipilih) ─────────
         if (! empty($validated['jadwal_pelajaran_id'])) {
             $existing = SesiQr::where('jadwal_pelajaran_id', $validated['jadwal_pelajaran_id'])
                 ->whereDate('tanggal', $validated['tanggal'])
@@ -104,14 +162,13 @@ class SesiQrController extends Controller
             if ($existing) {
                 return back()
                     ->withInput()
-                    ->with('error', 'Sudah ada sesi QR aktif untuk jadwal ini hari ini. Nonaktifkan sesi sebelumnya terlebih dahulu.');
+                    ->with('error', 'Sudah ada sesi QR aktif untuk jadwal ini. Nonaktifkan sesi sebelumnya terlebih dahulu.');
             }
         }
 
         $berlakuMulai   = \Carbon\Carbon::parse($validated['tanggal'] . ' ' . $validated['berlaku_mulai']);
         $kadaluarsaPada = $berlakuMulai->copy()->addMinutes((int) $validated['durasi_menit']);
 
-        // Ambil guru_id dari jadwal jika ada; fallback null (model boot juga handle ini)
         $guruId = null;
         if (! empty($validated['jadwal_pelajaran_id'])) {
             $jadwal = JadwalPelajaran::find($validated['jadwal_pelajaran_id']);
@@ -134,8 +191,11 @@ class SesiQrController extends Controller
             'is_active'           => true,
         ]);
 
+        // ── AUTO-GENERATE barcode_mapel untuk siswa di kelas ini ─────────────
+        $this->generateBarcodeMapelUntukKelas($validated['kelas_id']);
+
         return redirect()->route('admin.sesi-qr.show', $sesi)
-            ->with('success', 'Sesi QR berhasil dibuat. Tampilkan QR code ke siswa.');
+            ->with('success', 'Sesi QR berhasil dibuat. Barcode mapel siswa yang belum punya sudah di-generate otomatis.');
     }
 
     // ── SHOW ──────────────────────────────────────────────────────────────────
@@ -176,7 +236,6 @@ class SesiQrController extends Controller
     public function cetakQr(SesiQr $sesiQr)
     {
         $sesiQr->load(['kelas', 'mataPelajaran', 'guru']);
-
         return view('admin.sesi-qr.cetak-qr', compact('sesiQr'));
     }
 
@@ -204,7 +263,6 @@ class SesiQrController extends Controller
 
         DB::transaction(function () use ($sesiQr, $belumScan) {
             foreach ($belumScan as $siswa) {
-                // Pisah kondisi cari: WHERE col IS NULL tidak sama dengan WHERE col = NULL
                 $kondisi = [
                     'siswa_id' => $siswa->id,
                     'tanggal'  => $sesiQr->tanggal->toDateString(),
@@ -216,9 +274,7 @@ class SesiQrController extends Controller
                     $kondisi['sesi_qr_id'] = $sesiQr->id;
                 }
 
-                $sudahAda = Absensi::where($kondisi)->exists();
-
-                if (! $sudahAda) {
+                if (! Absensi::where($kondisi)->exists()) {
                     Absensi::create([
                         'siswa_id'            => $siswa->id,
                         'kelas_id'            => $sesiQr->kelas_id,
@@ -261,7 +317,6 @@ class SesiQrController extends Controller
         }
 
         $absensi = Absensi::firstOrNew($kondisiCari);
-
         $absensi->fill([
             'kelas_id'            => $sesiQr->kelas_id,
             'tahun_ajaran_id'     => $sesiQr->kelas->tahun_ajaran_id,
@@ -289,7 +344,6 @@ class SesiQrController extends Controller
                 'siswa_id'     => $r->siswa_id,
                 'nama'         => $r->siswa->nama_lengkap ?? '—',
                 'nis'          => $r->siswa->nis ?? '—',
-                // Gunakan nama kolom yang konsisten: dipindai_pada
                 'di_scan_pada' => $r->dipindai_pada->format('H:i:s'),
             ]);
 
@@ -298,7 +352,6 @@ class SesiQrController extends Controller
             'is_kadaluarsa' => $sesiQr->isKadaluarsa(),
             'jumlah_scan'   => $sesiQr->jumlah_scan,
             'sudah_scan'    => $sudahScan,
-            // max(0, ...) dengan false agar negatif menjadi 0
             'sisa_waktu'    => max(0, now()->diffInSeconds($sesiQr->kadaluarsa_pada, false)),
         ]);
     }
@@ -329,10 +382,8 @@ class SesiQrController extends Controller
 
     public function exportExcel(Request $request)
     {
-        $filters = $request->only(['kelas_id', 'tanggal', 'is_active']);
-
         return Excel::download(
-            new SesiQrExport($filters),
+            new SesiQrExport($request->only(['kelas_id', 'tanggal', 'is_active'])),
             'sesi_qr_' . now()->format('Ymd_His') . '.xlsx'
         );
     }

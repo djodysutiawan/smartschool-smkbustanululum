@@ -38,6 +38,9 @@
     .btn-nonaktif:hover{background:#fef9c3;filter:none}
     .btn-print{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
     .btn-print:hover{background:#ede9fe;filter:none}
+    /* Tombol buat sesi dinonaktifkan jika ada sesi aktif */
+    .btn-primary.blocked{background:#94a3b8;cursor:not-allowed}
+    .btn-primary.blocked:hover{filter:none}
 
     /* Stats */
     .stats-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
@@ -46,11 +49,20 @@
     .stat-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
     .stat-icon.blue{background:#eff6ff}
     .stat-icon.green{background:var(--green-bg)}
-    .stat-icon.red{background:var(--red-bg)}
     .stat-icon.yellow{background:var(--yellow-bg)}
     .stat-label{font-family:'Plus Jakarta Sans',sans-serif;font-size:10.5px;font-weight:700;color:var(--text3);letter-spacing:.05em;text-transform:uppercase}
     .stat-val{font-family:'Plus Jakarta Sans',sans-serif;font-size:24px;font-weight:800;color:var(--text);line-height:1.1;margin-top:2px}
     .stat-sub{font-size:11px;color:var(--text3);margin-top:1px;font-family:'DM Sans',sans-serif}
+
+    /* Banner sesi aktif sedang berjalan */
+    .sesi-aktif-banner{background:linear-gradient(135deg,#fff7ed 0%,#ffedd5 100%);border:1.5px solid #fed7aa;border-radius:var(--radius);padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;gap:14px}
+    .sesi-aktif-banner-dot{width:10px;height:10px;border-radius:50%;background:#ea580c;box-shadow:0 0 0 3px #ffedd5;flex-shrink:0;animation:pulse-orange 1.5s infinite}
+    @keyframes pulse-orange{0%,100%{box-shadow:0 0 0 3px #ffedd5}50%{box-shadow:0 0 0 6px #fed7aa}}
+    .sesi-aktif-banner-text{flex:1}
+    .sesi-aktif-banner-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:800;color:#9a3412}
+    .sesi-aktif-banner-sub{font-size:12px;color:#c2410c;margin-top:2px;font-family:'DM Sans',sans-serif}
+    .btn-goto-aktif{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;background:#ea580c;color:#fff;border:none;border-radius:6px;font-family:'Plus Jakarta Sans',sans-serif;font-size:12px;font-weight:700;text-decoration:none;white-space:nowrap;transition:filter .15s}
+    .btn-goto-aktif:hover{filter:brightness(.9)}
 
     /* Jadwal hari ini banner */
     .jadwal-banner{background:linear-gradient(135deg,#eef6ff 0%,#f0fdf4 100%);border:1px solid var(--brand-100);border-radius:var(--radius);padding:16px 20px;margin-bottom:16px}
@@ -84,6 +96,8 @@
     .sesi-card-header{padding:14px 16px 10px;display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
     .sesi-card-title{font-family:'Plus Jakarta Sans',sans-serif;font-size:14px;font-weight:800;color:var(--text);line-height:1.3}
     .sesi-card-mapel{font-size:12px;color:var(--text3);margin-top:2px;font-family:'DM Sans',sans-serif}
+    /* Label pembuat (admin) */
+    .badge-admin{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:99px;font-family:'Plus Jakarta Sans',sans-serif;font-size:10px;font-weight:700;color:#15803d;margin-top:4px}
     .sesi-card-body{padding:0 16px 14px;display:flex;flex-direction:column;gap:7px;flex:1}
     .info-row{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--text2);font-family:'DM Sans',sans-serif}
     .info-row svg{flex-shrink:0;opacity:.5}
@@ -143,10 +157,18 @@
             <p class="page-sub">Kelola sesi QR code untuk absensi digital siswa per jadwal pelajaran</p>
         </div>
         <div class="header-actions">
+            @if($adaSesiAktif)
+            {{-- Ada sesi aktif: tombol buat sesi dikunci, arahkan ke sesi aktif --}}
+            <span class="btn btn-primary blocked" title="Ada sesi QR aktif yang sedang berjalan">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                Buat Sesi QR
+            </span>
+            @else
             <a href="{{ route('guru.sesi-qr.create') }}" class="btn btn-primary">
                 <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Buat Sesi QR
             </a>
+            @endif
         </div>
     </div>
 
@@ -198,6 +220,28 @@
         </div>
     </div>
 
+    {{-- Banner sesi sedang aktif (dari admin maupun guru sendiri) --}}
+    @php
+        $sesiSedangAktif = $sesiPerJadwal->first(fn($s) => \Carbon\Carbon::parse($s->kadaluarsa_pada)->isFuture());
+    @endphp
+    @if($sesiSedangAktif)
+    <div class="sesi-aktif-banner">
+        <div class="sesi-aktif-banner-dot"></div>
+        <div class="sesi-aktif-banner-text">
+            <p class="sesi-aktif-banner-title">Sesi QR Sedang Berjalan</p>
+            <p class="sesi-aktif-banner-sub">
+                {{ $sesiSedangAktif->mataPelajaran->nama_mapel ?? '—' }} ·
+                {{ $sesiSedangAktif->kelas->nama_kelas ?? '—' }} ·
+                Berakhir pukul {{ \Carbon\Carbon::parse($sesiSedangAktif->kadaluarsa_pada)->format('H:i') }}
+            </p>
+        </div>
+        <a href="{{ route('guru.barcode-kelas.show-sesi', $sesiSedangAktif->id) }}" class="btn-goto-aktif">
+            <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Tayangkan QR
+        </a>
+    </div>
+    @endif
+
     {{-- Jadwal hari ini banner --}}
     @if($jadwalHariIni->count() > 0)
     <div class="jadwal-banner">
@@ -218,11 +262,13 @@
                         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
                         Lihat QR
                     </a>
-                @else
+                @elseif(!$adaSesiAktif)
                     <a href="{{ route('guru.sesi-qr.create', ['jadwal_pelajaran_id' => $jadwal->id]) }}" class="btn-xs btn-xs-primary">
                         <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                         Buat QR
                     </a>
+                @else
+                    <span class="btn-xs btn-xs-gray">Terkunci</span>
                 @endif
             </div>
             @endforeach
@@ -269,6 +315,7 @@
             $scanCount = $s->riwayatScan->count();
             $totalSiswa = $s->kelas?->siswa()->count() ?? 0;
             $pct = $totalSiswa > 0 ? round(($scanCount / $totalSiswa) * 100) : 0;
+            $dibuatOlehAdmin = $s->dibuat_oleh !== Auth::id();
         @endphp
         <div class="sesi-card">
             <div class="sesi-card-top {{ $isExpired ? 'expired' : 'aktif' }}"></div>
@@ -276,6 +323,12 @@
                 <div style="flex:1;min-width:0">
                     <p class="sesi-card-title">{{ $s->kelas->nama_kelas ?? '—' }}</p>
                     <p class="sesi-card-mapel">{{ $s->mataPelajaran->nama_mapel ?? 'Semua Mapel' }}</p>
+                    @if($dibuatOlehAdmin)
+                    <span class="badge-admin">
+                        <svg width="9" height="9" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        Dibuat Admin
+                    </span>
+                    @endif
                 </div>
                 <span class="badge {{ $isExpired ? 'badge-expired' : 'badge-aktif' }}">
                     <span class="badge-dot"></span>{{ $isExpired ? 'Kedaluwarsa' : 'Aktif' }}
@@ -335,6 +388,8 @@
                         onclick="return confirm('Nonaktifkan sesi QR ini?')">Nonaktifkan</button>
                 </form>
                 @endif
+                @if(!$dibuatOlehAdmin)
+                {{-- Hapus hanya boleh jika guru sendiri yang buat --}}
                 <form action="{{ route('guru.sesi-qr.destroy', $s->id) }}" method="POST" id="delForm-{{ $s->id }}" style="display:inline">
                     @csrf @method('DELETE')
                     <button type="button" class="btn btn-sm btn-del"
@@ -342,6 +397,7 @@
                         Hapus
                     </button>
                 </form>
+                @endif
             </div>
         </div>
         @endforeach
@@ -382,10 +438,12 @@
         </div>
         <p class="empty-title">Belum ada sesi QR</p>
         <p class="empty-sub" style="margin-bottom:16px">Buat sesi QR pertama untuk mengaktifkan absensi digital</p>
+        @if(!$adaSesiAktif)
         <a href="{{ route('guru.sesi-qr.create') }}" class="btn btn-primary">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
             Buat Sesi QR Baru
         </a>
+        @endif
     </div>
     @endif
 
